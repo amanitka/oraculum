@@ -21,6 +21,9 @@ public class PostgresParquetFileLoader {
 
     private void createSecret(Statement stmt) throws SQLException {
         var database = properties.getDatabase();
+        // SQL Injection Prevention: Escape single quotes in the password.
+        String escapedPassword = database.getPassword().replace("'", "''");
+
         var createSecret = """
                 CREATE OR REPLACE SECRET pg_secret (
                     TYPE POSTGRES,
@@ -31,7 +34,7 @@ public class PostgresParquetFileLoader {
                     PASSWORD '%s'
                 );
                 """.formatted(database.getHost(), database.getPort(), database.getName(), database.getUsername(),
-                database.getPassword());
+                escapedPassword);
         stmt.execute(createSecret);
     }
 

@@ -43,8 +43,8 @@ public class SharePriceFileLoaderImpl implements ParquetFileLoader {
                shares_outstanding,
                dividend,
                extracted_at,
-               CURRENT_TIMESTAMP,
-               CURRENT_TIMESTAMP
+               now() AS created_at,
+               now() AS updated_at
             FROM read_parquet('%s')
             ON CONFLICT (ticker, market, trade_date)
             DO UPDATE SET
@@ -59,7 +59,7 @@ public class SharePriceFileLoaderImpl implements ParquetFileLoader {
                shares_outstanding = EXCLUDED.shares_outstanding,
                dividend = EXCLUDED.dividend,
                extracted_at = EXCLUDED.extracted_at,
-               updated_at = CURRENT_TIMESTAMP;
+               updated_at = now();
             """;
     private final PostgresParquetFileLoader postgresParquetFileLoader;
 

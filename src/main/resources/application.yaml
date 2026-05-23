@@ -1,10 +1,18 @@
 spring:
   application:
     name: oraculum
+
   datasource:
-    url: jdbc:postgresql://${ORACULUM_DATABASE_HOST}:{ORACULUM_DATABASE_PORT}/${ORACULUM_DATABASE_NAME}
+    url: jdbc:postgresql://${ORACULUM_DATABASE_HOST}:${ORACULUM_DATABASE_PORT}/${ORACULUM_DATABASE_NAME}
     username: ${ORACULUM_DATABASE_USERNAME}
     password: ${ORACULUM_DATABASE_PASSWORD}
+
+  kafka:
+    bootstrap-servers: ${ORACULUM_KAFKA_BROKERS}
+    consumer:
+      group-id: oraculum
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
 
   flyway:
     enabled: false
@@ -40,8 +48,7 @@ oraculum:
     apiKey: ${ORACULUM_ALPHA_VANTAGE_API_KEY}
 
   kafka:
-    brokers: ${ORACULUM_KAFKA_BROKERS}
-    consumerGroup: oraculum-analyst
+    consumerGroup: oraculum
     topics:
       ticker: oraculum.ticker
       dataFileReady: oraculum.data_file_ready
