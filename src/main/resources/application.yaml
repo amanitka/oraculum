@@ -2,7 +2,7 @@ spring:
   application:
     name: oraculum
   datasource:
-    url: ${ORACULUM_DATABASE_URL}
+    url: jdbc:postgresql://${ORACULUM_DATABASE_HOST}:{ORACULUM_DATABASE_PORT}/${ORACULUM_DATABASE_NAME}
     username: ${ORACULUM_DATABASE_USERNAME}
     password: ${ORACULUM_DATABASE_PASSWORD}
 
@@ -23,6 +23,13 @@ vaadin:
   launch-browser: true
 
 oraculum:
+  database:
+    host: ${ORACULUM_DATABASE_HOST}
+    port: ${ORACULUM_DATABASE_PORT}
+    name: ${ORACULUM_DATABASE_NAME}
+    username: ${ORACULUM_DATABASE_USERNAME}
+    password: ${ORACULUM_DATABASE_PASSWORD}
+
   simfin:
     apiKey: ${ORACULUM_SIMFIN_API_KEY}
     chunkSize: ${ORACULUM_SIMFIN_CHUNK_SIZE:500000}
@@ -34,6 +41,7 @@ oraculum:
 
   kafka:
     brokers: ${ORACULUM_KAFKA_BROKERS}
+    consumerGroup: oraculum-analyst
     topics:
       ticker: oraculum.ticker
       incomeStatement: oraculum.income_statement
@@ -48,7 +56,6 @@ oraculum:
     folderPath: ${ORACULUM_SHARED_FOLDER_PATH:./data/shared}
 
   analyst:
-    consumerGroup: oraculum-analyst
     refresh:
       priceCron: "0 7 * * *"
       fundamentalsCron: "0 0 * * 0"
