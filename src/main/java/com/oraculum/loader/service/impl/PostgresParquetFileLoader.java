@@ -11,6 +11,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -19,11 +20,25 @@ public class PostgresParquetFileLoader {
 
     private final OraculumProperties properties;
 
+    public static String normalizeAndValidate(String parquetFilePath) {
+        if (parquetFilePath == null || parquetFilePath.isBlank()) {
+            throw new IllegalArgumentException("Parquet file path must not be null or blank");
+        }
+        String normalizedPath;
+        try {
+            normalizedPath = Path.of(parquetFilePath).normalize().toString();
+        } catch (InvalidPathException e) {
+            throw new IllegalArgumentException("Invalid parquet file path: " + parquetFilePath, e);
+        }
+        if (normalizedPath.contains("'") || normalizedPath.contains(";") || normalizedPath.contains("--")) {
+            throw new IllegalArgumentException("Parquet file path contains potentially unsafe characters: " + parquetFilePath);
+        }
+        return normalizedPath;
+    }
+
     private void createSecret(Statement stmt) throws SQLException {
         var database = properties.getDatabase();
-        // SQL Injection Prevention: Escape single quotes in the password.
         String escapedPassword = database.getPassword().replace("'", "''");
-
         var createSecret = """
                 CREATE OR REPLACE SECRET pg_secret (
                     TYPE POSTGRES,
@@ -39,23 +54,18 @@ public class PostgresParquetFileLoader {
     }
 
     /**
-     * Executes a bulk SQL command using a DuckDB in-memory instance that is configured
-     * to communicate with the project's primary PostgreSQL database.
-     * <p>
-     * This method handles the boilerplate of:
-     * 1. Creating an in-memory DuckDB instance.
-     * 2. Initializing the DuckDB-Postgres integration.
-     * 3. Creating a temporary secret for the DB connection.
-     * 4. Attaching the PostgreSQL database to DuckDB's execution path.
-     * 5. Executing the provided SQL.
-     * 6. Handling exceptions and logging.
+     * Uses DuckDB to perform a high-speed load of a Parquet file into a new,
+     * temporary staging table in the primary PostgreSQL database.
      *
-     * @param operationDescription A description of the operation for logging purposes.
-     * @param bulkSql              The complete SQL string to execute for the bulk operation.
+     * @param parquetFilePath The path to the Parquet file.
+     * @param baseTableName   The base name for the target table (e.g., "t_share_price").
+     * @return The name of the created staging table (unqualified).
+     * @throws SQLException if a database access error occurs during the DuckDB process.
      */
-    public void executeBulkSql(String operationDescription, String bulkSql) {
-        log.info("Starting bulk operation: {}", operationDescription);
-        // Open an isolated, fast in-memory DuckDB virtual instance
+    public String loadParquetIntoStaging(String parquetFilePath, String baseTableName) throws SQLException {
+        String stagingTableName = "staging_" + baseTableName + "_" + UUID.randomUUID().toString().replace("-", "");
+        log.info("Starting high-speed load from '{}' into new staging table '{}'", parquetFilePath, stagingTableName);
+
         try (Connection conn = DriverManager.getConnection("jdbc:duckdb:"); Statement stmt = conn.createStatement()) {
             log.debug("Initializing PostgreSQL extension for DuckDB.");
             stmt.execute("INSTALL postgres; LOAD postgres;");
@@ -63,30 +73,27 @@ public class PostgresParquetFileLoader {
             createSecret(stmt);
             log.debug("Attaching PostgreSQL database to DuckDB execution path.");
             stmt.execute("ATTACH '' AS pg (TYPE POSTGRES, SECRET pg_secret);");
-            log.info("Executing bulk SQL for: {}", operationDescription);
-            int rowsAffected = stmt.executeUpdate(bulkSql);
-            log.info("Bulk operation '{}' completed successfully. {} rows affected.", operationDescription,
-                    rowsAffected);
-        } catch (SQLException e) {
-            log.error("Failed to execute bulk operation '{}' due to a SQL error.", operationDescription, e);
-            throw new RuntimeException("Failed to execute bulk operation: " + operationDescription, e);
-        }
-    }
 
-    public static String normalizeAndValidate(String parquetFilePath) {
-        if (parquetFilePath == null || parquetFilePath.isBlank()) {
-            throw new IllegalArgumentException("Parquet file path must not be null or blank");
+            // 1. Create the staging table structure in Postgres
+            log.info("Step 1/2: Creating staging table '{}' in PostgreSQL.", stagingTableName);
+            String createStagingTableSql = """
+                    CREATE TABLE pg.%s AS
+                    SELECT *, now() AS created_at, now() AS updated_at
+                    FROM read_parquet('%s')
+                    LIMIT 0;
+                    """.formatted(stagingTableName, parquetFilePath);
+            stmt.execute(createStagingTableSql);
+
+            // 2. Fast-append data from Parquet into the staging table using COPY
+            log.info("Step 2/2: Appending data to staging table '{}' using high-speed COPY.", stagingTableName);
+            String copyToStagingSql = """
+                    INSERT INTO pg.%s
+                    SELECT *, now(), now()
+                    FROM read_parquet('%s');
+                    """.formatted(stagingTableName, parquetFilePath);
+            int rows = stmt.executeUpdate(copyToStagingSql);
+            log.info("Successfully loaded {} rows into staging table '{}'.", rows, stagingTableName);
         }
-        String normalizedPath;
-        try {
-            normalizedPath = Path.of(parquetFilePath).normalize().toString();
-        } catch (InvalidPathException e) {
-            throw new IllegalArgumentException("Invalid parquet file path: " + parquetFilePath, e);
-        }
-        // Simple check for SQL injection characters. Consider a more robust validation library if needed.
-        if (normalizedPath.contains("'") || normalizedPath.contains(";") || normalizedPath.contains("--")) {
-            throw new IllegalArgumentException("Parquet file path contains potentially unsafe characters: " + parquetFilePath);
-        }
-        return normalizedPath;
+        return stagingTableName;
     }
 }
