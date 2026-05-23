@@ -17,7 +17,7 @@ public class DataFileReadyListener {
 
     private final Map<String, ParquetFileLoader> fileLoaders;
 
-    @KafkaListener(topics = "${oraculum.kafka.topics.sharePriceBatch}", groupId = "${oraculum.kafka.consumerGroup}",
+    @KafkaListener(topics = "${oraculum.kafka.topics.dataFileReady}", groupId = "${oraculum.kafka.consumerGroup}",
             containerFactory = "kafkaListenerContainerFactory")
     public void onDataFileReady(DataFileReadyEvent event) {
         log.info("Received data file ready event: {}", event);

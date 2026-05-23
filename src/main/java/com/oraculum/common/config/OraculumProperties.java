@@ -51,12 +51,7 @@ public class OraculumProperties {
         @Getter
         @Setter
         public static class Topics {
-            private String ticker;
-            private String incomeStatement;
-            private String balanceSheet;
-            private String cashFlowStatement;
-            private String sharePriceBatch;
-            private String analystRequest;
+            private String dataFileReady;
             private String market;
             private String industry;
         }
