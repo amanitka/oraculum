@@ -1,14 +1,14 @@
 package com.oraculum.loader.service.impl;
 
 import com.oraculum.loader.dto.LoadParquetDto;
-import com.oraculum.loader.service.ParquetFileLoader;
+import com.oraculum.loader.service.ParquetFileLoadService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component("ticker")
 @RequiredArgsConstructor
-public class TickerFileLoaderImpl implements ParquetFileLoader {
+public class TickerFileLoadServiceImpl implements ParquetFileLoadService {
 
     private static final String TARGET_TABLE_NAME = "t_ticker";
     private static final String BULK_UPSERT_SQL = """

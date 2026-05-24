@@ -1,6 +1,6 @@
 package com.oraculum.loader.service;
 
-public interface ParquetFileLoader {
+public interface ParquetFileLoadService {
     /**
      * Merge records from a Parquet file natively into a target database table.
      *

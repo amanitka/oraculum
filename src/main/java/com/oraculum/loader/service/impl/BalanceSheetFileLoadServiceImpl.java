@@ -1,14 +1,14 @@
 package com.oraculum.loader.service.impl;
 
 import com.oraculum.loader.dto.LoadParquetDto;
-import com.oraculum.loader.service.ParquetFileLoader;
+import com.oraculum.loader.service.ParquetFileLoadService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component("balance_sheet")
 @RequiredArgsConstructor
-public class BalanceSheetFileLoaderImpl implements ParquetFileLoader {
+public class BalanceSheetFileLoadServiceImpl implements ParquetFileLoadService {
 
     private static final String TARGET_TABLE_NAME = "t_balance_sheet";
     private static final String BULK_UPSERT_SQL = """

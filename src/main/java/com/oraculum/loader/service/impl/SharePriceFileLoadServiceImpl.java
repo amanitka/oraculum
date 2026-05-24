@@ -1,14 +1,14 @@
 package com.oraculum.loader.service.impl;
 
 import com.oraculum.loader.dto.LoadParquetDto;
-import com.oraculum.loader.service.ParquetFileLoader;
+import com.oraculum.loader.service.ParquetFileLoadService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component("share_price")
 @RequiredArgsConstructor
-public class SharePriceFileLoaderImpl implements ParquetFileLoader {
+public class SharePriceFileLoadServiceImpl implements ParquetFileLoadService {
 
     private static final String TARGET_TABLE_NAME = "t_share_price";
     private static final String BULK_UPSERT_SQL = """
