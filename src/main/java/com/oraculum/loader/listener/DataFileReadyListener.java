@@ -21,7 +21,6 @@ public class DataFileReadyListener {
             containerFactory = "kafkaListenerContainerFactory")
     public void onDataFileReady(DataFileReadyEvent event) {
         log.info("Received data file ready event: {}", event);
-        // Strategy Pattern: Use the 'dataset' field to find the correct loader bean.
         Optional.ofNullable(fileLoaders.get(event.dataset())).ifPresentOrElse(loader -> {
             try {
                 log.info("Found loader for dataset '{}'. Initiating merge process.", event.dataset());
@@ -29,7 +28,6 @@ public class DataFileReadyListener {
                 log.info("Successfully processed file for dataset '{}'.", event.dataset());
             } catch (Exception e) {
                 log.error("Error processing file for dataset '{}'. Path: {}", event.dataset(), event.path(), e);
-                // Depending on requirements, you might want to send this to a dead-letter queue.
             }
         }, () -> log.warn("No ParquetFileLoader bean found for dataset: '{}'. Message will be ignored.",
                 event.dataset()));
