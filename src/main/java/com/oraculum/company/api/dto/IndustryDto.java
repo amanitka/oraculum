@@ -21,4 +21,14 @@ public record IndustryDto(
             entity.getExtractedAt()
         );
     }
+
+    public IndustryEntity toEntity() {
+        IndustryEntity entity = new IndustryEntity();
+        entity.setIndustryId(this.industryId);
+        entity.setSectorName(this.sectorName);
+        entity.setIndustryName(this.industryName);
+        entity.setStatementTemplate(this.statementTemplate);
+        entity.setExtractedAt(this.extractedAt);
+        return entity;
+    }
 }
