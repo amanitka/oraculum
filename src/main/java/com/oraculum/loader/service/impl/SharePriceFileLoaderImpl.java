@@ -1,18 +1,18 @@
 package com.oraculum.loader.service.impl;
 
+import com.oraculum.loader.dto.LoadParquetDto;
 import com.oraculum.loader.service.ParquetFileLoader;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
-
-import java.sql.SQLException;
 
 @Slf4j
 @Component("share_price")
 @RequiredArgsConstructor
 public class SharePriceFileLoaderImpl implements ParquetFileLoader {
 
+    private static final String TARGET_TABLE_NAME = "t_share_price";
     private static final String BULK_UPSERT_SQL = """
             INSERT INTO t_share_price AS dest
               (ticker,
@@ -66,38 +66,13 @@ public class SharePriceFileLoaderImpl implements ParquetFileLoader {
             """;
 
     private final PostgresParquetFileLoader postgresParquetFileLoader;
-    private final JdbcTemplate jdbcTemplate;
 
+    @Transactional
     @Override
     public void merge(String parquetFilePath) {
-        String safeParquetPath = PostgresParquetFileLoader.normalizeAndValidate(parquetFilePath);
-        String stagingTableName = null;
-
-        try {
-            // 1. DuckDB Phase: High-speed load into a temporary Postgres staging table
-            stagingTableName = postgresParquetFileLoader.loadParquetIntoStaging(safeParquetPath, "t_share_price");
-
-            // 2. Native Postgres Phase: Execute the UPSERT from the staging table using JdbcTemplate
-            log.info("Executing native UPSERT from staging table '{}' to t_share_price", stagingTableName);
-            int rowsAffected = jdbcTemplate.update(BULK_UPSERT_SQL.formatted(stagingTableName));
-            log.info("Native UPSERT completed successfully. {} rows affected or updated.", rowsAffected);
-        } catch (SQLException e) {
-            log.error("Failed during DuckDB staging process for file: {}", safeParquetPath, e);
-            throw new RuntimeException("Merge process failed during staging", e);
-        } catch (Exception e) {
-            log.error("Failed during native Postgres UPSERT process for file: {}", safeParquetPath, e);
-            throw new RuntimeException("Merge process failed during upsert", e);
-        } finally {
-            // 3. ALWAYS clean up the staging table using JdbcTemplate
-            if (stagingTableName != null) {
-                try {
-                    log.info("Dropping staging table '{}'", stagingTableName);
-                    jdbcTemplate.execute("DROP TABLE IF EXISTS " + stagingTableName + ";");
-                } catch (Exception e) {
-                    log.error("CRITICAL: Failed to drop staging table '{}'. Manual cleanup required.",
-                            stagingTableName, e);
-                }
-            }
-        }
+        var stagingTableName = PostgresParquetFileLoader.getStagingTableName(TARGET_TABLE_NAME);
+        var loadParquetDto =
+                LoadParquetDto.builder().targetTableName(TARGET_TABLE_NAME).stagingTableName(stagingTableName).parquetFilePath(PostgresParquetFileLoader.normalizeAndValidate(parquetFilePath)).loadSql(BULK_UPSERT_SQL.formatted(stagingTableName)).build();
+        postgresParquetFileLoader.loadParquetIntoTargetTable(loadParquetDto);
     }
 }

@@ -1,8 +1,10 @@
 package com.oraculum.loader.service.impl;
 
 import com.oraculum.common.config.OraculumProperties;
+import com.oraculum.loader.dto.LoadParquetDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.InvalidPathException;
@@ -19,6 +21,7 @@ import java.util.UUID;
 public class PostgresParquetFileLoader {
 
     private final OraculumProperties properties;
+    private final JdbcTemplate jdbcTemplate;
 
     public static String normalizeAndValidate(String parquetFilePath) {
         if (parquetFilePath == null || parquetFilePath.isBlank()) {
@@ -36,10 +39,14 @@ public class PostgresParquetFileLoader {
         return normalizedPath;
     }
 
-    private void createSecret(Statement stmt) throws SQLException {
+    public static String getStagingTableName(String targetTableName) {
+        return "staging_%s_%s".formatted(targetTableName, UUID.randomUUID().toString().replace("-", ""));
+    }
+
+    private String getSecret() {
         var database = properties.getDatabase();
         String escapedPassword = database.getPassword().replace("'", "''");
-        var createSecret = """
+        return """
                 CREATE OR REPLACE SECRET pg_secret (
                     TYPE POSTGRES,
                     HOST '%s',
@@ -50,50 +57,95 @@ public class PostgresParquetFileLoader {
                 );
                 """.formatted(database.getHost(), database.getPort(), database.getName(), database.getUsername(),
                 escapedPassword);
-        stmt.execute(createSecret);
+    }
+
+    private String getStagingTableDdl(LoadParquetDto loadParquetDto) {
+        return """
+                CREATE TABLE pg.%s AS
+                SELECT *, now() AS created_at, now() AS updated_at
+                FROM read_parquet('%s')
+                LIMIT 0;
+                """.formatted(loadParquetDto.stagingTableName(), loadParquetDto.parquetFilePath());
+    }
+
+    private String getCopyToStagingSql(LoadParquetDto loadParquetDto) {
+        return """
+                INSERT INTO pg.%s
+                SELECT *, now(), now()
+                FROM read_parquet('%s');
+                """.formatted(loadParquetDto.stagingTableName(), loadParquetDto.parquetFilePath());
+    }
+
+    private void loadParquetIntoStaging(LoadParquetDto loadParquetDto) throws SQLException {
+        log.info("Starting high-speed load from '{}' into new staging table '{}'", loadParquetDto.parquetFilePath(),
+                loadParquetDto.stagingTableName());
+        try (Connection conn = DriverManager.getConnection("jdbc:duckdb:"); Statement stmt = conn.createStatement()) {
+            log.info("Step 1/3: Initializing PostgreSQL extension and connection for DuckDB.");
+            stmt.execute("INSTALL postgres; LOAD postgres;");
+            stmt.execute(getSecret());
+            stmt.execute("ATTACH '' AS pg (TYPE POSTGRES, SECRET pg_secret);");
+            log.info("Step 2/3: Creating staging table '{}' in PostgreSQL.", loadParquetDto.stagingTableName());
+            stmt.execute(getStagingTableDdl(loadParquetDto));
+            log.info("Step 3/3: Appending data to staging table '{}' using high-speed COPY.",
+                    loadParquetDto.stagingTableName());
+            int rows = stmt.executeUpdate(getCopyToStagingSql(loadParquetDto));
+            log.info("Successfully loaded {} rows into staging table '{}'.", rows, loadParquetDto.stagingTableName());
+        }
+    }
+
+    private void loadFromStagingTable(LoadParquetDto loadParquetDto) {
+        log.info("Executing native load from staging table '{}' to '{}'", loadParquetDto.stagingTableName(),
+                loadParquetDto.targetTableName());
+        int rowsAffected = jdbcTemplate.update(loadParquetDto.loadSql());
+        log.info("Native load completed successfully. {} rows affected or updated.", rowsAffected);
+    }
+
+    private void dropStagingTable(LoadParquetDto loadParquetDto) {
+        var stagingTableName = loadParquetDto.stagingTableName();
+        if (stagingTableName != null) {
+            try {
+                log.info("Dropping staging table '{}'", stagingTableName);
+                jdbcTemplate.execute("DROP TABLE IF EXISTS " + stagingTableName + ";");
+            } catch (Exception e) {
+                log.error("CRITICAL: Failed to drop staging table '{}'. Manual cleanup required.", stagingTableName, e);
+            }
+        }
     }
 
     /**
-     * Uses DuckDB to perform a high-speed load of a Parquet file into a new,
-     * temporary staging table in the primary PostgreSQL database.
+     * Orchestrates the high-performance data ingestion pipeline using a Staging Table pattern.
+     * <p>
+     * This method avoids the severe performance penalties of running complex operations (like
+     * {@code INSERT ... ON CONFLICT}) directly from DuckDB over the network. Instead, it executes
+     * a highly optimized three-phase process:
+     * <ol>
+     *     <li><b>Phase 1 (DuckDB):</b> Reads the Parquet file and utilizes the lightning-fast PostgreSQL
+     *         {@code COPY} protocol to stream the raw data into a uniquely named, temporary staging table
+     *         in the database.</li>
+     *     <li><b>Phase 2 (Native PostgreSQL):</b> Executes the provided custom SQL (typically an
+     *         {@code UPSERT} with necessary type casting) entirely within PostgreSQL. It reads from
+     *         the local staging table and writes to the final target table, ensuring maximum native speed.</li>
+     *     <li><b>Phase 3 (Cleanup):</b> Guaranteed execution via a {@code finally} block to drop the
+     *         temporary staging table, preventing database clutter even if Phase 2 fails.</li>
+     * </ol>
      *
-     * @param parquetFilePath The path to the Parquet file.
-     * @param baseTableName   The base name for the target table (e.g., "t_share_price").
-     * @return The name of the created staging table (unqualified).
-     * @throws SQLException if a database access error occurs during the DuckDB process.
+     * @param loadParquetDto An object containing all necessary parameters for the load operation,
+     *                       including the file path, target table, staging table name, and the
+     *                       final SQL command.
+     * @throws RuntimeException if the staging process or the native upsert fails.
      */
-    public String loadParquetIntoStaging(String parquetFilePath, String baseTableName) throws SQLException {
-        String stagingTableName = "staging_" + baseTableName + "_" + UUID.randomUUID().toString().replace("-", "");
-        log.info("Starting high-speed load from '{}' into new staging table '{}'", parquetFilePath, stagingTableName);
-
-        try (Connection conn = DriverManager.getConnection("jdbc:duckdb:"); Statement stmt = conn.createStatement()) {
-            log.debug("Initializing PostgreSQL extension for DuckDB.");
-            stmt.execute("INSTALL postgres; LOAD postgres;");
-            log.debug("Creating database secret for Postgres connection.");
-            createSecret(stmt);
-            log.debug("Attaching PostgreSQL database to DuckDB execution path.");
-            stmt.execute("ATTACH '' AS pg (TYPE POSTGRES, SECRET pg_secret);");
-
-            // 1. Create the staging table structure in Postgres
-            log.info("Step 1/2: Creating staging table '{}' in PostgreSQL.", stagingTableName);
-            String createStagingTableSql = """
-                    CREATE TABLE pg.%s AS
-                    SELECT *, now() AS created_at, now() AS updated_at
-                    FROM read_parquet('%s')
-                    LIMIT 0;
-                    """.formatted(stagingTableName, parquetFilePath);
-            stmt.execute(createStagingTableSql);
-
-            // 2. Fast-append data from Parquet into the staging table using COPY
-            log.info("Step 2/2: Appending data to staging table '{}' using high-speed COPY.", stagingTableName);
-            String copyToStagingSql = """
-                    INSERT INTO pg.%s
-                    SELECT *, now(), now()
-                    FROM read_parquet('%s');
-                    """.formatted(stagingTableName, parquetFilePath);
-            int rows = stmt.executeUpdate(copyToStagingSql);
-            log.info("Successfully loaded {} rows into staging table '{}'.", rows, stagingTableName);
+    public void loadParquetIntoTargetTable(LoadParquetDto loadParquetDto) {
+        try {
+            loadParquetIntoStaging(loadParquetDto);
+            loadFromStagingTable(loadParquetDto);
+        } catch (SQLException e) {
+            log.error("Failed during DuckDB staging process for file: {}", loadParquetDto, e);
+            throw new RuntimeException("Merge process failed during staging", e);
+        } catch (Exception e) {
+            log.error("Failed during native Postgres UPSERT process for file: {}", loadParquetDto, e);
+            throw new RuntimeException("Merge process failed during upsert", e);
+        } finally {
+            dropStagingTable(loadParquetDto);
         }
-        return stagingTableName;
     }
 }
