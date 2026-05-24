@@ -32,8 +32,9 @@ public class IngestionRunLogEntity {
     @Column(name = "file_checksum", nullable = false)
     private String fileChecksum;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String status;
+    private IngestionStatus status;
 
     @Column(name = "loaded_rows", nullable = false)
     private int loadedRows;
