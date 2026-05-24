@@ -1,4 +1,4 @@
-package com.oraculum.company.comain;
+package com.oraculum.company.domain;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -12,20 +12,19 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 @Entity
-@Table(name = "t_income_statement", uniqueConstraints = {
-    @UniqueConstraint(name = "uq_income_statement_composite_key", columnNames = {"composite_key"})
-})
+@Table(name = "t_balance_sheet", uniqueConstraints = {@UniqueConstraint(name = "uq_balance_sheet_composite_key",
+        columnNames = {"composite_key"})})
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class IncomeStatementEntity {
+public class BalanceSheetEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "composite_key", nullable = false, updatable = false, unique = true)
+    @Column(name = "composite_key", nullable = false, updatable = false)
     private String compositeKey;
 
     @Column(nullable = false)

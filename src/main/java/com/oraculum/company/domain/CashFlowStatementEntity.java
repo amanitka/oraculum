@@ -1,12 +1,6 @@
-package com.oraculum.company.comain;
+package com.oraculum.company.domain;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Column;
-import jakarta.persistence.UniqueConstraint;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,14 +12,13 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 @Entity
-@Table(name = "t_balance_sheet", uniqueConstraints = {
-    @UniqueConstraint(name = "uq_balance_sheet_composite_key", columnNames = {"composite_key"})
-})
+@Table(name = "t_cash_flow_statement", uniqueConstraints = {@UniqueConstraint(name =
+        "uq_cash_flow_statement_composite_key", columnNames = {"composite_key"})})
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class BalanceSheetEntity {
+public class CashFlowStatementEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

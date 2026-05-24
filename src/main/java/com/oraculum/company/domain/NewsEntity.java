@@ -1,4 +1,4 @@
-package com.oraculum.company.comain;
+package com.oraculum.company.domain;
 
 import jakarta.persistence.*;
 import lombok.*;

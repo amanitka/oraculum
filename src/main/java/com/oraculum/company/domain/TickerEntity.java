@@ -1,4 +1,4 @@
-package com.oraculum.company.comain;
+package com.oraculum.company.domain;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -11,9 +11,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.OffsetDateTime;
 
 @Entity
-@Table(name = "t_ticker", uniqueConstraints = {
-    @UniqueConstraint(name = "uq_ticker_ticker_market", columnNames = {"ticker", "market"})
-})
+@Table(name = "t_ticker", uniqueConstraints = {@UniqueConstraint(name = "uq_ticker_ticker_market", columnNames = {
+        "ticker", "market"})})
 @Getter
 @Setter
 @NoArgsConstructor
