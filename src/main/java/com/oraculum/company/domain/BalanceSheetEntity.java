@@ -22,7 +22,7 @@ public class BalanceSheetEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;
 
     @Column(name = "composite_key", nullable = false, updatable = false)
     private String compositeKey;

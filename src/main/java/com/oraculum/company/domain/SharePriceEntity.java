@@ -1,18 +1,19 @@
 package com.oraculum.company.domain;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "t_share_price", uniqueConstraints = {@UniqueConstraint(name = "uq_share_price_composite", columnNames
         = {"ticker", "market", "trade_date"})})
-@IdClass(SharePriceEntity.SharePriceId.class)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -20,12 +21,12 @@ import java.time.OffsetDateTime;
 public class SharePriceEntity {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
     @Column(nullable = false)
     private String ticker;
-    @Id
     @Column(nullable = false)
     private String market;
-    @Id
     @Column(name = "trade_date", nullable = false)
     private LocalDate tradeDate;
     @Column(name = "sim_fin_id")
@@ -56,15 +57,4 @@ public class SharePriceEntity {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
-
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @EqualsAndHashCode
-    public static class SharePriceId implements Serializable {
-        private String ticker;
-        private String market;
-        private LocalDate tradeDate;
-    }
 }

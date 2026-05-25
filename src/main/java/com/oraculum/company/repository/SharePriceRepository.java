@@ -7,6 +7,6 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface SharePriceRepository extends JpaRepository<SharePriceEntity, SharePriceEntity.SharePriceId> {
+public interface SharePriceRepository extends JpaRepository<SharePriceEntity, Long> {
     List<SharePriceEntity> findByTicker(String ticker);
 }

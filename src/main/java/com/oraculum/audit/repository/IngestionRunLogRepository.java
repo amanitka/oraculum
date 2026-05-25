@@ -9,10 +9,11 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface IngestionRunLogRepository extends JpaRepository<IngestionRunLogEntity, Integer> {
+public interface IngestionRunLogRepository extends JpaRepository<IngestionRunLogEntity, Long> {
 
     List<IngestionRunLogEntity> findByDataset(String dataset);
 
-    Optional<IngestionRunLogEntity> findByDatasetAndRunIdAndFileChecksumAndStatus(
-            String dataset, String runId, String fileChecksum, IngestionStatus status);
+    Optional<IngestionRunLogEntity> findByDatasetAndRunIdAndFileChecksumAndStatus(String dataset, String runId,
+                                                                                  String fileChecksum,
+                                                                                  IngestionStatus status);
 }

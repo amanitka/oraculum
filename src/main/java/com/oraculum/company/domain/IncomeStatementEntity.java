@@ -22,7 +22,7 @@ public class IncomeStatementEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;
 
     @Column(name = "composite_key", nullable = false, updatable = false, unique = true)
     private String compositeKey;

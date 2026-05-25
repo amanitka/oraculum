@@ -13,11 +13,9 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "t_analysis", indexes = {
-    @Index(name = "ix_analysis_correlation_id", columnList = "correlation_id", unique = true),
-    @Index(name = "ix_analysis_ticker_market_created", columnList = "ticker, market, created_at"),
-    @Index(name = "ix_analysis_status_created", columnList = "status, created_at")
-})
+@Table(name = "t_analysis", indexes = {@Index(name = "ix_analysis_correlation_id", columnList = "correlation_id",
+        unique = true), @Index(name = "ix_analysis_ticker_market_created", columnList = "ticker, market, created_at")
+        , @Index(name = "ix_analysis_status_created", columnList = "status, created_at")})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -26,7 +24,7 @@ public class AnalysisEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;
 
     @Column(name = "correlation_id", nullable = false, updatable = false)
     private UUID correlationId;

@@ -10,9 +10,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.OffsetDateTime;
 
 @Entity
-@Table(name = "t_ingestion_run_log", uniqueConstraints = {
-    @UniqueConstraint(name = "uq_run_log_idempotency", columnNames = {"dataset", "run_id", "file_checksum"})
-})
+@Table(name = "t_ingestion_run_log", uniqueConstraints = {@UniqueConstraint(name = "uq_run_log_idempotency",
+        columnNames = {"dataset", "run_id", "file_checksum"})})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -21,7 +20,7 @@ public class IngestionRunLogEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;
 
     @Column(nullable = false)
     private String dataset;
