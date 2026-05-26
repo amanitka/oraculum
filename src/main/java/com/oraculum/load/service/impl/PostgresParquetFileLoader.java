@@ -60,6 +60,14 @@ public class PostgresParquetFileLoader {
     }
 
     private String getStagingTableDdl(LoadParquetDto loadParquetDto) {
+        if (loadParquetDto.hasPayload()) {
+            return """
+                    CREATE TABLE pg.%s AS
+                    SELECT * EXCLUDE (payload), CAST(payload AS JSON) AS payload, now() AS created_at, now() AS updated_at
+                    FROM read_parquet('%s')
+                    LIMIT 0;
+                    """.formatted(loadParquetDto.stagingTableName(), loadParquetDto.parquetFilePath());
+        }
         return """
                 CREATE TABLE pg.%s AS
                 SELECT *, now() AS created_at, now() AS updated_at
@@ -69,9 +77,23 @@ public class PostgresParquetFileLoader {
     }
 
     private String getCopyToStagingSql(LoadParquetDto loadParquetDto) {
+        if (loadParquetDto.hasPayload()) {
+            return """
+                    INSERT INTO pg.%s
+                    SELECT
+                        * EXCLUDE (payload),
+                        CAST(payload AS JSON) AS payload,
+                        now(),
+                        now()
+                    FROM read_parquet('%s');
+                    """.formatted(loadParquetDto.stagingTableName(), loadParquetDto.parquetFilePath());
+        }
         return """
                 INSERT INTO pg.%s
-                SELECT *, now(), now()
+                SELECT
+                    *,
+                    now(),
+                    now()
                 FROM read_parquet('%s');
                 """.formatted(loadParquetDto.stagingTableName(), loadParquetDto.parquetFilePath());
     }

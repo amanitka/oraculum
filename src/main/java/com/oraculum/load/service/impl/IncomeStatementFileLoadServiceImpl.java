@@ -64,7 +64,7 @@ public class IncomeStatementFileLoadServiceImpl implements ParquetFileLoadServic
     public void merge(String parquetFilePath) {
         var stagingTableName = PostgresParquetFileLoader.getStagingTableName(TARGET_TABLE_NAME);
         var loadParquetDto =
-                LoadParquetDto.builder().targetTableName(TARGET_TABLE_NAME).stagingTableName(stagingTableName).parquetFilePath(PostgresParquetFileLoader.normalizeAndValidate(parquetFilePath)).loadSql(BULK_UPSERT_SQL.formatted(stagingTableName)).build();
+                LoadParquetDto.builder().targetTableName(TARGET_TABLE_NAME).stagingTableName(stagingTableName).parquetFilePath(PostgresParquetFileLoader.normalizeAndValidate(parquetFilePath)).loadSql(BULK_UPSERT_SQL.formatted(stagingTableName)).hasPayload(true).build();
         postgresParquetFileLoader.loadParquetIntoTargetTable(loadParquetDto);
     }
 }
