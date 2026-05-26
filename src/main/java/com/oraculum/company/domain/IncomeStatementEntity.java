@@ -60,6 +60,9 @@ public class IncomeStatementEntity {
     @Column(name = "extracted_at", nullable = false)
     private OffsetDateTime extractedAt;
 
+    @Column(columnDefinition = "jsonb", nullable = false)
+    private String payload;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;

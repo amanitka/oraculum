@@ -38,6 +38,7 @@ CREATE TABLE public.t_ingestion_run_log (
     duration_ms INTEGER NOT NULL,
     error_text TEXT,
     created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
     CONSTRAINT uq_run_log_idempotency UNIQUE (dataset, run_id, file_checksum)
 );
 
@@ -58,6 +59,7 @@ CREATE TABLE public.t_balance_sheet (
     publish_date DATE NOT NULL,
     restated_date DATE,
     extracted_at TIMESTAMPTZ NOT NULL,
+    payload JSONB NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,
     CONSTRAINT uq_balance_sheet_composite_key UNIQUE (composite_key)
@@ -80,6 +82,7 @@ CREATE TABLE public.t_cash_flow_statement (
     publish_date DATE NOT NULL,
     restated_date DATE,
     extracted_at TIMESTAMPTZ NOT NULL,
+    payload JSONB NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,
     CONSTRAINT uq_cash_flow_statement_composite_key UNIQUE (composite_key)
@@ -102,6 +105,7 @@ CREATE TABLE public.t_income_statement (
     publish_date DATE NOT NULL,
     restated_date DATE,
     extracted_at TIMESTAMPTZ NOT NULL,
+    payload JSONB NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,
     CONSTRAINT uq_income_statement_composite_key UNIQUE (composite_key)

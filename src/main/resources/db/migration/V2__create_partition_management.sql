@@ -118,7 +118,7 @@ BEGIN
 
         IF v_partition_date < v_cutoff_date THEN
             RAISE NOTICE 'Dropping old partition: %', v_partition.partition_name;
-            EXECUTE format('DROP TABLE %I', v_partition.partition_name);
+            EXECUTE format('DROP TABLE %I CASCADE', v_partition.partition_name);
         END IF;
     END LOOP;
 END;
@@ -131,17 +131,17 @@ $$ LANGUAGE plpgsql;
 DO $$
 BEGIN
     RAISE NOTICE '--- Creating initial partitions for t_share_price (monthly) ---';
-    PERFORM create_monthly_partitions('t_share_price', NOW() - INTERVAL '10 years', NOW() + INTERVAL '2 years');
+    PERFORM create_monthly_partitions('t_share_price', (NOW() - INTERVAL '10 years')::DATE, (NOW() + INTERVAL '2 years')::DATE);
 
     RAISE NOTICE '--- Creating initial partitions for t_news (yearly) ---';
-    PERFORM create_yearly_partitions('t_news', NOW() - INTERVAL '10 years', NOW() + INTERVAL '2 years');
+    PERFORM create_yearly_partitions('t_news', (NOW() - INTERVAL '10 years')::DATE, (NOW() + INTERVAL '2 years')::DATE);
 
     RAISE NOTICE '--- Creating initial partitions for t_news_ticker (yearly) ---';
-    PERFORM create_yearly_partitions('t_news_ticker', NOW() - INTERVAL '10 years', NOW() + INTERVAL '2 years');
+    PERFORM create_yearly_partitions('t_news_ticker', (NOW() - INTERVAL '10 years')::DATE, (NOW() + INTERVAL '2 years')::DATE);
 
     RAISE NOTICE '--- Purging old yearly partitions for news tables ---';
     -- Purge news data older than 3 years
-    PERFORM purge_old_partitions('t_news', '3 years', 'yearly');
     PERFORM purge_old_partitions('t_news_ticker', '3 years', 'yearly');
+    PERFORM purge_old_partitions('t_news', '3 years', 'yearly');
 END;
 $$;
