@@ -1,7 +1,7 @@
-package com.oraculum.loader.service.impl;
+package com.oraculum.load.service.impl;
 
-import com.oraculum.loader.dto.LoadParquetDto;
-import com.oraculum.loader.service.ParquetFileLoadService;
+import com.oraculum.load.dto.LoadParquetDto;
+import com.oraculum.load.service.ParquetFileLoadService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

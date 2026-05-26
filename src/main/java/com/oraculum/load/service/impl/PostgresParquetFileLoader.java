@@ -1,7 +1,7 @@
-package com.oraculum.loader.service.impl;
+package com.oraculum.load.service.impl;
 
 import com.oraculum.common.config.OraculumProperties;
-import com.oraculum.loader.dto.LoadParquetDto;
+import com.oraculum.load.dto.LoadParquetDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;

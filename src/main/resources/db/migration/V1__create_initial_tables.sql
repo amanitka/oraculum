@@ -25,9 +25,9 @@ CREATE INDEX ix_analysis_ticker_market_created ON public.t_analysis (ticker, mar
 CREATE INDEX ix_analysis_status_created ON public.t_analysis (status, created_at);
 
 -- =================================================================
--- Table: t_ingestion_run_log
+-- Table: t_load_log
 -- =================================================================
-CREATE TABLE public.t_ingestion_run_log (
+CREATE TABLE public.t_load_log (
     id BIGSERIAL PRIMARY KEY,
     dataset VARCHAR(255) NOT NULL,
     run_id VARCHAR(255) NOT NULL,
@@ -35,11 +35,10 @@ CREATE TABLE public.t_ingestion_run_log (
     status VARCHAR(255) NOT NULL,
     loaded_rows INTEGER NOT NULL,
     merged_rows INTEGER NOT NULL,
-    duration_ms INTEGER NOT NULL,
     error_text TEXT,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,
-    CONSTRAINT uq_run_log_idempotency UNIQUE (dataset, run_id, file_checksum)
+    CONSTRAINT uq_load_log_idempotency UNIQUE (dataset, run_id, file_checksum)
 );
 
 -- =================================================================

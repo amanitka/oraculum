@@ -11,13 +11,13 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.OffsetDateTime;
 
 @Entity
-@Table(name = "t_ingestion_run_log", uniqueConstraints = {@UniqueConstraint(name = "uq_run_log_idempotency",
-        columnNames = {"dataset", "run_id", "file_checksum"})})
+@Table(name = "t_load_log", uniqueConstraints = {@UniqueConstraint(name = "uq_load_log_idempotency", columnNames = {
+        "dataset", "run_id", "file_checksum"})})
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class IngestionRunLogEntity {
+public class LoadLogEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,16 +34,13 @@ public class IngestionRunLogEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private IngestionStatus status;
+    private LoadLogStatus status;
 
     @Column(name = "loaded_rows", nullable = false)
     private int loadedRows;
 
     @Column(name = "merged_rows", nullable = false)
     private int mergedRows;
-
-    @Column(name = "duration_ms", nullable = false)
-    private int durationMs;
 
     @Column(name = "error_text", columnDefinition = "TEXT")
     private String errorText;

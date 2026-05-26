@@ -1,4 +1,4 @@
-package com.oraculum.loader.service;
+package com.oraculum.load.service;
 
 public interface ParquetFileLoadService {
     /**

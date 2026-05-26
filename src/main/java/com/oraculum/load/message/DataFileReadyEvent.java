@@ -1,4 +1,4 @@
-package com.oraculum.loader.message;
+package com.oraculum.load.message;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

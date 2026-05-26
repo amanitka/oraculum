@@ -1,18 +1,18 @@
-package com.oraculum.loader.service.impl;
+package com.oraculum.load.service.impl;
 
-import com.oraculum.loader.dto.LoadParquetDto;
-import com.oraculum.loader.service.ParquetFileLoadService;
+import com.oraculum.load.dto.LoadParquetDto;
+import com.oraculum.load.service.ParquetFileLoadService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-@Component("cash_flow_statement")
+@Component("balance_sheet")
 @RequiredArgsConstructor
-public class CashFlowStatementFileLoadServiceImpl implements ParquetFileLoadService {
+public class BalanceSheetFileLoadServiceImpl implements ParquetFileLoadService {
 
-    private static final String TARGET_TABLE_NAME = "t_cash_flow_statement";
+    private static final String TARGET_TABLE_NAME = "t_balance_sheet";
     private static final String BULK_UPSERT_SQL = """
-            INSERT INTO t_cash_flow_statement AS dest
+            INSERT INTO t_balance_sheet AS dest
               (composite_key,
                template,
                variant,

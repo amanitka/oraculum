@@ -1,7 +1,7 @@
-package com.oraculum.loader.listener;
+package com.oraculum.load.listener;
 
-import com.oraculum.loader.message.DataFileReadyEvent;
-import com.oraculum.loader.service.DataFileLoadService;
+import com.oraculum.load.message.DataFileReadyEvent;
+import com.oraculum.load.service.DataFileLoadService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;

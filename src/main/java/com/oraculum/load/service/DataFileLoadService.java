@@ -1,6 +1,6 @@
-package com.oraculum.loader.service;
+package com.oraculum.load.service;
 
-import com.oraculum.loader.message.DataFileReadyEvent;
+import com.oraculum.load.message.DataFileReadyEvent;
 
 public interface DataFileLoadService {
 

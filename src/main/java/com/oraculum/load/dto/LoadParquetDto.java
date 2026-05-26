@@ -1,4 +1,4 @@
-package com.oraculum.loader.dto;
+package com.oraculum.load.dto;
 
 import lombok.Builder;
 
