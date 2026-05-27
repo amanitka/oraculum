@@ -23,9 +23,9 @@ public record NewsArticleDto(
         OffsetDateTime extractedAt,
         String sentimentScoreDefinition,
         String relevanceScoreDefinition,
-        List<TickerSentimentDto> tickerSentiment
+        List<NewsTickerSentimentDto> tickerSentiment
 ) {
-    public record TickerSentimentDto(
+    public record NewsTickerSentimentDto(
             String ticker,
             Float relevanceScore,
             Float tickerSentimentScore,

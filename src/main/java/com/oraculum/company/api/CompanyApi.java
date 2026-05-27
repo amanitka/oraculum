@@ -17,7 +17,7 @@ public interface CompanyApi {
 
     List<IndustryDto> getAllIndustries();
 
-    List<NewsDto> getNewsByTicker(String ticker);
+    List<NewsTickerDto> getNewsByTicker(String ticker, int days);
 
     List<BalanceSheetDto> getBalanceSheetsByTicker(String ticker);
 

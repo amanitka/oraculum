@@ -2,6 +2,8 @@ package com.oraculum.company.service.impl;
 
 import com.oraculum.common.exception.EntityNotFoundException;
 import com.oraculum.company.api.dto.*;
+import com.oraculum.company.domain.NewsEntity;
+import com.oraculum.company.domain.NewsTickerEntity;
 import com.oraculum.company.domain.TickerEntity;
 import com.oraculum.company.repository.*;
 import com.oraculum.company.service.CompanyService;
@@ -9,7 +11,10 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -49,10 +54,15 @@ public class CompanyServiceImpl implements CompanyService {
     }
 
     @Override
-    public List<NewsDto> getNewsByTicker(String ticker) {
-        // This is a simplification. A real implementation would need a more complex query
-        // to join NewsTickerEntity with NewsEntity. For now, we'll just return all news.
-        return newsRepository.findAll().stream().map(NewsDto::fromEntity).collect(Collectors.toList());
+    public List<NewsTickerDto> getNewsByTicker(String ticker, int days) {
+        OffsetDateTime after = OffsetDateTime.now().minusDays(days);
+        List<NewsTickerEntity> tickerRows =
+                newsTickerRepository.findByTickerAndTimePublishedAfterOrderByTimePublishedDesc(ticker, after);
+        List<String> newsIds = tickerRows.stream().map(NewsTickerEntity::getNewsId).collect(Collectors.toList());
+        Map<String, NewsEntity> newsById =
+                newsRepository.findByIdIn(newsIds).stream().collect(Collectors.toMap(NewsEntity::getId,
+                        Function.identity()));
+        return tickerRows.stream().filter(t -> newsById.containsKey(t.getNewsId())).map(t -> NewsTickerDto.from(newsById.get(t.getNewsId()), t)).collect(Collectors.toList());
     }
 
     @Override
