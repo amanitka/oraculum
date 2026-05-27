@@ -17,7 +17,11 @@ public class IndustryListener {
     @KafkaListener(topics = "${oraculum.kafka.topics.industry}", groupId = "${oraculum.kafka.consumerGroup}",
             containerFactory = "kafkaListenerContainerFactory")
     public void onIndustry(IndustryDto industry) {
-        log.info("Received industry: {}", industry.industryId());
-        companyLoadApi.createOrUpdateIndustry(industry);
+        try {
+            log.info("Received industry: {}", industry.industryId());
+            companyLoadApi.createOrUpdateIndustry(industry);
+        } catch (Exception e) {
+            log.error("Failed to process industry {}, discarding message", industry.industryId(), e);
+        }
     }
 }

@@ -19,7 +19,11 @@ public class NewsListener {
     @KafkaListener(topics = "${oraculum.kafka.topics.news}", groupId = "${oraculum.kafka.consumerGroup}",
             containerFactory = "kafkaListenerContainerFactory")
     public void onNewsBatch(List<NewsArticleDto> articles) {
-        log.info("Received news batch: {} articles", articles.size());
-        companyLoadApi.createOrUpdateNewsBatch(articles);
+        try {
+            log.info("Received news batch: {} articles", articles.size());
+            companyLoadApi.createOrUpdateNewsBatch(articles);
+        } catch (Exception e) {
+            log.error("Failed to process news batch, discarding message", e);
+        }
     }
 }

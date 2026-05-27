@@ -17,7 +17,10 @@ public class MarketListener {
     @KafkaListener(topics = "${oraculum.kafka.topics.market}", groupId = "${oraculum.kafka.consumerGroup}",
             containerFactory = "kafkaListenerContainerFactory")
     public void onMarket(MarketDto market) {
-        log.info("Received market: {}", market.marketId());
-        companyLoadApi.createOrUpdateMarket(market);
+        try {
+            companyLoadApi.createOrUpdateMarket(market);
+        } catch (Exception e) {
+            log.error("Failed to process market {}, discarding message", market.marketId(), e);
+        }
     }
 }
