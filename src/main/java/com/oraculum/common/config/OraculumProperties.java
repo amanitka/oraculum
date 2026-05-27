@@ -55,6 +55,7 @@ public class OraculumProperties {
             private String market;
             private String industry;
             private String news;
+            private String harvesterRequest;
         }
     }
 }

@@ -13,6 +13,9 @@ spring:
       group-id: oraculum
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
 
   flyway:
     enabled: true
@@ -54,6 +57,7 @@ oraculum:
       market: oraculum.market
       industry: oraculum.industry
       news: oraculum.news
+      harvesterRequest: ${ORACULUM_HARVESTER_REQUEST_TOPIC:oraculum.harvester.request}
 
   shared:
     folderPath: ${ORACULUM_SHARED_FOLDER_PATH:./data/shared}

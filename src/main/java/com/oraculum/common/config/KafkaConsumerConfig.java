@@ -12,11 +12,6 @@ import tools.jackson.databind.json.JsonMapper;
 public class KafkaConsumerConfig {
 
     @Bean
-    public JsonMapper jsonMapper() {
-        return JsonMapper.builder().build();
-    }
-
-    @Bean
     public RecordMessageConverter multiTypeConverter(JsonMapper jsonMapper) {
         return new StringJacksonJsonMessageConverter(jsonMapper);
     }
