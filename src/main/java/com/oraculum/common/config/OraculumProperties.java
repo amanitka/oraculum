@@ -54,6 +54,7 @@ public class OraculumProperties {
             private String dataFileReady;
             private String market;
             private String industry;
+            private String news;
         }
     }
 }

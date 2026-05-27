@@ -50,10 +50,10 @@ oraculum:
   kafka:
     consumerGroup: oraculum
     topics:
-      ticker: oraculum.ticker
       dataFileReady: oraculum.data_file_ready
       market: oraculum.market
       industry: oraculum.industry
+      news: oraculum.news
 
   shared:
     folderPath: ${ORACULUM_SHARED_FOLDER_PATH:./data/shared}

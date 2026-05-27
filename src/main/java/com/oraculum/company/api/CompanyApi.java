@@ -15,15 +15,7 @@ public interface CompanyApi {
 
     List<MarketDto> getAllMarkets();
 
-    MarketDto createOrUpdateMarket(MarketDto marketDto);
-
     List<IndustryDto> getAllIndustries();
-
-    IndustryDto createOrUpdateIndustry(IndustryDto industryDto);
-
-    NewsDto createOrUpdateNews(NewsDto newsDto);
-
-    NewsTickerDto createOrUpdateNewsTicker(NewsTickerDto newsTickerDto);
 
     List<NewsDto> getNewsByTicker(String ticker);
 
