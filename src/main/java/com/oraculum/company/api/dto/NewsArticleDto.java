@@ -1,21 +1,21 @@
 package com.oraculum.company.api.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.oraculum.common.jackson.LenientLocalDateDeserializer;
+import com.oraculum.common.jackson.LenientLocalDateTimeDeserializer;
 import com.oraculum.company.domain.NewsEntity;
 import com.oraculum.company.domain.NewsTickerEntity;
+import com.oraculum.util.TimeUtil;
 import tools.jackson.databind.annotation.JsonDeserialize;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public record NewsArticleDto(String id, String title, String url,
                              @JsonProperty("time_published") @JsonDeserialize(using =
-                                     LenientLocalDateDeserializer.class) LocalDate timePublished,
+                                     LenientLocalDateTimeDeserializer.class) LocalDateTime timePublished,
                              List<String> authors, String summary, @JsonProperty("banner_image") String bannerImage,
                              String source, @JsonProperty("category_within_source") String categoryWithinSource,
                              @JsonProperty("source_domain") String sourceDomain, List<TopicRelevanceDto> topics,
@@ -38,19 +38,12 @@ public record NewsArticleDto(String id, String title, String url,
         }
     }
 
-    private static OffsetDateTime toOffsetDateTime(LocalDate value) {
-        if (value == null) {
-            return null;
-        }
-        return value.atStartOfDay().atOffset(ZoneOffset.UTC);
-    }
-
     public NewsEntity toNewsEntity() {
         NewsEntity entity = new NewsEntity();
         entity.setId(this.id);
         entity.setTitle(this.title);
         entity.setUrl(this.url);
-        entity.setTimePublished(toOffsetDateTime(this.timePublished));
+        entity.setTimePublished(TimeUtil.toOffsetDateTime(this.timePublished));
         entity.setAuthors(toJsonString(this.authors));
         entity.setSummary(this.summary);
         entity.setSource(this.source);
@@ -59,7 +52,7 @@ public record NewsArticleDto(String id, String title, String url,
         entity.setTopics(toJsonString(this.topics));
         entity.setOverallSentimentScore(this.overallSentimentScore);
         entity.setOverallSentimentLabel(this.overallSentimentLabel);
-        entity.setExtractedAt(toOffsetDateTime(this.extractedAt));
+        entity.setExtractedAt(TimeUtil.toOffsetDateTime(this.extractedAt));
         entity.setSentimentScoreDefinition(this.sentimentScoreDefinition);
         entity.setRelevanceScoreDefinition(this.relevanceScoreDefinition);
         return entity;
@@ -73,7 +66,7 @@ public record NewsArticleDto(String id, String title, String url,
             NewsTickerEntity entity = new NewsTickerEntity();
             entity.setNewsId(this.id);
             entity.setTicker(s.ticker());
-            entity.setTimePublished(toOffsetDateTime(this.timePublished));
+            entity.setTimePublished(TimeUtil.toOffsetDateTime(this.timePublished));
             entity.setRelevanceScore(s.relevanceScore());
             entity.setTickerSentimentScore(s.tickerSentimentScore());
             entity.setTickerSentimentLabel(s.tickerSentimentLabel());

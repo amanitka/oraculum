@@ -39,7 +39,7 @@ public class RefreshView extends VerticalLayout {
 
     private static final List<String> VARIANTS = List.of("annual", "quarterly", "ttm");
     private static final List<String> TEMPLATES = List.of("general", "banks", "insurance");
-    private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
+    private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ISO_LOCAL_DATE;
 
     private final RefreshRequestService refreshService;
 
