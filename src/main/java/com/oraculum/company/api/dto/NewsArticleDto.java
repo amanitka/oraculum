@@ -1,52 +1,65 @@
 package com.oraculum.company.api.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.oraculum.common.jackson.LenientLocalDateDeserializer;
 import com.oraculum.company.domain.NewsEntity;
 import com.oraculum.company.domain.NewsTickerEntity;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.json.JsonMapper;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public record NewsArticleDto(
-        String id,
-        String title,
-        String url,
-        OffsetDateTime timePublished,
-        String authors,
-        String summary,
-        String source,
-        String categoryWithinSource,
-        String sourceDomain,
-        String topics,
-        Float overallSentimentScore,
-        String overallSentimentLabel,
-        OffsetDateTime extractedAt,
-        String sentimentScoreDefinition,
-        String relevanceScoreDefinition,
-        List<NewsTickerSentimentDto> tickerSentiment
-) {
-    public record NewsTickerSentimentDto(
-            String ticker,
-            Float relevanceScore,
-            Float tickerSentimentScore,
-            String tickerSentimentLabel
-    ) {}
+public record NewsArticleDto(String id, String title, String url,
+                             @JsonProperty("time_published") @JsonDeserialize(using =
+                                     LenientLocalDateDeserializer.class) LocalDate timePublished,
+                             List<String> authors, String summary, @JsonProperty("banner_image") String bannerImage,
+                             String source, @JsonProperty("category_within_source") String categoryWithinSource,
+                             @JsonProperty("source_domain") String sourceDomain, List<TopicRelevanceDto> topics,
+                             @JsonProperty("overall_sentiment_score") Float overallSentimentScore,
+                             @JsonProperty("overall_sentiment_label") String overallSentimentLabel,
+                             @JsonProperty("extracted_at") LocalDate extractedAt,
+                             @JsonProperty("sentiment_score_definition") String sentimentScoreDefinition,
+                             @JsonProperty("relevance_score_definition") String relevanceScoreDefinition,
+                             @JsonProperty("ticker_sentiment") List<NewsTickerSentimentDto> tickerSentiment) {
+    private static final JsonMapper JSON_MAPPER = JsonMapper.builder().build();
+
+    private static String toJsonString(Object value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return JSON_MAPPER.writeValueAsString(value);
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to serialize news payload to JSON", e);
+        }
+    }
+
+    private static OffsetDateTime toOffsetDateTime(LocalDate value) {
+        if (value == null) {
+            return null;
+        }
+        return value.atStartOfDay().atOffset(ZoneOffset.UTC);
+    }
 
     public NewsEntity toNewsEntity() {
         NewsEntity entity = new NewsEntity();
         entity.setId(this.id);
         entity.setTitle(this.title);
         entity.setUrl(this.url);
-        entity.setTimePublished(this.timePublished);
-        entity.setAuthors(this.authors);
+        entity.setTimePublished(toOffsetDateTime(this.timePublished));
+        entity.setAuthors(toJsonString(this.authors));
         entity.setSummary(this.summary);
         entity.setSource(this.source);
         entity.setCategoryWithinSource(this.categoryWithinSource);
         entity.setSourceDomain(this.sourceDomain);
-        entity.setTopics(this.topics);
+        entity.setTopics(toJsonString(this.topics));
         entity.setOverallSentimentScore(this.overallSentimentScore);
         entity.setOverallSentimentLabel(this.overallSentimentLabel);
-        entity.setExtractedAt(this.extractedAt);
+        entity.setExtractedAt(toOffsetDateTime(this.extractedAt));
         entity.setSentimentScoreDefinition(this.sentimentScoreDefinition);
         entity.setRelevanceScoreDefinition(this.relevanceScoreDefinition);
         return entity;
@@ -60,11 +73,19 @@ public record NewsArticleDto(
             NewsTickerEntity entity = new NewsTickerEntity();
             entity.setNewsId(this.id);
             entity.setTicker(s.ticker());
-            entity.setTimePublished(this.timePublished);
+            entity.setTimePublished(toOffsetDateTime(this.timePublished));
             entity.setRelevanceScore(s.relevanceScore());
             entity.setTickerSentimentScore(s.tickerSentimentScore());
             entity.setTickerSentimentLabel(s.tickerSentimentLabel());
             return entity;
         }).collect(Collectors.toList());
+    }
+
+    public record NewsTickerSentimentDto(String ticker, @JsonProperty("relevance_score") Float relevanceScore,
+                                         @JsonProperty("ticker_sentiment_score") Float tickerSentimentScore,
+                                         @JsonProperty("ticker_sentiment_label") String tickerSentimentLabel) {
+    }
+
+    public record TopicRelevanceDto(String topic, @JsonProperty("relevance_score") Float relevanceScore) {
     }
 }

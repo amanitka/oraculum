@@ -3,7 +3,9 @@ package com.oraculum.company.domain;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
@@ -27,6 +29,7 @@ public class NewsEntity {
     @Id
     @Column(name = "time_published", nullable = false)
     private OffsetDateTime timePublished;
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private String authors;
     @Column(columnDefinition = "TEXT", nullable = false)
@@ -37,6 +40,7 @@ public class NewsEntity {
     private String categoryWithinSource;
     @Column(name = "source_domain", length = 255)
     private String sourceDomain;
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private String topics;
     @Column(name = "overall_sentiment_score")
