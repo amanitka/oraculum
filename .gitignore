@@ -35,3 +35,4 @@ build/
 .env
 .mvn
 src/main/frontend/generated
+data/
