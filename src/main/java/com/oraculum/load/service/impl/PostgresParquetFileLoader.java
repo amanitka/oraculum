@@ -1,6 +1,6 @@
 package com.oraculum.load.service.impl;
 
-import com.oraculum.common.properties.OraculumProperties;
+import com.oraculum.common.config.OraculumProperties;
 import com.oraculum.load.dto.LoadParquetDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -1,6 +1,6 @@
 package com.oraculum.ui.service;
 
-import com.oraculum.common.properties.OraculumProperties;
+import com.oraculum.common.config.OraculumProperties;
 import com.oraculum.ui.request.HarvesterRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;

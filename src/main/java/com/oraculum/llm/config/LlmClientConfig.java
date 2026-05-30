@@ -3,7 +3,6 @@ package com.oraculum.llm.config;
 import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
 import com.oraculum.llm.domain.LlmProviderType;
-import com.oraculum.llm.property.LlmProperties;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;

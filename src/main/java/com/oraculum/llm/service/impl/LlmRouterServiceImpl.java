@@ -1,17 +1,19 @@
 package com.oraculum.llm.service.impl;
 
 import com.oraculum.llm.api.dto.LlmTierType;
+import com.oraculum.llm.config.LlmProperties;
 import com.oraculum.llm.domain.LlmProviderType;
 import com.oraculum.llm.domain.LlmRequest;
-import com.oraculum.llm.property.LlmProperties;
 import com.oraculum.llm.service.LlmExecutionService;
 import com.oraculum.llm.service.LlmRouterService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class LlmRouterServiceImpl implements LlmRouterService {
@@ -47,6 +49,18 @@ public class LlmRouterServiceImpl implements LlmRouterService {
     }
 
     private String resolveModel(LlmTierType tier, LlmProviderType provider) {
-        return properties.models().get(tier).get(provider);
+        Map<LlmProviderType, String> providerMap = properties.models().get(tier);
+        if (providerMap == null) {
+            String message = String.format("Configuration missing for tier: %s", tier);
+            log.error(message);
+            throw new IllegalArgumentException(message);
+        }
+        String model = providerMap.get(provider);
+        if (model == null) {
+            String message = String.format("Model configuration missing for tier: %s and provider: %s", tier, provider);
+            log.error(message);
+            throw new IllegalArgumentException(message);
+        }
+        return model;
     }
 }
