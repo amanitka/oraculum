@@ -1,4 +1,4 @@
-package com.oraculum.llm.dto;
+package com.oraculum.llm.domain;
 
 import org.springframework.ai.chat.client.ChatClient;
 

@@ -1,6 +1,6 @@
 package com.oraculum.llm.service.impl;
 
-import com.oraculum.llm.dto.LlmRequest;
+import com.oraculum.llm.domain.LlmRequest;
 import com.oraculum.llm.service.LlmExecutionService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.openai.OpenAiChatOptions;

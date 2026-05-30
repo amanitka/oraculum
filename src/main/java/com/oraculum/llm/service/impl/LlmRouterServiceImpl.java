@@ -1,6 +1,8 @@
 package com.oraculum.llm.service.impl;
 
-import com.oraculum.llm.dto.LlmRequest;
+import com.oraculum.llm.api.dto.LlmTierType;
+import com.oraculum.llm.domain.LlmProviderType;
+import com.oraculum.llm.domain.LlmRequest;
 import com.oraculum.llm.property.LlmProperties;
 import com.oraculum.llm.service.LlmExecutionService;
 import com.oraculum.llm.service.LlmRouterService;
@@ -13,15 +15,15 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class LlmRouterServiceImpl implements LlmRouterService {
-    private final Map<String, ChatClient> chatClients;
+    private final Map<LlmProviderType, ChatClient> chatClients;
     private final LlmExecutionService executionService;
     private final LlmHealthProvider health;
     private final LlmProperties properties;
 
     @Override
-    public <T> T generate(String tier, String prompt, Class<T> type) {
+    public <T> T generate(LlmTierType tier, String prompt, Class<T> type) {
         Exception last = null;
-        for (String provider : properties.common().providerFallbackOrder()) {
+        for (LlmProviderType provider : properties.common().providerFallbackOrder()) {
             if (health.isBlocked(provider)) {
                 continue;
             }
@@ -44,7 +46,7 @@ public class LlmRouterServiceImpl implements LlmRouterService {
         throw new RuntimeException("All providers failed", last);
     }
 
-    private String resolveModel(String tier, String provider) {
+    private String resolveModel(LlmTierType tier, LlmProviderType provider) {
         return properties.models().get(tier).get(provider);
     }
 }

@@ -1,5 +1,6 @@
 package com.oraculum.llm.service;
 
-public interface LlmRouterService {
-    <T> T generate(String tier, String prompt, Class<T> responseType);
+import com.oraculum.llm.api.LlmRouterApi;
+
+public interface LlmRouterService extends LlmRouterApi {
 }

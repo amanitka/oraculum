@@ -2,6 +2,7 @@ package com.oraculum.llm.config;
 
 import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
+import com.oraculum.llm.domain.LlmProviderType;
 import com.oraculum.llm.property.LlmProperties;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.openai.OpenAiChatModel;
@@ -15,7 +16,7 @@ import java.util.Map;
 @Configuration
 public class LlmClientConfig {
 
-    private OpenAiChatModel buildChatModel(LlmProperties properties, String providerName) {
+    private OpenAiChatModel buildChatModel(LlmProperties properties, LlmProviderType providerName) {
         var provider = properties.providers().get(providerName);
         if (provider == null) {
             throw new IllegalStateException("Missing credentials for provider: " + providerName);
@@ -30,8 +31,8 @@ public class LlmClientConfig {
     }
 
     @Bean
-    public Map<String, ChatClient> chatClients(LlmProperties properties) {
-        Map<String, ChatClient> clients = new HashMap<>();
+    public Map<LlmProviderType, ChatClient> chatClients(LlmProperties properties) {
+        Map<LlmProviderType, ChatClient> clients = new HashMap<>();
         properties.providers().forEach((providerName, _) -> {
             OpenAiChatModel chatModel = buildChatModel(properties, providerName);
             clients.put(providerName, ChatClient.builder(chatModel).build());
