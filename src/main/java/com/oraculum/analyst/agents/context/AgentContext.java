@@ -1,7 +1,7 @@
 package com.oraculum.analyst.agents.context;
 
 import com.oraculum.analyst.agents.tools.DataTools;
-import com.oraculum.analyst.domain.IncomeStatementTemplate;
+import com.oraculum.analyst.domain.StatementTemplate;
 import com.oraculum.analyst.domain.StatementVariant;
 import com.oraculum.llm.api.LlmRouterApi;
 import lombok.Builder;
@@ -16,7 +16,7 @@ public class AgentContext {
     String ticker;
     String market;
     LocalDate asOf;
-    IncomeStatementTemplate template;
+    StatementTemplate template;
     StatementVariant defaultVariant;
     DataTools tools;
     LlmRouterApi llm;

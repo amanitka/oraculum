@@ -5,8 +5,8 @@ import com.oraculum.analyst.agents.base.AgentOutput;
 import com.oraculum.analyst.agents.context.AgentContext;
 import com.oraculum.analyst.agents.models.PlannerPlan;
 import com.oraculum.analyst.config.PromptRegistry;
-import com.oraculum.analyst.domain.IncomeStatementTemplate;
 import com.oraculum.analyst.domain.PromptType;
+import com.oraculum.analyst.domain.StatementTemplate;
 import com.oraculum.company.api.dto.TickerDto;
 import com.oraculum.llm.api.dto.LlmResponse;
 import com.oraculum.llm.api.dto.LlmTierType;
@@ -33,7 +33,7 @@ public class PlannerAgent implements Agent<PlannerPlan> {
     @Override
     public AgentOutput<PlannerPlan> run(AgentContext ctx) {
         TickerDto profile = ctx.getTools().getTickerProfile(ctx.getTicker());
-        IncomeStatementTemplate resolvedTemplate = ctx.getTools().resolveTemplate(ctx.getTicker());
+        StatementTemplate resolvedTemplate = ctx.getTools().resolveTemplate(ctx.getTicker());
         String sharePriceSignals = ctx.getTools().getSharePriceSignals(ctx.getTicker(), ctx.getMarket(), ctx.getAsOf());
 
         String prompt = systemPrompt.replace("{{ market_signals_json }}", sharePriceSignals);

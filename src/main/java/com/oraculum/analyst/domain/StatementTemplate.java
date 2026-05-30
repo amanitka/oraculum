@@ -2,14 +2,14 @@ package com.oraculum.analyst.domain;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
-public enum IncomeStatementTemplate {
+public enum StatementTemplate {
     GENERAL("general"),
     BANK("bank"),
     INSURANCE("insurance");
 
     private final String value;
 
-    IncomeStatementTemplate(String value) {
+    StatementTemplate(String value) {
         this.value = value;
     }
 

@@ -1,13 +1,13 @@
 package com.oraculum.analyst.agents.models;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.oraculum.analyst.domain.IncomeStatementTemplate;
+import com.oraculum.analyst.domain.StatementTemplate;
 import com.oraculum.analyst.domain.StatementVariant;
 import lombok.Data;
 
 @Data
 public class PlannerPlan {
-    private IncomeStatementTemplate template;
+    private StatementTemplate template;
 
     @JsonProperty("fundamentals_variant")
     private StatementVariant fundamentalsVariant = StatementVariant.ANNUAL;
@@ -22,5 +22,6 @@ public class PlannerPlan {
     private StatementVariant riskVariant = StatementVariant.QUARTERLY;
 
     @JsonProperty("analysis_focus")
-    private String analysisFocus = "Prioritize recent momentum shifts, valuation dislocations, and unusual volume signals.";
+    private String analysisFocus = "Prioritize recent momentum shifts, valuation dislocations, and unusual volume " +
+            "signals.";
 }
