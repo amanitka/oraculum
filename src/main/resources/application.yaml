@@ -42,78 +42,70 @@ oraculum:
     password: ${ORACULUM_DATABASE_PASSWORD}
 
   simfin:
-    apiKey: ${ORACULUM_SIMFIN_API_KEY}
-    chunkSize: ${ORACULUM_SIMFIN_CHUNK_SIZE:500000}
-    refreshDays: ${ORACULUM_SIMFIN_REFRESH_DAYS:1}
+    api-key: ${ORACULUM_SIMFIN_API_KEY}
+    chunk-size: ${ORACULUM_SIMFIN_CHUNK_SIZE:500000}
+    refresh-days: ${ORACULUM_SIMFIN_REFRESH_DAYS:1}
 
-  alphaVantage:
-    apiUrl: https://www.alphavantage.co
-    apiKey: ${ORACULUM_ALPHA_VANTAGE_API_KEY}
+  alpha-vantage:
+    api-url: https://www.alphavantage.co
+    api-key: ${ORACULUM_ALPHA_VANTAGE_API_KEY}
 
   kafka:
-    consumerGroup: oraculum
+    consumer-group: oraculum
     topics:
-      dataFileReady: oraculum.data_file_ready
+      data-file-ready: oraculum.data_file_ready
       market: oraculum.market
       industry: oraculum.industry
       news: oraculum.news
-      harvesterRequest: ${ORACULUM_HARVESTER_REQUEST_TOPIC:oraculum.harvester.request}
+      harvester-request: ${ORACULUM_HARVESTER_REQUEST_TOPIC:oraculum.harvester.request}
 
   shared:
-    folderPath: ${ORACULUM_SHARED_FOLDER_PATH:./data/shared}
+    folder-path: ${ORACULUM_SHARED_FOLDER_PATH:./data/shared}
 
   analyst:
     refresh:
-      priceCron: "0 7 * * *"
-      fundamentalsCron: "0 0 * * 0"
-      tickerCron: "0 0 1 * *"
+      price-cron: "0 7 * * *"
+      fundamentals-cron: "0 0 * * 0"
+      ticker-cron: "0 0 1 * *"
     cleanup:
-      dataCleanupCron: "${ORACULUM_DATA_CLEANUP_CRON:0 3 * * *}"
-      dataRetentionDays: ${ORACULUM_DATA_RETENTION_DAYS:3}
+      data-cleanup-cron: "${ORACULUM_DATA_CLEANUP_CRON:0 3 * * *}"
+      data-retention-days: ${ORACULUM_DATA_RETENTION_DAYS:3}
 
   llm:
-    # A list of all available model deployments.
-    # 'alias' groups them into tiers. 'order' defines failover priority within a tier.
-    deployments:
-      # --- Tier 1: Flash Models (for simple, high-volume tasks) ---
-      - alias: "flash-tier"
-        model: "gemini-2.5-flash-lite"
-        api_key: ${GEMINI_API_KEY}
-        api_base: "https://generativelanguage.googleapis.com/v1beta/"
-        order: 1 # Primary: Newest, agentic, and extremely cheap.
-      - alias: "flash-tier"
-        model: "gpt-4o-mini"
-        api_key: ${OPENAI_API_KEY}
-        api_base: "https://api.openai.com/v1"
-        order: 2 # Fallback: OpenAI's cost-effective model.
-
-      # --- Tier 2: Pro Models (for robust analysis) ---
-      - alias: "pro-tier"
-        model: "gemini-2.5-flash"
-        api_key: ${GEMINI_API_KEY}
-        api_base: "https://generativelanguage.googleapis.com/v1beta/"
-        order: 1 # Primary: Google's newest production model for agentic work.
-      - alias: "pro-tier"
-        model: "gpt-4o"
-        api_key: ${OPENAI_API_KEY}
-        api_base: "https://api.openai.com/v1"
-        order: 2 # Fallback: Powerful OpenAI model.
-
-      # --- Tier 3: Specialist Models (for critical synthesis) ---
-      - alias: "specialist-tier"
-        model: "gemini-3.1-pro-preview"
-        api_key: ${GEMINI_API_KEY}
-        api_base: "https://generativelanguage.googleapis.com/v1beta/"
-        order: 1 # Primary: Flagship model for the most complex tasks.
-      - alias: "specialist-tier"
-        model: "gpt-4o"
-        api_key: ${OPENAI_API_KEY}
-        api_base: "https://api.openai.com/v1"
-        order: 2 # Fallback: Cross-provider failover to a powerful OpenAI model.
-
-    # Global settings applied to all calls via the router
-    router_settings:
+    common:
       temperature: 0.0
-      num_retries: 3
-      workflow_token_budget: 100000
-      max_tokens: 8192
+      max-retries: 3
+      initial-backoff-ms: 2000
+      workflow-token-budget: 100000
+      max-tokens: 8192
+
+    providers:
+      gemini:
+        base-url: "https://generativelanguage.googleapis.com/v1beta/openai/"
+        api-key: ${GEMINI_API_KEY}
+      openai:
+        base-url: "https://api.openai.com/v1"
+        api-key: ${OPENAI_API_KEY}
+
+    tiers:
+      flash:
+        primary:
+          provider: "gemini"
+          model: "gemini-2.5-flash-lite"
+        secondary:
+          provider: "openai"
+          model: "gpt-4o-mini"
+      standard:
+        primary:
+          provider: "gemini"
+          model: "gemini-2.5-flash"
+        secondary:
+          provider: "openai"
+          model: "gpt-4o"
+      pro:
+        primary:
+          provider: "gemini"
+          model: "gemini-3.1-pro-preview"
+        secondary:
+          provider: "openai"
+          model: "gpt-4o"

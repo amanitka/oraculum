@@ -14,7 +14,7 @@ public class MarketListener {
 
     private final CompanyLoadApi companyLoadApi;
 
-    @KafkaListener(topics = "${oraculum.kafka.topics.market}", groupId = "${oraculum.kafka.consumerGroup}",
+    @KafkaListener(topics = "${oraculum.kafka.topics.market}", groupId = "${oraculum.kafka.consumer-group}",
             containerFactory = "kafkaListenerContainerFactory")
     public void onMarket(MarketDto market) {
         try {

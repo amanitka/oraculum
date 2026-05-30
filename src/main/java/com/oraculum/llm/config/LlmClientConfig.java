@@ -1,5 +1,7 @@
 package com.oraculum.llm.config;
 
+import com.openai.client.OpenAIClient;
+import com.openai.client.okhttp.OpenAIOkHttpClient;
 import com.oraculum.llm.property.LlmProperties;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.openai.OpenAiChatModel;
@@ -14,33 +16,35 @@ import java.util.Map;
 public class LlmClientConfig {
 
     @Bean
-    public Map<String, ChatClient> primaryClients(LlmProperties properties, ChatClient.Builder builder) {
-        return buildClients(properties, true, builder);
+    public Map<String, ChatClient> primaryClients(LlmProperties properties) {
+        return buildClients(properties, true);
     }
 
     @Bean
-    public Map<String, ChatClient> secondaryClients(LlmProperties properties, ChatClient.Builder builder) {
-        return buildClients(properties, false, builder);
+    public Map<String, ChatClient> secondaryClients(LlmProperties properties) {
+        return buildClients(properties, false);
     }
 
-    private Map<String, ChatClient> buildClients(LlmProperties properties, boolean isPrimary,
-                                                 ChatClient.Builder builder) {
+    private OpenAiChatModel buildChatModel(LlmProperties properties, LlmProperties.ModelReference modelRef) {
+        var provider = properties.providers().get(modelRef.provider());
+        if (provider == null) {
+            throw new IllegalStateException("Missing credentials for provider: " + modelRef.provider());
+        }
+        // OpenAI SDK client (works for OpenAI + Gemini + others)
+        OpenAIClient openAiClient =
+                OpenAIOkHttpClient.builder().apiKey(provider.apiKey()).baseUrl(provider.baseUrl()).build();
+        // Model options
+        OpenAiChatOptions options =
+                OpenAiChatOptions.builder().model(modelRef.model()).temperature(properties.common().temperature()).build();
+        // Return chat model
+        return OpenAiChatModel.builder().openAiClient(openAiClient).options(options).build();
+    }
+
+    private Map<String, ChatClient> buildClients(LlmProperties properties, boolean isPrimary) {
         Map<String, ChatClient> clients = new HashMap<>();
-
         properties.tiers().forEach((tierName, tierConfig) -> {
-            LlmProperties.ModelReference modelRef = isPrimary ? tierConfig.primary() : tierConfig.secondary();
-            LlmProperties.ProviderConfig provider = properties.providers().get(modelRef.provider());
-
-            if (provider == null) {
-                throw new IllegalStateException("Missing credentials for provider token: " + modelRef.provider());
-            }
-
-            var api = new OpenAiApi(provider.baseUrl(), provider.apiKey());
-            var options =
-                    OpenAiChatOptions.builder().model(modelRef.model()).temperature(properties.common().temperature()).build();
-
-            var chatModel = new OpenAiChatModel(api, options);
-            clients.put(tierName, builder.clone().chatModel(chatModel).build());
+            var modelRef = isPrimary ? tierConfig.primary() : tierConfig.secondary();
+            clients.put(tierName, ChatClient.builder(buildChatModel(properties, modelRef)).build());
         });
 
         return clients;

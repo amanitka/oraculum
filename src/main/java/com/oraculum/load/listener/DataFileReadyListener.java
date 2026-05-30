@@ -14,7 +14,7 @@ public class DataFileReadyListener {
 
     private final DataFileLoadService dataFileLoadService;
 
-    @KafkaListener(topics = "${oraculum.kafka.topics.dataFileReady}", groupId = "${oraculum.kafka.consumerGroup}",
+    @KafkaListener(topics = "${oraculum.kafka.topics.data-file-ready}", groupId = "${oraculum.kafka.consumer-group}",
             containerFactory = "kafkaListenerContainerFactory")
     public void onDataFileReady(DataFileReadyEvent event) {
         log.info("Received data file ready event via Kafka: {}", event);

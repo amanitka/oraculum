@@ -16,7 +16,7 @@ public class NewsListener {
 
     private final CompanyLoadApi companyLoadApi;
 
-    @KafkaListener(topics = "${oraculum.kafka.topics.news}", groupId = "${oraculum.kafka.consumerGroup}",
+    @KafkaListener(topics = "${oraculum.kafka.topics.news}", groupId = "${oraculum.kafka.consumer-group}",
             containerFactory = "kafkaListenerContainerFactory")
     public void onNewsBatch(List<NewsArticleDto> articles) {
         try {

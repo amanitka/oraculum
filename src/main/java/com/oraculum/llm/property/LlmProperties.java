@@ -4,7 +4,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.util.Map;
 
-@ConfigurationProperties(prefix = "llm")
+@ConfigurationProperties(prefix = "oraculum.llm")
 public record LlmProperties(CommonProperties common, Map<String, ProviderConfig> providers,
                             Map<String, TierConfig> tiers) {
     public record CommonProperties(Double temperature, Integer maxRetries, Long initialBackoffMs) {

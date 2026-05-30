@@ -14,7 +14,7 @@ public class IndustryListener {
 
     private final CompanyLoadApi companyLoadApi;
 
-    @KafkaListener(topics = "${oraculum.kafka.topics.industry}", groupId = "${oraculum.kafka.consumerGroup}",
+    @KafkaListener(topics = "${oraculum.kafka.topics.industry}", groupId = "${oraculum.kafka.consumer-group}",
             containerFactory = "kafkaListenerContainerFactory")
     public void onIndustry(IndustryDto industry) {
         try {
