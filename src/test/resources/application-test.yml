@@ -1,0 +1,29 @@
+oraculum:
+  llm:
+    common:
+      temperature: 0.1
+      provider-fallback-order:
+        - groq
+        - gemini
+    providers:
+      groq:
+        api-key: ${GROQ_API_KEY:}
+      gemini:
+        api-key: ${GEMINI_API_KEY:}
+    models:
+      mini:
+        groq: "llama3-8b-8192" # Or whatever groq model you prefer
+        gemini: "gemini-1.5-flash"
+    retry:
+      max-retries: 1
+      initial-backoff-ms: 1000
+
+spring:
+  ai:
+    openai:
+      api-key: DUMMY_KEY # Prevent startup failures if autoconfig kicks in
+    google:
+      gemini:
+        api-key: ${GEMINI_API_KEY:}
+    # Note: Groq auto-configuration usually expects spring.ai.openai.api-key if it's based on the OpenAI API compatibility layer.
+    # If using a specific spring-ai-groq starter, it might have its own properties, e.g., spring.ai.groq.api-key
