@@ -1,5 +1,6 @@
 package com.oraculum.llm.service.impl;
 
+import com.oraculum.llm.api.dto.LlmResponse;
 import com.oraculum.llm.api.dto.LlmTierType;
 import com.oraculum.llm.config.LlmProperties;
 import com.oraculum.llm.domain.LlmProviderType;
@@ -17,13 +18,14 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class LlmRouterServiceImpl implements LlmRouterService {
+
     private final Map<LlmProviderType, ChatClient> chatClients;
     private final LlmExecutionService executionService;
     private final LlmHealthProvider health;
     private final LlmProperties properties;
 
     @Override
-    public <T> T generate(LlmTierType tier, String prompt, Class<T> type) {
+    public <T> LlmResponse<T> executeCall(LlmTierType tier, String prompt, Class<T> type) {
         Exception last = null;
         for (LlmProviderType provider : properties.common().providerFallbackOrder()) {
             if (health.isBlocked(provider)) {
@@ -35,8 +37,12 @@ public class LlmRouterServiceImpl implements LlmRouterService {
             }
             String model = resolveModel(tier, provider);
             try {
-                T result = executionService.executeCall(new LlmRequest<>(client, prompt, model, properties.common()
-                        .temperature(), type));
+                var result = executionService.executeCall(new LlmRequest<>(client,
+                        prompt,
+                        provider,
+                        model,
+                        properties.common().temperature(),
+                        type));
                 health.markSuccess(provider);
                 return result;
             } catch (Exception e) {

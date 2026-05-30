@@ -1,6 +1,7 @@
 package com.oraculum.llm;
 
 import com.oraculum.llm.api.LlmRouterApi;
+import com.oraculum.llm.api.dto.LlmResponse;
 import com.oraculum.llm.api.dto.LlmTierType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -36,11 +37,14 @@ public class LlmIntegrationTest {
 
         // Act
         // This makes a real network call!
-        String response = llmRouterApi.generate(LlmTierType.MINI, prompt, String.class);
+        LlmResponse<String> response = llmRouterApi.executeCall(LlmTierType.MINI,
+                prompt,
+                String.class);
 
         // Assert
         assertNotNull(response);
-        assertTrue(response.toLowerCase().contains("hi"));
-        System.out.println("LLM Response: " + response);
+        assertNotNull(response.result());
+        assertTrue(response.result().toLowerCase().contains("hi"));
+        System.out.println("LLM Response: " + response.result());
     }
 }

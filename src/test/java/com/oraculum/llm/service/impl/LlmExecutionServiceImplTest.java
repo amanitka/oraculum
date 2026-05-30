@@ -1,7 +1,10 @@
 package com.oraculum.llm.service.impl;
 
+import com.oraculum.llm.api.dto.LlmResponse;
+import com.oraculum.llm.domain.LlmProviderType;
 import com.oraculum.llm.domain.LlmRequest;
 import org.junit.jupiter.api.BeforeEach;
+import org.springframework.ai.chat.client.ResponseEntity;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -40,19 +43,19 @@ class LlmExecutionServiceImplTest {
         double temperature = 0.7;
         String expectedResponse = "Mocked Response";
 
-        LlmRequest<String> request = new LlmRequest<>(chatClient, prompt, model, temperature, String.class);
+        LlmRequest<String> request = new LlmRequest<>(chatClient, prompt, LlmProviderType.OPENAI, model, temperature, String.class);
 
         when(chatClient.prompt()).thenReturn(requestSpec);
         when(requestSpec.user(prompt)).thenReturn(requestSpec);
         when(requestSpec.options(any())).thenReturn(requestSpec);
         when(requestSpec.call()).thenReturn(responseSpec);
-        when(responseSpec.entity(String.class)).thenReturn(expectedResponse);
+        when(responseSpec.responseEntity(String.class)).thenReturn(new ResponseEntity<>(null, expectedResponse));
 
         // Act
-        String result = executionService.executeCall(request);
+        LlmResponse<String> result = executionService.executeCall(request);
 
         // Assert
-        assertEquals(expectedResponse, result);
+        assertEquals(expectedResponse, result.result());
 
         verify(chatClient).prompt();
         verify(requestSpec).user(prompt);
@@ -64,6 +67,6 @@ class LlmExecutionServiceImplTest {
             return false;
         }));
         verify(requestSpec).call();
-        verify(responseSpec).entity(String.class);
+        verify(responseSpec).responseEntity(String.class);
     }
 }
