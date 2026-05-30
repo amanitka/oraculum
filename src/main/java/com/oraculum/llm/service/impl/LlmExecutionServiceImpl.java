@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class LlmExecutionServiceImpl implements LlmExecutionService {
 
-    private ChatClient.CallResponseSpec getCallResponse(LlmRequest request) {
+    private ChatClient.CallResponseSpec getCallResponse(LlmRequest<?> request) {
         return request.client()
                 .prompt()
                 .user(request.prompt())
@@ -23,11 +23,10 @@ public class LlmExecutionServiceImpl implements LlmExecutionService {
                 .call();
     }
 
-    private LlmMetrics getMetrics(LlmRequest request, ChatResponse chatResponse, long start) {
+    private LlmMetrics getMetrics(LlmRequest<?> request, ChatResponse chatResponse, long start) {
         Integer promptTokens = null;
         Integer completionTokens = null;
         Integer totalTokens = null;
-
         if (chatResponse != null) {
             var usage = chatResponse.getMetadata().getUsage();
             promptTokens = usage.getPromptTokens();
@@ -51,7 +50,7 @@ public class LlmExecutionServiceImpl implements LlmExecutionService {
         long start = System.currentTimeMillis();
         var callResponse = getCallResponse(request);
         var responseEntity = callResponse.responseEntity(request.responseType());
-        T entity = responseEntity.entity();
+        var entity = responseEntity.entity();
         var metrics = getMetrics(request, responseEntity.response(), start);
 
         return new LlmResponse<>(entity, metrics);
