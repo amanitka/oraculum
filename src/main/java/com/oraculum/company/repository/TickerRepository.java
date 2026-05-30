@@ -8,5 +8,5 @@ import java.util.Optional;
 
 @Repository
 public interface TickerRepository extends JpaRepository<TickerEntity, Integer> {
-    Optional<TickerEntity> findByTicker(String ticker);
+    Optional<TickerEntity> findByTickerAndMarket(String ticker, String market);
 }

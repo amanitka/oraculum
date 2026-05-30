@@ -26,4 +26,7 @@ public class FinancialFactSheet {
 
     @JsonProperty("share_price_signals")
     String sharePriceSignals;
+
+    @JsonProperty("recent_news")
+    String recentNews;
 }

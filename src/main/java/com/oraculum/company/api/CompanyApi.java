@@ -9,7 +9,7 @@ import java.util.List;
  */
 public interface CompanyApi {
 
-    TickerDto getTicker(String ticker);
+    TickerDto getTicker(String ticker, String market);
 
     List<TickerDto> getAllTickers();
 
@@ -17,13 +17,13 @@ public interface CompanyApi {
 
     List<IndustryDto> getAllIndustries();
 
-    List<NewsTickerDto> getNewsByTicker(String ticker, int days);
+    List<NewsTickerDto> getNewsByTicker(String ticker, int days, int limit);
 
-    List<BalanceSheetDto> getBalanceSheetsByTicker(String ticker);
+    List<BalanceSheetDto> getBalanceSheetsByCompanyId(String ticker, String variant, int limit);
 
-    List<CashFlowStatementDto> getCashFlowStatementsByTicker(String ticker);
+    List<CashFlowStatementDto> getCashFlowStatementsByTicker(String ticker, String variant, int limit);
 
-    List<IncomeStatementDto> getIncomeStatementsByTicker(String ticker);
+    List<IncomeStatementDto> getIncomeStatementsByTicker(String ticker, String variant, int limit);
 
     List<SharePriceDto> getSharePricesByTicker(String ticker);
 
