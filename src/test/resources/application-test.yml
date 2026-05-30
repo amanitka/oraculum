@@ -17,13 +17,3 @@ oraculum:
     retry:
       max-retries: 1
       initial-backoff-ms: 1000
-
-spring:
-  ai:
-    openai:
-      api-key: DUMMY_KEY # Prevent startup failures if autoconfig kicks in
-    google:
-      gemini:
-        api-key: ${GEMINI_API_KEY:}
-    # Note: Groq auto-configuration usually expects spring.ai.openai.api-key if it's based on the OpenAI API compatibility layer.
-    # If using a specific spring-ai-groq starter, it might have its own properties, e.g., spring.ai.groq.api-key
