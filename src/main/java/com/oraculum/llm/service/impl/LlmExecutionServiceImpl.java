@@ -11,9 +11,10 @@ import org.springframework.stereotype.Service;
 @Service
 public class LlmExecutionServiceImpl implements LlmExecutionService {
 
-    @Retryable(includes = {java.io.IOException.class, java.net.SocketTimeoutException.class}, maxRetriesString =
-            "#{@llmProperties.retry.max-retries}", delayString = "#{@llmProperties.retry.initial-backoff-ms}",
-            multiplier = 2.0, jitter = 200)
+    @Retryable(includes = {java.io.IOException.class, java.net.SocketTimeoutException.class}, 
+               maxRetriesString = "${oraculum.llm.retry.max-retries}", 
+               delayString = "${oraculum.llm.retry.initial-backoff-ms}",
+               multiplier = 2.0, jitter = 200)
     @Override
     public <T> T executeCall(LlmRequest<T> request) {
         return request.client()

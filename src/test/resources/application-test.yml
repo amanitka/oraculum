@@ -12,8 +12,8 @@ oraculum:
         api-key: ${GEMINI_API_KEY:}
     models:
       mini:
-        groq: "llama3-8b-8192" # Or whatever groq model you prefer
-        gemini: "gemini-1.5-flash"
+        groq: "llama-3.1-8b-instant"
+        gemini: "gemini-2.5-flash"
     retry:
       max-retries: 1
       initial-backoff-ms: 1000

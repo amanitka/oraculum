@@ -3,7 +3,6 @@ package com.oraculum.llm.service.impl;
 import com.oraculum.llm.api.dto.LlmTierType;
 import com.oraculum.llm.config.LlmProperties;
 import com.oraculum.llm.domain.LlmProviderType;
-import com.oraculum.llm.domain.LlmRequest;
 import com.oraculum.llm.service.LlmExecutionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,8 +37,11 @@ class LlmRouterServiceImplTest {
 
     @BeforeEach
     void setUp() {
+        Map<LlmTierType, Map<LlmProviderType, String>> models = Map.of(LlmTierType.STANDARD,
+                Map.of(LlmProviderType.OPENAI, "gpt-4o", LlmProviderType.GEMINI, "gemini-1.5-pro"));
+
         LlmProperties properties = new LlmProperties(new LlmProperties.Common(0.7, List.of(LlmProviderType.OPENAI,
-                LlmProviderType.GEMINI)), new LlmProperties.Retry(3, 1000), Map.of(), Map.of());
+                LlmProviderType.GEMINI)), new LlmProperties.Retry(3, 1000), Map.of(), models);
 
         Map<LlmProviderType, ChatClient> clients = Map.of(LlmProviderType.OPENAI, openaiClient,
                 LlmProviderType.GEMINI, geminiClient);
@@ -53,7 +55,7 @@ class LlmRouterServiceImplTest {
         String prompt = "Test prompt";
         String expectedResult = "Test response";
         when(health.isBlocked(LlmProviderType.OPENAI)).thenReturn(false);
-        when(executionService.executeCall(any(LlmRequest.class))).thenReturn(expectedResult);
+        when(executionService.executeCall(any())).thenReturn(expectedResult);
 
         // Act
         String result = routerService.generate(LlmTierType.STANDARD, prompt, String.class);
@@ -62,7 +64,7 @@ class LlmRouterServiceImplTest {
         assertEquals(expectedResult, result);
         verify(health).markSuccess(LlmProviderType.OPENAI);
         verify(health, never()).markSuccess(LlmProviderType.GEMINI);
-        verify(executionService).executeCall(argThat(req -> req.client() == openaiClient && req.model()
+        verify(executionService).executeCall(argThat(req -> req != null && req.client() == openaiClient && req.model()
                 .equals("gpt-4o") && req.prompt().equals(prompt)));
     }
 
@@ -76,10 +78,10 @@ class LlmRouterServiceImplTest {
         when(health.isBlocked(LlmProviderType.GEMINI)).thenReturn(false);
 
         // First provider fails
-        when(executionService.executeCall(argThat(req -> req.client() == openaiClient))).thenThrow(new RuntimeException("API Error"));
+        when(executionService.executeCall(argThat(req -> req != null && req.client() == openaiClient))).thenThrow(new RuntimeException("API Error"));
 
         // Second provider succeeds
-        when(executionService.executeCall(argThat(req -> req.client() == geminiClient))).thenReturn(expectedResult);
+        when(executionService.executeCall(argThat(req -> req != null && req.client() == geminiClient))).thenReturn(expectedResult);
 
         // Act
         String result = routerService.generate(LlmTierType.STANDARD, prompt, String.class);
@@ -100,15 +102,15 @@ class LlmRouterServiceImplTest {
         when(health.isBlocked(LlmProviderType.OPENAI)).thenReturn(true);
         when(health.isBlocked(LlmProviderType.GEMINI)).thenReturn(false);
 
-        when(executionService.executeCall(any(LlmRequest.class))).thenReturn(expectedResult);
+        when(executionService.executeCall(any())).thenReturn(expectedResult);
 
         // Act
         String result = routerService.generate(LlmTierType.STANDARD, prompt, String.class);
 
         // Assert
         assertEquals(expectedResult, result);
-        verify(executionService, never()).executeCall(argThat(req -> req.client() == openaiClient));
-        verify(executionService).executeCall(argThat(req -> req.client() == geminiClient));
+        verify(executionService, never()).executeCall(argThat(req -> req != null && req.client() == openaiClient));
+        verify(executionService).executeCall(argThat(req -> req != null && req.client() == geminiClient));
     }
 
     @Test
