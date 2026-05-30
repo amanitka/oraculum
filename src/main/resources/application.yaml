@@ -74,38 +74,40 @@ oraculum:
   llm:
     common:
       temperature: 0.0
-      max-retries: 3
-      initial-backoff-ms: 2000
-      workflow-token-budget: 100000
-      max-tokens: 8192
+      provider-fallback-order:
+        - gemini
+        - groq
+        - openai
+
+    retry:
+      max-retries: 2
+      initial-backoff-ms: 1000
 
     providers:
       gemini:
         base-url: "https://generativelanguage.googleapis.com/v1beta/openai/"
         api-key: ${GEMINI_API_KEY}
+
+      groq:
+        base-url: "https://api.groq.com/openai/v1"
+        api-key: ${GROQ_API_KEY}
+
       openai:
         base-url: "https://api.openai.com/v1"
         api-key: ${OPENAI_API_KEY}
 
-    tiers:
+    models:
       flash:
-        primary:
-          provider: "gemini"
-          model: "gemini-2.5-flash-lite"
-        secondary:
-          provider: "openai"
-          model: "gpt-4o-mini"
+        gemini: "gemini-2.5-flash-lite"
+        groq: "llama-3.1-8b-instant"
+        openai: "gpt-4o-mini"
+
       standard:
-        primary:
-          provider: "gemini"
-          model: "gemini-2.5-flash"
-        secondary:
-          provider: "openai"
-          model: "gpt-4o"
+        gemini: "gemini-2.5-flash"
+        groq: "llama-3.1-70b-versatile"
+        openai: "gpt-4o"
+
       pro:
-        primary:
-          provider: "gemini"
-          model: "gemini-3.1-pro-preview"
-        secondary:
-          provider: "openai"
-          model: "gpt-4o"
+        gemini: "gemini-3.1-pro-preview"
+        groq: "llama-3.3-70b"
+        openai: "gpt-4.1"

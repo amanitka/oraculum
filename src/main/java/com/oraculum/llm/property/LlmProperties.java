@@ -2,20 +2,16 @@ package com.oraculum.llm.property;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.util.List;
 import java.util.Map;
 
 @ConfigurationProperties(prefix = "oraculum.llm")
-public record LlmProperties(CommonProperties common, Map<String, ProviderConfig> providers,
-                            Map<String, TierConfig> tiers) {
-    public record CommonProperties(Double temperature, Integer maxRetries, Long initialBackoffMs) {
+public record LlmProperties(Common common, Map<String, ProviderConfig> providers,
+                            Map<String, Map<String, String>> models) {
+
+    public record Common(double temperature, List<String> providerFallbackOrder) {
     }
 
     public record ProviderConfig(String baseUrl, String apiKey) {
-    }
-
-    public record TierConfig(ModelReference primary, ModelReference secondary) {
-    }
-
-    public record ModelReference(String provider, String model) {
     }
 }

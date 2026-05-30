@@ -15,36 +15,26 @@ import java.util.Map;
 @Configuration
 public class LlmClientConfig {
 
-    @Bean
-    public Map<String, ChatClient> primaryClients(LlmProperties properties) {
-        return buildClients(properties, true);
-    }
-
-    @Bean
-    public Map<String, ChatClient> secondaryClients(LlmProperties properties) {
-        return buildClients(properties, false);
-    }
-
-    private OpenAiChatModel buildChatModel(LlmProperties properties, LlmProperties.ModelReference modelRef) {
-        var provider = properties.providers().get(modelRef.provider());
+    private OpenAiChatModel buildChatModel(LlmProperties properties, String providerName) {
+        var provider = properties.providers().get(providerName);
         if (provider == null) {
-            throw new IllegalStateException("Missing credentials for provider: " + modelRef.provider());
+            throw new IllegalStateException("Missing credentials for provider: " + providerName);
         }
-        // OpenAI SDK client (works for OpenAI + Gemini + others)
-        OpenAIClient openAiClient =
-                OpenAIOkHttpClient.builder().apiKey(provider.apiKey()).baseUrl(provider.baseUrl()).build();
-        // Model options
-        OpenAiChatOptions options =
-                OpenAiChatOptions.builder().model(modelRef.model()).temperature(properties.common().temperature()).build();
-        // Return chat model
+        OpenAIClient openAiClient = OpenAIOkHttpClient.builder()
+                .apiKey(provider.apiKey())
+                .baseUrl(provider.baseUrl())
+                .build();
+        OpenAiChatOptions options = OpenAiChatOptions.builder().temperature(properties.common().temperature()).build();
+
         return OpenAiChatModel.builder().openAiClient(openAiClient).options(options).build();
     }
 
-    private Map<String, ChatClient> buildClients(LlmProperties properties, boolean isPrimary) {
+    @Bean
+    public Map<String, ChatClient> chatClients(LlmProperties properties) {
         Map<String, ChatClient> clients = new HashMap<>();
-        properties.tiers().forEach((tierName, tierConfig) -> {
-            var modelRef = isPrimary ? tierConfig.primary() : tierConfig.secondary();
-            clients.put(tierName, ChatClient.builder(buildChatModel(properties, modelRef)).build());
+        properties.providers().forEach((providerName, _) -> {
+            OpenAiChatModel chatModel = buildChatModel(properties, providerName);
+            clients.put(providerName, ChatClient.builder(chatModel).build());
         });
 
         return clients;
