@@ -1,6 +1,6 @@
 package com.oraculum.load.service.impl;
 
-import com.oraculum.common.config.OraculumProperties;
+import com.oraculum.common.properties.OraculumProperties;
 import com.oraculum.load.dto.LoadParquetDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,8 +44,8 @@ public class PostgresParquetFileLoader {
     }
 
     private String getSecret() {
-        var database = properties.getDatabase();
-        String escapedPassword = database.getPassword().replace("'", "''");
+        var database = properties.database();
+        String escapedPassword = database.password().replace("'", "''");
         return """
                 CREATE OR REPLACE SECRET pg_secret (
                     TYPE POSTGRES,
@@ -55,8 +55,7 @@ public class PostgresParquetFileLoader {
                     USER '%s',
                     PASSWORD '%s'
                 );
-                """.formatted(database.getHost(), database.getPort(), database.getName(), database.getUsername(),
-                escapedPassword);
+                """.formatted(database.host(), database.port(), database.name(), database.username(), escapedPassword);
     }
 
     private String getStagingTableDdl(LoadParquetDto loadParquetDto) {

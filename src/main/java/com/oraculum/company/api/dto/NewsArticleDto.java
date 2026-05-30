@@ -1,7 +1,7 @@
 package com.oraculum.company.api.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.oraculum.common.jackson.LenientLocalDateTimeDeserializer;
+import com.oraculum.common.config.LenientLocalDateTimeDeserializer;
 import com.oraculum.company.domain.NewsEntity;
 import com.oraculum.company.domain.NewsTickerEntity;
 import com.oraculum.util.TimeUtil;

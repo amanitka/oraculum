@@ -1,6 +1,6 @@
 package com.oraculum.ui.service;
 
-import com.oraculum.common.config.OraculumProperties;
+import com.oraculum.common.properties.OraculumProperties;
 import com.oraculum.ui.request.HarvesterRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -13,11 +13,9 @@ public class RefreshRequestService {
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final String topic;
 
-    public RefreshRequestService(
-            KafkaTemplate<String, Object> kafkaTemplate,
-            OraculumProperties properties) {
+    public RefreshRequestService(KafkaTemplate<String, Object> kafkaTemplate, OraculumProperties properties) {
         this.kafkaTemplate = kafkaTemplate;
-        this.topic = properties.getKafka().getTopics().getHarvesterRequest();
+        this.topic = properties.kafka().topics().harvesterRequest();
     }
 
     public void publish(HarvesterRequest request) {

@@ -1,4 +1,4 @@
-package com.oraculum.common.jackson;
+package com.oraculum.common.config;
 
 import tools.jackson.core.JsonParser;
 import tools.jackson.databind.DeserializationContext;
