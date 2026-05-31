@@ -6,6 +6,14 @@ This guide details the necessary modifications to the data harvester, Data Trans
 
 The harvester's primary role is to transform raw source data (like CSVs) into clean, structured Parquet files that match the target application schema.
 
+### Kafka Request Types
+
+The harvester consumes requests from Kafka. The request type for fetching company data has been changed:
+-   **Old Request Type:** `fetch_ticker`
+-   **New Request Type:** `fetch_company`
+
+The harvester must be updated to handle the new `fetch_company` request type.
+
 ### Field Enrichment and Renaming
 
 -   **Market Column Enrichment:** Some source files (e.g., financial statement CSVs) may not contain a `market` column. The harvester's processing job is often triggered with market context (e.g., as part of the incoming request or job parameters). The harvester **must** use this context to add the correct `market` column to every record in the generated Parquet files.

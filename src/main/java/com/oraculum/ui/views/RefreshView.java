@@ -55,7 +55,7 @@ public class RefreshView extends VerticalLayout {
 
         Map<Tab, Div> tabContent = new LinkedHashMap<>();
         tabContent.put(new Tab("Metadata"),        buildMetadataTab());
-        tabContent.put(new Tab("Ticker"),           buildTickerTab());
+        tabContent.put(new Tab("Company"),           buildCompanyTab());
         tabContent.put(new Tab("Share Price"),      buildSharePriceTab());
         tabContent.put(new Tab("News & Sentiment"), buildNewsTab());
         tabContent.put(new Tab("Income Statement"), buildStatementTab((m, v, t) -> new HarvesterRequest.FetchIncomeStatement(m, v, t)));
@@ -108,20 +108,20 @@ public class RefreshView extends VerticalLayout {
     }
 
     // -------------------------------------------------------------------------
-    // Ticker tab
+    // Company tab
     // -------------------------------------------------------------------------
 
-    private Div buildTickerTab() {
+    private Div buildCompanyTab() {
         Div content = new Div();
         content.addClassNames(LumoUtility.Padding.MEDIUM);
 
-        H3 title = new H3("Ticker Refresh");
+        H3 title = new H3("Company Refresh");
 
         TextField market = new TextField("Market");
         market.setValue("us");
         market.setWidth("200px");
 
-        Button submit = new Button("Queue ticker refresh");
+        Button submit = new Button("Queue company refresh");
         submit.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         submit.addClickListener(e -> {
             String m = market.getValue().strip().toLowerCase();
@@ -129,7 +129,7 @@ public class RefreshView extends VerticalLayout {
                 showError("Market is required.");
                 return;
             }
-            publish(new HarvesterRequest.FetchTicker(m));
+            publish(new HarvesterRequest.FetchCompany(m));
         });
 
         FormLayout form = new FormLayout(market);

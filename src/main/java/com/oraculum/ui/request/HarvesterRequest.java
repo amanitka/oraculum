@@ -27,16 +27,16 @@ public abstract class HarvesterRequest {
     // -------------------------------------------------------------------------
 
     @Getter
-    public static class FetchTicker extends HarvesterRequest {
+    public static class FetchCompany extends HarvesterRequest {
         private final String market;
 
-        public FetchTicker(String market) {
+        public FetchCompany(String market) {
             this.market = market;
         }
 
         @Override
         public String getRequestType() {
-            return "fetch_ticker";
+            return "fetch_company";
         }
     }
 
