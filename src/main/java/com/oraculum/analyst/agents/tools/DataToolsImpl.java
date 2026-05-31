@@ -112,8 +112,9 @@ public class DataToolsImpl implements DataTools {
             return "No data available.";
         }
 
+        @SuppressWarnings("unchecked")
         List<Map<String, Object>> dictItems = items.stream()
-                .map(item -> objectMapper.convertValue(item, Map.class))
+                .map(item -> (Map<String, Object>) objectMapper.convertValue(item, Map.class))
                 .collect(Collectors.toList());
 
         List<String> headers = dictItems.getFirst()
