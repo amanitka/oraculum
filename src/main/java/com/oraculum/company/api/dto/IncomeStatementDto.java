@@ -6,9 +6,9 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 public record IncomeStatementDto(
-    String compositeKey,
-    String ticker,
-    int simfinId,
+    String id,
+    Integer companyId,
+    String market,
     String template,
     String variant,
     String currency,
@@ -22,9 +22,9 @@ public record IncomeStatementDto(
     public static IncomeStatementDto fromEntity(IncomeStatementEntity entity) {
         if (entity == null) return null;
         return new IncomeStatementDto(
-            entity.getCompositeKey(),
-            entity.getTicker(),
-            entity.getSimfinId(),
+            entity.getId(),
+            entity.getCompanyId(),
+            entity.getMarket(),
             entity.getTemplate(),
             entity.getVariant(),
             entity.getCurrency(),

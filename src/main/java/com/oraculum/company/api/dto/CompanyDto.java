@@ -1,13 +1,13 @@
 package com.oraculum.company.api.dto;
 
-import com.oraculum.company.domain.TickerEntity;
+import com.oraculum.company.domain.CompanyEntity;
 
 import java.time.OffsetDateTime;
 
-public record TickerDto(
+public record CompanyDto(
+    Integer id,
     String ticker,
-    String providerId,
-    String providerName,
+    String market,
     String companyName,
     String industryId,
     String industryName,
@@ -15,17 +15,16 @@ public record TickerDto(
     String isin,
     String description,
     Long employeeCount,
-    String market,
     String currency,
     String cik,
     OffsetDateTime extractedAt
 ) {
-    public static TickerDto fromEntity(TickerEntity entity) {
+    public static CompanyDto fromEntity(CompanyEntity entity) {
         if (entity == null) return null;
-        return new TickerDto(
+        return new CompanyDto(
+            entity.getId(),
             entity.getTicker(),
-            entity.getProviderId(),
-            entity.getProviderName(),
+            entity.getMarket(),
             entity.getCompanyName(),
             entity.getIndustryId(),
             entity.getIndustryName(),
@@ -33,7 +32,6 @@ public record TickerDto(
             entity.getIsin(),
             entity.getDescription(),
             entity.getEmployeeCount(),
-            entity.getMarket(),
             entity.getCurrency(),
             entity.getCik(),
             entity.getExtractedAt()

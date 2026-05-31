@@ -9,25 +9,29 @@ import java.util.List;
  */
 public interface CompanyApi {
 
-    TickerDto getTicker(String ticker, String market);
+    CompanyDto getCompany(String ticker, String market);
 
-    List<TickerDto> getAllTickers();
+    CompanyDto getCompanyById(int companyId);
+
+    List<CompanyDto> getAllCompanies();
 
     List<MarketDto> getAllMarkets();
 
     List<IndustryDto> getAllIndustries();
 
-    List<NewsTickerDto> getNewsByTicker(String ticker, int days, int limit);
+    List<NewsTickerDto> getNewsByTicker(String ticker, String market, int days, int limit);
 
-    List<BalanceSheetDto> getBalanceSheetsByCompanyId(String ticker, String variant, int limit);
+    List<BalanceSheetDto> getBalanceSheetsByCompanyId(int companyId, String variant, int limit);
 
-    List<CashFlowStatementDto> getCashFlowStatementsByTicker(String ticker, String variant, int limit);
+    List<CashFlowStatementDto> getCashFlowStatementsByCompanyId(int companyId, String variant, int limit);
 
-    List<IncomeStatementDto> getIncomeStatementsByTicker(String ticker, String variant, int limit);
+    List<IncomeStatementDto> getIncomeStatementsByCompanyId(int companyId, String variant, int limit);
 
-    List<SharePriceDto> getSharePricesByTicker(String ticker);
 
-    List<DailyMarketSignalDto> getDailyMarketSignalsByTicker(String ticker);
 
-    List<DerivedMetricsDto> getDerivedMetricsByTicker(String ticker);
+    List<SharePriceDto> getSharePricesByCompanyId(int companyId);
+
+    List<DailyMarketSignalDto> getDailyMarketSignalsByCompanyId(int companyId);
+
+    List<DerivedMetricsDto> getDerivedMetricsByCompanyId(int companyId);
 }

@@ -7,6 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface IncomeStatementRepository extends JpaRepository<IncomeStatementEntity, Integer> {
-    Page<IncomeStatementEntity> findByTickerAndVariant(String ticker, String variant, Pageable pageable);
+public interface IncomeStatementRepository extends JpaRepository<IncomeStatementEntity, String> {
+    Page<IncomeStatementEntity> findByCompanyIdAndVariant(int companyId, String variant, Pageable pageable);
 }

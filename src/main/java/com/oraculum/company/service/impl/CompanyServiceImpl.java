@@ -2,9 +2,9 @@ package com.oraculum.company.service.impl;
 
 import com.oraculum.common.exception.EntityNotFoundException;
 import com.oraculum.company.api.dto.*;
+import com.oraculum.company.domain.CompanyEntity;
 import com.oraculum.company.domain.NewsEntity;
 import com.oraculum.company.domain.NewsTickerEntity;
-import com.oraculum.company.domain.TickerEntity;
 import com.oraculum.company.repository.*;
 import com.oraculum.company.service.CompanyService;
 import jakarta.transaction.Transactional;
@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CompanyServiceImpl implements CompanyService {
 
-    private final TickerRepository tickerRepository;
+    private final CompanyRepository companyRepository;
     private final MarketRepository marketRepository;
     private final IndustryRepository industryRepository;
     private final NewsRepository newsRepository;
@@ -38,15 +38,22 @@ public class CompanyServiceImpl implements CompanyService {
     private final DerivedMetricsRepository derivedMetricsRepository;
 
     @Override
-    public TickerDto getTicker(String ticker, String market) {
-        return tickerRepository.findByTickerAndMarket(ticker, market)
-                .map(TickerDto::fromEntity)
-                .orElseThrow(() -> new EntityNotFoundException(TickerEntity.class, ticker));
+    public CompanyDto getCompany(String ticker, String market) {
+        return companyRepository.findByTickerAndMarket(ticker, market)
+                .map(CompanyDto::fromEntity)
+                .orElseThrow(() -> new EntityNotFoundException(CompanyEntity.class, ticker + ":" + market));
     }
 
     @Override
-    public List<TickerDto> getAllTickers() {
-        return tickerRepository.findAll().stream().map(TickerDto::fromEntity).collect(Collectors.toList());
+    public CompanyDto getCompanyById(int companyId) {
+        return companyRepository.findById(companyId)
+                .map(CompanyDto::fromEntity)
+                .orElseThrow(() -> new EntityNotFoundException(CompanyEntity.class, String.valueOf(companyId)));
+    }
+
+    @Override
+    public List<CompanyDto> getAllCompanies() {
+        return companyRepository.findAll().stream().map(CompanyDto::fromEntity).collect(Collectors.toList());
     }
 
     @Override
@@ -60,10 +67,11 @@ public class CompanyServiceImpl implements CompanyService {
     }
 
     @Override
-    public List<NewsTickerDto> getNewsByTicker(String ticker, int days, int limit) {
+    public List<NewsTickerDto> getNewsByTicker(String ticker, String market, int days, int limit) {
         OffsetDateTime after = OffsetDateTime.now().minusDays(days);
         Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "timePublished"));
-        Page<NewsTickerEntity> tickerRows = newsTickerRepository.findByTickerAndTimePublishedAfter(ticker,
+        Page<NewsTickerEntity> tickerRows = newsTickerRepository.findByTickerAndMarketAndTimePublishedAfter(ticker,
+                market,
                 after,
                 pageable);
         List<String> newsIds = tickerRows.stream().map(NewsTickerEntity::getNewsId).collect(Collectors.toList());
@@ -77,51 +85,51 @@ public class CompanyServiceImpl implements CompanyService {
     }
 
     @Override
-    public List<BalanceSheetDto> getBalanceSheetsByCompanyId(String ticker, String variant, int limit) {
+    public List<BalanceSheetDto> getBalanceSheetsByCompanyId(int companyId, String variant, int limit) {
         Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "reportDate"));
-        return balanceSheetRepository.findByTickerAndVariant(ticker, variant, pageable)
+        return balanceSheetRepository.findByCompanyIdAndVariant(companyId, variant, pageable)
                 .stream()
                 .map(BalanceSheetDto::fromEntity)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<CashFlowStatementDto> getCashFlowStatementsByTicker(String ticker, String variant, int limit) {
+    public List<CashFlowStatementDto> getCashFlowStatementsByCompanyId(int companyId, String variant, int limit) {
         Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "reportDate"));
-        return cashFlowStatementRepository.findByTickerAndVariant(ticker, variant, pageable)
+        return cashFlowStatementRepository.findByCompanyIdAndVariant(companyId, variant, pageable)
                 .stream()
                 .map(CashFlowStatementDto::fromEntity)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<IncomeStatementDto> getIncomeStatementsByTicker(String ticker, String variant, int limit) {
+    public List<IncomeStatementDto> getIncomeStatementsByCompanyId(int companyId, String variant, int limit) {
         Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "reportDate"));
-        return incomeStatementRepository.findByTickerAndVariant(ticker, variant, pageable)
+        return incomeStatementRepository.findByCompanyIdAndVariant(companyId, variant, pageable)
                 .stream()
                 .map(IncomeStatementDto::fromEntity)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<SharePriceDto> getSharePricesByTicker(String ticker) {
-        return sharePriceRepository.findByTicker(ticker)
+    public List<SharePriceDto> getSharePricesByCompanyId(int companyId) {
+        return sharePriceRepository.findByCompanyId(companyId)
                 .stream()
                 .map(SharePriceDto::fromEntity)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<DailyMarketSignalDto> getDailyMarketSignalsByTicker(String ticker) {
-        return dailyMarketSignalRepository.findByTicker(ticker)
+    public List<DailyMarketSignalDto> getDailyMarketSignalsByCompanyId(int companyId) {
+        return dailyMarketSignalRepository.findByCompanyId(companyId)
                 .stream()
                 .map(DailyMarketSignalDto::fromEntity)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<DerivedMetricsDto> getDerivedMetricsByTicker(String ticker) {
-        return derivedMetricsRepository.findByTicker(ticker)
+    public List<DerivedMetricsDto> getDerivedMetricsByCompanyId(int companyId) {
+        return derivedMetricsRepository.findByCompanyId(companyId)
                 .stream()
                 .map(DerivedMetricsDto::fromEntity)
                 .collect(Collectors.toList());

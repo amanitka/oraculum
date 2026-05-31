@@ -11,26 +11,22 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.OffsetDateTime;
 
 @Entity
-@Table(name = "t_ticker", uniqueConstraints = {@UniqueConstraint(name = "uq_ticker_ticker_market", columnNames = {
+@Table(name = "t_company", uniqueConstraints = {@UniqueConstraint(name = "uq_company_ticker_market", columnNames = {
         "ticker", "market"})})
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class TickerEntity {
+public class CompanyEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     @Column(nullable = false)
     private String ticker;
 
-    @Column(name = "provider_id")
-    private String providerId;
-
-    @Column(name = "provider_name")
-    private String providerName;
+    @Column(nullable = false, length = 10)
+    private String market;
 
     @Column(name = "company_name", nullable = false)
     private String companyName;
@@ -52,9 +48,6 @@ public class TickerEntity {
 
     @Column(name = "employee_count")
     private Long employeeCount;
-
-    @Column(nullable = false)
-    private String market;
 
     @Column(nullable = false)
     private String currency;

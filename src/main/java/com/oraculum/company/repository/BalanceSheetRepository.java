@@ -7,6 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface BalanceSheetRepository extends JpaRepository<BalanceSheetEntity, Integer> {
-    Page<BalanceSheetEntity> findByTickerAndVariant(String ticker, String variant, Pageable pageable);
+public interface BalanceSheetRepository extends JpaRepository<BalanceSheetEntity, String> {
+    Page<BalanceSheetEntity> findByCompanyIdAndVariant(int companyId, String variant, Pageable pageable);
 }

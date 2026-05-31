@@ -6,9 +6,8 @@
 -- =================================================================
 CREATE OR REPLACE VIEW v_derived_metrics AS
 WITH statement_values AS (SELECT
-                             income.composite_key,
-					         income.ticker,
-					         income.simfin_id,
+                             income.id,
+					         income.company_id,
 					         income.currency,
 					         income.template,
 					         income.variant,
@@ -36,15 +35,13 @@ WITH statement_values AS (SELECT
 						     NULLIF(cash_flow.payload ->> 'Net Cash from Operating Activities'::text, ''::text)::double precision AS net_cash_from_operating_activities,
 						     NULLIF(cash_flow.payload ->> 'Change in Fixed Assets & Intangibles'::text, ''::text)::double precision AS capital_expenditures
 					      FROM t_income_statement income
-					      LEFT JOIN t_balance_sheet balance ON balance.ticker = income.ticker
-					                                       AND balance.simfin_id = income.simfin_id
+					      LEFT JOIN t_balance_sheet balance ON balance.company_id = income.company_id
 					                                    	AND balance.currency = income.currency
 					                                    	AND balance.template = income.template
 					                                    	AND balance.variant = income.variant
 					                                    	AND balance.fiscal_year = income.fiscal_year
 					                                    	AND CASE WHEN balance.variant = 'annual' THEN 'FY' ELSE balance.fiscal_period END = income.fiscal_period
-					      LEFT JOIN t_cash_flow_statement cash_flow ON cash_flow.ticker = income.ticker
-					                                               AND cash_flow.simfin_id = income.simfin_id
+					      LEFT JOIN t_cash_flow_statement cash_flow ON cash_flow.company_id = income.company_id
 					                                               AND cash_flow.currency = income.currency
 					                                               AND cash_flow.template = income.template
 					                                               AND cash_flow.variant = income.variant
@@ -52,9 +49,8 @@ WITH statement_values AS (SELECT
 					                                               AND cash_flow.fiscal_period = income.fiscal_period
 					      )
 SELECT
-    composite_key,
-    ticker,
-    simfin_id,
+    id,
+    company_id,
     currency,
     template,
     variant,
@@ -118,14 +114,13 @@ FROM statement_values;
 -- =================================================================
 CREATE OR REPLACE VIEW v_daily_market_signals AS
 WITH fundamental_timeline AS (SELECT
-							     ticker,
-							     simfin_id,
+							     company_id,
 							     currency,
 							     fiscal_year,
 							     fiscal_period,
 							     publish_date AS valid_from,
 							     LEAD(publish_date, 1, '9999-12-31'::date) OVER (
-							         PARTITION BY ticker
+							         PARTITION BY company_id
 							         ORDER BY publish_date ASC, restated_date ASC
 							     ) AS valid_to,
 							     revenue,
@@ -152,19 +147,19 @@ WITH fundamental_timeline AS (SELECT
                               ),
      share_price AS (SELECT
 					    p.*,
-					    AVG(p.close) OVER (PARTITION BY p.ticker ORDER BY p.trade_date ROWS BETWEEN 49 PRECEDING AND CURRENT ROW) AS ma_50,
-					    AVG(p.close) OVER (PARTITION BY p.ticker ORDER BY p.trade_date ROWS BETWEEN 199 PRECEDING AND CURRENT ROW) AS ma_200,
-					    AVG(p.volume) OVER (PARTITION BY p.ticker ORDER BY p.trade_date ROWS BETWEEN 29 PRECEDING AND CURRENT ROW) AS vol_30
+					    AVG(p.close) OVER (PARTITION BY p.company_id ORDER BY p.trade_date ROWS BETWEEN 49 PRECEDING AND CURRENT ROW) AS ma_50,
+					    AVG(p.close) OVER (PARTITION BY p.company_id ORDER BY p.trade_date ROWS BETWEEN 199 PRECEDING AND CURRENT ROW) AS ma_200,
+					    AVG(p.volume) OVER (PARTITION BY p.company_id ORDER BY p.trade_date ROWS BETWEEN 29 PRECEDING AND CURRENT ROW) AS vol_30
 					 FROM public.t_share_price p
                      )
 SELECT
    -- Context Keys
    p.trade_date,
    CASE
-       WHEN p.trade_date = MAX(p.trade_date) OVER (PARTITION BY p.ticker, DATE_TRUNC('month', p.trade_date)) THEN 'Y'
+       WHEN p.trade_date = MAX(p.trade_date) OVER (PARTITION BY p.company_id, DATE_TRUNC('month', p.trade_date)) THEN 'Y'
        ELSE 'N'
        END                                                         AS flag_last_day_of_month,
-   p.ticker,
+   p.company_id,
    p.market,
    p.currency,
    -- Core Market Pricing & Technical Momentum
@@ -214,6 +209,6 @@ SELECT
    f.current_ratio,
    f.debt_to_equity
 FROM share_price p
-LEFT JOIN fundamental_timeline f ON p.ticker = f.ticker
+LEFT JOIN fundamental_timeline f ON p.company_id = f.company_id
                                 AND p.trade_date >= f.valid_from
                                 AND p.trade_date < f.valid_to;

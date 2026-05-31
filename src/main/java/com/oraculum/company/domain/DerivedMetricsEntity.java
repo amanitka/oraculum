@@ -22,14 +22,11 @@ import java.time.LocalDate;
 public class DerivedMetricsEntity {
 
     @Id
-    @Column(name = "composite_key")
-    private String compositeKey;
+    @Column(name = "id")
+    private String id;
 
-    @Column(name = "ticker")
-    private String ticker;
-
-    @Column(name = "simfin_id")
-    private int simfinId;
+    @Column(name = "company_id")
+    private int companyId;
 
     @Column(name = "currency")
     private String currency;

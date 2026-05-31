@@ -6,57 +6,58 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-@Component("share_price")
+@Component("company")
 @RequiredArgsConstructor
-public class SharePriceFileLoadServiceImpl implements ParquetFileLoadService {
+public class CompanyFileLoadServiceImpl implements ParquetFileLoadService {
 
-    private static final String TARGET_TABLE_NAME = "t_share_price";
+    private static final String TARGET_TABLE_NAME = "t_company";
     private static final String BULK_UPSERT_SQL = """
-            INSERT INTO t_share_price AS dest
-              (company_id,
-               trade_date,
+            INSERT INTO t_company AS dest
+              (id,
+               ticker,
                market,
+               company_name,
+               industry_id,
+               industry_name,
+               sector_name,
+               isin,
+               description,
+               employee_count,
                currency,
-               open,
-               high,
-               low,
-               close,
-               adj_close,
-               volume,
-               shares_outstanding,
-               dividend,
+               cik,
                extracted_at,
                created_at,
                updated_at)
             SELECT
-               CAST(src.company_id AS INTEGER),
-               CAST(src.trade_date AS DATE),
+               CAST(src.id AS INTEGER),
+               src.ticker,
                src.market,
+               src.company_name,
+               CAST(src.industry_id AS INTEGER),
+               src.industry_name,
+               src.sector_name,
+               src.isin,
+               src.description,
+               CAST(src.employee_count AS BIGINT),
                src.currency,
-               CAST(src.open AS DOUBLE PRECISION),
-               CAST(src.high AS DOUBLE PRECISION),
-               CAST(src.low AS DOUBLE PRECISION),
-               CAST(src.close AS DOUBLE PRECISION),
-               CAST(src.adj_close AS DOUBLE PRECISION),
-               CAST(src.volume AS BIGINT),
-               CAST(src.shares_outstanding AS BIGINT),
-               CAST(src.dividend AS DOUBLE PRECISION),
+               src.cik,
                CAST(src.extracted_at AS TIMESTAMP),
                src.created_at,
                src.updated_at
             FROM %s AS src
-            ON CONFLICT (company_id, trade_date)
+            ON CONFLICT (id)
             DO UPDATE SET
+               ticker = EXCLUDED.ticker,
                market = EXCLUDED.market,
+               company_name = EXCLUDED.company_name,
+               industry_id = EXCLUDED.industry_id,
+               industry_name = EXCLUDED.industry_name,
+               sector_name = EXCLUDED.sector_name,
+               isin = EXCLUDED.isin,
+               description = EXCLUDED.description,
+               employee_count = EXCLUDED.employee_count,
                currency = EXCLUDED.currency,
-               "open" = EXCLUDED.open,
-               high = EXCLUDED.high,
-               low = EXCLUDED.low,
-               "close" = EXCLUDED.close,
-               adj_close = EXCLUDED.adj_close,
-               volume = EXCLUDED.volume,
-               shares_outstanding = EXCLUDED.shares_outstanding,
-               dividend = EXCLUDED.dividend,
+               cik = EXCLUDED.cik,
                extracted_at = EXCLUDED.extracted_at,
                updated_at = CURRENT_TIMESTAMP;
             """;

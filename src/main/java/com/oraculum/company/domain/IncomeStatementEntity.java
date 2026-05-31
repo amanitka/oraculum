@@ -12,8 +12,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 @Entity
-@Table(name = "t_income_statement", uniqueConstraints = {@UniqueConstraint(name = "uq_income_statement_composite_key"
-        , columnNames = {"composite_key"})})
+@Table(name = "t_income_statement")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -21,17 +20,13 @@ import java.time.OffsetDateTime;
 public class IncomeStatementEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    @Column(name = "composite_key", nullable = false, updatable = false, unique = true)
-    private String compositeKey;
+    @Column(name = "company_id", nullable = false)
+    private Integer companyId;
 
-    @Column(nullable = false)
-    private String ticker;
-
-    @Column(name = "simfin_id", nullable = false)
-    private int simfinId;
+    @Column(nullable = false, length = 10)
+    private String market;
 
     @Column(nullable = false)
     private String template;

@@ -5,9 +5,8 @@ import com.oraculum.company.domain.DerivedMetricsEntity;
 import java.time.LocalDate;
 
 public record DerivedMetricsDto(
-    String compositeKey,
-    String ticker,
-    int simfinId,
+    String id,
+    int companyId,
     String currency,
     String template,
     String variant,
@@ -29,9 +28,8 @@ public record DerivedMetricsDto(
     public static DerivedMetricsDto fromEntity(DerivedMetricsEntity entity) {
         if (entity == null) return null;
         return new DerivedMetricsDto(
-            entity.getCompositeKey(),
-            entity.getTicker(),
-            entity.getSimfinId(),
+            entity.getId(),
+            entity.getCompanyId(),
             entity.getCurrency(),
             entity.getTemplate(),
             entity.getVariant(),

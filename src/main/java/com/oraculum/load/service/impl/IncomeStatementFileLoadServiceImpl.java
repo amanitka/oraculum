@@ -13,11 +13,11 @@ public class IncomeStatementFileLoadServiceImpl implements ParquetFileLoadServic
     private static final String TARGET_TABLE_NAME = "t_income_statement";
     private static final String BULK_UPSERT_SQL = """
             INSERT INTO t_income_statement AS dest
-              (composite_key,
+              (id,
+               company_id,
+               market,
                template,
                variant,
-               ticker,
-               simfin_id,
                currency,
                fiscal_year,
                fiscal_period,
@@ -29,11 +29,11 @@ public class IncomeStatementFileLoadServiceImpl implements ParquetFileLoadServic
                created_at,
                updated_at)
             SELECT
-               src.composite_key,
+               src.id,
+               CAST(src.company_id AS INTEGER),
+               src.market,
                src.template,
                src.variant,
-               src.ticker,
-               CAST(src.simfin_id AS INTEGER),
                src.currency,
                CAST(src.fiscal_year AS INTEGER),
                src.fiscal_period,
@@ -45,9 +45,10 @@ public class IncomeStatementFileLoadServiceImpl implements ParquetFileLoadServic
                src.created_at,
                src.updated_at
             FROM %s AS src
-            ON CONFLICT (composite_key)
+            ON CONFLICT (id)
             DO UPDATE SET
-               simfin_id = EXCLUDED.simfin_id,
+               company_id = EXCLUDED.company_id,
+               market = EXCLUDED.market,
                currency = EXCLUDED.currency,
                report_date = EXCLUDED.report_date,
                publish_date = EXCLUDED.publish_date,

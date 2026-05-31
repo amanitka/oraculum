@@ -7,7 +7,7 @@ import com.oraculum.analyst.agents.context.AgentContext;
 import com.oraculum.analyst.agents.models.FinancialFactSheet;
 import com.oraculum.analyst.config.AnalystProperties;
 import com.oraculum.analyst.domain.StatementVariant;
-import com.oraculum.company.api.dto.TickerDto;
+import com.oraculum.company.api.dto.CompanyDto;
 import lombok.Builder;
 import org.springframework.stereotype.Component;
 
@@ -35,31 +35,31 @@ public class FactSheetAgent implements Agent<FactSheetAgent.FactSheetOutput> {
 
     @Override
     public AgentOutput<FactSheetOutput> run(AgentContext ctx) {
-        TickerDto tickerProfileDto = ctx.getTools().getTicker(ctx.getTicker(), ctx.getMarket());
+        CompanyDto companyProfileDto = ctx.getTools().getCompany(ctx.getTicker(), ctx.getMarket());
         Map<String, String> tickerProfile = new HashMap<>();
 
-        if (tickerProfileDto != null) {
-            tickerProfile.put("ticker", tickerProfileDto.ticker() != null ? tickerProfileDto.ticker() : "");
+        if (companyProfileDto != null) {
+            tickerProfile.put("ticker", companyProfileDto.ticker() != null ? companyProfileDto.ticker() : "");
             tickerProfile.put("name",
-                    tickerProfileDto.companyName() != null ? tickerProfileDto.companyName() : "Unknown");
+                    companyProfileDto.companyName() != null ? companyProfileDto.companyName() : "Unknown");
             tickerProfile.put("industry",
-                    tickerProfileDto.industryName() != null ? tickerProfileDto.industryName() : "Unknown");
+                    companyProfileDto.industryName() != null ? companyProfileDto.industryName() : "Unknown");
             tickerProfile.put("sector",
-                    tickerProfileDto.sectorName() != null ? tickerProfileDto.sectorName() : "Unknown");
+                    companyProfileDto.sectorName() != null ? companyProfileDto.sectorName() : "Unknown");
             tickerProfile.put("industry_id",
-                    tickerProfileDto.industryId() != null ? tickerProfileDto.industryId() : "");
+                    companyProfileDto.industryId() != null ? companyProfileDto.industryId() : "");
         }
 
         StatementVariant variant = ctx.getDefaultVariant();
         int historyLimit = analystProperties.factSheet().historyLimit();
 
         String incomeStatementHistory = ctx.getTools()
-                .getIncomeStatementHistory(ctx.getTicker(), variant, historyLimit);
-        String balanceSheetHistory = ctx.getTools().getBalanceSheetHistory(ctx.getTicker(), variant, historyLimit);
-        String cashFlowHistory = ctx.getTools().getCashFlowHistory(ctx.getTicker(), variant, historyLimit);
-        String derivedMetrics = ctx.getTools().getDerivedMetrics(ctx.getTicker(), variant, historyLimit);
-        String sharePriceSignals = ctx.getTools().getSharePriceSignals(ctx.getTicker(), ctx.getMarket(), ctx.getAsOf());
-        String recentNews = ctx.getTools().getRecentNews(ctx.getTicker(), 30, historyLimit);
+                .getIncomeStatementHistory(ctx.getCompanyId(), variant, historyLimit);
+        String balanceSheetHistory = ctx.getTools().getBalanceSheetHistory(ctx.getCompanyId(), variant, historyLimit);
+        String cashFlowHistory = ctx.getTools().getCashFlowHistory(ctx.getCompanyId(), variant, historyLimit);
+        String derivedMetrics = ctx.getTools().getDerivedMetrics(ctx.getCompanyId(), variant, historyLimit);
+        String sharePriceSignals = ctx.getTools().getSharePriceSignals(ctx.getCompanyId(), ctx.getAsOf());
+        String recentNews = ctx.getTools().getRecentNews(ctx.getTicker(), ctx.getMarket(), 30, historyLimit);
 
         FinancialFactSheet factSheet = FinancialFactSheet.builder()
                 .tickerProfile(tickerProfile)

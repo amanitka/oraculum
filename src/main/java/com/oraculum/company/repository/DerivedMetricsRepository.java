@@ -8,5 +8,5 @@ import java.util.List;
 
 @Repository
 public interface DerivedMetricsRepository extends JpaRepository<DerivedMetricsEntity, String> {
-    List<DerivedMetricsEntity> findByTicker(String ticker);
+    List<DerivedMetricsEntity> findByCompanyId(int companyId);
 }

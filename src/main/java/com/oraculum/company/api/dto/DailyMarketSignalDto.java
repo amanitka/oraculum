@@ -6,7 +6,7 @@ import java.time.LocalDate;
 
 public record DailyMarketSignalDto(
     LocalDate tradeDate,
-    String ticker,
+    int companyId,
     String market,
     String flagLastDayOfMonth,
     String currency,
@@ -39,7 +39,7 @@ public record DailyMarketSignalDto(
         if (entity == null) return null;
         return new DailyMarketSignalDto(
             entity.getTradeDate(),
-            entity.getTicker(),
+            entity.getCompanyId(),
             entity.getMarket(),
             entity.getFlagLastDayOfMonth(),
             entity.getCurrency(),

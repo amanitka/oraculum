@@ -15,6 +15,7 @@ import java.util.Map;
 public class AgentContext {
     String ticker;
     String market;
+    Integer companyId;
     LocalDate asOf;
     StatementTemplate template;
     StatementVariant defaultVariant;

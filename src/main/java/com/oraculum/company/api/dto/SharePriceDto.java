@@ -6,10 +6,9 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 public record SharePriceDto(
-    String ticker,
-    String market,
+    Integer companyId,
     LocalDate tradeDate,
-    Integer simFinId,
+    String market,
     String currency,
     Float open,
     Float high,
@@ -24,10 +23,9 @@ public record SharePriceDto(
     public static SharePriceDto fromEntity(SharePriceEntity entity) {
         if (entity == null) return null;
         return new SharePriceDto(
-            entity.getTicker(),
-            entity.getMarket(),
+            entity.getCompanyId(),
             entity.getTradeDate(),
-            entity.getSimFinId(),
+            entity.getMarket(),
             entity.getCurrency(),
             entity.getOpen(),
             entity.getHigh(),

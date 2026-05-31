@@ -8,5 +8,5 @@ import java.util.List;
 
 @Repository
 public interface DailyMarketSignalRepository extends JpaRepository<DailyMarketSignalEntity, DailyMarketSignalEntity.DailyMarketSignalId> {
-    List<DailyMarketSignalEntity> findByTicker(String ticker);
+    List<DailyMarketSignalEntity> findByCompanyId(int companyId);
 }

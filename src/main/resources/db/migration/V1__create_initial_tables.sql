@@ -1,5 +1,27 @@
 -- Flyway migration script for creating initial tables
--- Generated based on JPA entity definitions
+-- Schema updated based on migration guide
+
+-- =================================================================
+-- Table: t_company
+-- =================================================================
+CREATE TABLE public.t_company (
+    id INTEGER PRIMARY KEY,
+    ticker VARCHAR(255) NOT NULL,
+    market VARCHAR(10) NOT NULL,
+    company_name VARCHAR(255) NOT NULL,
+    industry_id VARCHAR(255),
+    industry_name VARCHAR(255),
+    sector_name VARCHAR(255),
+    isin VARCHAR(255),
+    description TEXT,
+    employee_count BIGINT,
+    currency VARCHAR(255) NOT NULL,
+    cik VARCHAR(255),
+    extracted_at TIMESTAMPTZ NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
+    CONSTRAINT uq_company_ticker_market UNIQUE (ticker, market)
+);
 
 -- =================================================================
 -- Table: t_analysis
@@ -45,15 +67,14 @@ CREATE TABLE public.t_load_log (
 -- Table: t_balance_sheet
 -- =================================================================
 CREATE TABLE public.t_balance_sheet (
-    id BIGSERIAL PRIMARY KEY,
-    composite_key VARCHAR(255) NOT NULL,
-    ticker VARCHAR(255) NOT NULL,
-    simfin_id INTEGER NOT NULL,
-    template VARCHAR(255) NOT NULL,
-    variant VARCHAR(255) NOT NULL,
-    currency VARCHAR(255) NOT NULL,
+    id VARCHAR(255) PRIMARY KEY,
+    company_id INTEGER NOT NULL,
+    market VARCHAR(10) NOT NULL,
     fiscal_year INTEGER NOT NULL,
     fiscal_period VARCHAR(255) NOT NULL,
+    variant VARCHAR(255) NOT NULL,
+    template VARCHAR(255) NOT NULL,
+    currency VARCHAR(255) NOT NULL,
     report_date DATE NOT NULL,
     publish_date DATE NOT NULL,
     restated_date DATE,
@@ -61,22 +82,23 @@ CREATE TABLE public.t_balance_sheet (
     payload JSONB NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,
-    CONSTRAINT uq_balance_sheet_composite_key UNIQUE (composite_key)
+    FOREIGN KEY (company_id) REFERENCES public.t_company(id)
 );
+
+CREATE INDEX ix_balance_sheet_company_id ON public.t_balance_sheet (company_id);
 
 -- =================================================================
 -- Table: t_cash_flow_statement
 -- =================================================================
 CREATE TABLE public.t_cash_flow_statement (
-    id BIGSERIAL PRIMARY KEY,
-    composite_key VARCHAR(255) NOT NULL,
-    ticker VARCHAR(255) NOT NULL,
-    simfin_id INTEGER NOT NULL,
-    template VARCHAR(255) NOT NULL,
-    variant VARCHAR(255) NOT NULL,
-    currency VARCHAR(255) NOT NULL,
+    id VARCHAR(255) PRIMARY KEY,
+    company_id INTEGER NOT NULL,
+    market VARCHAR(10) NOT NULL,
     fiscal_year INTEGER NOT NULL,
     fiscal_period VARCHAR(255) NOT NULL,
+    variant VARCHAR(255) NOT NULL,
+    template VARCHAR(255) NOT NULL,
+    currency VARCHAR(255) NOT NULL,
     report_date DATE NOT NULL,
     publish_date DATE NOT NULL,
     restated_date DATE,
@@ -84,22 +106,23 @@ CREATE TABLE public.t_cash_flow_statement (
     payload JSONB NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,
-    CONSTRAINT uq_cash_flow_statement_composite_key UNIQUE (composite_key)
+    FOREIGN KEY (company_id) REFERENCES public.t_company(id)
 );
+
+CREATE INDEX ix_cash_flow_statement_company_id ON public.t_cash_flow_statement (company_id);
 
 -- =================================================================
 -- Table: t_income_statement
 -- =================================================================
 CREATE TABLE public.t_income_statement (
-    id BIGSERIAL PRIMARY KEY,
-    composite_key VARCHAR(255) NOT NULL,
-    ticker VARCHAR(255) NOT NULL,
-    simfin_id INTEGER NOT NULL,
-    template VARCHAR(255) NOT NULL,
-    variant VARCHAR(255) NOT NULL,
-    currency VARCHAR(255) NOT NULL,
+    id VARCHAR(255) PRIMARY KEY,
+    company_id INTEGER NOT NULL,
+    market VARCHAR(10) NOT NULL,
     fiscal_year INTEGER NOT NULL,
     fiscal_period VARCHAR(255) NOT NULL,
+    variant VARCHAR(255) NOT NULL,
+    template VARCHAR(255) NOT NULL,
+    currency VARCHAR(255) NOT NULL,
     report_date DATE NOT NULL,
     publish_date DATE NOT NULL,
     restated_date DATE,
@@ -107,8 +130,10 @@ CREATE TABLE public.t_income_statement (
     payload JSONB NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,
-    CONSTRAINT uq_income_statement_composite_key UNIQUE (composite_key)
+    FOREIGN KEY (company_id) REFERENCES public.t_company(id)
 );
+
+CREATE INDEX ix_income_statement_company_id ON public.t_income_statement (company_id);
 
 -- =================================================================
 -- Table: t_industry
@@ -136,42 +161,15 @@ CREATE TABLE public.t_market (
 );
 
 -- =================================================================
--- Table: t_ticker
--- =================================================================
-CREATE TABLE public.t_ticker (
-    id BIGSERIAL PRIMARY KEY,
-    ticker VARCHAR(255) NOT NULL,
-    provider_id VARCHAR(255),
-    provider_name VARCHAR(255),
-    company_name VARCHAR(255) NOT NULL,
-    industry_id VARCHAR(255),
-    industry_name VARCHAR(255),
-    sector_name VARCHAR(255),
-    isin VARCHAR(255),
-    description TEXT,
-    employee_count BIGINT,
-    market VARCHAR(255) NOT NULL,
-    currency VARCHAR(255) NOT NULL,
-    cik VARCHAR(255),
-    extracted_at TIMESTAMPTZ NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL,
-    updated_at TIMESTAMPTZ NOT NULL,
-    CONSTRAINT uq_ticker_ticker_market UNIQUE (ticker, market)
-);
-
--- =================================================================
 -- PARTITIONED TABLES (PARENT DEFINITION)
 -- =================================================================
 
 -- Table: t_share_price (Partitioned by trade_date)
--- Note: The ID is now the primary key, and the former PK is a unique constraint.
 -- =================================================================
 CREATE TABLE public.t_share_price (
-    id BIGSERIAL,
-    ticker VARCHAR(255) NOT NULL,
-    market VARCHAR(255) NOT NULL,
+    company_id INTEGER NOT NULL,
     trade_date DATE NOT NULL,
-    sim_fin_id INTEGER,
+    market VARCHAR(10) NOT NULL,
     currency VARCHAR(255),
     open REAL,
     high REAL,
@@ -184,8 +182,8 @@ CREATE TABLE public.t_share_price (
     extracted_at TIMESTAMPTZ NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,
-    PRIMARY KEY (id, trade_date),
-    CONSTRAINT uq_share_price_composite UNIQUE (ticker, market, trade_date)
+    PRIMARY KEY (company_id, trade_date),
+    FOREIGN KEY (company_id) REFERENCES public.t_company(id)
 ) PARTITION BY RANGE (trade_date);
 
 CREATE INDEX ix_share_price_trade_date ON public.t_share_price (trade_date);
@@ -222,14 +220,14 @@ CREATE INDEX ix_news_time_published ON public.t_news (time_published);
 CREATE TABLE public.t_news_ticker (
     news_id VARCHAR(64) NOT NULL,
     ticker VARCHAR(16) NOT NULL,
+    market VARCHAR(10) NOT NULL,
     time_published TIMESTAMPTZ NOT NULL,
     relevance_score REAL,
     ticker_sentiment_score REAL,
     ticker_sentiment_label VARCHAR(50),
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,
-    PRIMARY KEY (news_id, ticker, time_published)
-    -- FOREIGN KEY (news_id, time_published) REFERENCES public.t_news(id, time_published) ON DELETE CASCADE -- This must be applied to partitions individually.
+    PRIMARY KEY (news_id, ticker, market, time_published)
 ) PARTITION BY RANGE (time_published);
 
 CREATE INDEX ix_news_ticker_ticker ON public.t_news_ticker (ticker);

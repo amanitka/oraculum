@@ -20,51 +20,49 @@ public class DataToolsImpl implements DataTools {
     private final ObjectMapper objectMapper;
 
     @Override
-    public TickerDto getTicker(String ticker, String market) {
-        return companyApi.getTicker(ticker, market);
+    public CompanyDto getCompany(String ticker, String market) {
+        return companyApi.getCompany(ticker, market);
     }
 
     @Override
-    public String getIncomeStatementHistory(String ticker, StatementVariant variant, int limit) {
-        List<IncomeStatementDto> history = companyApi.getIncomeStatementsByTicker(ticker, variant.name(), limit);
-        return toMarkdown(history, "Income Statement History for " + ticker);
+    public String getIncomeStatementHistory(int companyId, StatementVariant variant, int limit) {
+        List<IncomeStatementDto> history = companyApi.getIncomeStatementsByCompanyId(companyId, variant.name(), limit);
+        return toMarkdown(history, "Income Statement History for company " + companyId);
     }
 
     @Override
-    public String getBalanceSheetHistory(String ticker, StatementVariant variant, int limit) {
-        List<BalanceSheetDto> history = companyApi.getBalanceSheetsByCompanyId(ticker, variant.name(), limit);
-        return toMarkdown(history, "Balance Sheet History for " + ticker);
+    public String getBalanceSheetHistory(int companyId, StatementVariant variant, int limit) {
+        List<BalanceSheetDto> history = companyApi.getBalanceSheetsByCompanyId(companyId, variant.name(), limit);
+        return toMarkdown(history, "Balance Sheet History for company " + companyId);
     }
 
     @Override
-    public String getCashFlowHistory(String ticker, StatementVariant variant, int limit) {
-        List<CashFlowStatementDto> history = companyApi.getCashFlowStatementsByTicker(ticker, variant.name(), limit);
-        return toMarkdown(history, "Cash Flow History for " + ticker);
+    public String getCashFlowHistory(int companyId, StatementVariant variant, int limit) {
+        List<CashFlowStatementDto> history = companyApi.getCashFlowStatementsByCompanyId(companyId, variant.name(), limit);
+        return toMarkdown(history, "Cash Flow History for company " + companyId);
     }
 
     @Override
-    public String getSharePriceWindow(String ticker, LocalDate start, LocalDate end) {
-        List<SharePriceDto> prices = companyApi.getSharePricesByTicker(ticker)
+    public String getSharePriceWindow(int companyId, LocalDate start, LocalDate end) {
+        List<SharePriceDto> prices = companyApi.getSharePricesByCompanyId(companyId)
                 .stream()
                 .filter(p -> !p.tradeDate().isBefore(start) && !p.tradeDate().isAfter(end))
                 .collect(Collectors.toList());
-        return toMarkdown(prices, "Share Prices for " + ticker + " from " + start + " to " + end);
+        return toMarkdown(prices, "Share Prices for company " + companyId + " from " + start + " to " + end);
     }
 
     @Override
-    public String getSharePriceSignals(String ticker, String market, LocalDate asOf) {
+    public String getSharePriceSignals(int companyId, LocalDate asOf) {
         LocalDate thirtyDaysAgo = asOf.minusDays(30);
-        List<DailyMarketSignalDto> dailyResults = companyApi.getDailyMarketSignalsByTicker(ticker)
+        List<DailyMarketSignalDto> dailyResults = companyApi.getDailyMarketSignalsByCompanyId(companyId)
                 .stream()
-                .filter(s -> market.equals(s.market()))
                 .filter(s -> !s.tradeDate().isBefore(thirtyDaysAgo) && !s.tradeDate().isAfter(asOf))
                 .limit(30)
                 .toList();
 
         LocalDate tenYearsAgo = asOf.minusYears(10);
-        List<DailyMarketSignalDto> monthlyResults = companyApi.getDailyMarketSignalsByTicker(ticker)
+        List<DailyMarketSignalDto> monthlyResults = companyApi.getDailyMarketSignalsByCompanyId(companyId)
                 .stream()
-                .filter(s -> market.equals(s.market()))
                 .filter(s -> !s.tradeDate().isBefore(tenYearsAgo) && !s.tradeDate().isAfter(asOf))
                 .filter(s -> s.flagLastDayOfMonth().equals("Y"))
                 .limit(120)
@@ -83,18 +81,18 @@ public class DataToolsImpl implements DataTools {
     }
 
     @Override
-    public String getDerivedMetrics(String ticker, StatementVariant variant, int limit) {
-        List<DerivedMetricsDto> metrics = companyApi.getDerivedMetricsByTicker(ticker)
+    public String getDerivedMetrics(int companyId, StatementVariant variant, int limit) {
+        List<DerivedMetricsDto> metrics = companyApi.getDerivedMetricsByCompanyId(companyId)
                 .stream()
                 .filter(m -> variant.name().equalsIgnoreCase(m.variant()))
                 .limit(limit)
                 .collect(Collectors.toList());
-        return toMarkdown(metrics, "Derived Metrics for " + ticker);
+        return toMarkdown(metrics, "Derived Metrics for company " + companyId);
     }
 
     @Override
-    public String getRecentNews(String ticker, int daysBack, int limit) {
-        List<NewsTickerDto> joinedItems = companyApi.getNewsByTicker(ticker, daysBack, limit);
+    public String getRecentNews(String ticker, String market, int daysBack, int limit) {
+        List<NewsTickerDto> joinedItems = companyApi.getNewsByTicker(ticker, market, daysBack, limit);
         if (joinedItems == null || joinedItems.isEmpty()) {
             return "No recent news found for this ticker.";
         }
