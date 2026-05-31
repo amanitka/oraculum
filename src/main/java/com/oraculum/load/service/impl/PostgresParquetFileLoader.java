@@ -6,6 +6,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -22,6 +25,7 @@ public class PostgresParquetFileLoader {
 
     private final OraculumProperties properties;
     private final JdbcTemplate jdbcTemplate;
+    private final PlatformTransactionManager transactionManager;
 
     public static String normalizeAndValidate(String parquetFilePath) {
         if (parquetFilePath == null || parquetFilePath.isBlank()) {
@@ -98,7 +102,8 @@ public class PostgresParquetFileLoader {
     }
 
     private void loadParquetIntoStaging(LoadParquetDto loadParquetDto) throws SQLException {
-        log.info("Starting high-speed load from '{}' into new staging table '{}'", loadParquetDto.parquetFilePath(),
+        log.info("Starting high-speed load from '{}' into new staging table '{}'",
+                loadParquetDto.parquetFilePath(),
                 loadParquetDto.stagingTableName());
         try (Connection conn = DriverManager.getConnection("jdbc:duckdb:"); Statement stmt = conn.createStatement()) {
             log.info("Step 1/3: Initializing PostgreSQL extension and connection for DuckDB.");
@@ -115,7 +120,8 @@ public class PostgresParquetFileLoader {
     }
 
     private void loadFromStagingTable(LoadParquetDto loadParquetDto) {
-        log.info("Executing native load from staging table '{}' to '{}'", loadParquetDto.stagingTableName(),
+        log.info("Executing native load from staging table '{}' to '{}'",
+                loadParquetDto.stagingTableName(),
                 loadParquetDto.targetTableName());
         int rowsAffected = jdbcTemplate.update(loadParquetDto.loadSql());
         log.info("Native load completed successfully. {} rows affected or updated.", rowsAffected);
@@ -124,37 +130,20 @@ public class PostgresParquetFileLoader {
     private void dropStagingTable(LoadParquetDto loadParquetDto) {
         var stagingTableName = loadParquetDto.stagingTableName();
         if (stagingTableName != null) {
-            try {
-                log.info("Dropping staging table '{}'", stagingTableName);
-                jdbcTemplate.execute("DROP TABLE IF EXISTS " + stagingTableName + ";");
-            } catch (Exception e) {
-                log.error("CRITICAL: Failed to drop staging table '{}'. Manual cleanup required.", stagingTableName, e);
-            }
+            TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+            transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            transactionTemplate.executeWithoutResult(status -> {
+                try {
+                    log.info("Dropping staging table '{}'.", stagingTableName);
+                    jdbcTemplate.execute("DROP TABLE IF EXISTS " + stagingTableName + ";");
+                    log.info("Successfully dropped staging table '{}'.", stagingTableName);
+                } catch (Exception e) {
+                    log.error("Failed to drop staging table '{}'. Manual cleanup required.", stagingTableName, e);
+                }
+            });
         }
     }
 
-    /**
-     * Orchestrates the high-performance data ingestion pipeline using a Staging Table pattern.
-     * <p>
-     * This method avoids the severe performance penalties of running complex operations (like
-     * {@code INSERT ... ON CONFLICT}) directly from DuckDB over the network. Instead, it executes
-     * a highly optimized three-phase process:
-     * <ol>
-     *     <li><b>Phase 1 (DuckDB):</b> Reads the Parquet file and utilizes the lightning-fast PostgreSQL
-     *         {@code COPY} protocol to stream the raw data into a uniquely named, temporary staging table
-     *         in the database.</li>
-     *     <li><b>Phase 2 (Native PostgreSQL):</b> Executes the provided custom SQL (typically an
-     *         {@code UPSERT} with necessary type casting) entirely within PostgreSQL. It reads from
-     *         the local staging table and writes to the final target table, ensuring maximum native speed.</li>
-     *     <li><b>Phase 3 (Cleanup):</b> Guaranteed execution via a {@code finally} block to drop the
-     *         temporary staging table, preventing database clutter even if Phase 2 fails.</li>
-     * </ol>
-     *
-     * @param loadParquetDto An object containing all necessary parameters for the load operation,
-     *                       including the file path, target table, staging table name, and the
-     *                       final SQL command.
-     * @throws RuntimeException if the staging process or the native upsert fails.
-     */
     public void loadParquetIntoTargetTable(LoadParquetDto loadParquetDto) {
         try {
             loadParquetIntoStaging(loadParquetDto);

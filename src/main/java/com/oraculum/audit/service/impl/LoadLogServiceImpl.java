@@ -43,11 +43,18 @@ public class LoadLogServiceImpl implements LoadLogService {
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public LoadLogDto startRunLog(String dataset, String runId, String fileChecksum) {
-        LoadLogEntity runLog = new LoadLogEntity();
-        runLog.setDataset(dataset);
-        runLog.setRunId(runId);
-        runLog.setFileChecksum(fileChecksum);
+        LoadLogEntity runLog = loadLogRepository.findByDatasetAndRunIdAndFileChecksum(dataset, runId, fileChecksum)
+                .orElseGet(() -> {
+                    LoadLogEntity entity = new LoadLogEntity();
+                    entity.setDataset(dataset);
+                    entity.setRunId(runId);
+                    entity.setFileChecksum(fileChecksum);
+                    return entity;
+                });
         runLog.setStatus(LoadLogStatus.RUNNING);
+        runLog.setLoadedRows(0);
+        runLog.setMergedRows(0);
+        runLog.setErrorText(null);
         return LoadLogDto.fromEntity(loadLogRepository.save(runLog));
     }
 

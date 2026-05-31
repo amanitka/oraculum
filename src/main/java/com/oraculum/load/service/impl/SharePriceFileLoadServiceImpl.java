@@ -44,8 +44,8 @@ public class SharePriceFileLoadServiceImpl implements ParquetFileLoadService {
                CAST(src.shares_outstanding AS BIGINT),
                CAST(src.dividend AS DOUBLE PRECISION),
                CAST(src.extracted_at AS TIMESTAMP),
-               src.created_at,
-               src.updated_at
+               CAST(src.created_at AS TIMESTAMPTZ),
+               CAST(src.updated_at AS TIMESTAMPTZ)
             FROM %s AS src
             ON CONFLICT (company_id, trade_date)
             DO UPDATE SET

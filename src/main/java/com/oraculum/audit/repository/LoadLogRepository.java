@@ -15,4 +15,6 @@ public interface LoadLogRepository extends JpaRepository<LoadLogEntity, Long> {
 
     Optional<LoadLogEntity> findByDatasetAndRunIdAndFileChecksumAndStatus(String dataset, String runId,
                                                                           String fileChecksum, LoadLogStatus status);
+
+    Optional<LoadLogEntity> findByDatasetAndRunIdAndFileChecksum(String dataset, String runId, String fileChecksum);
 }

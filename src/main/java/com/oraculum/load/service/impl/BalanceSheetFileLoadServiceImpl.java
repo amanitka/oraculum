@@ -44,8 +44,8 @@ public class BalanceSheetFileLoadServiceImpl implements ParquetFileLoadService {
                CAST(src.restated_date AS DATE),
                CAST(src.extracted_at AS TIMESTAMP),
                CAST(src.payload AS JSONB),
-               src.created_at,
-               src.updated_at
+               CAST(src.created_at AS TIMESTAMPTZ),
+               CAST(src.updated_at AS TIMESTAMPTZ)
             FROM %s AS src
             ON CONFLICT (id)
             DO UPDATE SET
