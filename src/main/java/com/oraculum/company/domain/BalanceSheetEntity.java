@@ -29,6 +29,9 @@ public class BalanceSheetEntity {
     private String market;
 
     @Column(nullable = false)
+    private String ticker;
+
+    @Column(nullable = false)
     private String template;
 
     @Column(nullable = false)

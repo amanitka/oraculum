@@ -42,8 +42,8 @@ public class CompanyFileLoadServiceImpl implements ParquetFileLoadService {
                src.currency,
                src.cik,
                CAST(src.extracted_at AS TIMESTAMP),
-               src.created_at,
-               src.updated_at
+               CAST(src.created_at AS TIMESTAMPTZ),
+               CAST(src.updated_at AS TIMESTAMPTZ)
             FROM %s AS src
             ON CONFLICT (id)
             DO UPDATE SET

@@ -16,6 +16,7 @@ public class BalanceSheetFileLoadServiceImpl implements ParquetFileLoadService {
               (id,
                company_id,
                market,
+               ticker,
                template,
                variant,
                currency,
@@ -32,6 +33,7 @@ public class BalanceSheetFileLoadServiceImpl implements ParquetFileLoadService {
                src.id,
                CAST(src.company_id AS INTEGER),
                src.market,
+               src.ticker,
                src.template,
                src.variant,
                src.currency,
@@ -49,6 +51,7 @@ public class BalanceSheetFileLoadServiceImpl implements ParquetFileLoadService {
             DO UPDATE SET
                company_id = EXCLUDED.company_id,
                market = EXCLUDED.market,
+               ticker = EXCLUDED.ticker,
                currency = EXCLUDED.currency,
                report_date = EXCLUDED.report_date,
                publish_date = EXCLUDED.publish_date,

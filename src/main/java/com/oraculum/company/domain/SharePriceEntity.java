@@ -31,6 +31,9 @@ public class SharePriceEntity {
     @Column(nullable = false, length = 10)
     private String market;
 
+    @Column(nullable = false)
+    private String ticker;
+
     @Column(name = "currency")
     private String currency;
 

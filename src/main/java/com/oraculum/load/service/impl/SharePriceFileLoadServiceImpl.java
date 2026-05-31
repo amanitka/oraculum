@@ -16,6 +16,7 @@ public class SharePriceFileLoadServiceImpl implements ParquetFileLoadService {
               (company_id,
                trade_date,
                market,
+               ticker,
                currency,
                open,
                high,
@@ -32,6 +33,7 @@ public class SharePriceFileLoadServiceImpl implements ParquetFileLoadService {
                CAST(src.company_id AS INTEGER),
                CAST(src.trade_date AS DATE),
                src.market,
+               src.ticker,
                src.currency,
                CAST(src.open AS DOUBLE PRECISION),
                CAST(src.high AS DOUBLE PRECISION),
@@ -48,6 +50,7 @@ public class SharePriceFileLoadServiceImpl implements ParquetFileLoadService {
             ON CONFLICT (company_id, trade_date)
             DO UPDATE SET
                market = EXCLUDED.market,
+               ticker = EXCLUDED.ticker,
                currency = EXCLUDED.currency,
                "open" = EXCLUDED.open,
                high = EXCLUDED.high,
