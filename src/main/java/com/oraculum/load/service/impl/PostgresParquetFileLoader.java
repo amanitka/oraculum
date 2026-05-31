@@ -6,9 +6,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.support.TransactionTemplate;
 
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -25,7 +22,6 @@ public class PostgresParquetFileLoader {
 
     private final OraculumProperties properties;
     private final JdbcTemplate jdbcTemplate;
-    private final PlatformTransactionManager transactionManager;
 
     public static String normalizeAndValidate(String parquetFilePath) {
         if (parquetFilePath == null || parquetFilePath.isBlank()) {
@@ -130,17 +126,13 @@ public class PostgresParquetFileLoader {
     private void dropStagingTable(LoadParquetDto loadParquetDto) {
         var stagingTableName = loadParquetDto.stagingTableName();
         if (stagingTableName != null) {
-            TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-            transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-            transactionTemplate.executeWithoutResult(status -> {
-                try {
-                    log.info("Dropping staging table '{}'.", stagingTableName);
-                    jdbcTemplate.execute("DROP TABLE IF EXISTS " + stagingTableName + ";");
-                    log.info("Successfully dropped staging table '{}'.", stagingTableName);
-                } catch (Exception e) {
-                    log.error("Failed to drop staging table '{}'. Manual cleanup required.", stagingTableName, e);
-                }
-            });
+            try {
+                log.info("Dropping staging table '{}'.", stagingTableName);
+                jdbcTemplate.execute("DROP TABLE IF EXISTS " + stagingTableName + ";");
+                log.info("Successfully dropped staging table '{}'.", stagingTableName);
+            } catch (Exception e) {
+                log.error("Failed to drop staging table '{}'. Manual cleanup required.", stagingTableName, e);
+            }
         }
     }
 

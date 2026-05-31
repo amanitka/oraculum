@@ -2,7 +2,6 @@ package com.oraculum.load.service.impl;
 
 import com.oraculum.load.dto.LoadParquetDto;
 import com.oraculum.load.service.ParquetFileLoadService;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -63,7 +62,6 @@ public class CashFlowStatementFileLoadServiceImpl implements ParquetFileLoadServ
 
     private final PostgresParquetFileLoader postgresParquetFileLoader;
 
-    @Transactional
     @Override
     public void merge(String parquetFilePath) {
         var stagingTableName = PostgresParquetFileLoader.getStagingTableName(TARGET_TABLE_NAME);
