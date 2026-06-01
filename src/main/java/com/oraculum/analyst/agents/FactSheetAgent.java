@@ -3,7 +3,7 @@ package com.oraculum.analyst.agents;
 import com.oraculum.analyst.agents.base.Agent;
 import com.oraculum.analyst.agents.base.AgentOutput;
 import com.oraculum.analyst.agents.context.AgentContext;
-import com.oraculum.analyst.agents.models.FactSheetOutput;
+import com.oraculum.analyst.agents.models.FactSheetAgentOutput;
 import com.oraculum.analyst.agents.models.FinancialFactSheetData;
 import com.oraculum.analyst.config.AnalystProperties;
 import com.oraculum.analyst.domain.AgentType;
@@ -17,7 +17,7 @@ import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
-public class FactSheetAgent implements Agent<FactSheetOutput> {
+public class FactSheetAgent implements Agent<FactSheetAgentOutput> {
 
     private final AnalystProperties analystProperties;
 
@@ -27,12 +27,12 @@ public class FactSheetAgent implements Agent<FactSheetOutput> {
     }
 
     @Override
-    public Class<FactSheetOutput> getOutputModel() {
-        return FactSheetOutput.class;
+    public Class<FactSheetAgentOutput> getOutputModel() {
+        return FactSheetAgentOutput.class;
     }
 
     @Override
-    public AgentOutput<FactSheetOutput> run(AgentContext ctx) {
+    public AgentOutput<FactSheetAgentOutput> run(AgentContext ctx) {
         CompanyDto companyProfileDto = ctx.getTools().getCompany(ctx.getTicker(), ctx.getMarket());
         Map<String, String> tickerProfile = new HashMap<>();
 
@@ -59,17 +59,17 @@ public class FactSheetAgent implements Agent<FactSheetOutput> {
         String sharePriceSignals = ctx.getTools().getSharePriceSignals(ctx.getCompanyId(), ctx.getAsOf());
         String recentNews = ctx.getTools().getRecentNews(ctx.getTicker(), 30, historyLimit);
 
-        FinancialFactSheetData factSheet = FinancialFactSheetData.builder()
-                .tickerProfile(tickerProfile)
-                .incomeStatementHistory(incomeStatementHistory)
-                .balanceSheetHistory(balanceSheetHistory)
-                .cashFlowHistory(cashFlowHistory)
-                .derivedMetrics(derivedMetrics)
-                .sharePriceSignals(sharePriceSignals)
-                .recentNews(recentNews)
-                .build();
+        FinancialFactSheetData factSheet = new FinancialFactSheetData(
+                tickerProfile,
+                incomeStatementHistory,
+                balanceSheetHistory,
+                cashFlowHistory,
+                derivedMetrics,
+                sharePriceSignals,
+                recentNews
+        );
 
-        FactSheetOutput output = new FactSheetOutput(factSheet);
+        FactSheetAgentOutput output = new FactSheetAgentOutput(factSheet);
         return new AgentOutput<>(output, 0);
     }
 }

@@ -3,8 +3,8 @@ package com.oraculum.analyst.agents;
 import com.oraculum.analyst.agents.base.Agent;
 import com.oraculum.analyst.agents.base.AgentOutput;
 import com.oraculum.analyst.agents.context.AgentContext;
-import com.oraculum.analyst.agents.models.CashFlowOutput;
-import com.oraculum.analyst.agents.models.FactSheetOutput;
+import com.oraculum.analyst.agents.models.CashFlowAgentOutput;
+import com.oraculum.analyst.agents.models.FactSheetAgentOutput;
 import com.oraculum.analyst.agents.models.FinancialFactSheetData;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.AgentType;
@@ -14,6 +14,7 @@ import com.oraculum.llm.api.dto.LlmResponse;
 import com.oraculum.llm.api.dto.LlmTierType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.*;
@@ -23,7 +24,7 @@ import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
-public class CashFlowAgent implements Agent<CashFlowOutput> {
+public class CashFlowAgent implements Agent<CashFlowAgentOutput> {
 
     private static final double DIRECTION_EPSILON = 1e-9;
     private static final Set<String> MISSING_NUMERIC_VALUES = new HashSet<>(Arrays.asList("",
@@ -53,27 +54,27 @@ public class CashFlowAgent implements Agent<CashFlowOutput> {
     }
 
     @Override
-    public Class<CashFlowOutput> getOutputModel() {
-        return CashFlowOutput.class;
+    public Class<CashFlowAgentOutput> getOutputModel() {
+        return CashFlowAgentOutput.class;
     }
 
     @Override
-    public AgentOutput<CashFlowOutput> run(AgentContext ctx) {
-        FactSheetOutput factSheetOutput = (FactSheetOutput) ctx.getPriorOutputs().get(AgentType.FACT_SHEET);
+    public AgentOutput<CashFlowAgentOutput> run(AgentContext ctx) {
+        FactSheetAgentOutput factSheetOutput = (FactSheetAgentOutput) ctx.getPriorOutputs().get(AgentType.FACT_SHEET);
         FinancialFactSheetData factSheet = factSheetOutput.factSheet();
-        Map<String, Object> quantitativeGuardrails = buildQuantitativeGuardrails(factSheet.getCashFlowHistory());
+        Map<String, Object> quantitativeGuardrails = buildQuantitativeGuardrails(factSheet.cashFlowHistory());
 
         Map<String, Object> promptData = Map.of("cash_flow_history",
-                factSheet.getCashFlowHistory(),
+                factSheet.cashFlowHistory(),
                 "derived_metrics",
-                factSheet.getDerivedMetrics(),
+                factSheet.derivedMetrics(),
                 "quantitative_guardrails",
                 quantitativeGuardrails);
 
         String promptDataJson;
         try {
             promptDataJson = objectMapper.writeValueAsString(promptData);
-        } catch (Exception e) {
+        } catch (JacksonException e) {
             throw new RuntimeException(e);
         }
 
@@ -86,9 +87,9 @@ public class CashFlowAgent implements Agent<CashFlowOutput> {
 
         String fullPrompt = prompt + "\n" + userPrompt;
 
-        LlmResponse<CashFlowOutput> response = llmRouterApi.executeCall(LlmTierType.MINI,
+        LlmResponse<CashFlowAgentOutput> response = llmRouterApi.executeCall(LlmTierType.MINI,
                 fullPrompt,
-                CashFlowOutput.class);
+                CashFlowAgentOutput.class);
 
         return new AgentOutput<>(response.result(), response.metrics().totalTokens());
     }
@@ -144,7 +145,7 @@ public class CashFlowAgent implements Agent<CashFlowOutput> {
 
         try {
             return objectMapper.readValue(raw, Map.class);
-        } catch (Exception e) {
+        } catch (JacksonException e) {
             // Not a valid JSON, ignore
         }
 

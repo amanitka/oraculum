@@ -5,7 +5,7 @@ import com.oraculum.analyst.agents.base.AgentOutput;
 import com.oraculum.analyst.agents.context.AgentContext;
 import com.oraculum.analyst.agents.models.FactSheetAgentOutput;
 import com.oraculum.analyst.agents.models.FinancialFactSheetData;
-import com.oraculum.analyst.agents.models.FundamentalsAgentOutput;
+import com.oraculum.analyst.agents.models.ValuationAgentOutput;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.AgentType;
 import com.oraculum.analyst.domain.PromptType;
@@ -21,7 +21,7 @@ import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
-public class FundamentalsAgent implements Agent<FundamentalsAgentOutput> {
+public class ValuationAgent implements Agent<ValuationAgentOutput> {
 
     private final LlmRouterApi llmRouterApi;
     private final PromptRegistry promptRegistry;
@@ -29,25 +29,23 @@ public class FundamentalsAgent implements Agent<FundamentalsAgentOutput> {
 
     @Override
     public String getName() {
-        return AgentType.FUNDAMENTALS.getAgentName();
+        return AgentType.VALUATION.getAgentName();
     }
 
     @Override
-    public Class<FundamentalsAgentOutput> getOutputModel() {
-        return FundamentalsAgentOutput.class;
+    public Class<ValuationAgentOutput> getOutputModel() {
+        return ValuationAgentOutput.class;
     }
 
     @Override
-    public AgentOutput<FundamentalsAgentOutput> run(AgentContext ctx) {
+    public AgentOutput<ValuationAgentOutput> run(AgentContext ctx) {
         FactSheetAgentOutput factSheetOutput = (FactSheetAgentOutput) ctx.getPriorOutputs().get(AgentType.FACT_SHEET);
         FinancialFactSheetData factSheet = factSheetOutput.factSheet();
 
-        Map<String, Object> promptData = Map.of("income_statement_history",
-                factSheet.incomeStatementHistory(),
-                "balance_sheet_history",
-                factSheet.balanceSheetHistory(),
-                "derived_metrics",
-                factSheet.derivedMetrics());
+        Map<String, Object> promptData = Map.of("derived_metrics",
+                factSheet.derivedMetrics(),
+                "share_price_signals",
+                factSheet.sharePriceSignals());
 
         String promptDataJson;
         try {
@@ -56,19 +54,18 @@ public class FundamentalsAgent implements Agent<FundamentalsAgentOutput> {
             throw new RuntimeException(e);
         }
 
-        String prompt = promptRegistry.getPrompt(PromptType.FUNDAMENTALS)
-                .replace("{{ fact_sheet_json }}", promptDataJson);
+        String prompt = promptRegistry.getPrompt(PromptType.VALUATION).replace("{{ fact_sheet_json }}", promptDataJson);
 
         String userPrompt = String.format(
-                "Analyze fundamentals for %s as of %s based on the provided financial fact sheet.",
+                "Analyze the valuation for %s as of %s based on the provided financial fact sheet.",
                 ctx.getTicker(),
                 ctx.getAsOf());
 
         String fullPrompt = prompt + "\n" + userPrompt;
 
-        LlmResponse<FundamentalsAgentOutput> response = llmRouterApi.executeCall(LlmTierType.MINI,
+        LlmResponse<ValuationAgentOutput> response = llmRouterApi.executeCall(LlmTierType.MINI,
                 fullPrompt,
-                FundamentalsAgentOutput.class);
+                ValuationAgentOutput.class);
 
         return new AgentOutput<>(response.result(), response.metrics().totalTokens());
     }
