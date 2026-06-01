@@ -1,14 +1,18 @@
 package com.oraculum.analyst.agents.models;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Value;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.Map;
 
-@Value
+@Getter
+@Setter
+@AllArgsConstructor
 @Builder
-public class FinancialFactSheet {
+public class FinancialFactSheetData {
     @JsonProperty("ticker_profile")
     Map<String, String> tickerProfile;
 

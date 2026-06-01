@@ -4,10 +4,10 @@ import com.oraculum.analyst.agents.base.Agent;
 import com.oraculum.analyst.agents.base.AgentOutput;
 import com.oraculum.analyst.agents.context.AgentContext;
 import com.oraculum.analyst.agents.models.FactSheetOutput;
-import com.oraculum.analyst.agents.models.FinancialFactSheet;
+import com.oraculum.analyst.agents.models.FinancialFactSheetData;
+import com.oraculum.analyst.agents.models.FundamentalsOutput;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.AgentType;
-import com.oraculum.analyst.domain.FundamentalsOutput;
 import com.oraculum.analyst.domain.PromptType;
 import com.oraculum.llm.api.LlmRouterApi;
 import com.oraculum.llm.api.dto.LlmResponse;
@@ -39,7 +39,7 @@ public class FundamentalsAgent implements Agent<FundamentalsOutput> {
     @Override
     public AgentOutput<FundamentalsOutput> run(AgentContext ctx) {
         FactSheetOutput factSheetOutput = (FactSheetOutput) ctx.getPriorOutputs().get(AgentType.FACT_SHEET);
-        FinancialFactSheet factSheet = factSheetOutput.getFactSheet();
+        FinancialFactSheetData factSheet = factSheetOutput.factSheet();
 
         Map<String, Object> promptData = Map.of("income_statement_history",
                 factSheet.getIncomeStatementHistory(),

@@ -1,28 +1,25 @@
 package com.oraculum.analyst.agents;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.oraculum.analyst.agents.base.Agent;
 import com.oraculum.analyst.agents.base.AgentOutput;
 import com.oraculum.analyst.agents.context.AgentContext;
-import com.oraculum.analyst.agents.models.FinancialFactSheet;
+import com.oraculum.analyst.agents.models.FactSheetOutput;
+import com.oraculum.analyst.agents.models.FinancialFactSheetData;
 import com.oraculum.analyst.config.AnalystProperties;
 import com.oraculum.analyst.domain.AgentType;
 import com.oraculum.analyst.domain.StatementVariant;
 import com.oraculum.company.api.dto.CompanyDto;
-import lombok.Builder;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
 
 @Component
-public class FactSheetAgent implements Agent<FactSheetAgent.FactSheetOutput> {
+@RequiredArgsConstructor
+public class FactSheetAgent implements Agent<FactSheetOutput> {
 
     private final AnalystProperties analystProperties;
-
-    public FactSheetAgent(AnalystProperties analystProperties) {
-        this.analystProperties = analystProperties;
-    }
 
     @Override
     public String getName() {
@@ -62,7 +59,7 @@ public class FactSheetAgent implements Agent<FactSheetAgent.FactSheetOutput> {
         String sharePriceSignals = ctx.getTools().getSharePriceSignals(ctx.getCompanyId(), ctx.getAsOf());
         String recentNews = ctx.getTools().getRecentNews(ctx.getTicker(), 30, historyLimit);
 
-        FinancialFactSheet factSheet = FinancialFactSheet.builder()
+        FinancialFactSheetData factSheet = FinancialFactSheetData.builder()
                 .tickerProfile(tickerProfile)
                 .incomeStatementHistory(incomeStatementHistory)
                 .balanceSheetHistory(balanceSheetHistory)
@@ -72,13 +69,7 @@ public class FactSheetAgent implements Agent<FactSheetAgent.FactSheetOutput> {
                 .recentNews(recentNews)
                 .build();
 
-        FactSheetOutput output = FactSheetOutput.builder().factSheet(factSheet).build();
+        FactSheetOutput output = new FactSheetOutput(factSheet);
         return new AgentOutput<>(output, 0);
-    }
-
-    @Builder
-    public static class FactSheetOutput {
-        @JsonProperty("fact_sheet")
-        FinancialFactSheet factSheet;
     }
 }
