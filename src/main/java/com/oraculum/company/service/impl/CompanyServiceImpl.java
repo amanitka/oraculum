@@ -67,11 +67,10 @@ public class CompanyServiceImpl implements CompanyService {
     }
 
     @Override
-    public List<NewsTickerDto> getNewsByTicker(String ticker, String market, int days, int limit) {
+    public List<NewsTickerDto> getNewsByTicker(String ticker, int days, int limit) {
         OffsetDateTime after = OffsetDateTime.now().minusDays(days);
         Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "timePublished"));
-        Page<NewsTickerEntity> tickerRows = newsTickerRepository.findByTickerAndMarketAndTimePublishedAfter(ticker,
-                market,
+        Page<NewsTickerEntity> tickerRows = newsTickerRepository.findByTickerAndTimePublishedAfter(ticker,
                 after,
                 pageable);
         List<String> newsIds = tickerRows.stream().map(NewsTickerEntity::getNewsId).collect(Collectors.toList());

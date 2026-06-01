@@ -59,7 +59,7 @@ public class FactSheetAgent implements Agent<FactSheetAgent.FactSheetOutput> {
         String cashFlowHistory = ctx.getTools().getCashFlowHistory(ctx.getCompanyId(), variant, historyLimit);
         String derivedMetrics = ctx.getTools().getDerivedMetrics(ctx.getCompanyId(), variant, historyLimit);
         String sharePriceSignals = ctx.getTools().getSharePriceSignals(ctx.getCompanyId(), ctx.getAsOf());
-        String recentNews = ctx.getTools().getRecentNews(ctx.getTicker(), ctx.getMarket(), 30, historyLimit);
+        String recentNews = ctx.getTools().getRecentNews(ctx.getTicker(), 30, historyLimit);
 
         FinancialFactSheet factSheet = FinancialFactSheet.builder()
                 .tickerProfile(tickerProfile)

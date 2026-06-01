@@ -26,10 +26,6 @@ public class NewsTickerEntity {
     private String ticker;
 
     @Id
-    @Column(length = 10)
-    private String market;
-
-    @Id
     @Column(name = "time_published")
     private OffsetDateTime timePublished;
 
@@ -58,7 +54,6 @@ public class NewsTickerEntity {
     public static class NewsTickerId implements Serializable {
         private String newsId;
         private String ticker;
-        private String market;
         private OffsetDateTime timePublished;
     }
 }

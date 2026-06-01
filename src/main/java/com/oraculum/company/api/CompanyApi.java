@@ -19,7 +19,7 @@ public interface CompanyApi {
 
     List<IndustryDto> getAllIndustries();
 
-    List<NewsTickerDto> getNewsByTicker(String ticker, String market, int days, int limit);
+    List<NewsTickerDto> getNewsByTicker(String ticker, int days, int limit);
 
     List<BalanceSheetDto> getBalanceSheetsByCompanyId(int companyId, String variant, int limit);
 

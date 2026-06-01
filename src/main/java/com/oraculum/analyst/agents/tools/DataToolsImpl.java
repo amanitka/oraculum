@@ -91,8 +91,8 @@ public class DataToolsImpl implements DataTools {
     }
 
     @Override
-    public String getRecentNews(String ticker, String market, int daysBack, int limit) {
-        List<NewsTickerDto> joinedItems = companyApi.getNewsByTicker(ticker, market, daysBack, limit);
+    public String getRecentNews(String ticker, int daysBack, int limit) {
+        List<NewsTickerDto> joinedItems = companyApi.getNewsByTicker(ticker, daysBack, limit);
         if (joinedItems == null || joinedItems.isEmpty()) {
             return "No recent news found for this ticker.";
         }

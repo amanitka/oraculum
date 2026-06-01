@@ -20,5 +20,5 @@ public interface DataTools {
 
     String getDerivedMetrics(int companyId, StatementVariant variant, int limit);
 
-    String getRecentNews(String ticker, String market, int daysBack, int limit);
+    String getRecentNews(String ticker, int daysBack, int limit);
 }

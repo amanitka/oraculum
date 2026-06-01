@@ -10,5 +10,5 @@ import java.time.OffsetDateTime;
 
 @Repository
 public interface NewsTickerRepository extends JpaRepository<NewsTickerEntity, NewsTickerEntity.NewsTickerId> {
-    Page<NewsTickerEntity> findByTickerAndMarketAndTimePublishedAfter(String ticker, String market, OffsetDateTime after, Pageable pageable);
+    Page<NewsTickerEntity> findByTickerAndTimePublishedAfter(String ticker, OffsetDateTime after, Pageable pageable);
 }

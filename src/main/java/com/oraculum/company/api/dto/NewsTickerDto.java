@@ -22,7 +22,6 @@ public record NewsTickerDto(
         String sentimentScoreDefinition,
         String relevanceScoreDefinition,
         String ticker,
-        String market,
         Float relevanceScore,
         Float tickerSentimentScore,
         String tickerSentimentLabel
@@ -45,7 +44,6 @@ public record NewsTickerDto(
                 news.getSentimentScoreDefinition(),
                 news.getRelevanceScoreDefinition(),
                 tickerSentiment.getTicker(),
-                tickerSentiment.getMarket(),
                 tickerSentiment.getRelevanceScore(),
                 tickerSentiment.getTickerSentimentScore(),
                 tickerSentiment.getTickerSentimentLabel()
