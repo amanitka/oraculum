@@ -6,6 +6,7 @@ import com.oraculum.analyst.agents.base.AgentOutput;
 import com.oraculum.analyst.agents.context.AgentContext;
 import com.oraculum.analyst.agents.models.FinancialFactSheet;
 import com.oraculum.analyst.config.AnalystProperties;
+import com.oraculum.analyst.domain.AgentType;
 import com.oraculum.analyst.domain.StatementVariant;
 import com.oraculum.company.api.dto.CompanyDto;
 import lombok.Builder;
@@ -25,7 +26,7 @@ public class FactSheetAgent implements Agent<FactSheetAgent.FactSheetOutput> {
 
     @Override
     public String getName() {
-        return "FactSheet";
+        return AgentType.FACT_SHEET.getAgentName();
     }
 
     @Override

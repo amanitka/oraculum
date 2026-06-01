@@ -1,6 +1,7 @@
 package com.oraculum.analyst.agents.context;
 
 import com.oraculum.analyst.agents.tools.DataTools;
+import com.oraculum.analyst.domain.AgentType;
 import com.oraculum.analyst.domain.StatementTemplate;
 import com.oraculum.analyst.domain.StatementVariant;
 import com.oraculum.llm.api.LlmRouterApi;
@@ -22,5 +23,5 @@ public class AgentContext {
     DataTools tools;
     LlmRouterApi llm;
     int tokenBudget;
-    Map<String, Object> priorOutputs;
+    Map<AgentType, Object> priorOutputs;
 }
