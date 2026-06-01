@@ -28,8 +28,8 @@ public class SynthesizerAgent implements Agent<SynthesizerAgentOutput> {
     private final ObjectMapper objectMapper;
 
     @Override
-    public String getName() {
-        return AgentType.SYNTHESIZER.getAgentName();
+    public AgentType getName() {
+        return AgentType.SYNTHESIZER;
     }
 
     @Override

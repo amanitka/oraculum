@@ -22,8 +22,8 @@ public class FactSheetAgent implements Agent<FactSheetAgentOutput> {
     private final AnalystProperties analystProperties;
 
     @Override
-    public String getName() {
-        return AgentType.FACT_SHEET.getAgentName();
+    public AgentType getName() {
+        return AgentType.FACT_SHEET;
     }
 
     @Override

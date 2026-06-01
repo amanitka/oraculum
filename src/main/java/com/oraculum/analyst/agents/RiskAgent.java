@@ -28,8 +28,8 @@ public class RiskAgent implements Agent<RiskAgentOutput> {
     private final ObjectMapper objectMapper;
 
     @Override
-    public String getName() {
-        return AgentType.RISK.getAgentName();
+    public AgentType getName() {
+        return AgentType.RISK;
     }
 
     @Override

@@ -49,8 +49,8 @@ public class CashFlowAgent implements Agent<CashFlowAgentOutput> {
     private final ObjectMapper objectMapper;
 
     @Override
-    public String getName() {
-        return AgentType.CASH_FLOW.getAgentName();
+    public AgentType getName() {
+        return AgentType.CASH_FLOW;
     }
 
     @Override

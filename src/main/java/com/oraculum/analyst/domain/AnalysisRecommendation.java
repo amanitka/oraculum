@@ -4,5 +4,5 @@ public enum AnalysisRecommendation {
     BUY,
     SELL,
     HOLD,
-    NEUTRAL
+    NEUTRAL;
 }

@@ -23,8 +23,8 @@ public class SharePriceAgent implements Agent<SharePriceAgentOutput> {
     private final PromptRegistry promptRegistry;
 
     @Override
-    public String getName() {
-        return AgentType.SHARE_PRICE.getAgentName();
+    public AgentType getName() {
+        return AgentType.SHARE_PRICE;
     }
 
     @Override

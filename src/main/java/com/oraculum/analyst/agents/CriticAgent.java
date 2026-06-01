@@ -27,8 +27,8 @@ public class CriticAgent implements Agent<CriticAgentOutput> {
     private final ObjectMapper objectMapper;
 
     @Override
-    public String getName() {
-        return AgentType.CRITIC.getAgentName();
+    public AgentType getName() {
+        return AgentType.CRITIC;
     }
 
     @Override

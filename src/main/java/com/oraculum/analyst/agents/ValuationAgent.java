@@ -28,8 +28,8 @@ public class ValuationAgent implements Agent<ValuationAgentOutput> {
     private final ObjectMapper objectMapper;
 
     @Override
-    public String getName() {
-        return AgentType.VALUATION.getAgentName();
+    public AgentType getName() {
+        return AgentType.VALUATION;
     }
 
     @Override

@@ -28,8 +28,8 @@ public class FundamentalsAgent implements Agent<FundamentalsAgentOutput> {
     private final ObjectMapper objectMapper;
 
     @Override
-    public String getName() {
-        return AgentType.FUNDAMENTALS.getAgentName();
+    public AgentType getName() {
+        return AgentType.FUNDAMENTALS;
     }
 
     @Override

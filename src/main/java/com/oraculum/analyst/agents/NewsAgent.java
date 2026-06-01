@@ -23,8 +23,8 @@ public class NewsAgent implements Agent<NewsAgentOutput> {
     private final PromptRegistry promptRegistry;
 
     @Override
-    public String getName() {
-        return AgentType.NEWS.getAgentName();
+    public AgentType getName() {
+        return AgentType.NEWS;
     }
 
     @Override
