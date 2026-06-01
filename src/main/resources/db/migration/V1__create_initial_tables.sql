@@ -6,8 +6,8 @@
 -- =================================================================
 CREATE TABLE public.t_company (
     id INTEGER PRIMARY KEY,
-    ticker VARCHAR(255) NOT NULL,
     market VARCHAR(10) NOT NULL,
+    ticker VARCHAR(255) NOT NULL,
     company_name VARCHAR(255) NOT NULL,
     industry_id VARCHAR(255),
     industry_name VARCHAR(255),
@@ -24,27 +24,30 @@ CREATE TABLE public.t_company (
 );
 
 -- =================================================================
--- Table: t_analysis
+-- Table: t_company_analysis
 -- =================================================================
-CREATE TABLE public.t_analysis (
-    id BIGSERIAL PRIMARY KEY,
-    correlation_id UUID NOT NULL,
-    ticker VARCHAR(255) NOT NULL,
+CREATE TABLE public.t_company_analysis (
+    id UUID PRIMARY KEY,
+    company_id INTEGER NOT NULL,
     market VARCHAR(255) NOT NULL,
+    ticker VARCHAR(255) NOT NULL,
     analysis_date DATE NOT NULL,
-    status VARCHAR(255) NOT NULL,
-    report_md TEXT,
-    verdict VARCHAR(255),
+    status VARCHAR(20) NOT NULL,
+    report TEXT,
+    outlook VARCHAR(15),
+    recommendation VARCHAR(15),
     conviction INTEGER,
-    payload JSONB,
+    analysis_data JSONB,
     error TEXT,
     created_at TIMESTAMPTZ NOT NULL,
-    updated_at TIMESTAMPTZ NOT NULL
+    updated_at TIMESTAMPTZ NOT NULL,
+    FOREIGN KEY (company_id) REFERENCES public.t_company(id)
 );
 
-CREATE UNIQUE INDEX ix_analysis_correlation_id ON public.t_analysis (correlation_id);
-CREATE INDEX ix_analysis_ticker_market_created ON public.t_analysis (ticker, market, created_at);
-CREATE INDEX ix_analysis_status_created ON public.t_analysis (status, created_at);
+CREATE INDEX ix_company_analysis_company_id ON public.t_company_analysis (company_id);
+CREATE INDEX ix_company_analysis_ticker_market_created ON public.t_company_analysis (ticker, market, created_at);
+CREATE INDEX ix_company_analysis_status_created ON public.t_company_analysis (status, created_at);
+
 
 -- =================================================================
 -- Table: t_load_log
