@@ -3,8 +3,8 @@ package com.oraculum.analyst.agents;
 import com.oraculum.analyst.agents.base.Agent;
 import com.oraculum.analyst.agents.base.AgentOutput;
 import com.oraculum.analyst.agents.context.AgentContext;
+import com.oraculum.analyst.agents.models.CompanyFactSheetData;
 import com.oraculum.analyst.agents.models.FactSheetAgentOutput;
-import com.oraculum.analyst.agents.models.FinancialFactSheetData;
 import com.oraculum.analyst.agents.models.ValuationAgentOutput;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.AgentType;
@@ -40,7 +40,7 @@ public class ValuationAgent implements Agent<ValuationAgentOutput> {
     @Override
     public AgentOutput<ValuationAgentOutput> run(AgentContext ctx) {
         FactSheetAgentOutput factSheetOutput = (FactSheetAgentOutput) ctx.priorOutputs().get(AgentType.FACT_SHEET);
-        FinancialFactSheetData factSheet = factSheetOutput.factSheet();
+        CompanyFactSheetData factSheet = factSheetOutput.factSheet();
 
         Map<String, Object> promptData = Map.of("derived_metrics",
                 factSheet.derivedMetrics(),

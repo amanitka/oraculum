@@ -4,8 +4,8 @@ import com.oraculum.analyst.agents.base.Agent;
 import com.oraculum.analyst.agents.base.AgentOutput;
 import com.oraculum.analyst.agents.context.AgentContext;
 import com.oraculum.analyst.agents.models.CashFlowAgentOutput;
+import com.oraculum.analyst.agents.models.CompanyFactSheetData;
 import com.oraculum.analyst.agents.models.FactSheetAgentOutput;
-import com.oraculum.analyst.agents.models.FinancialFactSheetData;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.AgentType;
 import com.oraculum.analyst.domain.PromptType;
@@ -61,7 +61,7 @@ public class CashFlowAgent implements Agent<CashFlowAgentOutput> {
     @Override
     public AgentOutput<CashFlowAgentOutput> run(AgentContext ctx) {
         FactSheetAgentOutput factSheetOutput = (FactSheetAgentOutput) ctx.priorOutputs().get(AgentType.FACT_SHEET);
-        FinancialFactSheetData factSheet = factSheetOutput.factSheet();
+        CompanyFactSheetData factSheet = factSheetOutput.factSheet();
         Map<String, Object> quantitativeGuardrails = buildQuantitativeGuardrails(factSheet.cashFlowHistory());
 
         Map<String, Object> promptData = Map.of("cash_flow_history",

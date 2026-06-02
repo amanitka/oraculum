@@ -3,8 +3,8 @@ package com.oraculum.analyst.agents;
 import com.oraculum.analyst.agents.base.Agent;
 import com.oraculum.analyst.agents.base.AgentOutput;
 import com.oraculum.analyst.agents.context.AgentContext;
+import com.oraculum.analyst.agents.models.CompanyFactSheetData;
 import com.oraculum.analyst.agents.models.FactSheetAgentOutput;
-import com.oraculum.analyst.agents.models.FinancialFactSheetData;
 import com.oraculum.analyst.agents.models.SharePriceAgentOutput;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.AgentType;
@@ -35,7 +35,7 @@ public class SharePriceAgent implements Agent<SharePriceAgentOutput> {
     @Override
     public AgentOutput<SharePriceAgentOutput> run(AgentContext ctx) {
         FactSheetAgentOutput factSheetOutput = (FactSheetAgentOutput) ctx.priorOutputs().get(AgentType.FACT_SHEET);
-        FinancialFactSheetData factSheet = factSheetOutput.factSheet();
+        CompanyFactSheetData factSheet = factSheetOutput.factSheet();
 
         String signalsJson = factSheet.sharePriceSignals();
 
