@@ -9,8 +9,8 @@ import com.oraculum.analyst.config.AnalystProperties;
 import com.oraculum.analyst.domain.AgentType;
 import com.oraculum.analyst.domain.AnalysisStatus;
 import com.oraculum.analyst.service.dto.AnalysisResultDto;
-import com.oraculum.analyst.service.dto.AnalyzeTickerRequest;
-import com.oraculum.llm.api.LlmRouterApi;
+import com.oraculum.analyst.service.dto.AnalyzeCompanyRequest;
+import com.oraculum.company.api.dto.CompanyDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,27 +28,25 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CompanyAnalysisWorkflow {
 
-    private final LlmRouterApi llmRouterApi;
     private final DataTools dataTools;
     private final AnalystProperties analystProperties;
     private final Map<AgentType, Agent<?>> agents;
 
-    public AnalysisResultDto run(AnalyzeTickerRequest request, UUID correlationId) {
+    public AnalysisResultDto run(AnalyzeCompanyRequest request, UUID correlationId) {
         long startTime = System.currentTimeMillis();
         int totalTokens = 0;
         Map<AgentType, Object> agentTrace = new EnumMap<>(AgentType.class);
         ZonedDateTime now = ZonedDateTime.now();
 
         log.info("Starting analysis workflow for ticker {}", request.ticker());
+        CompanyDto company = dataTools.getCompany(request.ticker(), request.market());
+        if (company == null) {
+            throw new IllegalArgumentException("Company not found for ticker: " + request.ticker());
+        }
 
-        AgentContext initialCtx = new AgentContext(request.ticker(),
-                request.market(),
-                null,
-                request.asOf() != null ? request.asOf() : LocalDate.now(),
-                null,
+        AgentContext initialCtx = new AgentContext(company,
+                request.requestDate() != null ? request.requestDate() : LocalDate.now(),
                 request.defaultVariant(),
-                dataTools,
-                llmRouterApi,
                 analystProperties.tokenBudget(),
                 new EnumMap<>(AgentType.class));
 
@@ -61,14 +59,9 @@ public class CompanyAnalysisWorkflow {
             agentTrace.put(AgentType.PLANNER, plan);
             log.info("Planner phase complete. Tokens: {}. Plan: {}", planOut.tokens(), plan);
 
-            AgentContext sharedCtx = new AgentContext(request.ticker(),
-                    request.market(),
-                    null,
-                    initialCtx.runDateTime(),
-                    plan.getTemplate(),
+            AgentContext sharedCtx = new AgentContext(company,
+                    initialCtx.requestDate(),
                     request.defaultVariant(),
-                    dataTools,
-                    llmRouterApi,
                     analystProperties.tokenBudget(),
                     new EnumMap<>(AgentType.class));
 
@@ -79,11 +72,11 @@ public class CompanyAnalysisWorkflow {
             sharedCtx.priorOutputs().put(AgentType.FACT_SHEET, factSheetOut.result());
             log.info("FactSheet phase complete.");
 
-			List<Agent<?>> specialists = java.util.Arrays.stream(AgentType.values())
-					.filter(AgentType::isSpecialist)
-					.map(agents::get)
-					.filter(java.util.Objects::nonNull)
-					.collect(Collectors.toList());
+            List<Agent<?>> specialists = java.util.Arrays.stream(AgentType.values())
+                    .filter(AgentType::isSpecialist)
+                    .map(agents::get)
+                    .filter(java.util.Objects::nonNull)
+                    .collect(Collectors.toList());
 
             for (Agent<?> agent : specialists) {
                 log.info("Starting {} phase", agent.getName());
@@ -120,7 +113,7 @@ public class CompanyAnalysisWorkflow {
             return new AnalysisResultDto(correlationId,
                     request.ticker(),
                     request.market(),
-                    sharedCtx.runDateTime(),
+                    sharedCtx.requestDate(),
                     AnalysisStatus.COMPLETED,
                     finalOutput.result().reportMd(),
                     finalOutput.result().outlook(),
@@ -128,7 +121,7 @@ public class CompanyAnalysisWorkflow {
                     finalOutput.result().conviction(),
                     finalOutput.result().keyDrivers(),
                     finalOutput.result().keyRisks(),
-                    (Map) agentTrace,
+                    agentTrace,
                     totalTokens,
                     null,
                     now,
@@ -139,7 +132,7 @@ public class CompanyAnalysisWorkflow {
             return new AnalysisResultDto(correlationId,
                     request.ticker(),
                     request.market(),
-                    initialCtx.runDateTime(),
+                    initialCtx.requestDate(),
                     AnalysisStatus.FAILED,
                     null,
                     null,
@@ -147,7 +140,7 @@ public class CompanyAnalysisWorkflow {
                     null,
                     null,
                     null,
-                    (Map) agentTrace,
+                    agentTrace,
                     totalTokens,
                     e.getMessage(),
                     now,

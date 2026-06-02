@@ -62,7 +62,7 @@ public class FundamentalsAgent implements Agent<FundamentalsAgentOutput> {
         String userPrompt = String.format(
                 "Analyze fundamentals for %s as of %s based on the provided financial fact sheet.",
                 ctx.ticker(),
-                ctx.runDateTime());
+                ctx.requestDate());
 
         String fullPrompt = prompt + "\n" + userPrompt;
 

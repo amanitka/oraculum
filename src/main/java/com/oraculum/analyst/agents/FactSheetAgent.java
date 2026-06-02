@@ -5,6 +5,7 @@ import com.oraculum.analyst.agents.base.AgentOutput;
 import com.oraculum.analyst.agents.context.AgentContext;
 import com.oraculum.analyst.agents.models.FactSheetAgentOutput;
 import com.oraculum.analyst.agents.models.FinancialFactSheetData;
+import com.oraculum.analyst.agents.tools.DataTools;
 import com.oraculum.analyst.config.AnalystProperties;
 import com.oraculum.analyst.domain.AgentType;
 import com.oraculum.analyst.domain.StatementVariant;
@@ -19,6 +20,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class FactSheetAgent implements Agent<FactSheetAgentOutput> {
 
+    private final DataTools dataTools;
     private final AnalystProperties analystProperties;
 
     @Override
@@ -33,7 +35,7 @@ public class FactSheetAgent implements Agent<FactSheetAgentOutput> {
 
     @Override
     public AgentOutput<FactSheetAgentOutput> run(AgentContext ctx) {
-        CompanyDto companyProfileDto = ctx.tools().getCompany(ctx.ticker(), ctx.market());
+        CompanyDto companyProfileDto = ctx.company();
         Map<String, String> tickerProfile = new HashMap<>();
 
         if (companyProfileDto != null) {
@@ -50,24 +52,22 @@ public class FactSheetAgent implements Agent<FactSheetAgentOutput> {
 
         StatementVariant variant = ctx.defaultVariant();
         int historyLimit = analystProperties.factSheet().historyLimit();
+        Integer companyId = companyProfileDto != null ? companyProfileDto.id() : null;
 
-        String incomeStatementHistory = ctx.tools()
-                .getIncomeStatementHistory(ctx.companyId(), variant, historyLimit);
-        String balanceSheetHistory = ctx.tools().getBalanceSheetHistory(ctx.companyId(), variant, historyLimit);
-        String cashFlowHistory = ctx.tools().getCashFlowHistory(ctx.companyId(), variant, historyLimit);
-        String derivedMetrics = ctx.tools().getDerivedMetrics(ctx.companyId(), variant, historyLimit);
-        String sharePriceSignals = ctx.tools().getSharePriceSignals(ctx.companyId(), ctx.runDateTime());
-        String recentNews = ctx.tools().getRecentNews(ctx.ticker(), 30, historyLimit);
+        String incomeStatementHistory = dataTools.getIncomeStatementHistory(companyId, variant, historyLimit);
+        String balanceSheetHistory = dataTools.getBalanceSheetHistory(companyId, variant, historyLimit);
+        String cashFlowHistory = dataTools.getCashFlowHistory(companyId, variant, historyLimit);
+        String derivedMetrics = dataTools.getDerivedMetrics(companyId, variant, historyLimit);
+        String sharePriceSignals = dataTools.getSharePriceSignals(companyId, ctx.requestDate());
+        String recentNews = dataTools.getRecentNews(ctx.ticker(), 30, historyLimit);
 
-        FinancialFactSheetData factSheet = new FinancialFactSheetData(
-                tickerProfile,
+        FinancialFactSheetData factSheet = new FinancialFactSheetData(tickerProfile,
                 incomeStatementHistory,
                 balanceSheetHistory,
                 cashFlowHistory,
                 derivedMetrics,
                 sharePriceSignals,
-                recentNews
-        );
+                recentNews);
 
         FactSheetAgentOutput output = new FactSheetAgentOutput(factSheet);
         return new AgentOutput<>(output, 0);

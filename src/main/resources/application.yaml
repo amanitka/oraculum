@@ -57,7 +57,8 @@ oraculum:
       market: oraculum.market
       industry: oraculum.industry
       news: oraculum.news
-      harvester-request: ${ORACULUM_HARVESTER_REQUEST_TOPIC:oraculum.harvester.request}
+      harvester-request: oraculum.harvester.request
+      analyst-request: oraculum.analyst.request
 
   shared:
     folder-path: ${ORACULUM_SHARED_FOLDER_PATH:./data/shared}

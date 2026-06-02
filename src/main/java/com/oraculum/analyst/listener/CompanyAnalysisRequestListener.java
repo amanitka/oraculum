@@ -24,7 +24,7 @@ public class CompanyAnalysisRequestListener {
     private final CompanyAnalysisRepository repository;
     private final ObjectMapper objectMapper;
 
-    @KafkaListener(topics = "${oraculum.topics.analyst-request}", groupId = "${oraculum.analyst-consumer-group}")
+    @KafkaListener(topics = "${oraculum.kafka.topics.analyst-request}", groupId = "${oraculum.kafka.consumer-group}")
     @Transactional
     public void handleAnalyzeCompanyRequest(AnalyzeCompanyRequest request) {
         log.info("Handling company analysis request for {}", request.ticker());
@@ -42,7 +42,7 @@ public class CompanyAnalysisRequestListener {
             repository.save(entity);
 
             AnalysisResultDto result =
-                    workflow.run(new com.oraculum.analyst.service.dto.AnalyzeTickerRequest(request.ticker(),
+                    workflow.run(new com.oraculum.analyst.service.dto.AnalyzeCompanyRequest(request.ticker(),
                     request.market(),
                     request.asOf(),
                     request.defaultVariant()), request.correlationId());

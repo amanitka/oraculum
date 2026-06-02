@@ -59,7 +59,7 @@ public class ValuationAgent implements Agent<ValuationAgentOutput> {
         String userPrompt = String.format(
                 "Analyze the valuation for %s as of %s based on the provided financial fact sheet.",
                 ctx.ticker(),
-                ctx.runDateTime());
+                ctx.requestDate());
 
         String fullPrompt = prompt + "\n" + userPrompt;
 

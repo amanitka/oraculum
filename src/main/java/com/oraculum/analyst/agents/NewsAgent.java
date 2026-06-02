@@ -4,6 +4,7 @@ import com.oraculum.analyst.agents.base.Agent;
 import com.oraculum.analyst.agents.base.AgentOutput;
 import com.oraculum.analyst.agents.context.AgentContext;
 import com.oraculum.analyst.agents.models.NewsAgentOutput;
+import com.oraculum.analyst.agents.tools.DataTools;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.AgentType;
 import com.oraculum.analyst.domain.PromptType;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Component;
 public class NewsAgent implements Agent<NewsAgentOutput> {
 
     private final LlmRouterApi llmRouterApi;
+    private final DataTools dataTools;
     private final PromptRegistry promptRegistry;
 
     @Override
@@ -36,7 +38,7 @@ public class NewsAgent implements Agent<NewsAgentOutput> {
     public AgentOutput<NewsAgentOutput> run(AgentContext ctx) {
         log.info("NewsAgent starting analysis for ticker: {}", ctx.ticker());
 
-        String newsMarkdown = ctx.tools().getRecentNews(ctx.ticker(), 30, 100);
+        String newsMarkdown = dataTools.getRecentNews(ctx.ticker(), 30, 100);
 
         if (newsMarkdown.contains("No recent news found")) {
             log.warn("No recent news found for ticker: {}", ctx.ticker());
