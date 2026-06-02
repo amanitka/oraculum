@@ -39,7 +39,7 @@ public class SynthesizerAgent implements Agent<SynthesizerAgentOutput> {
 
     @Override
     public AgentOutput<SynthesizerAgentOutput> run(AgentContext ctx) {
-        Map<AgentType, Object> specialistOutputs = ctx.getPriorOutputs()
+        Map<AgentType, Object> specialistOutputs = ctx.priorOutputs()
                 .entrySet()
                 .stream()
                 .filter(entry -> entry.getKey() != AgentType.FACT_SHEET && entry.getKey() != AgentType.CRITIC)
@@ -52,7 +52,7 @@ public class SynthesizerAgent implements Agent<SynthesizerAgentOutput> {
             throw new RuntimeException(e);
         }
 
-        CriticAgentOutput criticOutput = (CriticAgentOutput) ctx.getPriorOutputs().get(AgentType.CRITIC);
+        CriticAgentOutput criticOutput = (CriticAgentOutput) ctx.priorOutputs().get(AgentType.CRITIC);
         String criticReportJson;
         try {
             criticReportJson = criticOutput != null ? objectMapper.writeValueAsString(criticOutput) : "{}";
@@ -68,9 +68,9 @@ public class SynthesizerAgent implements Agent<SynthesizerAgentOutput> {
                 "Synthesize the analysis for %s. The resolved statement template was '%s'. The default variant was " +
                         "'%s'. Generate the final report and structured verdict, explicitly addressing the critic's " +
                         "findings.",
-                ctx.getTicker(),
-                ctx.getTemplate(),
-                ctx.getDefaultVariant());
+                ctx.ticker(),
+                ctx.template(),
+                ctx.defaultVariant());
 
         String fullPrompt = prompt + "\n" + userPrompt;
 

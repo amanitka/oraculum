@@ -39,7 +39,7 @@ public class RiskAgent implements Agent<RiskAgentOutput> {
 
     @Override
     public AgentOutput<RiskAgentOutput> run(AgentContext ctx) {
-        FactSheetAgentOutput factSheetOutput = (FactSheetAgentOutput) ctx.getPriorOutputs().get(AgentType.FACT_SHEET);
+        FactSheetAgentOutput factSheetOutput = (FactSheetAgentOutput) ctx.priorOutputs().get(AgentType.FACT_SHEET);
         FinancialFactSheetData factSheet = factSheetOutput.factSheet();
 
         Map<String, Object> promptData = Map.of("balance_sheet_history",
@@ -59,8 +59,8 @@ public class RiskAgent implements Agent<RiskAgentOutput> {
         String prompt = promptRegistry.getPrompt(PromptType.RISK).replace("{{ fact_sheet_json }}", promptDataJson);
 
         String userPrompt = String.format("Analyze risk for %s as of %s based on the provided financial fact sheet.",
-                ctx.getTicker(),
-                ctx.getAsOf());
+                ctx.ticker(),
+                ctx.runDateTime());
 
         String fullPrompt = prompt + "\n" + userPrompt;
 

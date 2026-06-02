@@ -34,24 +34,24 @@ public class NewsAgent implements Agent<NewsAgentOutput> {
 
     @Override
     public AgentOutput<NewsAgentOutput> run(AgentContext ctx) {
-        log.info("NewsAgent starting analysis for ticker: {}", ctx.getTicker());
+        log.info("NewsAgent starting analysis for ticker: {}", ctx.ticker());
 
-        String newsMarkdown = ctx.getTools().getRecentNews(ctx.getTicker(), 30, 100);
+        String newsMarkdown = ctx.tools().getRecentNews(ctx.ticker(), 30, 100);
 
         if (newsMarkdown.contains("No recent news found")) {
-            log.warn("No recent news found for ticker: {}", ctx.getTicker());
+            log.warn("No recent news found for ticker: {}", ctx.ticker());
             return new AgentOutput<>(new NewsAgentOutput("No significant recent news found for this ticker."), 0);
         }
 
         String systemPrompt = promptRegistry.getPrompt(PromptType.NEWS);
-        String userPrompt = String.format("Here is the recent news for %s:\n\n%s", ctx.getTicker(), newsMarkdown);
+        String userPrompt = String.format("Here is the recent news for %s:\n\n%s", ctx.ticker(), newsMarkdown);
         String fullPrompt = systemPrompt + "\n" + userPrompt;
 
         LlmResponse<NewsAgentOutput> response = llmRouterApi.executeCall(LlmTierType.MINI,
                 fullPrompt,
                 NewsAgentOutput.class);
 
-        log.info("NewsAgent successfully generated summary for ticker: {}", ctx.getTicker());
+        log.info("NewsAgent successfully generated summary for ticker: {}", ctx.ticker());
         return new AgentOutput<>(response.result(), response.metrics().totalTokens());
     }
 }

@@ -33,7 +33,7 @@ public class FactSheetAgent implements Agent<FactSheetAgentOutput> {
 
     @Override
     public AgentOutput<FactSheetAgentOutput> run(AgentContext ctx) {
-        CompanyDto companyProfileDto = ctx.getTools().getCompany(ctx.getTicker(), ctx.getMarket());
+        CompanyDto companyProfileDto = ctx.tools().getCompany(ctx.ticker(), ctx.market());
         Map<String, String> tickerProfile = new HashMap<>();
 
         if (companyProfileDto != null) {
@@ -48,16 +48,16 @@ public class FactSheetAgent implements Agent<FactSheetAgentOutput> {
                     companyProfileDto.industryId() != null ? companyProfileDto.industryId() : "");
         }
 
-        StatementVariant variant = ctx.getDefaultVariant();
+        StatementVariant variant = ctx.defaultVariant();
         int historyLimit = analystProperties.factSheet().historyLimit();
 
-        String incomeStatementHistory = ctx.getTools()
-                .getIncomeStatementHistory(ctx.getCompanyId(), variant, historyLimit);
-        String balanceSheetHistory = ctx.getTools().getBalanceSheetHistory(ctx.getCompanyId(), variant, historyLimit);
-        String cashFlowHistory = ctx.getTools().getCashFlowHistory(ctx.getCompanyId(), variant, historyLimit);
-        String derivedMetrics = ctx.getTools().getDerivedMetrics(ctx.getCompanyId(), variant, historyLimit);
-        String sharePriceSignals = ctx.getTools().getSharePriceSignals(ctx.getCompanyId(), ctx.getAsOf());
-        String recentNews = ctx.getTools().getRecentNews(ctx.getTicker(), 30, historyLimit);
+        String incomeStatementHistory = ctx.tools()
+                .getIncomeStatementHistory(ctx.companyId(), variant, historyLimit);
+        String balanceSheetHistory = ctx.tools().getBalanceSheetHistory(ctx.companyId(), variant, historyLimit);
+        String cashFlowHistory = ctx.tools().getCashFlowHistory(ctx.companyId(), variant, historyLimit);
+        String derivedMetrics = ctx.tools().getDerivedMetrics(ctx.companyId(), variant, historyLimit);
+        String sharePriceSignals = ctx.tools().getSharePriceSignals(ctx.companyId(), ctx.runDateTime());
+        String recentNews = ctx.tools().getRecentNews(ctx.ticker(), 30, historyLimit);
 
         FinancialFactSheetData factSheet = new FinancialFactSheetData(
                 tickerProfile,

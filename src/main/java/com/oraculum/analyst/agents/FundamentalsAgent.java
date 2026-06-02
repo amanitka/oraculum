@@ -39,7 +39,7 @@ public class FundamentalsAgent implements Agent<FundamentalsAgentOutput> {
 
     @Override
     public AgentOutput<FundamentalsAgentOutput> run(AgentContext ctx) {
-        FactSheetAgentOutput factSheetOutput = (FactSheetAgentOutput) ctx.getPriorOutputs().get(AgentType.FACT_SHEET);
+        FactSheetAgentOutput factSheetOutput = (FactSheetAgentOutput) ctx.priorOutputs().get(AgentType.FACT_SHEET);
         FinancialFactSheetData factSheet = factSheetOutput.factSheet();
 
         Map<String, Object> promptData = Map.of("income_statement_history",
@@ -61,8 +61,8 @@ public class FundamentalsAgent implements Agent<FundamentalsAgentOutput> {
 
         String userPrompt = String.format(
                 "Analyze fundamentals for %s as of %s based on the provided financial fact sheet.",
-                ctx.getTicker(),
-                ctx.getAsOf());
+                ctx.ticker(),
+                ctx.runDateTime());
 
         String fullPrompt = prompt + "\n" + userPrompt;
 

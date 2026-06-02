@@ -38,7 +38,7 @@ public class CriticAgent implements Agent<CriticAgentOutput> {
 
     @Override
     public AgentOutput<CriticAgentOutput> run(AgentContext ctx) {
-        Map<AgentType, Object> specialistOutputs = ctx.getPriorOutputs()
+        Map<AgentType, Object> specialistOutputs = ctx.priorOutputs()
                 .entrySet()
                 .stream()
                 .filter(entry -> entry.getKey() != AgentType.FACT_SHEET)
@@ -55,7 +55,7 @@ public class CriticAgent implements Agent<CriticAgentOutput> {
 
         String userPrompt = String.format(
                 "Critique the analysis for %s. Identify any contradictions between the provided agent summaries.",
-                ctx.getTicker());
+                ctx.ticker());
 
         String fullPrompt = prompt + "\n" + userPrompt;
 

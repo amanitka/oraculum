@@ -39,7 +39,7 @@ public class ValuationAgent implements Agent<ValuationAgentOutput> {
 
     @Override
     public AgentOutput<ValuationAgentOutput> run(AgentContext ctx) {
-        FactSheetAgentOutput factSheetOutput = (FactSheetAgentOutput) ctx.getPriorOutputs().get(AgentType.FACT_SHEET);
+        FactSheetAgentOutput factSheetOutput = (FactSheetAgentOutput) ctx.priorOutputs().get(AgentType.FACT_SHEET);
         FinancialFactSheetData factSheet = factSheetOutput.factSheet();
 
         Map<String, Object> promptData = Map.of("derived_metrics",
@@ -58,8 +58,8 @@ public class ValuationAgent implements Agent<ValuationAgentOutput> {
 
         String userPrompt = String.format(
                 "Analyze the valuation for %s as of %s based on the provided financial fact sheet.",
-                ctx.getTicker(),
-                ctx.getAsOf());
+                ctx.ticker(),
+                ctx.runDateTime());
 
         String fullPrompt = prompt + "\n" + userPrompt;
 

@@ -8,8 +8,8 @@ import com.oraculum.analyst.agents.tools.DataTools;
 import com.oraculum.analyst.config.AnalystProperties;
 import com.oraculum.analyst.domain.AgentType;
 import com.oraculum.analyst.domain.AnalysisStatus;
-import com.oraculum.analyst.service.dto.AnalyzeTickerRequest;
 import com.oraculum.analyst.service.dto.AnalysisResultDto;
+import com.oraculum.analyst.service.dto.AnalyzeTickerRequest;
 import com.oraculum.llm.api.LlmRouterApi;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,8 +41,7 @@ public class CompanyAnalysisWorkflow {
 
         log.info("Starting analysis workflow for ticker {}", request.ticker());
 
-        AgentContext initialCtx = new AgentContext(
-                request.ticker(),
+        AgentContext initialCtx = new AgentContext(request.ticker(),
                 request.market(),
                 null,
                 request.asOf() != null ? request.asOf() : LocalDate.now(),
@@ -51,8 +50,7 @@ public class CompanyAnalysisWorkflow {
                 dataTools,
                 llmRouterApi,
                 analystProperties.tokenBudget(),
-                new EnumMap<>(AgentType.class)
-        );
+                new EnumMap<>(AgentType.class));
 
         try {
             log.info("Starting Planner phase");
@@ -63,18 +61,16 @@ public class CompanyAnalysisWorkflow {
             agentTrace.put(AgentType.PLANNER, plan);
             log.info("Planner phase complete. Tokens: {}. Plan: {}", planOut.tokens(), plan);
 
-            AgentContext sharedCtx = new AgentContext(
-                    request.ticker(),
+            AgentContext sharedCtx = new AgentContext(request.ticker(),
                     request.market(),
                     null,
-                    initialCtx.asOf(),
-                    plan.template(),
+                    initialCtx.runDateTime(),
+                    plan.getTemplate(),
                     request.defaultVariant(),
                     dataTools,
                     llmRouterApi,
                     analystProperties.tokenBudget(),
-                    new EnumMap<>(AgentType.class)
-            );
+                    new EnumMap<>(AgentType.class));
 
             log.info("Starting FactSheet phase");
             Agent<?> factSheetAgent = agents.get(AgentType.FACT_SHEET);
@@ -83,9 +79,11 @@ public class CompanyAnalysisWorkflow {
             sharedCtx.priorOutputs().put(AgentType.FACT_SHEET, factSheetOut.result());
             log.info("FactSheet phase complete.");
 
-            List<Agent<?>> specialists = analystProperties.specialists().stream()
-                    .map(agents::get)
-                    .collect(Collectors.toList());
+			List<Agent<?>> specialists = java.util.Arrays.stream(AgentType.values())
+					.filter(AgentType::isSpecialist)
+					.map(agents::get)
+					.filter(java.util.Objects::nonNull)
+					.collect(Collectors.toList());
 
             for (Agent<?> agent : specialists) {
                 log.info("Starting {} phase", agent.getName());
@@ -102,23 +100,27 @@ public class CompanyAnalysisWorkflow {
             sharedCtx.priorOutputs().put(AgentType.CRITIC, criticOutput.result());
             totalTokens += criticOutput.tokens();
             agentTrace.put(AgentType.CRITIC, criticOutput.result());
-            log.info("Critic phase complete. Tokens: {}. Consistent: {}", criticOutput.tokens(), ((com.oraculum.analyst.agents.models.CriticAgentOutput) criticOutput.result()).isConsistent());
+            log.info("Critic phase complete. Tokens: {}. Consistent: {}",
+                    criticOutput.tokens(),
+                    ((com.oraculum.analyst.agents.models.CriticAgentOutput) criticOutput.result()).isConsistent());
 
             log.info("Starting Synthesizer phase");
-            Agent<SynthesizerAgentOutput> synthesizer = (Agent<SynthesizerAgentOutput>) agents.get(AgentType.SYNTHESIZER);
+            Agent<SynthesizerAgentOutput> synthesizer =
+                    (Agent<SynthesizerAgentOutput>) agents.get(AgentType.SYNTHESIZER);
             var finalOutput = synthesizer.run(sharedCtx);
             totalTokens += finalOutput.tokens();
             agentTrace.put(AgentType.SYNTHESIZER, finalOutput.result());
-            log.info("Synthesizer phase complete. Tokens: {}. Recommendation: {}", finalOutput.tokens(), finalOutput.result().recommendation());
+            log.info("Synthesizer phase complete. Tokens: {}. Recommendation: {}",
+                    finalOutput.tokens(),
+                    finalOutput.result().recommendation());
 
             long elapsedMs = System.currentTimeMillis() - startTime;
             log.info("Analysis workflow completed successfully in {}ms. Total tokens: {}", elapsedMs, totalTokens);
 
-            return new AnalysisResultDto(
-                    correlationId,
+            return new AnalysisResultDto(correlationId,
                     request.ticker(),
                     request.market(),
-                    sharedCtx.asOf(),
+                    sharedCtx.runDateTime(),
                     AnalysisStatus.COMPLETED,
                     finalOutput.result().reportMd(),
                     finalOutput.result().outlook(),
@@ -130,17 +132,14 @@ public class CompanyAnalysisWorkflow {
                     totalTokens,
                     null,
                     now,
-                    ZonedDateTime.now()
-            );
-
+                    ZonedDateTime.now());
         } catch (Exception e) {
             long elapsedMs = System.currentTimeMillis() - startTime;
             log.error("Workflow failed after {}ms: {}", elapsedMs, e.getMessage(), e);
-            return new AnalysisResultDto(
-                    correlationId,
+            return new AnalysisResultDto(correlationId,
                     request.ticker(),
                     request.market(),
-                    initialCtx.asOf(),
+                    initialCtx.runDateTime(),
                     AnalysisStatus.FAILED,
                     null,
                     null,
@@ -152,8 +151,7 @@ public class CompanyAnalysisWorkflow {
                     totalTokens,
                     e.getMessage(),
                     now,
-                    ZonedDateTime.now()
-            );
+                    ZonedDateTime.now());
         }
     }
 }

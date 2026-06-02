@@ -5,6 +5,7 @@ import com.oraculum.analyst.agents.base.AgentOutput;
 import com.oraculum.analyst.agents.context.AgentContext;
 import com.oraculum.analyst.agents.models.PlannerPlan;
 import com.oraculum.analyst.config.PromptRegistry;
+import com.oraculum.analyst.domain.AgentType;
 import com.oraculum.analyst.domain.PromptType;
 import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.llm.api.dto.LlmResponse;
@@ -20,8 +21,8 @@ public class PlannerAgent implements Agent<PlannerPlan> {
     }
 
     @Override
-    public String getName() {
-        return "Planner";
+    public AgentType getName() {
+        return AgentType.PLANNER;
     }
 
     @Override
@@ -31,8 +32,8 @@ public class PlannerAgent implements Agent<PlannerPlan> {
 
     @Override
     public AgentOutput<PlannerPlan> run(AgentContext ctx) {
-        CompanyDto company = ctx.getTools().getCompany(ctx.getTicker(), ctx.getMarket());
-        String sharePriceSignals = ctx.getTools().getSharePriceSignals(ctx.getCompanyId(), ctx.getAsOf());
+        CompanyDto company = ctx.tools().getCompany(ctx.ticker(), ctx.market());
+        String sharePriceSignals = ctx.tools().getSharePriceSignals(ctx.companyId(), ctx.runDateTime());
 
         String prompt = systemPrompt.replace("{{ market_signals_json }}", sharePriceSignals);
 
@@ -42,10 +43,10 @@ public class PlannerAgent implements Agent<PlannerPlan> {
                         Please generate the plan \
                         using default variants (annual for fundamentals/cash_flow, ttm for valuation, \
                         quarterly for risk), and set an analysis focus based on the market signals.""",
-                ctx.getTicker(),
+                ctx.ticker(),
                 company);
 
-        LlmResponse<PlannerPlan> response = ctx.getLlm()
+        LlmResponse<PlannerPlan> response = ctx.llm()
                 .executeCall(LlmTierType.STANDARD, prompt + "\n" + userMessage, PlannerPlan.class);
 
         return new AgentOutput<>(response.result(), response.getTotalTokens());

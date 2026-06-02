@@ -6,7 +6,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public record AnalystProperties(
     Refresh refresh,
     Cleanup cleanup,
-    FactSheet factSheet
+    FactSheet factSheet,
+    int tokenBudget
 ) {
     public record Refresh(
         String priceCron,

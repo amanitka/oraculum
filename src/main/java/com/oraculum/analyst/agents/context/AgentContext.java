@@ -6,22 +6,21 @@ import com.oraculum.analyst.domain.StatementTemplate;
 import com.oraculum.analyst.domain.StatementVariant;
 import com.oraculum.llm.api.LlmRouterApi;
 import lombok.Builder;
-import lombok.Value;
 
 import java.time.LocalDate;
 import java.util.Map;
 
-@Value
 @Builder
-public class AgentContext {
-    String ticker;
-    String market;
-    Integer companyId;
-    LocalDate asOf;
-    StatementTemplate template;
-    StatementVariant defaultVariant;
-    DataTools tools;
-    LlmRouterApi llm;
-    int tokenBudget;
-    Map<AgentType, Object> priorOutputs;
+public record AgentContext(
+    String ticker,
+    String market,
+    Integer companyId,
+    LocalDate runDateTime,
+    StatementTemplate template,
+    StatementVariant defaultVariant,
+    DataTools tools,
+    LlmRouterApi llm,
+    int tokenBudget,
+    Map<AgentType, Object> priorOutputs
+) {
 }
