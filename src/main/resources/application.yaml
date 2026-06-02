@@ -64,7 +64,7 @@ oraculum:
     folder-path: ${ORACULUM_SHARED_FOLDER_PATH:./data/shared}
 
   analyst:
-    token-budget: 4000
+    token-budget: 100000
     refresh:
       price-cron: "0 7 * * *"
       fundamentals-cron: "0 0 * * 0"
@@ -78,6 +78,7 @@ oraculum:
   llm:
     common:
       temperature: 0.0
+      max-completion-tokens: 8192
       provider-fallback-order:
         - gemini
         - groq

@@ -14,6 +14,7 @@ public record LlmProperties(Common common,
                             Map<LlmTierType, Map<LlmProviderType, String>> models) {
 
     public record Common(double temperature,
+                         int maxCompletionTokens,
                          List<LlmProviderType> providerFallbackOrder) {
     }
 

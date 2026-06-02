@@ -42,6 +42,7 @@ public class LlmRouterServiceImpl implements LlmRouterService {
                         provider,
                         model,
                         properties.common().temperature(),
+                        properties.common().maxCompletionTokens(),
                         type));
                 health.markSuccess(provider);
                 return result;

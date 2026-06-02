@@ -23,29 +23,25 @@ public class FactSheetAgent implements Agent<FactSheetAgentOutput> {
     private final DataTools dataTools;
     private final AnalystProperties analystProperties;
 
-    private static @NonNull Map<String, String> getStringStringMap(CompanyDto companyProfileDto) {
+    private static @NonNull Map<String, String> getCompanyProfile(CompanyDto company) {
         Map<String, String> tickerProfile = new HashMap<>();
-        tickerProfile.put("ticker", companyProfileDto.ticker() != null ? companyProfileDto.ticker() : "");
-        tickerProfile.put("market", companyProfileDto.market() != null ? companyProfileDto.market() : "");
-        tickerProfile.put("company_name",
-                companyProfileDto.companyName() != null ? companyProfileDto.companyName() : "Unknown");
-        tickerProfile.put("industry_name",
-                companyProfileDto.industryName() != null ? companyProfileDto.industryName() : "Unknown");
-        tickerProfile.put("sector_name",
-                companyProfileDto.sectorName() != null ? companyProfileDto.sectorName() : "Unknown");
-        tickerProfile.put("isin", companyProfileDto.isin() != null ? companyProfileDto.isin() : "");
-        tickerProfile.put("description",
-                companyProfileDto.description() != null ? companyProfileDto.description() : "");
+        tickerProfile.put("ticker", company.ticker() != null ? company.ticker() : "");
+        tickerProfile.put("market", company.market() != null ? company.market() : "");
+        tickerProfile.put("company_name", company.companyName() != null ? company.companyName() : "Unknown");
+        tickerProfile.put("industry_name", company.industryName() != null ? company.industryName() : "Unknown");
+        tickerProfile.put("sector_name", company.sectorName() != null ? company.sectorName() : "Unknown");
+        tickerProfile.put("isin", company.isin() != null ? company.isin() : "");
+        tickerProfile.put("description", company.description() != null ? company.description() : "");
         tickerProfile.put("employee_count",
-                companyProfileDto.employeeCount() != null ? String.valueOf(companyProfileDto.employeeCount()) : "");
-        tickerProfile.put("currency", companyProfileDto.currency() != null ? companyProfileDto.currency() : "");
-        tickerProfile.put("cik", companyProfileDto.cik() != null ? companyProfileDto.cik() : "");
+                company.employeeCount() != null ? String.valueOf(company.employeeCount()) : "");
+        tickerProfile.put("currency", company.currency() != null ? company.currency() : "");
+        tickerProfile.put("cik", company.cik() != null ? company.cik() : "");
         return tickerProfile;
     }
 
     private CompanyFactSheetData createFinancialFactSheetData(AgentContext ctx) {
         int historyLimit = analystProperties.factSheet().historyLimit();
-        Map<String, String> tickerProfile = getStringStringMap(ctx.company());
+        Map<String, String> companyProfile = getCompanyProfile(ctx.company());
         String incomeStatementHistory = dataTools.getIncomeStatementHistory(ctx.companyId(),
                 ctx.defaultVariant(),
                 historyLimit);
@@ -57,7 +53,7 @@ public class FactSheetAgent implements Agent<FactSheetAgentOutput> {
         String sharePriceSignals = dataTools.getSharePriceSignals(ctx.companyId(), ctx.requestDate());
         String recentNews = dataTools.getRecentNews(ctx.ticker(), 30, historyLimit);
 
-        return new CompanyFactSheetData(tickerProfile,
+        return new CompanyFactSheetData(companyProfile,
                 incomeStatementHistory,
                 balanceSheetHistory,
                 cashFlowHistory,

@@ -7,5 +7,6 @@ public record LlmRequest<T>(ChatClient client,
                             LlmProviderType provider,
                             String model,
                             Double temperature,
+                            Integer maxCompletionTokens,
                             Class<T> responseType) {
 }
