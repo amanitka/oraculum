@@ -1,4 +1,4 @@
-package com.oraculum.analyst.service.dto;
+package com.oraculum.analyst.dto;
 
 import com.oraculum.analyst.domain.AgentType;
 import com.oraculum.analyst.domain.AnalysisOutlook;

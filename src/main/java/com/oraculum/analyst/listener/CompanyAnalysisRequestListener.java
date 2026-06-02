@@ -2,10 +2,10 @@ package com.oraculum.analyst.listener;
 
 import com.oraculum.analyst.domain.AnalysisStatus;
 import com.oraculum.analyst.domain.CompanyAnalysisEntity;
+import com.oraculum.analyst.dto.AnalysisResultDto;
 import com.oraculum.analyst.listener.message.AnalyzeCompanyRequest;
 import com.oraculum.analyst.repository.CompanyAnalysisRepository;
 import com.oraculum.analyst.service.CompanyAnalysisWorkflow;
-import com.oraculum.analyst.service.dto.AnalysisResultDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -41,8 +41,7 @@ public class CompanyAnalysisRequestListener {
             entity.setStatus(AnalysisStatus.RUNNING.name());
             repository.save(entity);
 
-            AnalysisResultDto result =
-                    workflow.run(new com.oraculum.analyst.service.dto.AnalyzeCompanyRequest(request.ticker(),
+            AnalysisResultDto result = workflow.run(new com.oraculum.analyst.dto.AnalyzeCompanyRequest(request.ticker(),
                     request.market(),
                     request.asOf(),
                     request.defaultVariant()), request.correlationId());

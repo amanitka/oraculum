@@ -27,8 +27,6 @@ public interface CompanyApi {
 
     List<IncomeStatementDto> getIncomeStatementsByCompanyId(int companyId, String variant, int limit);
 
-
-
     List<SharePriceDto> getSharePricesByCompanyId(int companyId);
 
     List<DailyMarketSignalDto> getDailyMarketSignalsByCompanyId(int companyId);
