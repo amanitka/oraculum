@@ -34,5 +34,7 @@ public interface CompanyApi {
 
     List<DailyMarketSignalDto> getDailyMarketSignalsByCompanyId(int companyId, LocalDate after);
 
+    List<DailyMarketSignalDto> getMonthlyMarketSignalsByCompanyId(int companyId, LocalDate after);
+
     List<DerivedMetricsDto> getDerivedMetricsByCompanyId(int companyId, LocalDate after);
 }

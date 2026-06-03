@@ -35,10 +35,9 @@ public class SharePriceAgentService implements AgentService<SharePriceAgentOutpu
     public AgentOutput<SharePriceAgentOutput> run(AgentContext ctx) {
         CompanyFactSheetData factSheet = ctx.factSheetData();
 
-        String signalsJson = factSheet.getSharePriceSignals();
-
         String prompt = promptRegistry.getPrompt(PromptType.SHARE_PRICE)
-                .replace("{{ market_signals_json }}", signalsJson);
+                .replace("{{ daily_market_signals }}", factSheet.getDailyMarketSignals())
+                .replace("{{ monthly_market_signals }}", factSheet.getMonthlyMarketSignals());
 
         String userPrompt = String.format(
                 "Analyze the market signals for %s as of %s based on the provided financial fact sheet.",

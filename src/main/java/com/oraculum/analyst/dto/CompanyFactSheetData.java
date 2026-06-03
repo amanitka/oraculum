@@ -26,19 +26,17 @@ public class CompanyFactSheetData {
     private final Map<StatementVariant, List<BalanceSheetDto>> balanceSheets;
     private final Map<StatementVariant, List<CashFlowStatementDto>> cashFlowStatements;
     private final Map<StatementVariant, List<DerivedMetricsDto>> derivedMetrics;
-    private final List<SharePriceDto> sharePriceSignals;
     private final List<DailyMarketSignalDto> dailyMarketSignals;
+    private final List<DailyMarketSignalDto> monthlyMarketSignals;
     private final List<NewsTickerDto> recentNews;
-
-    // Lazy loaded stuff
     private final Map<StatementVariant, String> incomeStatementsCache = new HashMap<>();
     private final Map<StatementVariant, String> balanceSheetsCache = new HashMap<>();
     private final Map<StatementVariant, String> cashFlowStatementsCache = new HashMap<>();
     private final Map<StatementVariant, String> derivedMetricsCache = new HashMap<>();
-    private final Map<String, String> sharePriceWindowCache = new HashMap<>(); // Cache for share price window
+    // Lazy loaded stuff
     private String companyProfileCache;
-    private String sharePriceSignalsCache;
     private String dailyMarketSignalsCache;
+    private String monthlyMarketSignalsCache;
     private String recentNewsCache;
 
     public String getCompanyProfile() {
@@ -103,32 +101,22 @@ public class CompanyFactSheetData {
                         objectMapper));
     }
 
-    public String getSharePriceSignals() {
-        if (sharePriceSignalsCache == null) {
-            if (dailyMarketSignals == null || dailyMarketSignals.isEmpty()) {
-                sharePriceSignalsCache = "No daily market signals available.";
-                return sharePriceSignalsCache;
-            }
-
-            // Assuming sharePriceSignals contains the monthly data, or we fetch it similarly
-            // For now, let's use the existing dailyMarketSignals for both, but filter for monthly
-            List<DailyMarketSignalDto> dailyResults = dailyMarketSignals.stream().limit(30).toList();
-
-            List<DailyMarketSignalDto> monthlyResults = dailyMarketSignals.stream()
-                    .filter(s -> "Y".equalsIgnoreCase(s.flagLastDayOfMonth()))
-                    .limit(120)
-                    .toList();
-
-            String dailyMarkdown = MarkdownUtils.toMarkdownTable(dailyResults,
-                    "Recent Daily Market Signals for company " + company.companyName() + " (last 30 days)",
+    public String getDailyMarketSignals() {
+        if (dailyMarketSignalsCache != null) {
+            dailyMarketSignalsCache = MarkdownUtils.toMarkdownTable(dailyMarketSignals,
+                    "Recent daily market signals for company " + company.companyName(),
                     objectMapper);
-            String monthlyMarkdown = MarkdownUtils.toMarkdownTable(monthlyResults,
-                    "Historical Monthly Market Signals for company " + company.companyName() + " (last 10 years)",
-                    objectMapper);
-
-            sharePriceSignalsCache = dailyMarkdown + "\n\n" + monthlyMarkdown;
         }
-        return sharePriceSignalsCache;
+        return dailyMarketSignalsCache;
+    }
+
+    public String getMonthlyMarketSignals() {
+        if (monthlyMarketSignalsCache != null) {
+            monthlyMarketSignalsCache = MarkdownUtils.toMarkdownTable(monthlyMarketSignals,
+                    "Historical monthly market signals for company " + company.companyName(),
+                    objectMapper);
+        }
+        return monthlyMarketSignalsCache;
     }
 
     public String getRecentNews() {

@@ -137,11 +137,20 @@ public class CompanyServiceImpl implements CompanyService {
     }
 
     @Override
+    public List<DailyMarketSignalDto> getMonthlyMarketSignalsByCompanyId(int companyId, LocalDate after) {
+        return dailyMarketSignalRepository.findByCompanyIdAndTradeDateAfterAndFlagLastDayOfMonth(companyId, after, "Y")
+                .stream()
+                .map(DailyMarketSignalDto::fromEntity)
+                .sorted(Comparator.comparing(DailyMarketSignalDto::tradeDate).reversed())
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public List<DerivedMetricsDto> getDerivedMetricsByCompanyId(int companyId, LocalDate after) {
         return derivedMetricsRepository.findByCompanyIdAndReportDateAfter(companyId, after)
                 .stream()
                 .map(DerivedMetricsDto::fromEntity)
-                .sorted(Comparator.comparing(DerivedMetricsDto::reportDate).reversed()) // Sort by reportDate descending
+                .sorted(Comparator.comparing(DerivedMetricsDto::reportDate).reversed())
                 .collect(Collectors.toList());
     }
 

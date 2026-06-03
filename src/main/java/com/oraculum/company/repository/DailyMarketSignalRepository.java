@@ -8,6 +8,11 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Repository
-public interface DailyMarketSignalRepository extends JpaRepository<DailyMarketSignalEntity, DailyMarketSignalEntity.DailyMarketSignalId> {
+public interface DailyMarketSignalRepository extends JpaRepository<DailyMarketSignalEntity,
+        DailyMarketSignalEntity.DailyMarketSignalId> {
     List<DailyMarketSignalEntity> findByCompanyIdAndTradeDateAfter(int companyId, LocalDate after);
+
+    List<DailyMarketSignalEntity> findByCompanyIdAndTradeDateAfterAndFlagLastDayOfMonth(int companyId,
+                                                                                        LocalDate after,
+                                                                                        String flagLastDayOfMonth);
 }

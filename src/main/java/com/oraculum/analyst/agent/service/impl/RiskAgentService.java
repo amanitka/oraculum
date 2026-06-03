@@ -45,7 +45,7 @@ public class RiskAgentService implements AgentService<RiskAgentOutput> {
                 "derived_metrics",
                 factSheet.getDerivedMetrics(ctx.statementVariant()),
                 "share_price_signals",
-                factSheet.getSharePriceSignals());
+                factSheet.getDailyMarketSignals());
 
         String promptDataJson;
         try {

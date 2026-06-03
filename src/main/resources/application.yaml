@@ -73,7 +73,13 @@ oraculum:
       data-cleanup-cron: "${ORACULUM_DATA_CLEANUP_CRON:0 3 * * *}"
       data-retention-days: ${ORACULUM_DATA_RETENTION_DAYS:3}
     fact-sheet:
-      history-limit: 100
+      history-limit: 3660
+    share-price:
+      monthly-history-limit: 3660
+      daily-history-limit: 30
+    news:
+      history-limit: 30
+
 
   llm:
     common:
