@@ -9,13 +9,12 @@ import com.oraculum.company.repository.*;
 import com.oraculum.company.service.CompanyService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -67,12 +66,10 @@ public class CompanyServiceImpl implements CompanyService {
     }
 
     @Override
-    public List<NewsTickerDto> getNewsByTicker(String ticker, int days, int limit) {
-        OffsetDateTime after = OffsetDateTime.now().minusDays(days);
-        Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "timePublished"));
-        Page<NewsTickerEntity> tickerRows = newsTickerRepository.findByTickerAndTimePublishedAfter(ticker,
-                after,
-                pageable);
+    public List<NewsTickerDto> getNewsByTicker(String ticker, LocalDate after) {
+        OffsetDateTime afterDateTime = after.atStartOfDay().atOffset(ZoneOffset.UTC);
+        List<NewsTickerEntity> tickerRows = newsTickerRepository.findByTickerAndTimePublishedAfter(ticker,
+                afterDateTime);
         List<String> newsIds = tickerRows.stream().map(NewsTickerEntity::getNewsId).collect(Collectors.toList());
         Map<String, NewsEntity> newsById = newsRepository.findByIdIn(newsIds)
                 .stream()
@@ -80,57 +77,71 @@ public class CompanyServiceImpl implements CompanyService {
         return tickerRows.stream()
                 .filter(t -> newsById.containsKey(t.getNewsId()))
                 .map(t -> NewsTickerDto.from(newsById.get(t.getNewsId()), t))
+                .sorted(Comparator.comparing(NewsTickerDto::timePublished)
+                        .reversed()) // Sort by timePublished descending
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<BalanceSheetDto> getBalanceSheetsByCompanyId(int companyId, String variant, int limit) {
-        Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "reportDate"));
-        return balanceSheetRepository.findByCompanyIdAndVariant(companyId, variant, pageable)
+    public List<BalanceSheetDto> getBalanceSheetsByCompanyId(int companyId, LocalDate after) {
+        return balanceSheetRepository.findByCompanyIdAndReportDateAfter(companyId, after)
                 .stream()
                 .map(BalanceSheetDto::fromEntity)
+                .sorted(Comparator.comparing(BalanceSheetDto::reportDate).reversed())
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<CashFlowStatementDto> getCashFlowStatementsByCompanyId(int companyId, String variant, int limit) {
-        Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "reportDate"));
-        return cashFlowStatementRepository.findByCompanyIdAndVariant(companyId, variant, pageable)
+    public List<CashFlowStatementDto> getCashFlowStatementsByCompanyId(int companyId, LocalDate after) {
+        return cashFlowStatementRepository.findByCompanyIdAndReportDateAfter(companyId, after)
                 .stream()
                 .map(CashFlowStatementDto::fromEntity)
+                .sorted(Comparator.comparing(CashFlowStatementDto::reportDate).reversed())
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<IncomeStatementDto> getIncomeStatementsByCompanyId(int companyId, String variant, int limit) {
-        Pageable pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "reportDate"));
-        return incomeStatementRepository.findByCompanyIdAndVariant(companyId, variant, pageable)
+    public List<IncomeStatementDto> getIncomeStatementsByCompanyId(int companyId, LocalDate after) {
+        return incomeStatementRepository.findByCompanyIdAndReportDateAfter(companyId, after)
                 .stream()
                 .map(IncomeStatementDto::fromEntity)
+                .sorted(Comparator.comparing(IncomeStatementDto::reportDate).reversed())
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<SharePriceDto> getSharePricesByCompanyId(int companyId) {
-        return sharePriceRepository.findByCompanyId(companyId)
+    public List<SharePriceDto> getSharePricesByCompanyId(int companyId, LocalDate after) {
+        return sharePriceRepository.findByCompanyIdAndTradeDateAfter(companyId, after)
                 .stream()
                 .map(SharePriceDto::fromEntity)
+                .sorted(Comparator.comparing(SharePriceDto::tradeDate).reversed())
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<DailyMarketSignalDto> getDailyMarketSignalsByCompanyId(int companyId) {
-        return dailyMarketSignalRepository.findByCompanyId(companyId)
+    public List<SharePriceDto> getMonthlySharePricesByCompanyId(int companyId, LocalDate after) {
+        return sharePriceRepository.findByCompanyIdAndTradeDateAfterAndFlagLastDayOfMonth(companyId, after, "Y")
+                .stream()
+                .map(SharePriceDto::fromEntity)
+                .sorted(Comparator.comparing(SharePriceDto::tradeDate).reversed())
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<DailyMarketSignalDto> getDailyMarketSignalsByCompanyId(int companyId, LocalDate after) {
+        return dailyMarketSignalRepository.findByCompanyIdAndTradeDateAfter(companyId, after)
                 .stream()
                 .map(DailyMarketSignalDto::fromEntity)
+                .sorted(Comparator.comparing(DailyMarketSignalDto::tradeDate).reversed())
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<DerivedMetricsDto> getDerivedMetricsByCompanyId(int companyId) {
-        return derivedMetricsRepository.findByCompanyId(companyId)
+    public List<DerivedMetricsDto> getDerivedMetricsByCompanyId(int companyId, LocalDate after) {
+        return derivedMetricsRepository.findByCompanyIdAndReportDateAfter(companyId, after)
                 .stream()
                 .map(DerivedMetricsDto::fromEntity)
+                .sorted(Comparator.comparing(DerivedMetricsDto::reportDate).reversed()) // Sort by reportDate descending
                 .collect(Collectors.toList());
     }
 

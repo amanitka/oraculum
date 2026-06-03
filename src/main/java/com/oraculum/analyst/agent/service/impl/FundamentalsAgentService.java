@@ -1,10 +1,13 @@
 package com.oraculum.analyst.agent.service.impl;
 
-import com.oraculum.analyst.agent.dto.*;
+import com.oraculum.analyst.agent.dto.AgentContext;
+import com.oraculum.analyst.agent.dto.AgentOutput;
+import com.oraculum.analyst.agent.dto.FundamentalsAgentOutput;
 import com.oraculum.analyst.agent.service.AgentService;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.AgentType;
 import com.oraculum.analyst.domain.PromptType;
+import com.oraculum.analyst.dto.CompanyFactSheetData;
 import com.oraculum.llm.api.LlmRouterApi;
 import com.oraculum.llm.api.dto.LlmResponse;
 import com.oraculum.llm.api.dto.LlmTierType;
@@ -35,15 +38,14 @@ public class FundamentalsAgentService implements AgentService<FundamentalsAgentO
 
     @Override
     public AgentOutput<FundamentalsAgentOutput> run(AgentContext ctx) {
-        FactSheetAgentOutput factSheetOutput = (FactSheetAgentOutput) ctx.priorOutputs().get(AgentType.FACT_SHEET);
-        CompanyFactSheetData factSheet = factSheetOutput.factSheet();
+        CompanyFactSheetData factSheet = ctx.factSheetData();
 
         Map<String, Object> promptData = Map.of("income_statement_history",
-                factSheet.incomeStatementHistory(),
+                factSheet.getIncomeStatementHistory(ctx.statementVariant()),
                 "balance_sheet_history",
-                factSheet.balanceSheetHistory(),
+                factSheet.getBalanceSheetHistory(ctx.statementVariant()),
                 "derived_metrics",
-                factSheet.derivedMetrics());
+                factSheet.getDerivedMetrics(ctx.statementVariant()));
 
         String promptDataJson;
         try {

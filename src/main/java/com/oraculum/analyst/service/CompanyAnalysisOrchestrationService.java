@@ -3,7 +3,7 @@ package com.oraculum.analyst.service;
 import com.oraculum.analyst.domain.AnalysisStatus;
 import com.oraculum.analyst.domain.CompanyAnalysisEntity;
 import com.oraculum.analyst.dto.CompanyAnalysisRequest;
-import com.oraculum.analyst.dto.CompanyAnalysisResultDto;
+import com.oraculum.analyst.dto.CompanyAnalysisResult;
 import com.oraculum.analyst.listener.message.AnalyzeCompanyRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +26,7 @@ public class CompanyAnalysisOrchestrationService {
         CompanyAnalysisEntity companyAnalysis = initAnalysis(request);
         try {
             markAsRunning(companyAnalysis);
-            CompanyAnalysisResultDto analysisResult = runAnalysisWorkflow(request);
+            CompanyAnalysisResult analysisResult = runAnalysisWorkflow(request);
             completeAnalysis(companyAnalysis, analysisResult);
             log.info("Successfully completed analysis for ticker {} in market {}", request.ticker(), request.market());
         } catch (Exception e) {
@@ -61,7 +61,7 @@ public class CompanyAnalysisOrchestrationService {
         companyAnalysisService.createOrUpdateAnalysis(entity);
     }
 
-    private void completeAnalysis(CompanyAnalysisEntity entity, CompanyAnalysisResultDto result) {
+    private void completeAnalysis(CompanyAnalysisEntity entity, CompanyAnalysisResult result) {
         try {
             entity.setStatus(result.status());
             entity.setReport(result.reportMd());
@@ -77,7 +77,7 @@ public class CompanyAnalysisOrchestrationService {
         }
     }
 
-    private CompanyAnalysisResultDto runAnalysisWorkflow(AnalyzeCompanyRequest request) {
+    private CompanyAnalysisResult runAnalysisWorkflow(AnalyzeCompanyRequest request) {
         return workflow.run(new CompanyAnalysisRequest(request.ticker(),
                 request.market(),
                 request.analysisDate(),

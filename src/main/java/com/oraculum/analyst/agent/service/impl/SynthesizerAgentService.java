@@ -42,7 +42,7 @@ public class SynthesizerAgentService implements AgentService<SynthesizerAgentOut
         Map<AgentType, Object> specialistOutputs = ctx.priorOutputs()
                 .entrySet()
                 .stream()
-                .filter(entry -> entry.getKey() != AgentType.FACT_SHEET && entry.getKey() != AgentType.CRITIC)
+                .filter(entry -> entry.getKey() != AgentType.CRITIC)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
         String priorOutputsJson;

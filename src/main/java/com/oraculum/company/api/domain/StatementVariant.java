@@ -1,15 +1,15 @@
-package com.oraculum.analyst.domain;
+package com.oraculum.company.api.domain;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
-public enum StatementTemplate {
-    GENERAL("general"),
-    BANK("bank"),
-    INSURANCE("insurance");
+public enum StatementVariant {
+    ANNUAL("annual"),
+    QUARTERLY("quarterly"),
+    TTM("ttm");
 
     private final String value;
 
-    StatementTemplate(String value) {
+    StatementVariant(String value) {
         this.value = value;
     }
 

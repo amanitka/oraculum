@@ -3,13 +3,14 @@ package com.oraculum.analyst.service;
 import com.oraculum.analyst.agent.dto.AgentContext;
 import com.oraculum.analyst.agent.dto.PlannerPlan;
 import com.oraculum.analyst.agent.dto.SynthesizerAgentOutput;
-import com.oraculum.analyst.agent.service.AgentDataTools;
 import com.oraculum.analyst.agent.service.AgentService;
 import com.oraculum.analyst.config.AnalystProperties;
 import com.oraculum.analyst.domain.AgentType;
 import com.oraculum.analyst.domain.AnalysisStatus;
 import com.oraculum.analyst.dto.CompanyAnalysisRequest;
-import com.oraculum.analyst.dto.CompanyAnalysisResultDto;
+import com.oraculum.analyst.dto.CompanyAnalysisResult;
+import com.oraculum.analyst.dto.CompanyFactSheetData;
+import com.oraculum.company.api.CompanyApi;
 import com.oraculum.company.api.dto.CompanyDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,23 +29,27 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CompanyAnalysisWorkflowService {
 
-    private final AgentDataTools agentDataTools;
+    private final CompanyApi companyApi; // Inject CompanyApi directly
     private final AnalystProperties analystProperties;
+    private final CompanyFactSheetDataService companyFactSheetDataService;
     private final Map<AgentType, AgentService<?>> agents;
 
-    public CompanyAnalysisResultDto run(CompanyAnalysisRequest request, UUID correlationId) {
+    public CompanyAnalysisResult run(CompanyAnalysisRequest request, UUID correlationId) {
         long startTime = System.currentTimeMillis();
         int totalTokens = 0;
         Map<AgentType, Object> agentTrace = new EnumMap<>(AgentType.class);
         ZonedDateTime now = ZonedDateTime.now();
 
         log.info("Starting analysis workflow for ticker {}", request.ticker());
-        CompanyDto company = agentDataTools.getCompany(request.ticker(), request.market());
+        CompanyDto company = companyApi.getCompany(request.ticker(), request.market()); // Use companyApi directly
         if (company == null) {
             throw new IllegalArgumentException("Company not found for ticker: " + request.ticker());
         }
 
+        CompanyFactSheetData factSheetData = companyFactSheetDataService.create(company);
+
         AgentContext initialCtx = new AgentContext(company,
+                factSheetData,
                 request.requestDate() != null ? request.requestDate() : LocalDate.now(),
                 request.defaultVariant(),
                 analystProperties.tokenBudget(),
@@ -60,17 +65,11 @@ public class CompanyAnalysisWorkflowService {
             log.info("Planner phase complete. Tokens: {}. Plan: {}", planOut.tokens(), plan);
 
             AgentContext sharedCtx = new AgentContext(company,
+                    factSheetData,
                     initialCtx.requestDate(),
                     request.defaultVariant(),
                     analystProperties.tokenBudget(),
                     new EnumMap<>(AgentType.class));
-
-            log.info("Starting FactSheet phase");
-            AgentService<?> factSheetAgentService = agents.get(AgentType.FACT_SHEET);
-            var factSheetOut = factSheetAgentService.run(sharedCtx);
-            totalTokens += factSheetOut.tokens();
-            sharedCtx.priorOutputs().put(AgentType.FACT_SHEET, factSheetOut.result());
-            log.info("FactSheet phase complete.");
 
             List<AgentService<?>> specialists = java.util.Arrays.stream(AgentType.values())
                     .filter(AgentType::isSpecialist)
@@ -110,7 +109,7 @@ public class CompanyAnalysisWorkflowService {
             long elapsedMs = System.currentTimeMillis() - startTime;
             log.info("Analysis workflow completed successfully in {}ms. Total tokens: {}", elapsedMs, totalTokens);
 
-            return new CompanyAnalysisResultDto(correlationId,
+            return new CompanyAnalysisResult(correlationId,
                     request.ticker(),
                     request.market(),
                     sharedCtx.requestDate(),
@@ -129,7 +128,7 @@ public class CompanyAnalysisWorkflowService {
         } catch (Exception e) {
             long elapsedMs = System.currentTimeMillis() - startTime;
             log.error("Workflow failed after {}ms: {}", elapsedMs, e.getMessage(), e);
-            return new CompanyAnalysisResultDto(correlationId,
+            return new CompanyAnalysisResult(correlationId,
                     request.ticker(),
                     request.market(),
                     initialCtx.requestDate(),

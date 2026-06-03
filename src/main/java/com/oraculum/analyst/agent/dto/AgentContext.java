@@ -1,7 +1,8 @@
 package com.oraculum.analyst.agent.dto;
 
 import com.oraculum.analyst.domain.AgentType;
-import com.oraculum.analyst.domain.StatementVariant;
+import com.oraculum.analyst.dto.CompanyFactSheetData;
+import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.dto.CompanyDto;
 import lombok.Builder;
 import org.jspecify.annotations.NonNull;
@@ -11,6 +12,7 @@ import java.util.Map;
 
 @Builder
 public record AgentContext(CompanyDto company,
+                           CompanyFactSheetData factSheetData,
                            LocalDate requestDate,
                            StatementVariant statementVariant,
                            int tokenBudget,

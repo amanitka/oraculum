@@ -1,10 +1,13 @@
 package com.oraculum.analyst.agent.service.impl;
 
-import com.oraculum.analyst.agent.dto.*;
+import com.oraculum.analyst.agent.dto.AgentContext;
+import com.oraculum.analyst.agent.dto.AgentOutput;
+import com.oraculum.analyst.agent.dto.SharePriceAgentOutput;
 import com.oraculum.analyst.agent.service.AgentService;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.AgentType;
 import com.oraculum.analyst.domain.PromptType;
+import com.oraculum.analyst.dto.CompanyFactSheetData;
 import com.oraculum.llm.api.LlmRouterApi;
 import com.oraculum.llm.api.dto.LlmResponse;
 import com.oraculum.llm.api.dto.LlmTierType;
@@ -30,10 +33,9 @@ public class SharePriceAgentService implements AgentService<SharePriceAgentOutpu
 
     @Override
     public AgentOutput<SharePriceAgentOutput> run(AgentContext ctx) {
-        FactSheetAgentOutput factSheetOutput = (FactSheetAgentOutput) ctx.priorOutputs().get(AgentType.FACT_SHEET);
-        CompanyFactSheetData factSheet = factSheetOutput.factSheet();
+        CompanyFactSheetData factSheet = ctx.factSheetData();
 
-        String signalsJson = factSheet.sharePriceSignals();
+        String signalsJson = factSheet.getSharePriceSignals();
 
         String prompt = promptRegistry.getPrompt(PromptType.SHARE_PRICE)
                 .replace("{{ market_signals_json }}", signalsJson);

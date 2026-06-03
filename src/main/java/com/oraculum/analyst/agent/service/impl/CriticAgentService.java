@@ -38,11 +38,7 @@ public class CriticAgentService implements AgentService<CriticAgentOutput> {
 
     @Override
     public AgentOutput<CriticAgentOutput> run(AgentContext ctx) {
-        Map<AgentType, Object> specialistOutputs = ctx.priorOutputs()
-                .entrySet()
-                .stream()
-                .filter(entry -> entry.getKey() != AgentType.FACT_SHEET)
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        Map<AgentType, Object> specialistOutputs = ctx.priorOutputs();
 
         String priorOutputsJson;
         try {

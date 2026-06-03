@@ -1,5 +1,7 @@
 package com.oraculum.company.domain;
 
+import com.oraculum.company.api.domain.StatementTemplate;
+import com.oraculum.company.api.domain.StatementVariant;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -32,10 +34,12 @@ public class CashFlowStatementEntity {
     private String ticker;
 
     @Column(nullable = false)
-    private String template;
+    @Enumerated(EnumType.STRING)
+    private StatementTemplate template;
 
     @Column(nullable = false)
-    private String variant;
+    @Enumerated(EnumType.STRING)
+    private StatementVariant variant;
 
     @Column(nullable = false)
     private String currency;

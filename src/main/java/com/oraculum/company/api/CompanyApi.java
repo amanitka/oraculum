@@ -2,6 +2,7 @@ package com.oraculum.company.api;
 
 import com.oraculum.company.api.dto.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -19,17 +20,19 @@ public interface CompanyApi {
 
     List<IndustryDto> getAllIndustries();
 
-    List<NewsTickerDto> getNewsByTicker(String ticker, int days, int limit);
+    List<NewsTickerDto> getNewsByTicker(String ticker, LocalDate after);
 
-    List<BalanceSheetDto> getBalanceSheetsByCompanyId(int companyId, String variant, int limit);
+    List<BalanceSheetDto> getBalanceSheetsByCompanyId(int companyId, LocalDate after);
 
-    List<CashFlowStatementDto> getCashFlowStatementsByCompanyId(int companyId, String variant, int limit);
+    List<CashFlowStatementDto> getCashFlowStatementsByCompanyId(int companyId, LocalDate after);
 
-    List<IncomeStatementDto> getIncomeStatementsByCompanyId(int companyId, String variant, int limit);
+    List<IncomeStatementDto> getIncomeStatementsByCompanyId(int companyId, LocalDate after);
 
-    List<SharePriceDto> getSharePricesByCompanyId(int companyId);
+    List<SharePriceDto> getSharePricesByCompanyId(int companyId, LocalDate after);
 
-    List<DailyMarketSignalDto> getDailyMarketSignalsByCompanyId(int companyId);
+    List<SharePriceDto> getMonthlySharePricesByCompanyId(int companyId, LocalDate after);
 
-    List<DerivedMetricsDto> getDerivedMetricsByCompanyId(int companyId);
+    List<DailyMarketSignalDto> getDailyMarketSignalsByCompanyId(int companyId, LocalDate after);
+
+    List<DerivedMetricsDto> getDerivedMetricsByCompanyId(int companyId, LocalDate after);
 }

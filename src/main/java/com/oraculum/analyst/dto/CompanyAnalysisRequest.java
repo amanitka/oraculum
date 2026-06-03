@@ -1,6 +1,6 @@
 package com.oraculum.analyst.dto;
 
-import com.oraculum.analyst.domain.StatementVariant;
+import com.oraculum.company.api.domain.StatementVariant;
 
 import java.time.LocalDate;
 

@@ -1,6 +1,6 @@
 package com.oraculum.analyst.listener.message;
 
-import com.oraculum.analyst.domain.StatementVariant;
+import com.oraculum.company.api.domain.StatementVariant;
 
 import java.time.LocalDate;
 import java.util.UUID;

@@ -6,7 +6,6 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum AgentType {
-    FACT_SHEET("FactSheet", false),
     FUNDAMENTALS("Fundamentals", true),
     PLANNER("Planner", false),
     NEWS("News", true),

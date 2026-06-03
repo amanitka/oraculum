@@ -1,9 +1,8 @@
 package com.oraculum.company.domain;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import com.oraculum.company.api.domain.StatementTemplate;
+import com.oraculum.company.api.domain.StatementVariant;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -31,11 +30,13 @@ public class DerivedMetricsEntity {
     @Column(name = "currency")
     private String currency;
 
-    @Column(name = "template")
-    private String template;
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private StatementTemplate template;
 
-    @Column(name = "variant")
-    private String variant;
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private StatementVariant variant;
 
     @Column(name = "fiscal_year")
     private int fiscalYear;
