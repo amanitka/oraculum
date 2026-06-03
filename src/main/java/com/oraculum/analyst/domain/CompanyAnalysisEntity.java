@@ -13,11 +13,9 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "t_company_analysis", indexes = {
-        @Index(name = "ix_company_analysis_company_id", columnList = "company_id"),
-        @Index(name = "ix_company_analysis_ticker_market_created", columnList = "ticker, market, created_at"),
-        @Index(name = "ix_company_analysis_status_created", columnList = "status, created_at")
-})
+@Table(name = "t_company_analysis", indexes = {@Index(name = "ix_company_analysis_company_id", columnList =
+        "company_id"), @Index(name = "ix_company_analysis_ticker_market_created", columnList = "ticker, market, " +
+        "created_at"), @Index(name = "ix_company_analysis_status_created", columnList = "status, created_at")})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -40,7 +38,8 @@ public class CompanyAnalysisEntity {
     private LocalDate analysisDate;
 
     @Column(nullable = false)
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private AnalysisStatus status;
 
     @Lob
     @Column(name = "report")

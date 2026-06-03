@@ -8,8 +8,8 @@ import com.oraculum.analyst.agents.tools.DataTools;
 import com.oraculum.analyst.config.AnalystProperties;
 import com.oraculum.analyst.domain.AgentType;
 import com.oraculum.analyst.domain.AnalysisStatus;
-import com.oraculum.analyst.dto.AnalysisResultDto;
-import com.oraculum.analyst.dto.AnalyzeCompanyRequest;
+import com.oraculum.analyst.dto.CompanyAnalysisRequest;
+import com.oraculum.analyst.dto.CompanyAnalysisResultDto;
 import com.oraculum.company.api.dto.CompanyDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,13 +26,13 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class CompanyAnalysisWorkflow {
+public class CompanyAnalysisWorkflowService {
 
     private final DataTools dataTools;
     private final AnalystProperties analystProperties;
     private final Map<AgentType, Agent<?>> agents;
 
-    public AnalysisResultDto run(AnalyzeCompanyRequest request, UUID correlationId) {
+    public CompanyAnalysisResultDto run(CompanyAnalysisRequest request, UUID correlationId) {
         long startTime = System.currentTimeMillis();
         int totalTokens = 0;
         Map<AgentType, Object> agentTrace = new EnumMap<>(AgentType.class);
@@ -110,7 +110,7 @@ public class CompanyAnalysisWorkflow {
             long elapsedMs = System.currentTimeMillis() - startTime;
             log.info("Analysis workflow completed successfully in {}ms. Total tokens: {}", elapsedMs, totalTokens);
 
-            return new AnalysisResultDto(correlationId,
+            return new CompanyAnalysisResultDto(correlationId,
                     request.ticker(),
                     request.market(),
                     sharedCtx.requestDate(),
@@ -129,7 +129,7 @@ public class CompanyAnalysisWorkflow {
         } catch (Exception e) {
             long elapsedMs = System.currentTimeMillis() - startTime;
             log.error("Workflow failed after {}ms: {}", elapsedMs, e.getMessage(), e);
-            return new AnalysisResultDto(correlationId,
+            return new CompanyAnalysisResultDto(correlationId,
                     request.ticker(),
                     request.market(),
                     initialCtx.requestDate(),

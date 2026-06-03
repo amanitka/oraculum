@@ -64,12 +64,11 @@ public class SynthesizerAgent implements Agent<SynthesizerAgentOutput> {
                 .replace("{{ prior_outputs }}", priorOutputsJson)
                 .replace("{{ critic_report }}", criticReportJson);
 
-        String userPrompt = String.format(
-                "Synthesize the analysis for %s. The default variant was " +
-                        "'%s'. Generate the final report and structured verdict, explicitly addressing the critic's " +
+        String userPrompt = String.format("Synthesize the analysis for %s. The default variant was " + "'%s'. " +
+                        "Generate the final report and structured verdict, explicitly addressing the critic's " +
                         "findings.",
                 ctx.ticker(),
-                ctx.defaultVariant());
+                ctx.statementVariant());
 
         String fullPrompt = prompt + "\n" + userPrompt;
 

@@ -43,13 +43,13 @@ public class FactSheetAgent implements Agent<FactSheetAgentOutput> {
         int historyLimit = analystProperties.factSheet().historyLimit();
         Map<String, String> companyProfile = getCompanyProfile(ctx.company());
         String incomeStatementHistory = dataTools.getIncomeStatementHistory(ctx.companyId(),
-                ctx.defaultVariant(),
+                ctx.statementVariant(),
                 historyLimit);
         String balanceSheetHistory = dataTools.getBalanceSheetHistory(ctx.companyId(),
-                ctx.defaultVariant(),
+                ctx.statementVariant(),
                 historyLimit);
-        String cashFlowHistory = dataTools.getCashFlowHistory(ctx.companyId(), ctx.defaultVariant(), historyLimit);
-        String derivedMetrics = dataTools.getDerivedMetrics(ctx.companyId(), ctx.defaultVariant(), historyLimit);
+        String cashFlowHistory = dataTools.getCashFlowHistory(ctx.companyId(), ctx.statementVariant(), historyLimit);
+        String derivedMetrics = dataTools.getDerivedMetrics(ctx.companyId(), ctx.statementVariant(), historyLimit);
         String sharePriceSignals = dataTools.getSharePriceSignals(ctx.companyId(), ctx.requestDate());
         String recentNews = dataTools.getRecentNews(ctx.ticker(), 30, historyLimit);
 

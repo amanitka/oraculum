@@ -12,7 +12,7 @@ import java.util.Map;
 @Builder
 public record AgentContext(CompanyDto company,
                            LocalDate requestDate,
-                           StatementVariant defaultVariant,
+                           StatementVariant statementVariant,
                            int tokenBudget,
                            Map<AgentType, Object> priorOutputs) {
     public String ticker() {

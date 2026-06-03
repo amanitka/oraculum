@@ -39,8 +39,7 @@ public class PlannerAgent implements Agent<PlannerPlan> {
     @Override
     public AgentOutput<PlannerPlan> run(AgentContext ctx) {
         CompanyDto company = ctx.company();
-        String sharePriceSignals = dataTools.getSharePriceSignals(company != null ? company.id() : null,
-                ctx.requestDate());
+        String sharePriceSignals = dataTools.getSharePriceSignals(company.id(), ctx.requestDate());
 
         String prompt = systemPrompt.replace("{{ market_signals_json }}", sharePriceSignals);
 
@@ -49,7 +48,7 @@ public class PlannerAgent implements Agent<PlannerPlan> {
                 Profile: %s
                 Please generate the plan \
                 using default variants (annual for fundamentals/cash_flow, ttm for valuation, \
-                quarterly for risk), and set an analysis focus based on the market signals.""", ctx.ticker(), company);
+                quarterly for risk), and set an analysis focus based on the market signals.""", ctx.ticker(), company.description());
 
         LlmResponse<PlannerPlan> response = llmRouterApi.executeCall(LlmTierType.STANDARD,
                 prompt + "\n" + userMessage,
