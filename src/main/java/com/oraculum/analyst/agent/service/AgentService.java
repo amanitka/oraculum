@@ -1,0 +1,13 @@
+package com.oraculum.analyst.agent.service;
+
+import com.oraculum.analyst.agent.dto.AgentContext;
+import com.oraculum.analyst.agent.dto.AgentOutput;
+import com.oraculum.analyst.domain.AgentType;
+
+public interface AgentService<T> {
+    AgentType getName();
+
+    Class<T> getOutputModel();
+
+    AgentOutput<T> run(AgentContext ctx);
+}
