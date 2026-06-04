@@ -13,10 +13,6 @@ import com.oraculum.llm.api.dto.LlmResponse;
 import com.oraculum.llm.api.dto.LlmTierType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.ObjectMapper;
-
-import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -24,7 +20,6 @@ public class FundamentalsAgentService implements AgentService<FundamentalsAgentO
 
     private final LlmRouterApi llmRouterApi;
     private final PromptRegistry promptRegistry;
-    private final ObjectMapper objectMapper;
 
     @Override
     public AgentType getName() {
@@ -40,22 +35,10 @@ public class FundamentalsAgentService implements AgentService<FundamentalsAgentO
     public AgentOutput<FundamentalsAgentOutput> run(AgentContext ctx) {
         CompanyFactSheetData factSheet = ctx.factSheetData();
 
-        Map<String, Object> promptData = Map.of("income_statement_history",
-                factSheet.getIncomeStatementHistory(ctx.statementVariant()),
-                "balance_sheet_history",
-                factSheet.getBalanceSheetHistory(ctx.statementVariant()),
-                "derived_metrics",
-                factSheet.getCompanyFinancialRatios(ctx.statementVariant()));
-
-        String promptDataJson;
-        try {
-            promptDataJson = objectMapper.writeValueAsString(promptData);
-        } catch (JacksonException e) {
-            throw new RuntimeException(e);
-        }
-
         String prompt = promptRegistry.getPrompt(PromptType.FUNDAMENTALS)
-                .replace("{{ fact_sheet_json }}", promptDataJson);
+                .replace("{{ income_statement_history }}", factSheet.getIncomeStatementHistory(ctx.statementVariant()))
+                .replace("{{ balance_sheet_history }}", factSheet.getBalanceSheetHistory(ctx.statementVariant()))
+                .replace("{{ company_financial_ratios }}", factSheet.getCompanyFinancialRatios(ctx.statementVariant()));
 
         String userPrompt = String.format(
                 "Analyze fundamentals for %s as of %s based on the provided financial fact sheet.",

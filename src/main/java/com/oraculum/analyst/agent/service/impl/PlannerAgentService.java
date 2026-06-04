@@ -7,7 +7,6 @@ import com.oraculum.analyst.agent.service.AgentService;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.AgentType;
 import com.oraculum.analyst.domain.PromptType;
-import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.llm.api.LlmRouterApi;
 import com.oraculum.llm.api.dto.LlmResponse;
 import com.oraculum.llm.api.dto.LlmTierType;
@@ -35,20 +34,11 @@ public class PlannerAgentService implements AgentService<PlannerPlan> {
 
     @Override
     public AgentOutput<PlannerPlan> run(AgentContext ctx) {
-        CompanyDto company = ctx.company();
-        String sharePriceSignals = ctx.factSheetData().getDailySharePriceSignals();
-        String companyProfile = ctx.factSheetData().getCompanyProfile();
+        String prompt = systemPrompt.replace("{{ daily_share_price_signals }}",
+                        ctx.factSheetData().getDailySharePriceSignals())
+                .replace("{{ company_profile }}", ctx.factSheetData().getCompanyProfile());
 
-        String prompt = systemPrompt.replace("{{ market_signals_json }}", sharePriceSignals);
-
-        String userMessage = String.format("""
-                        Ticker: %s
-                        Profile: %s
-                        Please generate the plan \
-                        using default variants (annual for fundamentals/cash_flow, ttm for valuation, \
-                        quarterly for risk), and set an analysis focus based on the market signals.""",
-                ctx.ticker(),
-                companyProfile);
+        String userMessage = String.format("Analyze %s and determine the plan.", ctx.ticker());
 
         LlmResponse<PlannerPlan> response = llmRouterApi.executeCall(LlmTierType.STANDARD,
                 prompt + "\n" + userMessage,

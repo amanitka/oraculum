@@ -13,10 +13,6 @@ import com.oraculum.llm.api.dto.LlmResponse;
 import com.oraculum.llm.api.dto.LlmTierType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.ObjectMapper;
-
-import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -24,7 +20,6 @@ public class ValuationAgentService implements AgentService<ValuationAgentOutput>
 
     private final LlmRouterApi llmRouterApi;
     private final PromptRegistry promptRegistry;
-    private final ObjectMapper objectMapper;
 
     @Override
     public AgentType getName() {
@@ -40,19 +35,9 @@ public class ValuationAgentService implements AgentService<ValuationAgentOutput>
     public AgentOutput<ValuationAgentOutput> run(AgentContext ctx) {
         CompanyFactSheetData factSheet = ctx.factSheetData();
 
-        Map<String, Object> promptData = Map.of("derived_metrics",
-                factSheet.getCompanyFinancialRatios(ctx.statementVariant()),
-                "share_price_signals",
-                factSheet.getDailySharePriceSignals());
-
-        String promptDataJson;
-        try {
-            promptDataJson = objectMapper.writeValueAsString(promptData);
-        } catch (JacksonException e) {
-            throw new RuntimeException(e);
-        }
-
-        String prompt = promptRegistry.getPrompt(PromptType.VALUATION).replace("{{ fact_sheet_json }}", promptDataJson);
+        String prompt = promptRegistry.getPrompt(PromptType.VALUATION)
+                .replace("{{ company_financial_ratios }}", factSheet.getCompanyFinancialRatios(ctx.statementVariant()))
+                .replace("{{ daily_share_price_signals }}", factSheet.getDailySharePriceSignals());
 
         String userPrompt = String.format(
                 "Analyze the valuation for %s as of %s based on the provided financial fact sheet.",
