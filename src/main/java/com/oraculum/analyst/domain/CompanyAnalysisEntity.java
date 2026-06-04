@@ -1,5 +1,6 @@
 package com.oraculum.analyst.domain;
 
+import com.oraculum.analyst.api.dto.AnalysisStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

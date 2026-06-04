@@ -3,6 +3,7 @@ package com.oraculum.ui.views;
 import com.oraculum.ui.MainLayout;
 import com.oraculum.ui.request.HarvesterRequest;
 import com.oraculum.ui.service.RefreshRequestService;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -11,13 +12,13 @@ import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Paragraph;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.tabs.Tab;
-import com.vaadin.flow.component.tabs.Tabs;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
@@ -27,9 +28,7 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 @Route(value = "refresh", layout = MainLayout.class)
@@ -46,224 +45,234 @@ public class RefreshView extends VerticalLayout {
     public RefreshView(RefreshRequestService refreshService) {
         this.refreshService = refreshService;
 
-        addClassNames(LumoUtility.Padding.MEDIUM);
+        addClassNames(LumoUtility.Padding.MEDIUM, LumoUtility.Gap.LARGE);
         setSizeFull();
 
-        Paragraph caption = new Paragraph(
-                "Queue refresh requests to Kafka. The harvester consumes them from the configured request topic.");
-        caption.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.Margin.Bottom.MEDIUM);
+        add(createHeader());
+        add(buildMetadataSection());
+        add(buildCompanySection());
+        add(buildStatementsSection());
+    }
 
-        Map<Tab, Div> tabContent = new LinkedHashMap<>();
-        tabContent.put(new Tab("Metadata"),        buildMetadataTab());
-        tabContent.put(new Tab("Company"),           buildCompanyTab());
-        tabContent.put(new Tab("Share Price"),      buildSharePriceTab());
-        tabContent.put(new Tab("News & Sentiment"), buildNewsTab());
-        tabContent.put(new Tab("Income Statement"), buildStatementTab((m, v, t) -> new HarvesterRequest.FetchIncomeStatement(m, v, t)));
-        tabContent.put(new Tab("Balance Sheet"),    buildStatementTab((m, v, t) -> new HarvesterRequest.FetchBalanceSheet(m, v, t)));
-        tabContent.put(new Tab("Cash Flow"),        buildStatementTab((m, v, t) -> new HarvesterRequest.FetchCashFlowStatement(m, v, t)));
-
-        Tabs tabs = new Tabs(tabContent.keySet().toArray(new Tab[0]));
-        tabs.setWidthFull();
-
-        Div pages = new Div();
-        pages.setSizeFull();
-        tabContent.values().forEach(page -> {
-            page.setVisible(false);
-            pages.add(page);
-        });
-        tabContent.values().iterator().next().setVisible(true);
-
-        tabs.addSelectedChangeListener(e -> {
-            tabContent.values().forEach(page -> page.setVisible(false));
-            tabContent.get(e.getSelectedTab()).setVisible(true);
-        });
-
-        setFlexGrow(1, pages);
-        add(caption, tabs, pages);
+    private Component createHeader() {
+        VerticalLayout header = new VerticalLayout();
+        header.setPadding(false);
+        header.setSpacing(false);
+        H3 title = new H3("Data Refresh Console");
+        title.addClassNames(LumoUtility.Margin.Top.NONE, LumoUtility.Margin.Bottom.XSMALL);
+        Paragraph caption = new Paragraph("Queue refresh requests to Kafka. The harvester consumes them from the configured request topic.");
+        caption.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.Margin.Bottom.NONE);
+        header.add(title, caption);
+        return header;
     }
 
     // -------------------------------------------------------------------------
-    // Metadata tab
+    // Sections
     // -------------------------------------------------------------------------
 
-    private Div buildMetadataTab() {
-        Div content = new Div();
-        content.addClassNames(LumoUtility.Padding.MEDIUM);
+    private Component buildMetadataSection() {
+        HorizontalLayout layout = new HorizontalLayout();
+        layout.setWidthFull();
+        layout.addClassNames(LumoUtility.Gap.MEDIUM);
+        
+        layout.add(createSimpleActionCard("Market Data", "Refreshes the list of all supported stock markets.", () -> publish(new HarvesterRequest.FetchMarket())));
+        layout.add(createSimpleActionCard("Industry Data", "Refreshes the list of all industry classifications.", () -> publish(new HarvesterRequest.FetchIndustry())));
+        
+        return layout;
+    }
 
-        H3 title = new H3("Markets & Industries");
+    private Component buildCompanySection() {
+        HorizontalLayout layout = new HorizontalLayout();
+        layout.setWidthFull();
+        layout.addClassNames(LumoUtility.Gap.MEDIUM);
 
-        Button marketBtn = new Button("Queue market refresh");
-        marketBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        marketBtn.addClickListener(e -> publish(new HarvesterRequest.FetchMarket()));
+        layout.add(createCompanyRefreshCard());
+        layout.add(createSharePriceRefreshCard());
+        
+        return layout;
+    }
 
-        Button industryBtn = new Button("Queue industry refresh");
-        industryBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        industryBtn.addClickListener(e -> publish(new HarvesterRequest.FetchIndustry()));
+    private Component buildStatementsSection() {
+        Div grid = new Div();
+        grid.setWidthFull();
+        grid.addClassNames(LumoUtility.Display.GRID, LumoUtility.Gap.MEDIUM);
+        grid.getStyle().set("grid-template-columns", "repeat(auto-fit, minmax(350px, 1fr))");
 
-        HorizontalLayout buttons = new HorizontalLayout(marketBtn, industryBtn);
-        buttons.addClassNames(LumoUtility.Gap.MEDIUM);
+        grid.add(createStatementRefreshCard("Income Statements", (m, v, t) -> new HarvesterRequest.FetchIncomeStatement(m, v, t)));
+        grid.add(createStatementRefreshCard("Balance Sheets", (m, v, t) -> new HarvesterRequest.FetchBalanceSheet(m, v, t)));
+        grid.add(createStatementRefreshCard("Cash Flow Statements", (m, v, t) -> new HarvesterRequest.FetchCashFlowStatement(m, v, t)));
+        grid.add(createNewsRefreshCard());
 
-        content.add(title, buttons);
-        return content;
+        return grid;
     }
 
     // -------------------------------------------------------------------------
-    // Company tab
+    // Card Builders
     // -------------------------------------------------------------------------
 
-    private Div buildCompanyTab() {
-        Div content = new Div();
-        content.addClassNames(LumoUtility.Padding.MEDIUM);
+    private VerticalLayout createCard(String title) {
+        VerticalLayout card = new VerticalLayout();
+        card.addClassNames(
+            LumoUtility.Background.BASE, 
+            LumoUtility.BorderRadius.MEDIUM,
+            LumoUtility.BoxShadow.SMALL, 
+            LumoUtility.Padding.MEDIUM,
+            LumoUtility.Border.ALL,
+            LumoUtility.BorderColor.CONTRAST_10
+        );
+        card.setWidthFull();
+        
+        H4 cardTitle = new H4(title);
+        cardTitle.addClassNames(LumoUtility.Margin.Top.NONE, LumoUtility.Margin.Bottom.MEDIUM);
+        card.add(cardTitle);
+        
+        return card;
+    }
 
-        H3 title = new H3("Company Refresh");
+    private Component createSimpleActionCard(String title, String description, Runnable action) {
+        VerticalLayout card = createCard(title);
+        
+        Paragraph desc = new Paragraph(description);
+        desc.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.Margin.Bottom.MEDIUM, LumoUtility.Margin.Top.NONE);
+        
+        Button btn = new Button("Queue Refresh", VaadinIcon.REFRESH.create());
+        btn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        btn.addClickListener(e -> action.run());
+        
+        card.add(desc, btn);
+        return card;
+    }
 
+    private Component createCompanyRefreshCard() {
+        VerticalLayout card = createCard("Company List");
+        
         TextField market = new TextField("Market");
         market.setValue("us");
-        market.setWidth("200px");
-
-        Button submit = new Button("Queue company refresh");
-        submit.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        submit.addClickListener(e -> {
-            String m = market.getValue().strip().toLowerCase();
-            if (m.isBlank()) {
-                showError("Market is required.");
-                return;
-            }
-            publish(new HarvesterRequest.FetchCompany(m));
-        });
-
+        market.setWidthFull();
+        
+        Button btn = new Button("Queue Refresh", VaadinIcon.REFRESH.create());
+        btn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        btn.addClickListener(e -> queueCompanyRefresh(market.getValue()));
+        
         FormLayout form = new FormLayout(market);
-        content.add(title, form, submit);
-        return content;
+        card.add(form, btn);
+        return card;
     }
 
-    // -------------------------------------------------------------------------
-    // Share Price tab
-    // -------------------------------------------------------------------------
-
-    private Div buildSharePriceTab() {
-        Div content = new Div();
-        content.addClassNames(LumoUtility.Padding.MEDIUM);
-
-        H3 title = new H3("Share Price Refresh");
-
+    private Component createSharePriceRefreshCard() {
+        VerticalLayout card = createCard("Share Prices");
+        
         TextField market = new TextField("Market");
         market.setValue("us");
-
+        
         TextField variant = new TextField("Variant");
         variant.setValue("daily");
-        variant.setHelperText("SimFin variant name, e.g. 'daily'");
-
-        Checkbox useFromDate = new Checkbox("Use incremental from_date", true);
-
-        DatePicker fromDate = new DatePicker("From date");
+        
+        Checkbox useFromDate = new Checkbox("Incremental Refresh", true);
+        DatePicker fromDate = new DatePicker("From Date");
         fromDate.setValue(LocalDate.now());
-        fromDate.setEnabled(true);
         useFromDate.addValueChangeListener(e -> fromDate.setEnabled(e.getValue()));
-
-        IntegerField safetyWindowDays = new IntegerField("Safety window days");
-        safetyWindowDays.setValue(7);
-        safetyWindowDays.setMin(0);
-        safetyWindowDays.setStepButtonsVisible(true);
-
-        Button submit = new Button("Queue share-price refresh");
-        submit.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        submit.addClickListener(e -> {
-            String m = market.getValue().strip().toLowerCase();
-            String v = variant.getValue().strip().toLowerCase();
-            if (m.isBlank() || v.isBlank()) {
-                showError("Market and Variant are required.");
-                return;
-            }
-            int window = safetyWindowDays.getValue() != null ? safetyWindowDays.getValue() : 7;
-            String dateStr = useFromDate.getValue() && fromDate.getValue() != null
-                    ? fromDate.getValue().format(DATE_FMT) : null;
-            publish(new HarvesterRequest.FetchSharePrice(m, v, dateStr, window));
-        });
-
-        FormLayout form = new FormLayout(market, variant, useFromDate, fromDate, safetyWindowDays);
-        content.add(title, form, submit);
-        return content;
+        
+        IntegerField safetyWindow = new IntegerField("Safety Window (days)");
+        safetyWindow.setValue(7);
+        
+        Button btn = new Button("Queue Refresh", VaadinIcon.REFRESH.create());
+        btn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        btn.addClickListener(e -> queueSharePriceRefresh(market.getValue(), variant.getValue(), useFromDate.getValue(), fromDate.getValue(), safetyWindow.getValue()));
+        
+        FormLayout form = new FormLayout(market, variant, useFromDate, fromDate, safetyWindow);
+        form.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 1), new FormLayout.ResponsiveStep("300px", 2));
+        
+        card.add(form, btn);
+        return card;
     }
 
-    // -------------------------------------------------------------------------
-    // News tab
-    // -------------------------------------------------------------------------
+    private Component createStatementRefreshCard(String title, StatementRequestFactory factory) {
+        VerticalLayout card = createCard(title);
+        
+        TextField market = new TextField("Market");
+        market.setValue("us");
+        
+        MultiSelectComboBox<String> variants = new MultiSelectComboBox<>("Variants");
+        variants.setItems(VARIANTS);
+        variants.setValue(Set.copyOf(VARIANTS));
+        
+        MultiSelectComboBox<String> templates = new MultiSelectComboBox<>("Templates");
+        templates.setItems(TEMPLATES);
+        templates.setValue(Set.copyOf(TEMPLATES));
+        
+        Button btn = new Button("Queue Refresh", VaadinIcon.REFRESH.create());
+        btn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        btn.addClickListener(e -> queueStatementRefresh(market.getValue(), variants.getValue(), templates.getValue(), factory));
+        
+        FormLayout form = new FormLayout(market, variants, templates);
+        card.add(form, btn);
+        return card;
+    }
 
-    private Div buildNewsTab() {
-        Div content = new Div();
-        content.addClassNames(LumoUtility.Padding.MEDIUM);
-
-        H3 title = new H3("News & Sentiment Refresh");
-
-        Checkbox useFromDate = new Checkbox("Use incremental from_date", true);
-
-        DatePicker fromDate = new DatePicker("From date");
+    private Component createNewsRefreshCard() {
+        VerticalLayout card = createCard("News & Sentiment");
+        
+        Checkbox useFromDate = new Checkbox("Incremental Refresh", true);
+        DatePicker fromDate = new DatePicker("From Date");
         fromDate.setValue(LocalDate.now());
-        fromDate.setEnabled(true);
         useFromDate.addValueChangeListener(e -> fromDate.setEnabled(e.getValue()));
-
-        Button submit = new Button("Queue news refresh");
-        submit.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        submit.addClickListener(e -> {
-            String timeFrom = null;
-            if (useFromDate.getValue() && fromDate.getValue() != null) {
-                timeFrom = fromDate.getValue().atStartOfDay()
-                        .format(DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmm"));
-            }
-            publish(new HarvesterRequest.FetchNews(timeFrom));
-        });
-
+        
+        Button btn = new Button("Queue Refresh", VaadinIcon.REFRESH.create());
+        btn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        btn.addClickListener(e -> queueNewsRefresh(useFromDate.getValue(), fromDate.getValue()));
+        
         FormLayout form = new FormLayout(useFromDate, fromDate);
-        content.add(title, form, submit);
-        return content;
+        card.add(form, btn);
+        return card;
     }
 
     // -------------------------------------------------------------------------
-    // Generic statement tab (income / balance sheet / cash flow)
+    // Request Dispatchers
+    // -------------------------------------------------------------------------
+
+    private void queueCompanyRefresh(String market) {
+        String m = market.strip().toLowerCase();
+        if (m.isBlank()) { showError("Market is required."); return; }
+        publish(new HarvesterRequest.FetchCompany(m));
+    }
+
+    private void queueSharePriceRefresh(String market, String variant, boolean useDate, LocalDate date, Integer window) {
+        String m = market.strip().toLowerCase();
+        String v = variant.strip().toLowerCase();
+        if (m.isBlank() || v.isBlank()) { showError("Market and Variant are required."); return; }
+        String dateStr = useDate && date != null ? date.format(DATE_FMT) : null;
+        int win = window != null ? window : 7;
+        publish(new HarvesterRequest.FetchSharePrice(m, v, dateStr, win));
+    }
+
+    private void queueStatementRefresh(String market, Set<String> variants, Set<String> templates, StatementRequestFactory factory) {
+        String m = market.strip().toLowerCase();
+        if (m.isBlank()) { showError("Market is required."); return; }
+        if (variants.isEmpty()) { showError("Select at least one variant."); return; }
+        if (templates.isEmpty()) { showError("Select at least one template."); return; }
+        
+        for (String v : variants) {
+            publish(factory.create(m, v, List.copyOf(templates)));
+        }
+    }
+
+    private void queueNewsRefresh(boolean useDate, LocalDate date) {
+        String timeFrom = null;
+        if (useDate && date != null) {
+            timeFrom = date.atStartOfDay().format(DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmm"));
+        }
+        publish(new HarvesterRequest.FetchNews(timeFrom));
+    }
+
+    // -------------------------------------------------------------------------
+    // Helpers
     // -------------------------------------------------------------------------
 
     @FunctionalInterface
     private interface StatementRequestFactory {
         HarvesterRequest create(String market, String variant, List<String> templates);
     }
-
-    private Div buildStatementTab(StatementRequestFactory factory) {
-        Div content = new Div();
-        content.addClassNames(LumoUtility.Padding.MEDIUM);
-
-        TextField market = new TextField("Market");
-        market.setValue("us");
-
-        MultiSelectComboBox<String> variants = new MultiSelectComboBox<>("Variants");
-        variants.setItems(VARIANTS);
-        variants.setValue(Set.copyOf(VARIANTS));
-
-        MultiSelectComboBox<String> templates = new MultiSelectComboBox<>("Templates");
-        templates.setItems(TEMPLATES);
-        templates.setValue(Set.copyOf(TEMPLATES));
-
-        Button submit = new Button("Queue refresh");
-        submit.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        submit.addClickListener(e -> {
-            String m = market.getValue().strip().toLowerCase();
-            if (m.isBlank()) { showError("Market is required."); return; }
-            if (variants.getValue().isEmpty()) { showError("Select at least one variant."); return; }
-            if (templates.getValue().isEmpty()) { showError("Select at least one template."); return; }
-
-            for (String v : variants.getValue()) {
-                publish(factory.create(m, v, List.copyOf(templates.getValue())));
-            }
-        });
-
-        FormLayout form = new FormLayout(market, variants, templates);
-        content.add(form, submit);
-        return content;
-    }
-
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
 
     private void publish(HarvesterRequest request) {
         try {

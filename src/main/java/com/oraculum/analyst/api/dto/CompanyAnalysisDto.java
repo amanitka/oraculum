@@ -21,7 +21,7 @@ public class CompanyAnalysisDto {
     private String market;
     private String ticker;
     private LocalDate analysisDate;
-    private String status;
+    private AnalysisStatus status;
     private String report;
     private AnalysisOutlook outlook;
     private AnalysisRecommendation recommendation;
@@ -40,7 +40,7 @@ public class CompanyAnalysisDto {
                 entity.getMarket(),
                 entity.getTicker(),
                 entity.getAnalysisDate(),
-                entity.getStatus() != null ? entity.getStatus().name() : null,
+                entity.getStatus(),
                 entity.getReport(),
                 entity.getOutlook(),
                 entity.getRecommendation(),

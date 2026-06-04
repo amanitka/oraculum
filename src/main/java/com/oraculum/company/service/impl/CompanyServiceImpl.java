@@ -56,6 +56,11 @@ public class CompanyServiceImpl implements CompanyService {
     }
 
     @Override
+    public List<CompanyDto> getCompaniesByMarket(String market) {
+        return companyRepository.findByMarket(market).stream().map(CompanyDto::fromEntity).collect(Collectors.toList());
+    }
+
+    @Override
     public List<MarketDto> getAllMarkets() {
         return marketRepository.findAll().stream().map(MarketDto::fromEntity).collect(Collectors.toList());
     }

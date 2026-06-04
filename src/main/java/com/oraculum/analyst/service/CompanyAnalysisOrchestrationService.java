@@ -1,7 +1,7 @@
 package com.oraculum.analyst.service;
 
+import com.oraculum.analyst.api.dto.AnalysisStatus;
 import com.oraculum.analyst.api.dto.CompanyAnalysisRequest;
-import com.oraculum.analyst.domain.AnalysisStatus;
 import com.oraculum.analyst.domain.CompanyAnalysisEntity;
 import com.oraculum.analyst.dto.CompanyAnalysisResult;
 import lombok.RequiredArgsConstructor;
