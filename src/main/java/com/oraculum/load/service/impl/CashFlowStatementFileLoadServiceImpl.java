@@ -25,7 +25,7 @@ public class CashFlowStatementFileLoadServiceImpl implements ParquetFileLoadServ
                publish_date,
                restated_date,
                extracted_at,
-               payload,
+               statement_data,
                created_at,
                updated_at)
             SELECT
@@ -42,7 +42,7 @@ public class CashFlowStatementFileLoadServiceImpl implements ParquetFileLoadServ
                CAST(src.publish_date AS DATE),
                CAST(src.restated_date AS DATE),
                CAST(src.extracted_at AS TIMESTAMP),
-               CAST(src.payload AS JSONB),
+               CAST(src.statement_data AS JSONB),
                CAST(src.created_at AS TIMESTAMPTZ),
                CAST(src.updated_at AS TIMESTAMPTZ)
             FROM %s AS src
@@ -56,7 +56,7 @@ public class CashFlowStatementFileLoadServiceImpl implements ParquetFileLoadServ
                publish_date = EXCLUDED.publish_date,
                restated_date = EXCLUDED.restated_date,
                extracted_at = EXCLUDED.extracted_at,
-               payload = EXCLUDED.payload,
+               statement_data = EXCLUDED.statement_data,
                updated_at = CURRENT_TIMESTAMP;
             """;
 

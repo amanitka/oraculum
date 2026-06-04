@@ -1,15 +1,14 @@
 package com.oraculum.analyst.dto;
 
-import com.oraculum.analyst.util.MarkdownUtils;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.oraculum.analyst.util.JsonUtils;
 import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.dto.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
 import tools.jackson.databind.ObjectMapper;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,7 +17,6 @@ import java.util.stream.Collectors;
 @Builder
 @AllArgsConstructor
 @Getter
-@Setter
 public class CompanyFactSheetData {
     private final ObjectMapper objectMapper;
     private final CompanyDto company;
@@ -29,9 +27,6 @@ public class CompanyFactSheetData {
     private final List<DailyMarketSignalDto> dailyMarketSignals;
     private final List<DailyMarketSignalDto> monthlyMarketSignals;
     private final List<NewsTickerDto> recentNews;
-    private final Map<StatementVariant, String> incomeStatementsCache = new HashMap<>();
-    private final Map<StatementVariant, String> balanceSheetsCache = new HashMap<>();
-    private final Map<StatementVariant, String> cashFlowStatementsCache = new HashMap<>();
     private final Map<StatementVariant, String> derivedMetricsCache = new HashMap<>();
     // Lazy loaded stuff
     private String companyProfileCache;
@@ -41,106 +36,58 @@ public class CompanyFactSheetData {
 
     public String getCompanyProfile() {
         if (companyProfileCache == null) {
-            List<Map<String, Object>> profileData = new ArrayList<>();
-
-            addProfileEntry(profileData, "ticker", company.ticker());
-            addProfileEntry(profileData, "market", company.market());
-            addProfileEntry(profileData, "company_name", company.companyName(), "Unknown");
-            addProfileEntry(profileData, "industry_name", company.industryName(), "Unknown");
-            addProfileEntry(profileData, "sector_name", company.sectorName(), "Unknown");
-            addProfileEntry(profileData, "isin", company.isin());
-            addProfileEntry(profileData, "description", company.description());
-            addProfileEntry(profileData, "employee_count", company.employeeCount());
-            addProfileEntry(profileData, "currency", company.currency());
-            addProfileEntry(profileData, "cik", company.cik());
-
-            companyProfileCache = MarkdownUtils.toMarkdownTable(profileData, "Company Profile", objectMapper);
+            companyProfileCache = JsonUtils.toJson(objectMapper, company, "{}");
         }
         return companyProfileCache;
     }
 
-    private void addProfileEntry(List<Map<String, Object>> profileData, String key, Object value) {
-        addProfileEntry(profileData, key, value, "");
-    }
-
-    private void addProfileEntry(List<Map<String, Object>> profileData, String key, Object value, String defaultValue) {
-        String stringValue = (value != null) ? String.valueOf(value) : defaultValue;
-        if (!stringValue.isEmpty()) {
-            Map<String, Object> entry = new HashMap<>();
-            entry.put("Field", capitalizeKey(key));
-            entry.put("Value", stringValue);
-            profileData.add(entry);
-        }
-    }
-
     public String getIncomeStatementHistory(StatementVariant variant) {
-        return incomeStatementsCache.computeIfAbsent(variant,
-                v -> MarkdownUtils.toMarkdownTable(incomeStatements.get(v),
-                        "Income Statement History (" + v.name() + ")",
-                        objectMapper));
+        List<IncomeStatementDto> stmts = incomeStatements.get(variant);
+        if (stmts == null || stmts.isEmpty()) return "[]";
+        return "[" + stmts.stream()
+                .map(IncomeStatementDto::statementData)
+                .collect(Collectors.joining(",")) + "]";
     }
 
     public String getBalanceSheetHistory(StatementVariant variant) {
-        return balanceSheetsCache.computeIfAbsent(variant,
-                v -> MarkdownUtils.toMarkdownTable(balanceSheets.get(v),
-                        "Balance Sheet History (" + v.name() + ")",
-                        objectMapper));
+        List<BalanceSheetDto> stmts = balanceSheets.get(variant);
+        if (stmts == null || stmts.isEmpty()) return "[]";
+        return "[" + stmts.stream()
+                .map(BalanceSheetDto::statementData)
+                .collect(Collectors.joining(",")) + "]";
     }
 
     public String getCashFlowHistory(StatementVariant variant) {
-        return cashFlowStatementsCache.computeIfAbsent(variant,
-                v -> MarkdownUtils.toMarkdownTable(cashFlowStatements.get(v),
-                        "Cash Flow History (" + v.name() + ")",
-                        objectMapper));
+        List<CashFlowStatementDto> stmts = cashFlowStatements.get(variant);
+        if (stmts == null || stmts.isEmpty()) return "[]";
+        return "[" + stmts.stream()
+                .map(CashFlowStatementDto::statementData)
+                .collect(Collectors.joining(",")) + "]";
     }
 
     public String getDerivedMetrics(StatementVariant variant) {
         return derivedMetricsCache.computeIfAbsent(variant,
-                v -> MarkdownUtils.toMarkdownTable(derivedMetrics.get(v),
-                        "Derived Metrics (" + v.name() + ")",
-                        objectMapper));
+                v -> JsonUtils.toJson(objectMapper, derivedMetrics.get(v), "[]"));
     }
 
     public String getDailyMarketSignals() {
-        if (dailyMarketSignalsCache != null) {
-            dailyMarketSignalsCache = MarkdownUtils.toMarkdownTable(dailyMarketSignals,
-                    "Recent daily market signals for company " + company.companyName(),
-                    objectMapper);
+        if (dailyMarketSignalsCache == null) {
+            dailyMarketSignalsCache = JsonUtils.toJson(objectMapper, dailyMarketSignals, "[]");
         }
         return dailyMarketSignalsCache;
     }
 
     public String getMonthlyMarketSignals() {
-        if (monthlyMarketSignalsCache != null) {
-            monthlyMarketSignalsCache = MarkdownUtils.toMarkdownTable(monthlyMarketSignals,
-                    "Historical monthly market signals for company " + company.companyName(),
-                    objectMapper);
+        if (monthlyMarketSignalsCache == null) {
+            monthlyMarketSignalsCache = JsonUtils.toJson(objectMapper, monthlyMarketSignals, "[]");
         }
         return monthlyMarketSignalsCache;
     }
 
     public String getRecentNews() {
         if (recentNewsCache == null) {
-            if (recentNews == null || recentNews.isEmpty()) {
-                recentNewsCache = "No recent news found.";
-                return recentNewsCache;
-            }
-
-            recentNewsCache = recentNews.stream().map(item -> {
-                String sentimentStr = String.format("%s (%.2f)",
-                        item.tickerSentimentLabel(),
-                        item.tickerSentimentScore());
-                return "### " + item.title() + "\n" + "**Date:** " + item.timePublished()
-                        .toLocalDate()
-                        .toString() + "\n" + "**Source:** " + item.source() + "\n" + "**Ticker Sentiment:** " + sentimentStr + "\n" + "**Summary:** " + item.summary() + "\n";
-            }).collect(Collectors.joining("\n---\n"));
+            recentNewsCache = JsonUtils.toJson(objectMapper, recentNews, "[]");
         }
         return recentNewsCache;
-    }
-
-    private String capitalizeKey(String key) {
-        return java.util.Arrays.stream(key.split("_"))
-                .map(word -> word.substring(0, 1).toUpperCase() + word.substring(1))
-                .collect(Collectors.joining(" "));
     }
 }

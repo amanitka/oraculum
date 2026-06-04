@@ -18,7 +18,8 @@ public record BalanceSheetDto(String id,
                               LocalDate reportDate,
                               LocalDate publishDate,
                               LocalDate restatedDate,
-                              OffsetDateTime extractedAt) {
+                              OffsetDateTime extractedAt,
+                              String statementData) {
     public static BalanceSheetDto fromEntity(BalanceSheetEntity entity) {
         if (entity == null)
             return null;
@@ -33,6 +34,7 @@ public record BalanceSheetDto(String id,
                 entity.getReportDate(),
                 entity.getPublishDate(),
                 entity.getRestatedDate(),
-                entity.getExtractedAt());
+                entity.getExtractedAt(),
+                entity.getStatementData());
     }
 }

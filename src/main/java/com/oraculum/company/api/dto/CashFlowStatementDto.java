@@ -18,7 +18,8 @@ public record CashFlowStatementDto(String id,
                                    LocalDate reportDate,
                                    LocalDate publishDate,
                                    LocalDate restatedDate,
-                                   OffsetDateTime extractedAt) {
+                                   OffsetDateTime extractedAt,
+                                   String statementData) {
     public static CashFlowStatementDto fromEntity(CashFlowStatementEntity entity) {
         if (entity == null)
             return null;
@@ -33,6 +34,7 @@ public record CashFlowStatementDto(String id,
                 entity.getReportDate(),
                 entity.getPublishDate(),
                 entity.getRestatedDate(),
-                entity.getExtractedAt());
+                entity.getExtractedAt(),
+                entity.getStatementData());
     }
 }

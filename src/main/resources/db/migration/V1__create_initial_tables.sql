@@ -83,7 +83,7 @@ CREATE TABLE public.t_balance_sheet (
     publish_date DATE NOT NULL,
     restated_date DATE,
     extracted_at TIMESTAMPTZ NOT NULL,
-    payload JSONB NOT NULL,
+    statement_data JSONB NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,
     FOREIGN KEY (company_id) REFERENCES public.t_company(id)
@@ -108,7 +108,7 @@ CREATE TABLE public.t_cash_flow_statement (
     publish_date DATE NOT NULL,
     restated_date DATE,
     extracted_at TIMESTAMPTZ NOT NULL,
-    payload JSONB NOT NULL,
+    statement_data JSONB NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,
     FOREIGN KEY (company_id) REFERENCES public.t_company(id)
@@ -133,7 +133,7 @@ CREATE TABLE public.t_income_statement (
     publish_date DATE NOT NULL,
     restated_date DATE,
     extracted_at TIMESTAMPTZ NOT NULL,
-    payload JSONB NOT NULL,
+    statement_data JSONB NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,
     FOREIGN KEY (company_id) REFERENCES public.t_company(id)
