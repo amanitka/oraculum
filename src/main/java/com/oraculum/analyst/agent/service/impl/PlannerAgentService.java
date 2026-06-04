@@ -36,7 +36,7 @@ public class PlannerAgentService implements AgentService<PlannerPlan> {
     @Override
     public AgentOutput<PlannerPlan> run(AgentContext ctx) {
         CompanyDto company = ctx.company();
-        String sharePriceSignals = ctx.factSheetData().getDailyMarketSignals();
+        String sharePriceSignals = ctx.factSheetData().getDailySharePriceSignals();
         String companyProfile = ctx.factSheetData().getCompanyProfile();
 
         String prompt = systemPrompt.replace("{{ market_signals_json }}", sharePriceSignals);

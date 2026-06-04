@@ -45,7 +45,7 @@ public class FundamentalsAgentService implements AgentService<FundamentalsAgentO
                 "balance_sheet_history",
                 factSheet.getBalanceSheetHistory(ctx.statementVariant()),
                 "derived_metrics",
-                factSheet.getDerivedMetrics(ctx.statementVariant()));
+                factSheet.getCompanyFinancialRatios(ctx.statementVariant()));
 
         String promptDataJson;
         try {

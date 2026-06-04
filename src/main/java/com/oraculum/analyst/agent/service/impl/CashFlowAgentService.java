@@ -66,7 +66,7 @@ public class CashFlowAgentService implements AgentService<CashFlowAgentOutput> {
         Map<String, Object> promptData = Map.of("cash_flow_history",
                 factSheet.getCashFlowHistory(ctx.statementVariant()),
                 "derived_metrics",
-                factSheet.getDerivedMetrics(ctx.statementVariant()),
+                factSheet.getCompanyFinancialRatios(ctx.statementVariant()),
                 "quantitative_guardrails",
                 quantitativeGuardrails);
 

@@ -36,8 +36,8 @@ public class SharePriceAgentService implements AgentService<SharePriceAgentOutpu
         CompanyFactSheetData factSheet = ctx.factSheetData();
 
         String prompt = promptRegistry.getPrompt(PromptType.SHARE_PRICE)
-                .replace("{{ daily_market_signals }}", factSheet.getDailyMarketSignals())
-                .replace("{{ monthly_market_signals }}", factSheet.getMonthlyMarketSignals());
+                .replace("{{ daily_market_signals }}", factSheet.getDailySharePriceSignals())
+                .replace("{{ monthly_market_signals }}", factSheet.getMonthlySharePriceSignals());
 
         String userPrompt = String.format(
                 "Analyze the market signals for %s as of %s based on the provided financial fact sheet.",

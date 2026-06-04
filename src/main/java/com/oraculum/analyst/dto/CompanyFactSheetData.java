@@ -27,10 +27,10 @@ public class CompanyFactSheetData {
     private final List<NewsTickerDto> recentNews;
     // Lazy loaded stuff
     private String companyProfileCache;
+    private Map<StatementVariant, String> companyFinancialRatiosCache;
     private String dailySharePriceSignalsCache;
     private String monthlySharePriceSignalsCache;
     private String recentNewsCache;
-    private String companyFinancialRatiosCache;
 
     public String getCompanyProfile() {
         if (companyProfileCache == null) {
@@ -41,33 +41,28 @@ public class CompanyFactSheetData {
 
     public String getIncomeStatementHistory(StatementVariant variant) {
         List<IncomeStatementDto> stmts = incomeStatements.get(variant);
-        if (stmts == null || stmts.isEmpty()) return "[]";
-        return "[" + stmts.stream()
-                .map(IncomeStatementDto::statementData)
-                .collect(Collectors.joining(",")) + "]";
+        if (stmts == null || stmts.isEmpty())
+            return "[]";
+        return "[" + stmts.stream().map(IncomeStatementDto::statementData).collect(Collectors.joining(",")) + "]";
     }
 
     public String getBalanceSheetHistory(StatementVariant variant) {
         List<BalanceSheetDto> stmts = balanceSheets.get(variant);
-        if (stmts == null || stmts.isEmpty()) return "[]";
-        return "[" + stmts.stream()
-                .map(BalanceSheetDto::statementData)
-                .collect(Collectors.joining(",")) + "]";
+        if (stmts == null || stmts.isEmpty())
+            return "[]";
+        return "[" + stmts.stream().map(BalanceSheetDto::statementData).collect(Collectors.joining(",")) + "]";
     }
 
     public String getCashFlowHistory(StatementVariant variant) {
         List<CashFlowStatementDto> stmts = cashFlowStatements.get(variant);
-        if (stmts == null || stmts.isEmpty()) return "[]";
-        return "[" + stmts.stream()
-                .map(CashFlowStatementDto::statementData)
-                .collect(Collectors.joining(",")) + "]";
+        if (stmts == null || stmts.isEmpty())
+            return "[]";
+        return "[" + stmts.stream().map(CashFlowStatementDto::statementData).collect(Collectors.joining(",")) + "]";
     }
 
     public String getCompanyFinancialRatios(StatementVariant variant) {
-        if (companyFinancialRatiosCache == null) {
-            companyFinancialRatiosCache = JsonUtils.toJson(objectMapper, companyFinancialRatios.get(variant), "[]");
-        }
-        return companyFinancialRatiosCache;
+        return companyFinancialRatiosCache.computeIfAbsent(variant,
+                k -> JsonUtils.toJson(objectMapper, companyFinancialRatios.get(variant), "[]"));
     }
 
     public String getDailySharePriceSignals() {

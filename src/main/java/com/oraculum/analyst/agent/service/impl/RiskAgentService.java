@@ -43,9 +43,9 @@ public class RiskAgentService implements AgentService<RiskAgentOutput> {
         Map<String, Object> promptData = Map.of("balance_sheet_history",
                 factSheet.getBalanceSheetHistory(ctx.statementVariant()),
                 "derived_metrics",
-                factSheet.getDerivedMetrics(ctx.statementVariant()),
+                factSheet.getCompanyFinancialRatios(ctx.statementVariant()),
                 "share_price_signals",
-                factSheet.getDailyMarketSignals());
+                factSheet.getDailySharePriceSignals());
 
         String promptDataJson;
         try {

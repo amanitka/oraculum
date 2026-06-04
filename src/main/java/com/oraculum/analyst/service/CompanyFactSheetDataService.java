@@ -41,7 +41,8 @@ public class CompanyFactSheetDataService {
                 .collect(Collectors.groupingBy(CashFlowStatementDto::variant));
     }
 
-    private Map<StatementVariant, List<CompanyFinancialRatiosDto>> getCompanyFinancialRatios(CompanyDto company, LocalDate after) {
+    private Map<StatementVariant, List<CompanyFinancialRatiosDto>> getCompanyFinancialRatios(CompanyDto company,
+                                                                                             LocalDate after) {
         return companyApi.getCompanyFinancialRatiosByCompanyId(company.id(), after)
                 .stream()
                 .collect(Collectors.groupingBy(CompanyFinancialRatiosDto::variant));

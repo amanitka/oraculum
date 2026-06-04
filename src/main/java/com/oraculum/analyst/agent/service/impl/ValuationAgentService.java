@@ -41,9 +41,9 @@ public class ValuationAgentService implements AgentService<ValuationAgentOutput>
         CompanyFactSheetData factSheet = ctx.factSheetData();
 
         Map<String, Object> promptData = Map.of("derived_metrics",
-                factSheet.getDerivedMetrics(ctx.statementVariant()),
+                factSheet.getCompanyFinancialRatios(ctx.statementVariant()),
                 "share_price_signals",
-                factSheet.getDailyMarketSignals());
+                factSheet.getDailySharePriceSignals());
 
         String promptDataJson;
         try {
