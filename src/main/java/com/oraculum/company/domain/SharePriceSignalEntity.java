@@ -1,21 +1,25 @@
 package com.oraculum.company.domain;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.Immutable;
 
 import java.io.Serializable;
 import java.time.LocalDate;
+import java.util.Objects;
 
 @Entity
 @Immutable
-@Table(name = "v_daily_market_signals")
-@IdClass(DailyMarketSignalEntity.DailyMarketSignalId.class)
+@Table(name = "v_share_price_signals")
+@IdClass(SharePriceSignalEntity.SharePriceSignalId.class)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class DailyMarketSignalEntity {
+public class SharePriceSignalEntity {
 
     @Id
     @Column(name = "trade_date")
@@ -24,6 +28,9 @@ public class DailyMarketSignalEntity {
     @Id
     @Column(name = "company_id")
     private int companyId;
+
+    @Column(name = "ticker")
+    private String ticker;
 
     @Column(name = "market")
     private String market;
@@ -106,13 +113,21 @@ public class DailyMarketSignalEntity {
     @Column(name = "debt_to_equity")
     private Float debtToEquity;
 
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @EqualsAndHashCode
-    public static class DailyMarketSignalId implements Serializable {
+    public static class SharePriceSignalId implements Serializable {
         private LocalDate tradeDate;
         private int companyId;
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            SharePriceSignalId that = (SharePriceSignalId) o;
+            return companyId == that.companyId && Objects.equals(tradeDate, that.tradeDate);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(tradeDate, companyId);
+        }
     }
 }

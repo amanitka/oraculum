@@ -33,8 +33,8 @@ public class CompanyServiceImpl implements CompanyService {
     private final CashFlowStatementRepository cashFlowStatementRepository;
     private final IncomeStatementRepository incomeStatementRepository;
     private final SharePriceRepository sharePriceRepository;
-    private final DailyMarketSignalRepository dailyMarketSignalRepository;
-    private final DerivedMetricsRepository derivedMetricsRepository;
+    private final SharePriceSignalRepository sharePriceSignalRepository;
+    private final CompanyFinancialRatiosRepository companyFinancialRatiosRepository;
 
     @Override
     public CompanyDto getCompany(String ticker, String market) {
@@ -128,29 +128,29 @@ public class CompanyServiceImpl implements CompanyService {
     }
 
     @Override
-    public List<DailyMarketSignalDto> getDailyMarketSignalsByCompanyId(int companyId, LocalDate after) {
-        return dailyMarketSignalRepository.findByCompanyIdAndTradeDateAfter(companyId, after)
+    public List<SharePriceSignalDto> getDailySharePriceSignalsByCompanyId(int companyId, LocalDate after) {
+        return sharePriceSignalRepository.findByCompanyIdAndTradeDateAfter(companyId, after)
                 .stream()
-                .map(DailyMarketSignalDto::fromEntity)
-                .sorted(Comparator.comparing(DailyMarketSignalDto::tradeDate).reversed())
+                .map(SharePriceSignalDto::fromEntity)
+                .sorted(Comparator.comparing(SharePriceSignalDto::tradeDate).reversed())
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<DailyMarketSignalDto> getMonthlyMarketSignalsByCompanyId(int companyId, LocalDate after) {
-        return dailyMarketSignalRepository.findByCompanyIdAndTradeDateAfterAndFlagLastDayOfMonth(companyId, after, "Y")
+    public List<SharePriceSignalDto> getMonthlySharePriceSignalsByCompanyId(int companyId, LocalDate after) {
+        return sharePriceSignalRepository.findByCompanyIdAndTradeDateAfterAndFlagLastDayOfMonth(companyId, after, "Y")
                 .stream()
-                .map(DailyMarketSignalDto::fromEntity)
-                .sorted(Comparator.comparing(DailyMarketSignalDto::tradeDate).reversed())
+                .map(SharePriceSignalDto::fromEntity)
+                .sorted(Comparator.comparing(SharePriceSignalDto::tradeDate).reversed())
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<DerivedMetricsDto> getDerivedMetricsByCompanyId(int companyId, LocalDate after) {
-        return derivedMetricsRepository.findByCompanyIdAndReportDateAfter(companyId, after)
+    public List<CompanyFinancialRatiosDto> getCompanyFinancialRatiosByCompanyId(int companyId, LocalDate after) {
+        return companyFinancialRatiosRepository.findByCompanyIdAndReportDateAfter(companyId, after)
                 .stream()
-                .map(DerivedMetricsDto::fromEntity)
-                .sorted(Comparator.comparing(DerivedMetricsDto::reportDate).reversed())
+                .map(CompanyFinancialRatiosDto::fromEntity)
+                .sorted(Comparator.comparing(CompanyFinancialRatiosDto::reportDate).reversed())
                 .collect(Collectors.toList());
     }
 

@@ -41,18 +41,18 @@ public class CompanyFactSheetDataService {
                 .collect(Collectors.groupingBy(CashFlowStatementDto::variant));
     }
 
-    private Map<StatementVariant, List<DerivedMetricsDto>> getDerivedMetrics(CompanyDto company, LocalDate after) {
-        return companyApi.getDerivedMetricsByCompanyId(company.id(), after)
+    private Map<StatementVariant, List<CompanyFinancialRatiosDto>> getCompanyFinancialRatios(CompanyDto company, LocalDate after) {
+        return companyApi.getCompanyFinancialRatiosByCompanyId(company.id(), after)
                 .stream()
-                .collect(Collectors.groupingBy(DerivedMetricsDto::variant));
+                .collect(Collectors.groupingBy(CompanyFinancialRatiosDto::variant));
     }
 
-    private List<DailyMarketSignalDto> getDailyMarketSignals(CompanyDto company, LocalDate after) {
-        return companyApi.getDailyMarketSignalsByCompanyId(company.id(), after);
+    private List<SharePriceSignalDto> getDailySharePriceSignals(CompanyDto company, LocalDate after) {
+        return companyApi.getDailySharePriceSignalsByCompanyId(company.id(), after);
     }
 
-    private List<DailyMarketSignalDto> getMonthlyMarketSignals(CompanyDto company, LocalDate after) {
-        return companyApi.getMonthlyMarketSignalsByCompanyId(company.id(), after);
+    private List<SharePriceSignalDto> getMonthlySharePriceSignals(CompanyDto company, LocalDate after) {
+        return companyApi.getMonthlySharePriceSignalsByCompanyId(company.id(), after);
     }
 
     private List<NewsTickerDto> getNews(CompanyDto company, LocalDate after) {
@@ -68,10 +68,10 @@ public class CompanyFactSheetDataService {
                 .incomeStatements(getIncomeStatements(company, factSheetAfter))
                 .balanceSheets(getBalanceSheets(company, factSheetAfter))
                 .cashFlowStatements(getCashFlowStatements(company, factSheetAfter))
-                .derivedMetrics(getDerivedMetrics(company, factSheetAfter))
-                .dailyMarketSignals(getDailyMarketSignals(company,
+                .companyFinancialRatios(getCompanyFinancialRatios(company, factSheetAfter))
+                .dailySharePriceSignals(getDailySharePriceSignals(company,
                         analystProperties.sharePrice().getSharePriceHistoryDate()))
-                .monthlyMarketSignals(getMonthlyMarketSignals(company,
+                .monthlySharePriceSignals(getMonthlySharePriceSignals(company,
                         analystProperties.sharePrice().getMonthlySharePriceHistoryDate()))
                 .recentNews(getNews(company, analystProperties.news().getNewsHistoryDate()))
                 .build();

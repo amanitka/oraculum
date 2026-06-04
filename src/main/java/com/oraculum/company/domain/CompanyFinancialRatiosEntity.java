@@ -13,12 +13,12 @@ import java.time.LocalDate;
 
 @Entity
 @Immutable
-@Table(name = "v_derived_metrics")
+@Table(name = "v_company_financial_ratios")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class DerivedMetricsEntity {
+public class CompanyFinancialRatiosEntity {
 
     @Id
     @Column(name = "id")
@@ -26,6 +26,9 @@ public class DerivedMetricsEntity {
 
     @Column(name = "company_id")
     private int companyId;
+
+    @Column(name = "ticker")
+    private String ticker;
 
     @Column(name = "currency")
     private String currency;

@@ -1,6 +1,5 @@
 package com.oraculum.analyst.dto;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.oraculum.analyst.util.JsonUtils;
 import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.dto.*;
@@ -9,7 +8,6 @@ import lombok.Builder;
 import lombok.Getter;
 import tools.jackson.databind.ObjectMapper;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -23,16 +21,16 @@ public class CompanyFactSheetData {
     private final Map<StatementVariant, List<IncomeStatementDto>> incomeStatements;
     private final Map<StatementVariant, List<BalanceSheetDto>> balanceSheets;
     private final Map<StatementVariant, List<CashFlowStatementDto>> cashFlowStatements;
-    private final Map<StatementVariant, List<DerivedMetricsDto>> derivedMetrics;
-    private final List<DailyMarketSignalDto> dailyMarketSignals;
-    private final List<DailyMarketSignalDto> monthlyMarketSignals;
+    private final Map<StatementVariant, List<CompanyFinancialRatiosDto>> companyFinancialRatios;
+    private final List<SharePriceSignalDto> dailySharePriceSignals;
+    private final List<SharePriceSignalDto> monthlySharePriceSignals;
     private final List<NewsTickerDto> recentNews;
-    private final Map<StatementVariant, String> derivedMetricsCache = new HashMap<>();
     // Lazy loaded stuff
     private String companyProfileCache;
-    private String dailyMarketSignalsCache;
-    private String monthlyMarketSignalsCache;
+    private String dailySharePriceSignalsCache;
+    private String monthlySharePriceSignalsCache;
     private String recentNewsCache;
+    private String companyFinancialRatiosCache;
 
     public String getCompanyProfile() {
         if (companyProfileCache == null) {
@@ -65,23 +63,25 @@ public class CompanyFactSheetData {
                 .collect(Collectors.joining(",")) + "]";
     }
 
-    public String getDerivedMetrics(StatementVariant variant) {
-        return derivedMetricsCache.computeIfAbsent(variant,
-                v -> JsonUtils.toJson(objectMapper, derivedMetrics.get(v), "[]"));
+    public String getCompanyFinancialRatios(StatementVariant variant) {
+        if (companyFinancialRatiosCache == null) {
+            companyFinancialRatiosCache = JsonUtils.toJson(objectMapper, companyFinancialRatios.get(variant), "[]");
+        }
+        return companyFinancialRatiosCache;
     }
 
-    public String getDailyMarketSignals() {
-        if (dailyMarketSignalsCache == null) {
-            dailyMarketSignalsCache = JsonUtils.toJson(objectMapper, dailyMarketSignals, "[]");
+    public String getDailySharePriceSignals() {
+        if (dailySharePriceSignalsCache == null) {
+            dailySharePriceSignalsCache = JsonUtils.toJson(objectMapper, dailySharePriceSignals, "[]");
         }
-        return dailyMarketSignalsCache;
+        return dailySharePriceSignalsCache;
     }
 
-    public String getMonthlyMarketSignals() {
-        if (monthlyMarketSignalsCache == null) {
-            monthlyMarketSignalsCache = JsonUtils.toJson(objectMapper, monthlyMarketSignals, "[]");
+    public String getMonthlySharePriceSignals() {
+        if (monthlySharePriceSignalsCache == null) {
+            monthlySharePriceSignalsCache = JsonUtils.toJson(objectMapper, monthlySharePriceSignals, "[]");
         }
-        return monthlyMarketSignalsCache;
+        return monthlySharePriceSignalsCache;
     }
 
     public String getRecentNews() {

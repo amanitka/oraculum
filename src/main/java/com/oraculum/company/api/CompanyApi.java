@@ -32,9 +32,9 @@ public interface CompanyApi {
 
     List<SharePriceDto> getMonthlySharePricesByCompanyId(int companyId, LocalDate after);
 
-    List<DailyMarketSignalDto> getDailyMarketSignalsByCompanyId(int companyId, LocalDate after);
+    List<SharePriceSignalDto> getDailySharePriceSignalsByCompanyId(int companyId, LocalDate after);
 
-    List<DailyMarketSignalDto> getMonthlyMarketSignalsByCompanyId(int companyId, LocalDate after);
+    List<SharePriceSignalDto> getMonthlySharePriceSignalsByCompanyId(int companyId, LocalDate after);
 
-    List<DerivedMetricsDto> getDerivedMetricsByCompanyId(int companyId, LocalDate after);
+    List<CompanyFinancialRatiosDto> getCompanyFinancialRatiosByCompanyId(int companyId, LocalDate after);
 }

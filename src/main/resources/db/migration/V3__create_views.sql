@@ -1,13 +1,14 @@
 -- Flyway migration script for creating database views
 
 -- =================================================================
--- VIEW: v_derived_metrics
--- Description: [Please add a brief description of the view]
+-- VIEW: v_company_financial_ratios
+-- Description: Core derived metrics for fundamental analysis
 -- =================================================================
-CREATE OR REPLACE VIEW v_derived_metrics AS
+CREATE OR REPLACE VIEW v_company_financial_ratios AS
 WITH statement_values AS (SELECT
                              income.id,
 					         income.company_id,
+					         income.ticker,
 					         income.currency,
 					         income.template,
 					         income.variant,
@@ -16,24 +17,24 @@ WITH statement_values AS (SELECT
 					         income.report_date,
 					         income.publish_date,
 					         income.restated_date,
-					         NULLIF(income.payload ->> 'Revenue'::text, ''::text)::double precision AS revenue,
-						     NULLIF(income.payload ->> 'Cost of Revenue'::text, ''::text)::double precision AS cost_of_revenue,
-						     NULLIF(income.payload ->> 'Net Income'::text, ''::text)::double precision AS net_income,
-						     NULLIF(income.payload ->> 'Operating Income (Loss)'::text, ''::text)::double precision AS operating_income,
-						     NULLIF(income.payload ->> 'Interest Expense, Net'::text, ''::text)::double precision AS interest_expense_net,
-						     NULLIF(income.payload ->> 'Income Tax (Expense) Benefit, Net'::text, ''::text)::double precision AS income_tax,
-						     NULLIF(income.payload ->> 'Depreciation & Amortization'::text, ''::text)::double precision AS depreciation_amortization,
-						     NULLIF(balance.payload ->> 'Total Equity'::text, ''::text)::double precision AS total_equity,
-						     NULLIF(balance.payload ->> 'Total Current Assets'::text, ''::text)::double precision AS total_current_assets,
-						     NULLIF(balance.payload ->> 'Total Current Liabilities'::text, ''::text)::double precision AS total_current_liabilities,
-						     NULLIF(balance.payload ->> 'Total Liabilities'::text, ''::text)::double precision AS total_liabilities,
-						     NULLIF(balance.payload ->> 'Cash, Cash Equivalents & Short Term Investments'::text, ''::text)::double precision AS cash_equivalents_short_term_investments,
-						     NULLIF(balance.payload ->> 'Accounts & Notes Receivable'::text, ''::text)::double precision AS accounts_notes_receivable,
-						     NULLIF(balance.payload ->> 'Inventories'::text, ''::text)::double precision AS inventories,
-						     NULLIF(income.payload ->> 'Shares (Basic)'::text, ''::text)::double precision AS shares_basic,
-						     NULLIF(income.payload ->> 'Shares (Diluted)'::text, ''::text)::double precision AS shares_diluted,
-						     NULLIF(cash_flow.payload ->> 'Net Cash from Operating Activities'::text, ''::text)::double precision AS net_cash_from_operating_activities,
-						     NULLIF(cash_flow.payload ->> 'Change in Fixed Assets & Intangibles'::text, ''::text)::double precision AS capital_expenditures
+					         NULLIF(income.statement_data ->> 'Revenue'::text, ''::text)::double precision AS revenue,
+						     NULLIF(income.statement_data ->> 'Cost of Revenue'::text, ''::text)::double precision AS cost_of_revenue,
+						     NULLIF(income.statement_data ->> 'Net Income'::text, ''::text)::double precision AS net_income,
+						     NULLIF(income.statement_data ->> 'Operating Income (Loss)'::text, ''::text)::double precision AS operating_income,
+						     NULLIF(income.statement_data ->> 'Interest Expense, Net'::text, ''::text)::double precision AS interest_expense_net,
+						     NULLIF(income.statement_data ->> 'Income Tax (Expense) Benefit, Net'::text, ''::text)::double precision AS income_tax,
+						     NULLIF(income.statement_data ->> 'Depreciation & Amortization'::text, ''::text)::double precision AS depreciation_amortization,
+						     NULLIF(balance.statement_data ->> 'Total Equity'::text, ''::text)::double precision AS total_equity,
+						     NULLIF(balance.statement_data ->> 'Total Current Assets'::text, ''::text)::double precision AS total_current_assets,
+						     NULLIF(balance.statement_data ->> 'Total Current Liabilities'::text, ''::text)::double precision AS total_current_liabilities,
+						     NULLIF(balance.statement_data ->> 'Total Liabilities'::text, ''::text)::double precision AS total_liabilities,
+						     NULLIF(balance.statement_data ->> 'Cash, Cash Equivalents & Short Term Investments'::text, ''::text)::double precision AS cash_equivalents_short_term_investments,
+						     NULLIF(balance.statement_data ->> 'Accounts & Notes Receivable'::text, ''::text)::double precision AS accounts_notes_receivable,
+						     NULLIF(balance.statement_data ->> 'Inventories'::text, ''::text)::double precision AS inventories,
+						     NULLIF(income.statement_data ->> 'Shares (Basic)'::text, ''::text)::double precision AS shares_basic,
+						     NULLIF(income.statement_data ->> 'Shares (Diluted)'::text, ''::text)::double precision AS shares_diluted,
+						     NULLIF(cash_flow.statement_data ->> 'Net Cash from Operating Activities'::text, ''::text)::double precision AS net_cash_from_operating_activities,
+						     NULLIF(cash_flow.statement_data ->> 'Change in Fixed Assets & Intangibles'::text, ''::text)::double precision AS capital_expenditures
 					      FROM t_income_statement income
 					      LEFT JOIN t_balance_sheet balance ON balance.company_id = income.company_id
 					                                    	AND balance.currency = income.currency
@@ -51,6 +52,7 @@ WITH statement_values AS (SELECT
 SELECT
     id,
     company_id,
+    ticker,
     currency,
     template,
     variant,
@@ -109,10 +111,10 @@ SELECT
 FROM statement_values;
 
 -- =================================================================
--- VIEW: v_daily_market_signals
--- Description: [Please add a brief description of the view]
+-- VIEW: v_share_price_signals
+-- Description: Daily technical and fundamental momentum signals
 -- =================================================================
-CREATE OR REPLACE VIEW v_daily_market_signals AS
+CREATE OR REPLACE VIEW v_share_price_signals AS
 WITH fundamental_timeline AS (SELECT
 							     company_id,
 							     currency,
@@ -141,7 +143,7 @@ WITH fundamental_timeline AS (SELECT
 							     -- Pulling base variables directly to avoid division hacks in the daily outer select
 							     (net_income / NULLIF(return_on_equity, 0)) AS derived_total_equity,
 							     (revenue / NULLIF(asset_turnover, 0)) AS derived_total_assets
-							  FROM v_derived_metrics
+							  FROM v_company_financial_ratios
 							  WHERE variant = 'ttm'
 							    AND publish_date IS NOT NULL
                               ),
@@ -160,6 +162,7 @@ SELECT
        ELSE 'N'
        END                                                         AS flag_last_day_of_month,
    p.company_id,
+   p.ticker,
    p.market,
    p.currency,
    -- Core Market Pricing & Technical Momentum
