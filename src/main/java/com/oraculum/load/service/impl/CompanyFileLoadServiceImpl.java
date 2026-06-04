@@ -66,8 +66,13 @@ public class CompanyFileLoadServiceImpl implements ParquetFileLoadService {
     @Override
     public void merge(String parquetFilePath) {
         var stagingTableName = PostgresParquetFileLoader.getStagingTableName(TARGET_TABLE_NAME);
-        var loadParquetDto =
-                LoadParquetDto.builder().targetTableName(TARGET_TABLE_NAME).stagingTableName(stagingTableName).parquetFilePath(PostgresParquetFileLoader.normalizeAndValidate(parquetFilePath)).loadSql(BULK_UPSERT_SQL.formatted(stagingTableName)).hasPayload(false).build();
+        var loadParquetDto = LoadParquetDto.builder()
+                .targetTableName(TARGET_TABLE_NAME)
+                .stagingTableName(stagingTableName)
+                .parquetFilePath(PostgresParquetFileLoader.normalizeAndValidate(parquetFilePath))
+                .loadSql(BULK_UPSERT_SQL.formatted(stagingTableName))
+                .hasStatementData(false)
+                .build();
         postgresParquetFileLoader.loadParquetIntoTargetTable(loadParquetDto);
     }
 }

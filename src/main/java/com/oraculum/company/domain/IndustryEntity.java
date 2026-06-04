@@ -31,9 +31,6 @@ public class IndustryEntity {
     @Column(name = "industry_name", nullable = false)
     private String industryName;
 
-    @Column(name = "statement_template", nullable = false)
-    private String statementTemplate;
-
     @Column(name = "extracted_at", nullable = false)
     private OffsetDateTime extractedAt;
 

@@ -33,8 +33,8 @@ public class CashFlowStatementFileLoadServiceImpl implements ParquetFileLoadServ
                CAST(src.company_id AS INTEGER),
                src.market,
                src.ticker,
-               src.template,
-               src.variant,
+               UPPER(src.template),
+               UPPER(src.variant),
                src.currency,
                CAST(src.fiscal_year AS INTEGER),
                src.fiscal_period,
@@ -65,8 +65,13 @@ public class CashFlowStatementFileLoadServiceImpl implements ParquetFileLoadServ
     @Override
     public void merge(String parquetFilePath) {
         var stagingTableName = PostgresParquetFileLoader.getStagingTableName(TARGET_TABLE_NAME);
-        var loadParquetDto =
-                LoadParquetDto.builder().targetTableName(TARGET_TABLE_NAME).stagingTableName(stagingTableName).parquetFilePath(PostgresParquetFileLoader.normalizeAndValidate(parquetFilePath)).loadSql(BULK_UPSERT_SQL.formatted(stagingTableName)).hasPayload(true).build();
+        var loadParquetDto = LoadParquetDto.builder()
+                .targetTableName(TARGET_TABLE_NAME)
+                .stagingTableName(stagingTableName)
+                .parquetFilePath(PostgresParquetFileLoader.normalizeAndValidate(parquetFilePath))
+                .loadSql(BULK_UPSERT_SQL.formatted(stagingTableName))
+                .hasStatementData(true)
+                .build();
         postgresParquetFileLoader.loadParquetIntoTargetTable(loadParquetDto);
     }
 }

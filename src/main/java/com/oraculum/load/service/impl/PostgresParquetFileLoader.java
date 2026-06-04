@@ -59,10 +59,10 @@ public class PostgresParquetFileLoader {
     }
 
     private String getStagingTableDdl(LoadParquetDto loadParquetDto) {
-        if (loadParquetDto.hasPayload()) {
+        if (loadParquetDto.hasStatementData()) {
             return """
                     CREATE TABLE pg.%s AS
-                    SELECT * EXCLUDE (payload), CAST(payload AS JSON) AS payload, now() AS created_at, now() AS updated_at
+                    SELECT * EXCLUDE (statement_data), CAST(statement_data AS JSON) AS statement_data, now() AS created_at, now() AS updated_at
                     FROM read_parquet('%s')
                     LIMIT 0;
                     """.formatted(loadParquetDto.stagingTableName(), loadParquetDto.parquetFilePath());
@@ -76,12 +76,12 @@ public class PostgresParquetFileLoader {
     }
 
     private String getCopyToStagingSql(LoadParquetDto loadParquetDto) {
-        if (loadParquetDto.hasPayload()) {
+        if (loadParquetDto.hasStatementData()) {
             return """
                     INSERT INTO pg.%s
                     SELECT
-                        * EXCLUDE (payload),
-                        CAST(payload AS JSON) AS payload,
+                        * EXCLUDE (statement_data),
+                        CAST(statement_data AS JSON) AS statement_data,
                         now(),
                         now()
                     FROM read_parquet('%s');
