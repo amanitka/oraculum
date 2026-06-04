@@ -1,10 +1,9 @@
 package com.oraculum.analyst.service;
 
+import com.oraculum.analyst.api.dto.CompanyAnalysisRequest;
 import com.oraculum.analyst.domain.AnalysisStatus;
 import com.oraculum.analyst.domain.CompanyAnalysisEntity;
-import com.oraculum.analyst.dto.CompanyAnalysisRequest;
 import com.oraculum.analyst.dto.CompanyAnalysisResult;
-import com.oraculum.analyst.listener.message.AnalyzeCompanyRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,12 +20,12 @@ public class CompanyAnalysisOrchestrationService {
     private final CompanyAnalysisWorkflowService workflow;
     private final ObjectMapper objectMapper;
 
-    public void executeAnalysis(AnalyzeCompanyRequest request) {
+    public void executeAnalysis(CompanyAnalysisRequest request) {
         log.info("Handling orchestrated company analysis request for {}", request.ticker());
         CompanyAnalysisEntity companyAnalysis = initAnalysis(request);
         try {
             markAsRunning(companyAnalysis);
-            CompanyAnalysisResult analysisResult = runAnalysisWorkflow(request);
+            CompanyAnalysisResult analysisResult = workflow.run(request);
             completeAnalysis(companyAnalysis, analysisResult);
             log.info("Successfully completed analysis for ticker {} in market {}", request.ticker(), request.market());
         } catch (Exception e) {
@@ -39,7 +38,7 @@ public class CompanyAnalysisOrchestrationService {
         }
     }
 
-    private CompanyAnalysisEntity initAnalysis(AnalyzeCompanyRequest request) {
+    private CompanyAnalysisEntity initAnalysis(CompanyAnalysisRequest request) {
         CompanyAnalysisEntity entity = new CompanyAnalysisEntity();
         entity.setId(request.correlationId());
         entity.setCompanyId(request.companyId());
@@ -75,12 +74,5 @@ public class CompanyAnalysisOrchestrationService {
             log.error("Failed to serialize analysis trace for {}: {}", entity.getTicker(), e.getMessage());
             markAsFailed(entity, "Failed to serialize agent trace: " + e.getMessage());
         }
-    }
-
-    private CompanyAnalysisResult runAnalysisWorkflow(AnalyzeCompanyRequest request) {
-        return workflow.run(new CompanyAnalysisRequest(request.ticker(),
-                request.market(),
-                request.analysisDate(),
-                request.statementVariant()), request.correlationId());
     }
 }

@@ -4,10 +4,10 @@ import com.oraculum.analyst.agent.dto.AgentContext;
 import com.oraculum.analyst.agent.dto.PlannerPlan;
 import com.oraculum.analyst.agent.dto.SynthesizerAgentOutput;
 import com.oraculum.analyst.agent.service.AgentService;
+import com.oraculum.analyst.api.dto.CompanyAnalysisRequest;
 import com.oraculum.analyst.config.AnalystProperties;
 import com.oraculum.analyst.domain.AgentType;
 import com.oraculum.analyst.domain.AnalysisStatus;
-import com.oraculum.analyst.dto.CompanyAnalysisRequest;
 import com.oraculum.analyst.dto.CompanyAnalysisResult;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
 import com.oraculum.company.api.CompanyApi;
@@ -21,7 +21,6 @@ import java.time.ZonedDateTime;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -34,7 +33,7 @@ public class CompanyAnalysisWorkflowService {
     private final CompanyFactSheetDataService companyFactSheetDataService;
     private final Map<AgentType, AgentService<?>> agents;
 
-    public CompanyAnalysisResult run(CompanyAnalysisRequest request, UUID correlationId) {
+    public CompanyAnalysisResult run(CompanyAnalysisRequest request) {
         long startTime = System.currentTimeMillis();
         int totalTokens = 0;
         Map<AgentType, Object> agentTrace = new EnumMap<>(AgentType.class);
@@ -50,7 +49,7 @@ public class CompanyAnalysisWorkflowService {
 
         AgentContext initialCtx = new AgentContext(company,
                 factSheetData,
-                request.requestDate() != null ? request.requestDate() : LocalDate.now(),
+                request.analysisDate() != null ? request.analysisDate() : LocalDate.now(),
                 request.defaultVariant(),
                 analystProperties.tokenBudget(),
                 new EnumMap<>(AgentType.class));
@@ -66,7 +65,7 @@ public class CompanyAnalysisWorkflowService {
 
             AgentContext sharedCtx = new AgentContext(company,
                     factSheetData,
-                    initialCtx.requestDate(),
+                    initialCtx.analysisDate(),
                     request.defaultVariant(),
                     analystProperties.tokenBudget(),
                     new EnumMap<>(AgentType.class));
@@ -109,10 +108,10 @@ public class CompanyAnalysisWorkflowService {
             long elapsedMs = System.currentTimeMillis() - startTime;
             log.info("Analysis workflow completed successfully in {}ms. Total tokens: {}", elapsedMs, totalTokens);
 
-            return new CompanyAnalysisResult(correlationId,
+            return new CompanyAnalysisResult(request.correlationId(),
                     request.ticker(),
                     request.market(),
-                    sharedCtx.requestDate(),
+                    sharedCtx.analysisDate(),
                     AnalysisStatus.COMPLETED,
                     finalOutput.result().reportMd(),
                     finalOutput.result().outlook(),
@@ -128,10 +127,10 @@ public class CompanyAnalysisWorkflowService {
         } catch (Exception e) {
             long elapsedMs = System.currentTimeMillis() - startTime;
             log.error("Workflow failed after {}ms: {}", elapsedMs, e.getMessage(), e);
-            return new CompanyAnalysisResult(correlationId,
+            return new CompanyAnalysisResult(request.correlationId(),
                     request.ticker(),
                     request.market(),
-                    initialCtx.requestDate(),
+                    initialCtx.analysisDate(),
                     AnalysisStatus.FAILED,
                     null,
                     null,

@@ -42,7 +42,7 @@ public class RiskAgentService implements AgentService<RiskAgentOutput> {
 
         String userPrompt = String.format("Analyze risk for %s as of %s based on the provided financial fact sheet.",
                 ctx.ticker(),
-                ctx.requestDate());
+                ctx.analysisDate());
 
         String fullPrompt = prompt + "\n" + userPrompt;
 

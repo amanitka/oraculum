@@ -42,7 +42,7 @@ public class ValuationAgentService implements AgentService<ValuationAgentOutput>
         String userPrompt = String.format(
                 "Analyze the valuation for %s as of %s based on the provided financial fact sheet.",
                 ctx.ticker(),
-                ctx.requestDate());
+                ctx.analysisDate());
 
         String fullPrompt = prompt + "\n" + userPrompt;
 

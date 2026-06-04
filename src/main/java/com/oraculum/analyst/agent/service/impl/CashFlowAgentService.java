@@ -42,7 +42,7 @@ public class CashFlowAgentService implements AgentService<CashFlowAgentOutput> {
         String userPrompt = String.format(
                 "Analyze cash flow for %s as of %s based on the provided financial fact sheet.",
                 ctx.ticker(),
-                ctx.requestDate());
+                ctx.analysisDate());
 
         String fullPrompt = prompt + "\n" + userPrompt;
 

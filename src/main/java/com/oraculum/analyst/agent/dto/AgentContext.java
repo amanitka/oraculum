@@ -13,7 +13,7 @@ import java.util.Map;
 @Builder
 public record AgentContext(CompanyDto company,
                            CompanyFactSheetData factSheetData,
-                           LocalDate requestDate,
+                           LocalDate analysisDate,
                            StatementVariant statementVariant,
                            int tokenBudget,
                            Map<AgentType, Object> priorOutputs) {

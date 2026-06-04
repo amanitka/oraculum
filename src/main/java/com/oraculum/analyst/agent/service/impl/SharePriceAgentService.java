@@ -42,7 +42,7 @@ public class SharePriceAgentService implements AgentService<SharePriceAgentOutpu
         String userPrompt = String.format(
                 "Analyze the market signals for %s as of %s based on the provided financial fact sheet.",
                 ctx.ticker(),
-                ctx.requestDate());
+                ctx.analysisDate());
 
         String fullPrompt = prompt + "\n" + userPrompt;
 
