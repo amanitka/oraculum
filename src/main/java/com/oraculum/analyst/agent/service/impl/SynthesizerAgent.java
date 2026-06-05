@@ -4,7 +4,7 @@ import com.oraculum.analyst.agent.dto.AgentContext;
 import com.oraculum.analyst.agent.dto.AgentOutput;
 import com.oraculum.analyst.agent.dto.CriticAgentOutput;
 import com.oraculum.analyst.agent.dto.SynthesizerAgentOutput;
-import com.oraculum.analyst.agent.service.AgentService;
+import com.oraculum.analyst.agent.service.Agent;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.AgentType;
 import com.oraculum.analyst.domain.PromptType;
@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
-public class SynthesizerAgentService implements AgentService<SynthesizerAgentOutput> {
+public class SynthesizerAgent implements Agent<SynthesizerAgentOutput> {
 
     private final LlmRouterApi llmRouterApi;
     private final PromptRegistry promptRegistry;
@@ -68,7 +68,7 @@ public class SynthesizerAgentService implements AgentService<SynthesizerAgentOut
                         "Generate the final report and structured verdict, explicitly addressing the critic's " +
                         "findings.",
                 ctx.ticker(),
-                ctx.statementVariant());
+                ctx.defaultStatementVariant());
 
         String fullPrompt = prompt + "\n" + userPrompt;
 

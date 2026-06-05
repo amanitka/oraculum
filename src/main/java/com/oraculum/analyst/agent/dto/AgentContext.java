@@ -14,7 +14,8 @@ import java.util.Map;
 public record AgentContext(CompanyDto company,
                            CompanyFactSheetData factSheetData,
                            LocalDate analysisDate,
-                           StatementVariant statementVariant,
+                           StatementVariant defaultStatementVariant,
+                           Map<AgentType, StatementVariant> statementVariants,
                            int tokenBudget,
                            Map<AgentType, Object> priorOutputs) {
     public String ticker() {
@@ -27,5 +28,12 @@ public record AgentContext(CompanyDto company,
 
     public @NonNull Integer companyId() {
         return company.id();
+    }
+
+    public StatementVariant getVariantFor(AgentType agentType) {
+        if (statementVariants != null && statementVariants.containsKey(agentType)) {
+            return statementVariants.get(agentType);
+        }
+        return defaultStatementVariant;
     }
 }

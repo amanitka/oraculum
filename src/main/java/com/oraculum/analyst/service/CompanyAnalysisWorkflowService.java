@@ -3,7 +3,7 @@ package com.oraculum.analyst.service;
 import com.oraculum.analyst.agent.dto.AgentContext;
 import com.oraculum.analyst.agent.dto.PlannerPlan;
 import com.oraculum.analyst.agent.dto.SynthesizerAgentOutput;
-import com.oraculum.analyst.agent.service.AgentService;
+import com.oraculum.analyst.agent.service.Agent;
 import com.oraculum.analyst.api.dto.AnalysisStatus;
 import com.oraculum.analyst.api.dto.CompanyAnalysisRequest;
 import com.oraculum.analyst.config.AnalystProperties;
@@ -11,6 +11,7 @@ import com.oraculum.analyst.domain.AgentType;
 import com.oraculum.analyst.dto.CompanyAnalysisResult;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
 import com.oraculum.company.api.CompanyApi;
+import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.dto.CompanyDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +32,7 @@ public class CompanyAnalysisWorkflowService {
     private final CompanyApi companyApi; // Inject CompanyApi directly
     private final AnalystProperties analystProperties;
     private final CompanyFactSheetDataService companyFactSheetDataService;
-    private final Map<AgentType, AgentService<?>> agents;
+    private final Map<AgentType, Agent<?>> agents;
 
     public CompanyAnalysisResult run(CompanyAnalysisRequest request) {
         long startTime = System.currentTimeMillis();
@@ -51,42 +52,60 @@ public class CompanyAnalysisWorkflowService {
                 factSheetData,
                 request.analysisDate() != null ? request.analysisDate() : LocalDate.now(),
                 request.defaultVariant(),
+                null,
                 analystProperties.tokenBudget(),
                 new EnumMap<>(AgentType.class));
 
         try {
             log.info("Starting Planner phase");
-            AgentService<PlannerPlan> planner = (AgentService<PlannerPlan>) agents.get(AgentType.PLANNER);
+            Agent<PlannerPlan> planner = (Agent<PlannerPlan>) agents.get(AgentType.PLANNER);
             var planOut = planner.run(initialCtx);
             PlannerPlan plan = planOut.result();
             totalTokens += planOut.tokens();
             agentTrace.put(AgentType.PLANNER, plan);
             log.info("Planner phase complete. Tokens: {}. Plan: {}", planOut.tokens(), plan);
 
+            Map<AgentType, StatementVariant> variants = new EnumMap<>(AgentType.class);
+            if (plan != null) {
+                if (plan.getFundamentalsVariant() != null) {
+                    variants.put(AgentType.FUNDAMENTALS, plan.getFundamentalsVariant());
+                }
+                if (plan.getCashFlowVariant() != null) {
+                    variants.put(AgentType.CASH_FLOW, plan.getCashFlowVariant());
+                }
+                if (plan.getValuationVariant() != null) {
+                    variants.put(AgentType.VALUATION, plan.getValuationVariant());
+                }
+                if (plan.getRiskVariant() != null) {
+                    variants.put(AgentType.RISK, plan.getRiskVariant());
+                }
+            }
+
             AgentContext sharedCtx = new AgentContext(company,
                     factSheetData,
                     initialCtx.analysisDate(),
                     request.defaultVariant(),
+                    variants,
                     analystProperties.tokenBudget(),
                     new EnumMap<>(AgentType.class));
 
-            List<AgentService<?>> specialists = java.util.Arrays.stream(AgentType.values())
+            List<Agent<?>> specialists = java.util.Arrays.stream(AgentType.values())
                     .filter(AgentType::isSpecialist)
                     .map(agents::get)
                     .filter(java.util.Objects::nonNull)
                     .collect(Collectors.toList());
 
-            for (AgentService<?> agentService : specialists) {
-                log.info("Starting {} phase", agentService.getName());
-                var output = agentService.run(sharedCtx);
-                sharedCtx.priorOutputs().put(agentService.getName(), output.result());
+            for (Agent<?> agent : specialists) {
+                log.info("Starting {} phase", agent.getName());
+                var output = agent.run(sharedCtx);
+                sharedCtx.priorOutputs().put(agent.getName(), output.result());
                 totalTokens += output.tokens();
-                agentTrace.put(agentService.getName(), output.result());
-                log.info("{} phase complete. Tokens: {}", agentService.getName(), output.tokens());
+                agentTrace.put(agent.getName(), output.result());
+                log.info("{} phase complete. Tokens: {}", agent.getName(), output.tokens());
             }
 
             log.info("Starting Critic phase");
-            AgentService<?> critic = agents.get(AgentType.CRITIC);
+            Agent<?> critic = agents.get(AgentType.CRITIC);
             var criticOutput = critic.run(sharedCtx);
             sharedCtx.priorOutputs().put(AgentType.CRITIC, criticOutput.result());
             totalTokens += criticOutput.tokens();
@@ -96,8 +115,8 @@ public class CompanyAnalysisWorkflowService {
                     ((com.oraculum.analyst.agent.dto.CriticAgentOutput) criticOutput.result()).isConsistent());
 
             log.info("Starting Synthesizer phase");
-            AgentService<SynthesizerAgentOutput> synthesizer = (AgentService<SynthesizerAgentOutput>) agents.get(
-                    AgentType.SYNTHESIZER);
+            Agent<SynthesizerAgentOutput> synthesizer =
+                    (Agent<SynthesizerAgentOutput>) agents.get(AgentType.SYNTHESIZER);
             var finalOutput = synthesizer.run(sharedCtx);
             totalTokens += finalOutput.tokens();
             agentTrace.put(AgentType.SYNTHESIZER, finalOutput.result());

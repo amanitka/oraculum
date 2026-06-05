@@ -8,13 +8,13 @@ You will be provided with a JSON object containing the outputs of several specia
 
 Your task is to:
 
-1. **Cross-Examine the Summaries**: Meticulously compare the summary and analysis from each agentService.
+1. **Cross-Examine the Summaries**: Meticulously compare the summary and analysis from each agent.
 2. **Identify Contradictions**: Look for direct contradictions. For example:
-    * Does the `Valuation` agentService say the stock is "fairly valued" while the `SharePrice` agentService calls the
+    * Does the `Valuation` agent say the stock is "fairly valued" while the `SharePrice` agent calls the
       valuation "stretched"?
-    * Does the `Fundamentals` agentService praise strong revenue growth while the `CashFlow` agentService points out
+    * Does the `Fundamentals` agent praise strong revenue growth while the `CashFlow` agent points out
       that cash flow is negative?
-    * Does one agentService use a data point that seems to conflict with another agentService's data point for the same
+    * Does one agent use a data point that seems to conflict with another agent's data point for the same
       period?
 3. **List All Findings**: Compile every contradiction you find into the `contradictions_found` list. If you find no
    contradictions, return an empty list.

@@ -3,7 +3,7 @@ package com.oraculum.analyst.agent.service.impl;
 import com.oraculum.analyst.agent.dto.AgentContext;
 import com.oraculum.analyst.agent.dto.AgentOutput;
 import com.oraculum.analyst.agent.dto.CriticAgentOutput;
-import com.oraculum.analyst.agent.service.AgentService;
+import com.oraculum.analyst.agent.service.Agent;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.AgentType;
 import com.oraculum.analyst.domain.PromptType;
@@ -16,11 +16,10 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
-public class CriticAgentService implements AgentService<CriticAgentOutput> {
+public class CriticAgent implements Agent<CriticAgentOutput> {
 
     private final LlmRouterApi llmRouterApi;
     private final PromptRegistry promptRegistry;

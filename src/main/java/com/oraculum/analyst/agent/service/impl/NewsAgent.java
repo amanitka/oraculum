@@ -3,7 +3,7 @@ package com.oraculum.analyst.agent.service.impl;
 import com.oraculum.analyst.agent.dto.AgentContext;
 import com.oraculum.analyst.agent.dto.AgentOutput;
 import com.oraculum.analyst.agent.dto.NewsAgentOutput;
-import com.oraculum.analyst.agent.service.AgentService;
+import com.oraculum.analyst.agent.service.Agent;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.AgentType;
 import com.oraculum.analyst.domain.PromptType;
@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class NewsAgentService implements AgentService<NewsAgentOutput> {
+public class NewsAgent implements Agent<NewsAgentOutput> {
 
     private final LlmRouterApi llmRouterApi;
     private final PromptRegistry promptRegistry;

@@ -3,7 +3,7 @@ package com.oraculum.analyst.agent.service.impl;
 import com.oraculum.analyst.agent.dto.AgentContext;
 import com.oraculum.analyst.agent.dto.AgentOutput;
 import com.oraculum.analyst.agent.dto.PlannerPlan;
-import com.oraculum.analyst.agent.service.AgentService;
+import com.oraculum.analyst.agent.service.Agent;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.AgentType;
 import com.oraculum.analyst.domain.PromptType;
@@ -13,11 +13,11 @@ import com.oraculum.llm.api.dto.LlmTierType;
 import org.springframework.stereotype.Component;
 
 @Component
-public class PlannerAgentService implements AgentService<PlannerPlan> {
+public class PlannerAgent implements Agent<PlannerPlan> {
     private final LlmRouterApi llmRouterApi;
     private final String systemPrompt;
 
-    public PlannerAgentService(LlmRouterApi llmRouterApi, PromptRegistry registry) {
+    public PlannerAgent(LlmRouterApi llmRouterApi, PromptRegistry registry) {
         this.llmRouterApi = llmRouterApi;
         this.systemPrompt = registry.getPrompt(PromptType.PLANNER);
     }

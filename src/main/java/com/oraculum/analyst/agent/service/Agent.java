@@ -4,7 +4,7 @@ import com.oraculum.analyst.agent.dto.AgentContext;
 import com.oraculum.analyst.agent.dto.AgentOutput;
 import com.oraculum.analyst.domain.AgentType;
 
-public interface AgentService<T> {
+public interface Agent<T> {
     AgentType getName();
 
     Class<T> getOutputModel();

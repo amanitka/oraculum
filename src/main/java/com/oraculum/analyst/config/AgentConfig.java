@@ -1,6 +1,6 @@
 package com.oraculum.analyst.config;
 
-import com.oraculum.analyst.agent.service.AgentService;
+import com.oraculum.analyst.agent.service.Agent;
 import com.oraculum.analyst.domain.AgentType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,9 +15,9 @@ import java.util.stream.Collectors;
 public class AgentConfig {
 
     @Bean
-    public Map<AgentType, AgentService<?>> agents(List<AgentService<?>> agentServiceList) {
-        return agentServiceList.stream()
-                .collect(Collectors.toMap(AgentService::getName,
+    public Map<AgentType, Agent<?>> agents(List<Agent<?>> agentList) {
+        return agentList.stream()
+                .collect(Collectors.toMap(Agent::getName,
                         Function.identity(),
                         (a1, a2) -> a1,
                         () -> new EnumMap<>(AgentType.class)));

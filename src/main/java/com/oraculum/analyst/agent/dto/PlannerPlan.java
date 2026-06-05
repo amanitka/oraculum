@@ -1,14 +1,11 @@
 package com.oraculum.analyst.agent.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.oraculum.company.api.domain.StatementTemplate;
 import com.oraculum.company.api.domain.StatementVariant;
 import lombok.Data;
 
 @Data
 public class PlannerPlan {
-    private StatementTemplate template;
-
     @JsonProperty("fundamentals_variant")
     private StatementVariant fundamentalsVariant = StatementVariant.ANNUAL;
 

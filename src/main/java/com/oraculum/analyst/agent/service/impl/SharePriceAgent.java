@@ -3,7 +3,7 @@ package com.oraculum.analyst.agent.service.impl;
 import com.oraculum.analyst.agent.dto.AgentContext;
 import com.oraculum.analyst.agent.dto.AgentOutput;
 import com.oraculum.analyst.agent.dto.SharePriceAgentOutput;
-import com.oraculum.analyst.agent.service.AgentService;
+import com.oraculum.analyst.agent.service.Agent;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.AgentType;
 import com.oraculum.analyst.domain.PromptType;
@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class SharePriceAgentService implements AgentService<SharePriceAgentOutput> {
+public class SharePriceAgent implements Agent<SharePriceAgentOutput> {
 
     private final LlmRouterApi llmRouterApi;
     private final PromptRegistry promptRegistry;
