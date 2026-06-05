@@ -1,0 +1,7 @@
+# Disable formatting for all .xml files
+[*.md]
+ij_formatter = false
+
+# Disable formatting for a specific file
+#[path/to/my/file.java]
+#ij_formatter = false
