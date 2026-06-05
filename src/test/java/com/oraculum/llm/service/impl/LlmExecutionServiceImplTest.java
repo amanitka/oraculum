@@ -4,12 +4,12 @@ import com.oraculum.llm.api.dto.LlmResponse;
 import com.oraculum.llm.domain.LlmProviderType;
 import com.oraculum.llm.domain.LlmRequest;
 import org.junit.jupiter.api.BeforeEach;
-import org.springframework.ai.chat.client.ResponseEntity;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.ResponseEntity;
 import org.springframework.ai.openai.OpenAiChatOptions;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,9 +41,16 @@ class LlmExecutionServiceImplTest {
         String prompt = "Hello AI";
         String model = "gpt-4o";
         double temperature = 0.7;
+        int maxCompletionTokens = 1000;
         String expectedResponse = "Mocked Response";
 
-        LlmRequest<String> request = new LlmRequest<>(chatClient, prompt, LlmProviderType.OPENAI, model, temperature, String.class);
+        LlmRequest<String> request = new LlmRequest<>(chatClient,
+                prompt,
+                LlmProviderType.OPENAI,
+                model,
+                temperature,
+                maxCompletionTokens,
+                String.class);
 
         when(chatClient.prompt()).thenReturn(requestSpec);
         when(requestSpec.user(prompt)).thenReturn(requestSpec);

@@ -39,16 +39,12 @@ class LlmRouterServiceImplTest {
     @BeforeEach
     void setUp() {
         Map<LlmTierType, Map<LlmProviderType, String>> models = Map.of(LlmTierType.STANDARD,
-                Map.of(LlmProviderType.OPENAI,
-                        "gpt-4o",
-                        LlmProviderType.GEMINI,
-                        "gemini-1.5-pro"));
+                Map.of(LlmProviderType.OPENAI, "gpt-4o", LlmProviderType.GEMINI, "gemini-1.5-pro"));
 
         LlmProperties properties = new LlmProperties(new LlmProperties.Common(0.7,
-                List.of(LlmProviderType.OPENAI,
-                        LlmProviderType.GEMINI)),
-                new LlmProperties.Retry(3,
-                        1000),
+                1000,
+                List.of(LlmProviderType.OPENAI, LlmProviderType.GEMINI)),
+                new LlmProperties.Retry(3, 1000),
                 Map.of(),
                 models);
 
@@ -57,10 +53,7 @@ class LlmRouterServiceImplTest {
                 LlmProviderType.GEMINI,
                 geminiClient);
 
-        routerService = new LlmRouterServiceImpl(clients,
-                executionService,
-                health,
-                properties);
+        routerService = new LlmRouterServiceImpl(clients, executionService, health, properties);
     }
 
     @Test
@@ -72,16 +65,12 @@ class LlmRouterServiceImplTest {
         when(executionService.executeCall(any())).thenReturn(new LlmResponse<>(expectedResult, null));
 
         // Act
-        LlmResponse<String> result = routerService.executeCall(LlmTierType.STANDARD,
-                prompt,
-                String.class);
+        LlmResponse<String> result = routerService.executeCall(LlmTierType.STANDARD, prompt, String.class);
 
         // Assert
-        assertEquals(expectedResult,
-                result.result());
+        assertEquals(expectedResult, result.result());
         verify(health).markSuccess(LlmProviderType.OPENAI);
-        verify(health,
-                never()).markSuccess(LlmProviderType.GEMINI);
+        verify(health, never()).markSuccess(LlmProviderType.GEMINI);
         verify(executionService).executeCall(argThat(req -> req != null && req.client() == openaiClient && req.model()
                 .equals("gpt-4o") && req.prompt().equals(prompt)));
     }
@@ -96,21 +85,20 @@ class LlmRouterServiceImplTest {
         when(health.isBlocked(LlmProviderType.GEMINI)).thenReturn(false);
 
         // First provider fails
-        when(executionService.executeCall(argThat(req -> req != null && req.client() == openaiClient))).thenThrow(new RuntimeException("API Error"));
+        when(executionService.executeCall(argThat(req -> req != null && req.client() == openaiClient))).thenThrow(new RuntimeException(
+                "API Error"));
 
         // Second provider succeeds
-        when(executionService.executeCall(argThat(req -> req != null && req.client() == geminiClient))).thenReturn(new LlmResponse<>(expectedResult, null));
+        when(executionService.executeCall(argThat(req -> req != null && req.client() == geminiClient))).thenReturn(new LlmResponse<>(
+                expectedResult,
+                null));
 
         // Act
-        LlmResponse<String> result = routerService.executeCall(LlmTierType.STANDARD,
-                prompt,
-                String.class);
+        LlmResponse<String> result = routerService.executeCall(LlmTierType.STANDARD, prompt, String.class);
 
         // Assert
-        assertEquals(expectedResult,
-                result.result());
-        verify(health).markFailure(LlmProviderType.OPENAI,
-                30_000);
+        assertEquals(expectedResult, result.result());
+        verify(health).markFailure(LlmProviderType.OPENAI, 30_000);
         verify(health).markSuccess(LlmProviderType.GEMINI);
     }
 
@@ -127,15 +115,11 @@ class LlmRouterServiceImplTest {
         when(executionService.executeCall(any())).thenReturn(new LlmResponse<>(expectedResult, null));
 
         // Act
-        LlmResponse<String> result = routerService.executeCall(LlmTierType.STANDARD,
-                prompt,
-                String.class);
+        LlmResponse<String> result = routerService.executeCall(LlmTierType.STANDARD, prompt, String.class);
 
         // Assert
-        assertEquals(expectedResult,
-                result.result());
-        verify(executionService,
-                never()).executeCall(argThat(req -> req != null && req.client() == openaiClient));
+        assertEquals(expectedResult, result.result());
+        verify(executionService, never()).executeCall(argThat(req -> req != null && req.client() == openaiClient));
         verify(executionService).executeCall(argThat(req -> req != null && req.client() == geminiClient));
     }
 
@@ -147,18 +131,11 @@ class LlmRouterServiceImplTest {
 
         // Act & Assert
         RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> routerService.executeCall(LlmTierType.STANDARD,
-                        "prompt",
-                        String.class));
+                () -> routerService.executeCall(LlmTierType.STANDARD, "prompt", String.class));
 
-        assertEquals("All providers failed",
-                exception.getMessage());
-        verify(health,
-                times(1)).markFailure(LlmProviderType.OPENAI,
-                30_000);
-        verify(health,
-                times(1)).markFailure(LlmProviderType.GEMINI,
-                30_000);
+        assertEquals("All providers failed", exception.getMessage());
+        verify(health, times(1)).markFailure(LlmProviderType.OPENAI, 30_000);
+        verify(health, times(1)).markFailure(LlmProviderType.GEMINI, 30_000);
     }
 
     @Test
@@ -166,22 +143,16 @@ class LlmRouterServiceImplTest {
         // Arrange
         // Empty models map
         LlmProperties propertiesWithMissingTier = new LlmProperties(new LlmProperties.Common(0.7,
-                List.of(LlmProviderType.OPENAI)),
-                new LlmProperties.Retry(3,
-                        1000),
-                Map.of(),
-                Map.of());
-        routerService = new LlmRouterServiceImpl(Map.of(LlmProviderType.OPENAI,
-                openaiClient),
+                1000,
+                List.of(LlmProviderType.OPENAI)), new LlmProperties.Retry(3, 1000), Map.of(), Map.of());
+        routerService = new LlmRouterServiceImpl(Map.of(LlmProviderType.OPENAI, openaiClient),
                 executionService,
                 health,
                 propertiesWithMissingTier);
 
         // Act & Assert
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> routerService.executeCall(LlmTierType.STANDARD,
-                        "prompt",
-                        String.class));
+                () -> routerService.executeCall(LlmTierType.STANDARD, "prompt", String.class));
 
         assertTrue(exception.getMessage().contains("Configuration missing for tier: STANDARD"));
     }
