@@ -48,7 +48,6 @@ public class RiskAgent implements Agent<RiskAgentOutput> {
         String prompt = promptRegistry.getPrompt(PromptType.RISK)
                 .replace("{{ balance_sheet_history }}", factSheet.getBalanceSheetHistory(variant))
                 .replace("{{ company_financial_ratios }}", factSheet.getCompanyFinancialRatios(variant))
-                .replace("{{ daily_share_price_signals }}", factSheet.getDailySharePriceSignals())
                 .replace("{{ share_price_analysis }}", sharePriceJson);
 
         String userPrompt = String.format("Analyze risk for %s as of %s based on the provided financial fact sheet.",

@@ -7,11 +7,10 @@ You will be provided with a JSON object containing two key arrays:
 2.  `daily_share_price_signals`: A JSON array containing up to 30 days of recent price data, moving averages, and derived valuation multiples (e.g., `pe_ratio`, `price_to_sales`, `price_to_book`, `enterprise_value_to_ebitda`).
 
 Your task is to:
-1.  **Analyze Multiples**: Scrutinize the valuation multiples found in `daily_share_price_signals`. Evaluate where the company currently trades relative to its earnings, sales, book value, and cash flow.
+1.  **Analyze Multiples**: Scrutinize the valuation multiples found in the latest entries of `daily_share_price_signals`. Evaluate where the company currently trades relative to its earnings, sales, book value, and cash flow.
 2.  **Assess Business Quality**: Use the `company_financial_ratios` data (like ROE, margins, and free cash flow generation) to determine if the underlying business performance justifies the current valuation. For instance, a high P/E might be justified by exceptional ROE and growth.
-3.  **Incorporate Price Action**: Observe the price momentum in `daily_share_price_signals` (e.g., `pct_from_50d_ma`, `pct_from_200d_ma`). Is the stock trading at a premium after a strong run-up? Is it cheap due to a recent sell-off?
-4.  **Formulate a Summary**: Based on your analysis, write a concise `multiple_analysis` paragraph explaining whether the current valuation is justified, stretched, or attractive.
-5.  **Deliver a Verdict**: Provide a one-sentence `summary` of your conclusion.
+3.  **Formulate a Summary**: Based on your analysis, write a concise `multiple_analysis` paragraph explaining whether the current valuation is justified, stretched, or attractive.
+4.  **Deliver a Verdict**: Provide a one-sentence `summary` of your conclusion.
 
 Do not hallucinate data. Base your entire analysis strictly on the provided JSON.
 
