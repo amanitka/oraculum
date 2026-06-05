@@ -33,6 +33,7 @@
         <vaadin.version>25.1.5</vaadin.version>
         <duckdb.version>1.5.3.0</duckdb.version>
         <lombok.version>1.18.38</lombok.version>
+        <commonmark.version>0.28.0</commonmark.version>
     </properties>
     <dependencies>
         <dependency>
@@ -114,6 +115,11 @@
             <groupId>org.springframework.modulith</groupId>
             <artifactId>spring-modulith-starter-test</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.commonmark</groupId>
+            <artifactId>commonmark</artifactId>
+            <version>${commonmark.version}</version>
         </dependency>
     </dependencies>
     <dependencyManagement>

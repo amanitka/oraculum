@@ -1,23 +1,25 @@
-package com.oraculum.ui.service;
+package com.oraculum.harvester.service;
 
 import com.oraculum.common.config.OraculumProperties;
-import com.oraculum.ui.request.HarvesterRequest;
+import com.oraculum.harvester.api.HarvesterRequestApi;
+import com.oraculum.harvester.api.dto.HarvesterRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
-public class RefreshRequestService {
+public class HarvesterRequestService implements HarvesterRequestApi {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final String topic;
 
-    public RefreshRequestService(KafkaTemplate<String, Object> kafkaTemplate, OraculumProperties properties) {
+    public HarvesterRequestService(KafkaTemplate<String, Object> kafkaTemplate, OraculumProperties properties) {
         this.kafkaTemplate = kafkaTemplate;
         this.topic = properties.kafka().topics().harvesterRequest();
     }
 
+    @Override
     public void publish(HarvesterRequest request) {
         try {
             kafkaTemplate.send(topic, request.getCorrelationId().toString(), request);

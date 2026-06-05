@@ -47,6 +47,10 @@ public class LlmRouterServiceImpl implements LlmRouterService {
                 health.markSuccess(provider);
                 return result;
             } catch (Exception e) {
+                log.warn("LLM call failed for provider: {} [model: {}]. Error: {}. Falling back to next available provider.",
+                        provider,
+                        model,
+                        e.getMessage());
                 last = e;
                 health.markFailure(provider, 30_000);
             }

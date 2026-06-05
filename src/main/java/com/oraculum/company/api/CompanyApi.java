@@ -3,7 +3,9 @@ package com.oraculum.company.api;
 import com.oraculum.company.api.dto.*;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Public API for the Company module.
@@ -21,6 +23,8 @@ public interface CompanyApi {
     List<MarketDto> getAllMarkets();
 
     List<IndustryDto> getAllIndustries();
+
+    Optional<OffsetDateTime> getNewsLastTimePublished();
 
     List<NewsTickerDto> getNewsByTicker(String ticker, LocalDate after);
 

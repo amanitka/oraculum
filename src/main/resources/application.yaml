@@ -34,6 +34,18 @@ vaadin:
   launch-browser: true
 
 oraculum:
+  jobs:
+    data-refresh:
+      enabled: true
+      share-price-cron: "0 0 3 * * TUE-SAT"
+      news-cron: "0 0 */4 * * *"
+      fundamentals-cron: "0 0 2 * * TUE"
+      metadata-cron: "0 0 1 1 * *"
+    database:
+      enabled: true
+      vacuum-cron: "0 0 4 * * SUN"
+      partition-cron: "0 0 5 1 * *"
+
   database:
     host: ${ORACULUM_DATABASE_HOST}
     port: ${ORACULUM_DATABASE_PORT}

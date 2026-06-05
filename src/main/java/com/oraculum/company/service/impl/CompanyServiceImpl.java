@@ -17,6 +17,7 @@ import java.time.ZoneOffset;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -71,10 +72,14 @@ public class CompanyServiceImpl implements CompanyService {
     }
 
     @Override
+    public Optional<OffsetDateTime> getNewsLastTimePublished() {
+        return newsRepository.findMaxTimePublished();
+    }
+
+    @Override
     public List<NewsTickerDto> getNewsByTicker(String ticker, LocalDate after) {
         OffsetDateTime afterDateTime = after.atStartOfDay().atOffset(ZoneOffset.UTC);
-        List<NewsTickerEntity> tickerRows = newsTickerRepository.findByTickerAndTimePublishedAfter(ticker,
-                afterDateTime);
+        List<NewsTickerEntity> tickerRows = newsTickerRepository.findByTickerAndTimePublishedAfter(ticker, afterDateTime);
         List<String> newsIds = tickerRows.stream().map(NewsTickerEntity::getNewsId).collect(Collectors.toList());
         Map<String, NewsEntity> newsById = newsRepository.findByIdIn(newsIds)
                 .stream()
@@ -82,8 +87,7 @@ public class CompanyServiceImpl implements CompanyService {
         return tickerRows.stream()
                 .filter(t -> newsById.containsKey(t.getNewsId()))
                 .map(t -> NewsTickerDto.from(newsById.get(t.getNewsId()), t))
-                .sorted(Comparator.comparing(NewsTickerDto::timePublished)
-                        .reversed()) // Sort by timePublished descending
+                .sorted(Comparator.comparing(NewsTickerDto::timePublished).reversed()) // Sort by timePublished descending
                 .collect(Collectors.toList());
     }
 
@@ -175,8 +179,6 @@ public class CompanyServiceImpl implements CompanyService {
     @Transactional
     public void createOrUpdateNewsBatch(List<NewsArticleDto> articles) {
         newsRepository.saveAll(articles.stream().map(NewsArticleDto::toNewsEntity).collect(Collectors.toList()));
-        newsTickerRepository.saveAll(articles.stream()
-                .flatMap(a -> a.toNewsTickerEntities().stream())
-                .collect(Collectors.toList()));
+        newsTickerRepository.saveAll(articles.stream().flatMap(a -> a.toNewsTickerEntities().stream()).collect(Collectors.toList()));
     }
 }
