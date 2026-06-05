@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Getter;
 import tools.jackson.databind.ObjectMapper;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -27,7 +28,7 @@ public class CompanyFactSheetData {
     private final List<NewsTickerDto> recentNews;
     // Lazy loaded stuff
     private String companyProfileCache;
-    private Map<StatementVariant, String> companyFinancialRatiosCache;
+    private Map<StatementVariant, String> companyFinancialRatiosCache = new HashMap<>();
     private String dailySharePriceSignalsCache;
     private String monthlySharePriceSignalsCache;
     private String recentNewsCache;

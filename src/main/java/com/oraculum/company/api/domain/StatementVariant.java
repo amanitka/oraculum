@@ -1,5 +1,6 @@
 package com.oraculum.company.api.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum StatementVariant {
@@ -16,5 +17,15 @@ public enum StatementVariant {
     @JsonValue
     public String getValue() {
         return value;
+    }
+
+    @JsonCreator
+    public static StatementVariant fromValue(String value) {
+        for (StatementVariant t : StatementVariant.values()) {
+            if (t.value.equalsIgnoreCase(value) || t.name().equalsIgnoreCase(value)) {
+                return t;
+            }
+        }
+        return null;
     }
 }

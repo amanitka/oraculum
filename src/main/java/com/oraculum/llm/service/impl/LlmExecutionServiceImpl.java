@@ -50,11 +50,16 @@ public class LlmExecutionServiceImpl implements LlmExecutionService {
             multiplier = 2.0, jitter = 200)
     @Override
     public <T> LlmResponse<T> executeCall(LlmRequest<T> request) {
+        log.info("Executing LLM call [Provider: {}, Model: {}]", request.provider(), request.model());
+        log.debug("Prompt:\n{}", request.prompt());
         long start = System.currentTimeMillis();
         var callResponse = getCallResponse(request);
         var responseEntity = callResponse.responseEntity(request.responseType());
         var entity = responseEntity.entity();
         var metrics = getMetrics(request, responseEntity.response(), start);
+        log.info("LLM call completed in {} ms. Tokens - Prompt: {}, Completion: {}, Total: {}", 
+                metrics.latencyMs(), metrics.promptTokens(), metrics.completionTokens(), metrics.totalTokens());
+        log.debug("Response:\n{}", entity);
 
         return new LlmResponse<>(entity, metrics);
     }

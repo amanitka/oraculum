@@ -44,8 +44,7 @@ public class CompanyAnalysisEntity {
     @Enumerated(EnumType.STRING)
     private AnalysisStatus status;
 
-    @Lob
-    @Column(name = "report")
+    @Column(name = "report", columnDefinition = "TEXT")
     private String report;
 
     @Enumerated(EnumType.STRING)
@@ -62,7 +61,7 @@ public class CompanyAnalysisEntity {
     @Column(name = "analysis_data", columnDefinition = "jsonb")
     private String analysisData;
 
-    @Lob
+    @Column(columnDefinition = "TEXT")
     private String error;
 
     @CreationTimestamp
