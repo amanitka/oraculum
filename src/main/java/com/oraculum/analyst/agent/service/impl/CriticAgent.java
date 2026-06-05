@@ -37,8 +37,7 @@ public class CriticAgent implements Agent<CriticAgentOutput> {
 
     @Override
     public AgentOutput<CriticAgentOutput> run(AgentContext ctx) {
-        Map<AgentType, Object> specialistOutputs = ctx.priorOutputs();
-
+        Map<AgentType, Object> specialistOutputs = ctx.getSpecialistAgentOutputs();
         String priorOutputsJson = JsonUtils.toJson(objectMapper, specialistOutputs, "{}");
 
         String prompt = promptRegistry.getPrompt(PromptType.CRITIC).replace("{{ prior_outputs }}", priorOutputsJson);

@@ -9,6 +9,7 @@ import org.jspecify.annotations.NonNull;
 
 import java.time.LocalDate;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Builder
 public record AgentContext(CompanyDto company,
@@ -17,7 +18,8 @@ public record AgentContext(CompanyDto company,
                            StatementVariant defaultStatementVariant,
                            Map<AgentType, StatementVariant> statementVariants,
                            int tokenBudget,
-                           Map<AgentType, Object> priorOutputs) {
+                           Map<AgentType, Object> agentOutputs) {
+
     public String ticker() {
         return company != null ? company.ticker() : null;
     }
@@ -35,5 +37,12 @@ public record AgentContext(CompanyDto company,
             return statementVariants.get(agentType);
         }
         return defaultStatementVariant != null ? defaultStatementVariant : StatementVariant.ANNUAL;
+    }
+
+    public Map<AgentType, Object> getSpecialistAgentOutputs() {
+        return agentOutputs().entrySet()
+                .stream()
+                .filter(entry -> entry.getKey().isSpecialist())
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 }

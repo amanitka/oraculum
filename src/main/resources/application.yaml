@@ -87,9 +87,9 @@ oraculum:
       max-completion-tokens: 8192
       timeout: 120s
       provider-fallback-order:
-        - groq
         - gemini
         - openai
+        - groq
 
     retry:
       max-retries: 2

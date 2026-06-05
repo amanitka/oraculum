@@ -17,7 +17,6 @@ import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -39,23 +38,17 @@ public class SynthesizerAgent implements Agent<SynthesizerAgentOutput> {
 
     @Override
     public AgentOutput<SynthesizerAgentOutput> run(AgentContext ctx) {
-        Map<AgentType, Object> specialistOutputs = ctx.priorOutputs()
-                .entrySet()
-                .stream()
-                .filter(entry -> entry.getKey() != AgentType.CRITIC)
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-        String specialistOutputJSon = JsonUtils.toJson(objectMapper, specialistOutputs, "{}");
-
-        CriticAgentOutput criticOutput = (CriticAgentOutput) ctx.priorOutputs().get(AgentType.CRITIC);
+        Map<AgentType, Object> specialistOutputs = ctx.getSpecialistAgentOutputs();
+        String specialistOutputJson = JsonUtils.toJson(objectMapper, specialistOutputs, "{}");
+        CriticAgentOutput criticOutput = (CriticAgentOutput) ctx.agentOutputs().get(AgentType.CRITIC);
         String criticOutputJson = JsonUtils.toJson(objectMapper, criticOutput, "{}");
 
         String prompt = promptRegistry.getPrompt(PromptType.SYNTHESIZER)
-                .replace("{{ specialist_outputs }}", specialistOutputJSon)
+                .replace("{{ specialist_output }}", specialistOutputJson)
                 .replace("{{ critic_output }}", criticOutputJson);
 
         String userPrompt = String.format("Synthesize the analysis for %s. Generate the final report and " +
-                        "structured verdict, explicitly addressing the critic's findings.",
+                        "structured verdict, explicitly resolving the contradictions flagged in the critic's report.",
                 ctx.ticker());
 
         String fullPrompt = prompt + "\n" + userPrompt;

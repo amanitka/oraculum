@@ -109,7 +109,7 @@ public class CompanyAnalysisWorkflowService {
             for (Agent<?> agent : specialists) {
                 log.info("Starting {} phase", agent.getName());
                 var output = agent.run(sharedCtx);
-                sharedCtx.priorOutputs().put(agent.getName(), output.result());
+                sharedCtx.agentOutputs().put(agent.getName(), output.result());
                 totalTokens += output.tokens();
                 agentTrace.put(agent.getName(), output.result());
                 log.info("{} phase complete. Tokens: {}", agent.getName(), output.tokens());
@@ -118,7 +118,7 @@ public class CompanyAnalysisWorkflowService {
             log.info("Starting Critic phase");
             Agent<?> critic = agents.get(AgentType.CRITIC);
             var criticOutput = critic.run(sharedCtx);
-            sharedCtx.priorOutputs().put(AgentType.CRITIC, criticOutput.result());
+            sharedCtx.agentOutputs().put(AgentType.CRITIC, criticOutput.result());
             totalTokens += criticOutput.tokens();
             agentTrace.put(AgentType.CRITIC, criticOutput.result());
             log.info("Critic phase complete. Tokens: {}. Consistent: {}",
