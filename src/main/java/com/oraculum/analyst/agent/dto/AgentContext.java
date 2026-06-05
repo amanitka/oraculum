@@ -34,6 +34,6 @@ public record AgentContext(CompanyDto company,
         if (statementVariants != null && statementVariants.containsKey(agentType)) {
             return statementVariants.get(agentType);
         }
-        return defaultStatementVariant;
+        return defaultStatementVariant != null ? defaultStatementVariant : StatementVariant.ANNUAL;
     }
 }

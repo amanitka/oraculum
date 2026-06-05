@@ -14,6 +14,7 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
@@ -90,13 +91,17 @@ public class AnalysisView extends VerticalLayout {
 
         ComboBox<StatementVariant> variantComboBox = new ComboBox<>("Statement Variant");
         variantComboBox.setItems(StatementVariant.values());
-        variantComboBox.setValue(StatementVariant.TTM);
+        variantComboBox.setPlaceholder("Auto (Planner Decides)");
+        variantComboBox.setClearButtonVisible(true);
+
+        Details advancedDetails = new Details("Advanced Options", variantComboBox);
+        advancedDetails.setOpened(false);
 
         Button analyzeButton = new Button("Analyze");
         analyzeButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         analyzeButton.addClickListener(_ -> triggerAnalysis(companyComboBox.getValue(), variantComboBox.getValue()));
 
-        FormLayout formLayout = new FormLayout(marketComboBox, companyComboBox, variantComboBox);
+        FormLayout formLayout = new FormLayout(marketComboBox, companyComboBox, advancedDetails);
         card.add(title, formLayout, analyzeButton);
         return card;
     }
@@ -128,15 +133,15 @@ public class AnalysisView extends VerticalLayout {
         grid.addColumn(CompanyAnalysisDto::getAnalysisDate).setHeader("Analysis Date");
 
         grid.setItems(q -> companyAnalysisApi.getCompanyAnalysisList(PageRequest.of(q.getPage(), q.getPageSize()))
-                .stream(), q -> (int) companyAnalysisApi.getAnalysisCount());
+                .stream(), _ -> (int) companyAnalysisApi.getAnalysisCount());
 
         layout.add(grid);
         return layout;
     }
 
     private void triggerAnalysis(CompanyDto company, StatementVariant variant) {
-        if (company == null || variant == null) {
-            showError("Please select a company and a variant.");
+        if (company == null) {
+            showError("Please select a company.");
             return;
         }
 

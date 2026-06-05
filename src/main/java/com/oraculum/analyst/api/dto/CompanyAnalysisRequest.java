@@ -10,5 +10,5 @@ public record CompanyAnalysisRequest(UUID correlationId,
                                      String ticker,
                                      String market,
                                      LocalDate analysisDate,
-                                     StatementVariant defaultVariant) {
+                                     StatementVariant statementVariant) {
 }

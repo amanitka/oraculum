@@ -22,7 +22,9 @@ import java.time.ZonedDateTime;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -33,6 +35,31 @@ public class CompanyAnalysisWorkflowService {
     private final AnalystProperties analystProperties;
     private final CompanyFactSheetDataService companyFactSheetDataService;
     private final Map<AgentType, Agent<?>> agents;
+
+    private Map<AgentType, StatementVariant> getAgentStatementVariants(CompanyAnalysisRequest request,
+                                                                       PlannerPlan plan) {
+        Map<AgentType, StatementVariant> variants = new EnumMap<>(AgentType.class);
+        if (request.statementVariant() != null) {
+            Stream.of(AgentType.values())
+                    .filter(AgentType::isSpecialist)
+                    .forEach(type -> variants.put(type, request.statementVariant()));
+        } else if (plan != null) {
+            Map<AgentType, Supplier<StatementVariant>> getters = Map.of(AgentType.FUNDAMENTALS,
+                    plan::getFundamentalsVariant,
+                    AgentType.CASH_FLOW,
+                    plan::getCashFlowVariant,
+                    AgentType.VALUATION,
+                    plan::getValuationVariant,
+                    AgentType.RISK,
+                    plan::getRiskVariant);
+            getters.forEach((type, getter) -> {
+                StatementVariant val = getter.get();
+                if (val != null)
+                    variants.put(type, val);
+            });
+        }
+        return variants;
+    }
 
     public CompanyAnalysisResult run(CompanyAnalysisRequest request) {
         long startTime = System.currentTimeMillis();
@@ -51,7 +78,7 @@ public class CompanyAnalysisWorkflowService {
         AgentContext initialCtx = new AgentContext(company,
                 factSheetData,
                 request.analysisDate() != null ? request.analysisDate() : LocalDate.now(),
-                request.defaultVariant(),
+                request.statementVariant(),
                 null,
                 analystProperties.tokenBudget(),
                 new EnumMap<>(AgentType.class));
@@ -65,27 +92,11 @@ public class CompanyAnalysisWorkflowService {
             agentTrace.put(AgentType.PLANNER, plan);
             log.info("Planner phase complete. Tokens: {}. Plan: {}", planOut.tokens(), plan);
 
-            Map<AgentType, StatementVariant> variants = new EnumMap<>(AgentType.class);
-            if (plan != null) {
-                if (plan.getFundamentalsVariant() != null) {
-                    variants.put(AgentType.FUNDAMENTALS, plan.getFundamentalsVariant());
-                }
-                if (plan.getCashFlowVariant() != null) {
-                    variants.put(AgentType.CASH_FLOW, plan.getCashFlowVariant());
-                }
-                if (plan.getValuationVariant() != null) {
-                    variants.put(AgentType.VALUATION, plan.getValuationVariant());
-                }
-                if (plan.getRiskVariant() != null) {
-                    variants.put(AgentType.RISK, plan.getRiskVariant());
-                }
-            }
-
             AgentContext sharedCtx = new AgentContext(company,
                     factSheetData,
                     initialCtx.analysisDate(),
-                    request.defaultVariant(),
-                    variants,
+                    request.statementVariant(),
+                    getAgentStatementVariants(request, plan),
                     analystProperties.tokenBudget(),
                     new EnumMap<>(AgentType.class));
 
