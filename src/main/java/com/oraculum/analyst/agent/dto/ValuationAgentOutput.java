@@ -2,7 +2,6 @@ package com.oraculum.analyst.agent.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public record ValuationAgentOutput(@JsonProperty("relative_valuation_analysis") String relativeValuationAnalysis,
-                                   @JsonProperty("historical_valuation_analysis") String historicalValuationAnalysis,
+public record ValuationAgentOutput(@JsonProperty("multiple_analysis") String multipleAnalysis,
                                    @JsonProperty("summary") String summary) {
 }

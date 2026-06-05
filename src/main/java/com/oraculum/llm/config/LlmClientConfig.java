@@ -9,6 +9,7 @@ import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -20,9 +21,15 @@ public class LlmClientConfig {
         if (provider == null) {
             throw new IllegalStateException("Missing credentials for provider: " + providerName);
         }
+        
+        Duration timeout = properties.common().timeout() != null 
+                ? properties.common().timeout() 
+                : Duration.ofSeconds(60);
+
         OpenAIClient openAiClient = OpenAIOkHttpClient.builder()
                 .apiKey(provider.apiKey())
                 .baseUrl(provider.baseUrl())
+                .timeout(timeout)
                 .build();
         OpenAiChatOptions options = OpenAiChatOptions.builder().temperature(properties.common().temperature()).build();
 

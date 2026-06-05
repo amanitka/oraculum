@@ -4,6 +4,7 @@ import com.oraculum.llm.api.dto.LlmTierType;
 import com.oraculum.llm.domain.LlmProviderType;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -15,7 +16,8 @@ public record LlmProperties(Common common,
 
     public record Common(double temperature,
                          int maxCompletionTokens,
-                         List<LlmProviderType> providerFallbackOrder) {
+                         List<LlmProviderType> providerFallbackOrder,
+                         Duration timeout) {
     }
 
     public record Retry(int maxRetries,

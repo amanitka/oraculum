@@ -28,6 +28,7 @@ public class CompanyFactSheetData {
     private final List<NewsTickerDto> recentNews;
     // Lazy loaded stuff
     private String companyProfileCache;
+    @Builder.Default
     private Map<StatementVariant, String> companyFinancialRatiosCache = new HashMap<>();
     private String dailySharePriceSignalsCache;
     private String monthlySharePriceSignalsCache;
@@ -63,7 +64,7 @@ public class CompanyFactSheetData {
 
     public String getCompanyFinancialRatios(StatementVariant variant) {
         return companyFinancialRatiosCache.computeIfAbsent(variant,
-                k -> JsonUtils.toJson(objectMapper, companyFinancialRatios.get(variant), "[]"));
+                _ -> JsonUtils.toJson(objectMapper, companyFinancialRatios.get(variant), "[]"));
     }
 
     public String getDailySharePriceSignals() {
