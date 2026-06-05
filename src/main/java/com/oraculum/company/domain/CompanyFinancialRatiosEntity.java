@@ -82,4 +82,19 @@ public class CompanyFinancialRatiosEntity {
 
     @Column(name = "net_income")
     private Float netIncome;
+
+    @Column(name = "gross_margin")
+    private Float grossMargin;
+
+    @Column(name = "operating_margin")
+    private Float operatingMargin;
+
+    @Column(name = "fcf_margin")
+    private Float fcfMargin;
+
+    @Column(name = "quick_ratio")
+    private Float quickRatio;
+
+    @Column(name = "interest_coverage_ratio")
+    private Float interestCoverageRatio;
 }

@@ -25,7 +25,12 @@ public record CompanyFinancialRatiosDto(String id,
                                         Float returnOnEquity,
                                         Float netMargin,
                                         Float revenue,
-                                        Float netIncome) {
+                                        Float netIncome,
+                                        Float grossMargin,
+                                        Float operatingMargin,
+                                        Float fcfMargin,
+                                        Float quickRatio,
+                                        Float interestCoverageRatio) {
     public static CompanyFinancialRatiosDto fromEntity(CompanyFinancialRatiosEntity entity) {
         if (entity == null)
             return null;
@@ -48,6 +53,11 @@ public record CompanyFinancialRatiosDto(String id,
                 entity.getReturnOnEquity(),
                 entity.getNetMargin(),
                 entity.getRevenue(),
-                entity.getNetIncome());
+                entity.getNetIncome(),
+                entity.getGrossMargin(),
+                entity.getOperatingMargin(),
+                entity.getFcfMargin(),
+                entity.getQuickRatio(),
+                entity.getInterestCoverageRatio());
     }
 }

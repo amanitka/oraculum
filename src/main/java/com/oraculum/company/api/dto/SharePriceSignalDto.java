@@ -34,7 +34,16 @@ public record SharePriceSignalDto(
     Float returnOnEquity,
     Float netMargin,
     Float currentRatio,
-    Float debtToEquity
+    Float debtToEquity,
+    Float fcfYield,
+    Float enterpriseValueToRevenue,
+    Float enterpriseValueToFreeCashFlow,
+    Float returnOnAssets,
+    Float grossMargin,
+    Float operatingMargin,
+    Float fcfMargin,
+    Float quickRatio,
+    Float interestCoverageRatio
 ) {
     public static SharePriceSignalDto fromEntity(SharePriceSignalEntity entity) {
         if (entity == null)
@@ -69,7 +78,16 @@ public record SharePriceSignalDto(
                 entity.getReturnOnEquity(),
                 entity.getNetMargin(),
                 entity.getCurrentRatio(),
-                entity.getDebtToEquity()
+                entity.getDebtToEquity(),
+                entity.getFcfYield(),
+                entity.getEnterpriseValueToRevenue(),
+                entity.getEnterpriseValueToFreeCashFlow(),
+                entity.getReturnOnAssets(),
+                entity.getGrossMargin(),
+                entity.getOperatingMargin(),
+                entity.getFcfMargin(),
+                entity.getQuickRatio(),
+                entity.getInterestCoverageRatio()
         );
     }
 }

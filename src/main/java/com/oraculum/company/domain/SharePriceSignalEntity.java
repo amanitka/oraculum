@@ -113,6 +113,33 @@ public class SharePriceSignalEntity {
     @Column(name = "debt_to_equity")
     private Float debtToEquity;
 
+    @Column(name = "fcf_yield")
+    private Float fcfYield;
+
+    @Column(name = "enterprise_value_to_revenue")
+    private Float enterpriseValueToRevenue;
+
+    @Column(name = "enterprise_value_to_free_cash_flow")
+    private Float enterpriseValueToFreeCashFlow;
+
+    @Column(name = "return_on_assets")
+    private Float returnOnAssets;
+
+    @Column(name = "gross_margin")
+    private Float grossMargin;
+
+    @Column(name = "operating_margin")
+    private Float operatingMargin;
+
+    @Column(name = "fcf_margin")
+    private Float fcfMargin;
+
+    @Column(name = "quick_ratio")
+    private Float quickRatio;
+
+    @Column(name = "interest_coverage_ratio")
+    private Float interestCoverageRatio;
+
     public static class SharePriceSignalId implements Serializable {
         private LocalDate tradeDate;
         private int companyId;
