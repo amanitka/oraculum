@@ -102,6 +102,7 @@ public class CompanyAnalysisWorkflowService {
 
             List<Agent<?>> specialists = java.util.Arrays.stream(AgentType.values())
                     .filter(AgentType::isSpecialist)
+                    .sorted(java.util.Comparator.comparingInt(AgentType::getExecutionOrder))
                     .map(agents::get)
                     .filter(java.util.Objects::nonNull)
                     .collect(Collectors.toList());

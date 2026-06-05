@@ -45,7 +45,6 @@ public class SharePriceAgent implements Agent<SharePriceAgentOutput> {
                 ctx.analysisDate());
 
         String fullPrompt = prompt + "\n" + userPrompt;
-
         LlmResponse<SharePriceAgentOutput> response = llmRouterApi.executeCall(LlmTierType.MINI,
                 fullPrompt,
                 SharePriceAgentOutput.class);

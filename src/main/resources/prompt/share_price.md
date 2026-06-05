@@ -7,7 +7,11 @@ You will be provided with two JSON arrays:
 - **`monthly_share_price_signals`**: Up to 10 years of historical monthly end-of-month data.
 
 Your task is to:
-1. **Analyze Momentum**: Evaluate the short-term trend using the `daily_share_price_signals` data. Look at the price relative to the 50-day and 200-day SMAs. Note any significant volume velocity changes. Write a `momentum_analysis` paragraph.
+1. **Analyze Momentum (Strategy 1)**: Evaluate the short-term trend using the `daily_share_price_signals` data. 
+    *   **CRITICAL**: Clearly differentiate between the **current state** (the latest/most recent entry in the daily array) and the **historical trend** (previous entries in the daily array).
+    *   Look at the current price relative to the current 50-day and 200-day SMAs. Note any significant recent volume velocity changes.
+    *   Explicitly mention if the stock has recently recovered or dipped within the 30-day window, describing the current position vs the recent range.
+    *   Write a `momentum_analysis` paragraph.
 2. **Analyze Valuation**: Assess the current valuation using the most recent ratios (P/E, P/FCF, P/B, etc.) in the `daily_share_price_signals` data. Write a `valuation_analysis` paragraph.
 3. **Analyze Historical Trend**: Compare the current state (momentum and valuation) to the 10-year baseline in `monthly_share_price_signals`. Is the current situation an anomaly or part of a long-term trend? Write a `historical_trend_analysis` paragraph.
 4. **Summarize Key Signals**: Identify the most critical technical or valuation signals (e.g., "Trading 50% below 200 SMA," "P/E at 10-year low," "Extreme volume spike"). Provide a one-sentence `key_signals_summary`.

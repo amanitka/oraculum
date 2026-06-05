@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -38,8 +39,16 @@ public class SynthesizerAgent implements Agent<SynthesizerAgentOutput> {
 
     @Override
     public AgentOutput<SynthesizerAgentOutput> run(AgentContext ctx) {
-        Map<AgentType, Object> specialistOutputs = ctx.getSpecialistAgentOutputs();
+        // Safe selection: Only include specialists and ignore null outputs to prevent NPE in Collectors.toMap
+        Map<AgentType, Object> specialistOutputs = ctx.agentOutputs()
+                .entrySet()
+                .stream()
+                .filter(entry -> entry.getKey().isSpecialist() && entry.getValue() != null)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
         String specialistOutputJson = JsonUtils.toJson(objectMapper, specialistOutputs, "{}");
+
+        // Retrieve Critic Agent output from prior outputs
         CriticAgentOutput criticOutput = (CriticAgentOutput) ctx.agentOutputs().get(AgentType.CRITIC);
         String criticOutputJson = JsonUtils.toJson(objectMapper, criticOutput, "{}");
 
