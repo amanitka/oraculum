@@ -8,12 +8,12 @@ import com.oraculum.analyst.agent.service.Agent;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.AgentType;
 import com.oraculum.analyst.domain.PromptType;
+import com.oraculum.analyst.util.JsonUtils;
 import com.oraculum.llm.api.LlmRouterApi;
 import com.oraculum.llm.api.dto.LlmResponse;
 import com.oraculum.llm.api.dto.LlmTierType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.Map;
@@ -45,30 +45,18 @@ public class SynthesizerAgent implements Agent<SynthesizerAgentOutput> {
                 .filter(entry -> entry.getKey() != AgentType.CRITIC)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-        String priorOutputsJson;
-        try {
-            priorOutputsJson = objectMapper.writeValueAsString(specialistOutputs);
-        } catch (JacksonException e) {
-            throw new RuntimeException(e);
-        }
+        String specialistOutputJSon = JsonUtils.toJson(objectMapper, specialistOutputs, "{}");
 
         CriticAgentOutput criticOutput = (CriticAgentOutput) ctx.priorOutputs().get(AgentType.CRITIC);
-        String criticReportJson;
-        try {
-            criticReportJson = criticOutput != null ? objectMapper.writeValueAsString(criticOutput) : "{}";
-        } catch (JacksonException e) {
-            throw new RuntimeException(e);
-        }
+        String criticOutputJson = JsonUtils.toJson(objectMapper, criticOutput, "{}");
 
         String prompt = promptRegistry.getPrompt(PromptType.SYNTHESIZER)
-                .replace("{{ prior_outputs }}", priorOutputsJson)
-                .replace("{{ critic_report }}", criticReportJson);
+                .replace("{{ specialist_outputs }}", specialistOutputJSon)
+                .replace("{{ critic_output }}", criticOutputJson);
 
-        String userPrompt = String.format("Synthesize the analysis for %s. The default variant was " + "'%s'. " +
-                        "Generate the final report and structured verdict, explicitly addressing the critic's " +
-                        "findings.",
-                ctx.ticker(),
-                ctx.defaultStatementVariant());
+        String userPrompt = String.format("Synthesize the analysis for %s. Generate the final report and " +
+                        "structured verdict, explicitly addressing the critic's findings.",
+                ctx.ticker());
 
         String fullPrompt = prompt + "\n" + userPrompt;
 

@@ -7,12 +7,12 @@ import com.oraculum.analyst.agent.service.Agent;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.AgentType;
 import com.oraculum.analyst.domain.PromptType;
+import com.oraculum.analyst.util.JsonUtils;
 import com.oraculum.llm.api.LlmRouterApi;
 import com.oraculum.llm.api.dto.LlmResponse;
 import com.oraculum.llm.api.dto.LlmTierType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.Map;
@@ -39,12 +39,7 @@ public class CriticAgent implements Agent<CriticAgentOutput> {
     public AgentOutput<CriticAgentOutput> run(AgentContext ctx) {
         Map<AgentType, Object> specialistOutputs = ctx.priorOutputs();
 
-        String priorOutputsJson;
-        try {
-            priorOutputsJson = objectMapper.writeValueAsString(specialistOutputs);
-        } catch (JacksonException e) {
-            throw new RuntimeException(e);
-        }
+        String priorOutputsJson = JsonUtils.toJson(objectMapper, specialistOutputs, "{}");
 
         String prompt = promptRegistry.getPrompt(PromptType.CRITIC).replace("{{ prior_outputs }}", priorOutputsJson);
 
