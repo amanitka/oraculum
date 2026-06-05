@@ -12,4 +12,6 @@ public interface CompanyAnalysisApi {
     Page<CompanyAnalysisDto> getCompanyAnalysisList(Pageable pageable);
 
     int getRunningCount();
+
+    long getAnalysisCount();
 }

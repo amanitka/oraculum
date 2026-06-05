@@ -35,11 +35,17 @@ public class CompanyAnalysisServiceImpl implements CompanyAnalysisService {
 
     @Override
     public Page<CompanyAnalysisDto> getCompanyAnalysisList(Pageable pageable) {
-        return companyAnalysisRepository.findAllByOrderByCreatedAtDesc(pageable);
+        return companyAnalysisRepository.findAllByOrderByCreatedAtDesc(pageable)
+                .map(CompanyAnalysisDto::fromEntity);
     }
 
     @Override
     public int getRunningCount() {
         return 0;
+    }
+
+    @Override
+    public long getAnalysisCount() {
+        return companyAnalysisRepository.count();
     }
 }

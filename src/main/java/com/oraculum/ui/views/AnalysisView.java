@@ -9,7 +9,7 @@ import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.company.api.dto.MarketDto;
 import com.oraculum.ui.MainLayout;
-import com.oraculum.ui.service.AnalysisTriggerService;
+import com.oraculum.ui.service.AnalysisRequestService;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -31,6 +31,7 @@ import org.springframework.data.domain.PageRequest;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 @Route(value = "analysis", layout = MainLayout.class)
 @PageTitle("Analysis | Oraculum")
@@ -38,16 +39,16 @@ public class AnalysisView extends VerticalLayout {
 
     private final CompanyApi companyApi;
     private final CompanyAnalysisApi companyAnalysisApi;
-    private final AnalysisTriggerService analysisTriggerService;
+    private final AnalysisRequestService analysisRequestService;
 
     private ComboBox<CompanyDto> companyComboBox;
     private Grid<CompanyAnalysisDto> grid;
 
     public AnalysisView(CompanyApi companyApi, CompanyAnalysisApi companyAnalysisApi,
-                        AnalysisTriggerService analysisTriggerService) {
+                        AnalysisRequestService analysisRequestService) {
         this.companyApi = companyApi;
         this.companyAnalysisApi = companyAnalysisApi;
-        this.analysisTriggerService = analysisTriggerService;
+        this.analysisRequestService = analysisRequestService;
 
         setSizeFull();
         addClassNames(LumoUtility.Padding.MEDIUM);
@@ -127,7 +128,7 @@ public class AnalysisView extends VerticalLayout {
         grid.addColumn(CompanyAnalysisDto::getAnalysisDate).setHeader("Analysis Date");
 
         grid.setItems(q -> companyAnalysisApi.getCompanyAnalysisList(PageRequest.of(q.getPage(), q.getPageSize()))
-                .stream());
+                .stream(), q -> (int) companyAnalysisApi.getAnalysisCount());
 
         layout.add(grid);
         return layout;
@@ -140,13 +141,13 @@ public class AnalysisView extends VerticalLayout {
         }
 
         try {
-            CompanyAnalysisRequest request = new CompanyAnalysisRequest(null,
+            CompanyAnalysisRequest request = new CompanyAnalysisRequest(UUID.randomUUID(),
                     company.id(),
                     company.ticker(),
                     company.market(),
                     LocalDate.now(),
                     variant);
-            analysisTriggerService.triggerAnalysis(request);
+            analysisRequestService.requestAnalysis(request);
             showSuccess("Analysis triggered for " + company.ticker());
             grid.getDataProvider().refreshAll();
         } catch (Exception e) {

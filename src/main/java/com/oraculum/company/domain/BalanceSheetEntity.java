@@ -8,7 +8,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -62,7 +64,8 @@ public class BalanceSheetEntity {
     @Column(name = "extracted_at", nullable = false)
     private OffsetDateTime extractedAt;
 
-    @Column(name = "payload", columnDefinition = "jsonb", nullable = false)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "statement_data", columnDefinition = "jsonb", nullable = false)
     private String statementData;
 
     @CreationTimestamp

@@ -1,6 +1,5 @@
 package com.oraculum.analyst.repository;
 
-import com.oraculum.analyst.api.dto.CompanyAnalysisDto;
 import com.oraculum.analyst.domain.CompanyAnalysisEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -11,5 +10,5 @@ import java.util.UUID;
 
 @Repository
 public interface CompanyAnalysisRepository extends JpaRepository<CompanyAnalysisEntity, UUID> {
-    Page<CompanyAnalysisDto> findAllByOrderByCreatedAtDesc(Pageable pageable);
+    Page<CompanyAnalysisEntity> findAllByOrderByCreatedAtDesc(Pageable pageable);
 }

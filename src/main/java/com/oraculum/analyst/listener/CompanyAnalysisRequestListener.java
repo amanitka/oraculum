@@ -15,7 +15,11 @@ public class CompanyAnalysisRequestListener {
     private final CompanyAnalysisOrchestrationService orchestrationService;
 
     @KafkaListener(topics = "${oraculum.kafka.topics.analyst-request}", groupId = "${oraculum.kafka.consumer-group}")
-    public void handleAnalyzeCompanyRequest(CompanyAnalysisRequest request) {
-        orchestrationService.executeAnalysis(request);
+    public void executeCompanyAnalysisRequest(CompanyAnalysisRequest request) {
+        try {
+            orchestrationService.executeAnalysis(request);
+        } catch (Exception e) {
+            log.error("Failed to execute analysis request: {}", e.getMessage(), e);
+        }
     }
 }
