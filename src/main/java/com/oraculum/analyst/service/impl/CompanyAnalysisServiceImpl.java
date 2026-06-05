@@ -35,8 +35,7 @@ public class CompanyAnalysisServiceImpl implements CompanyAnalysisService {
 
     @Override
     public Page<CompanyAnalysisDto> getCompanyAnalysisList(Pageable pageable) {
-
-        return null;
+        return companyAnalysisRepository.findAllByOrderByCreatedAtDesc(pageable);
     }
 
     @Override
