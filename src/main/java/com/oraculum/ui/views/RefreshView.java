@@ -38,7 +38,6 @@ public class RefreshView extends VerticalLayout {
 
     private static final List<String> VARIANTS = List.of("annual", "quarterly", "ttm");
     private static final List<String> TEMPLATES = List.of("general", "banks", "insurance");
-    private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ISO_LOCAL_DATE;
 
     private final HarvesterRequestApi harvesterRequestApi;
 
@@ -303,7 +302,7 @@ public class RefreshView extends VerticalLayout {
 
     private void publish(HarvesterRequest request) {
         try {
-            harvesterRequestApi.publish(request);
+            harvesterRequestApi.publishRequest(request);
             showSuccess("Published `" + request.getRequestType() + "` [" + request.getCorrelationId() + "]");
         } catch (Exception ex) {
             showError("Failed to publish: " + ex.getMessage());

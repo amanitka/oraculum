@@ -3,15 +3,32 @@ package com.oraculum.common.config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "oraculum")
-public record OraculumProperties(Database database,
+public record OraculumProperties(Data data,
+                                 Database database,
                                  Simfin simfin,
                                  AlphaVantage alphaVantage,
                                  Kafka kafka) {
+
+    public record Data(SharePrice sharePrice,
+                       News news) {
+
+        public record SharePrice(int incrementalWindowDays) {
+        }
+
+        public record News(int incrementalWindowHours) {
+        }
+    }
+
     public record Database(String host,
                            int port,
                            String name,
                            String username,
-                           String password) {
+                           String password,
+                           Maintenance maintenance) {
+        public record Maintenance(Boolean enabled,
+                                  String vacuumCron,
+                                  String partitionCron) {
+        }
     }
 
     public record Simfin(String apiKey,

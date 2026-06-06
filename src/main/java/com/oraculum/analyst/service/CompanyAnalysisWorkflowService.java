@@ -31,18 +31,15 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 public class CompanyAnalysisWorkflowService {
 
-    private final CompanyApi companyApi; // Inject CompanyApi directly
+    private final CompanyApi companyApi;
     private final AnalystProperties analystProperties;
     private final CompanyFactSheetDataService companyFactSheetDataService;
     private final Map<AgentType, Agent<?>> agents;
 
-    private Map<AgentType, StatementVariant> getAgentStatementVariants(CompanyAnalysisRequest request,
-                                                                       PlannerPlan plan) {
+    private Map<AgentType, StatementVariant> getAgentStatementVariants(CompanyAnalysisRequest request, PlannerPlan plan) {
         Map<AgentType, StatementVariant> variants = new EnumMap<>(AgentType.class);
         if (request.statementVariant() != null) {
-            Stream.of(AgentType.values())
-                    .filter(AgentType::isSpecialist)
-                    .forEach(type -> variants.put(type, request.statementVariant()));
+            Stream.of(AgentType.values()).filter(AgentType::isSpecialist).forEach(type -> variants.put(type, request.statementVariant()));
         } else if (plan != null) {
             Map<AgentType, Supplier<StatementVariant>> getters = Map.of(AgentType.FUNDAMENTALS,
                     plan::getFundamentalsVariant,
@@ -68,7 +65,7 @@ public class CompanyAnalysisWorkflowService {
         ZonedDateTime now = ZonedDateTime.now();
 
         log.info("Starting analysis workflow for ticker {}", request.ticker());
-        CompanyDto company = companyApi.getCompany(request.ticker(), request.market()); // Use companyApi directly
+        CompanyDto company = companyApi.getCompanyById(request.companyId());
         if (company == null) {
             throw new IllegalArgumentException("Company not found for ticker: " + request.ticker());
         }
@@ -127,8 +124,7 @@ public class CompanyAnalysisWorkflowService {
                     ((com.oraculum.analyst.agent.dto.CriticAgentOutput) criticOutput.result()).isConsistent());
 
             log.info("Starting Synthesizer phase");
-            Agent<SynthesizerAgentOutput> synthesizer =
-                    (Agent<SynthesizerAgentOutput>) agents.get(AgentType.SYNTHESIZER);
+            Agent<SynthesizerAgentOutput> synthesizer = (Agent<SynthesizerAgentOutput>) agents.get(AgentType.SYNTHESIZER);
             var finalOutput = synthesizer.run(sharedCtx);
             totalTokens += finalOutput.tokens();
             agentTrace.put(AgentType.SYNTHESIZER, finalOutput.result());

@@ -38,22 +38,10 @@ public class CompanyServiceImpl implements CompanyService {
     private final CompanyFinancialRatiosRepository companyFinancialRatiosRepository;
 
     @Override
-    public CompanyDto getCompany(String ticker, String market) {
-        return companyRepository.findByTickerAndMarket(ticker, market)
-                .map(CompanyDto::fromEntity)
-                .orElseThrow(() -> new EntityNotFoundException(CompanyEntity.class, ticker + ":" + market));
-    }
-
-    @Override
     public CompanyDto getCompanyById(int companyId) {
         return companyRepository.findById(companyId)
                 .map(CompanyDto::fromEntity)
                 .orElseThrow(() -> new EntityNotFoundException(CompanyEntity.class, String.valueOf(companyId)));
-    }
-
-    @Override
-    public List<CompanyDto> getAllCompanies() {
-        return companyRepository.findAll().stream().map(CompanyDto::fromEntity).collect(Collectors.toList());
     }
 
     @Override
@@ -64,6 +52,11 @@ public class CompanyServiceImpl implements CompanyService {
     @Override
     public List<MarketDto> getAllMarkets() {
         return marketRepository.findAll().stream().map(MarketDto::fromEntity).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<String> getAllMarketIds() {
+        return marketRepository.findAllMarketIds();
     }
 
     @Override
@@ -134,6 +127,11 @@ public class CompanyServiceImpl implements CompanyService {
                 .map(SharePriceDto::fromEntity)
                 .sorted(Comparator.comparing(SharePriceDto::tradeDate).reversed())
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public Optional<LocalDate> getSharePricesLastTradeDate() {
+        return sharePriceRepository.findMaxTradeDate();
     }
 
     @Override

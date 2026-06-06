@@ -34,17 +34,20 @@ vaadin:
   launch-browser: true
 
 oraculum:
-  jobs:
-    data-refresh:
-      enabled: true
-      share-price-cron: "0 0 3 * * TUE-SAT"
-      news-cron: "0 0 */4 * * *"
-      fundamentals-cron: "0 0 2 * * TUE"
-      metadata-cron: "0 0 1 1 * *"
-    database:
-      enabled: true
-      vacuum-cron: "0 0 4 * * SUN"
-      partition-cron: "0 0 5 1 * *"
+  data:
+    refresh-enabled: true
+    metadata:
+      cron: "0 0 1 1 * *"
+    company:
+      cron: "0 0 2 * * TUE"
+    fundamentals:
+      cron: "0 0 2 * * TUE"
+    share-price:
+      incremental-window-days: 5
+      cron: "0 0 3 * * TUE-SAT"
+    news:
+      incremental-window-hours: 1
+      cron: "0 0 */4 * * *"
 
   database:
     host: ${ORACULUM_DATABASE_HOST}
@@ -52,6 +55,10 @@ oraculum:
     name: ${ORACULUM_DATABASE_NAME}
     username: ${ORACULUM_DATABASE_USERNAME}
     password: ${ORACULUM_DATABASE_PASSWORD}
+    maintenance:
+      enabled: true
+      vacuum-cron: "0 0 4 * * SUN"
+      partition-cron: "0 0 5 1 * *"
 
   simfin:
     api-key: ${ORACULUM_SIMFIN_API_KEY}
@@ -77,10 +84,6 @@ oraculum:
 
   analyst:
     token-budget: 100000
-    refresh:
-      price-cron: "0 7 * * *"
-      fundamentals-cron: "0 0 * * 0"
-      ticker-cron: "0 0 1 * *"
     cleanup:
       data-cleanup-cron: "${ORACULUM_DATA_CLEANUP_CRON:0 3 * * *}"
       data-retention-days: ${ORACULUM_DATA_RETENTION_DAYS:3}

@@ -12,15 +12,13 @@ import java.util.Optional;
  */
 public interface CompanyApi {
 
-    CompanyDto getCompany(String ticker, String market);
-
     CompanyDto getCompanyById(int companyId);
-
-    List<CompanyDto> getAllCompanies();
 
     List<CompanyDto> getCompaniesByMarket(String market);
 
     List<MarketDto> getAllMarkets();
+
+    List<String> getAllMarketIds();
 
     List<IndustryDto> getAllIndustries();
 
@@ -37,6 +35,8 @@ public interface CompanyApi {
     List<SharePriceDto> getSharePricesByCompanyId(int companyId, LocalDate after);
 
     List<SharePriceDto> getMonthlySharePricesByCompanyId(int companyId, LocalDate after);
+
+    Optional<LocalDate> getSharePricesLastTradeDate();
 
     List<SharePriceSignalDto> getDailySharePriceSignalsByCompanyId(int companyId, LocalDate after);
 

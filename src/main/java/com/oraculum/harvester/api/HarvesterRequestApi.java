@@ -1,7 +1,22 @@
 package com.oraculum.harvester.api;
 
-import com.oraculum.harvester.api.dto.HarvesterRequest;
+import java.time.LocalDate;
 
 public interface HarvesterRequestApi {
-    void publish(HarvesterRequest request);
+
+    void refreshMarket();
+
+    void refreshIndustry();
+
+    void refreshCompany();
+
+    void refreshFundamentals();
+
+    void refreshSharePrices(boolean incremental, LocalDate fromDate);
+
+    default void refreshSharePrices() {
+        refreshSharePrices(true, null);
+    }
+
+    void refreshNews();
 }

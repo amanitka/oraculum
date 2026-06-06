@@ -7,11 +7,13 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface SharePriceRepository extends JpaRepository<SharePriceEntity, SharePriceId> {
     List<SharePriceEntity> findByCompanyIdAndTradeDateAfter(int companyId, LocalDate after);
 
-    List<SharePriceEntity> findByCompanyIdAndTradeDateAfterAndFlagLastDayOfMonth(int companyId, LocalDate after,
-                                                                                 String flagLastDayOfMonth);
+    List<SharePriceEntity> findByCompanyIdAndTradeDateAfterAndFlagLastDayOfMonth(int companyId, LocalDate after, String flagLastDayOfMonth);
+
+    Optional<LocalDate> findMaxTradeDate();
 }

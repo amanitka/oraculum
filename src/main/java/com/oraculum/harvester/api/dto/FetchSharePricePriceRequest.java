@@ -15,9 +15,6 @@ public class FetchSharePricePriceRequest extends HarvesterRequest {
     @JsonProperty("from_date")
     private final String fromDate;
 
-    @JsonProperty("safety_window_days")
-    private final int safetyWindowDays;
-
     @Override
     public String getRequestType() {
         return "fetch_share_price";
