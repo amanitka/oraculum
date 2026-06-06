@@ -61,9 +61,6 @@ public class SharePriceEntity {
     @Column(name = "dividend")
     private Float dividend;
 
-    @Column(name = "flag_last_day_of_month")
-    private String flagLastDayOfMonth;
-
     @Column(name = "extracted_at", nullable = false)
     private OffsetDateTime extractedAt;
 

@@ -121,15 +121,6 @@ public class CompanyServiceImpl implements CompanyService {
     }
 
     @Override
-    public List<SharePriceDto> getMonthlySharePricesByCompanyId(int companyId, LocalDate after) {
-        return sharePriceRepository.findByCompanyIdAndTradeDateAfterAndFlagLastDayOfMonth(companyId, after, "Y")
-                .stream()
-                .map(SharePriceDto::fromEntity)
-                .sorted(Comparator.comparing(SharePriceDto::tradeDate).reversed())
-                .collect(Collectors.toList());
-    }
-
-    @Override
     public Optional<LocalDate> getSharePricesLastTradeDate() {
         return sharePriceRepository.findMaxTradeDate();
     }

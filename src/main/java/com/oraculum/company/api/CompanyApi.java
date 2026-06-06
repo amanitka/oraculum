@@ -34,8 +34,6 @@ public interface CompanyApi {
 
     List<SharePriceDto> getSharePricesByCompanyId(int companyId, LocalDate after);
 
-    List<SharePriceDto> getMonthlySharePricesByCompanyId(int companyId, LocalDate after);
-
     Optional<LocalDate> getSharePricesLastTradeDate();
 
     List<SharePriceSignalDto> getDailySharePriceSignalsByCompanyId(int companyId, LocalDate after);

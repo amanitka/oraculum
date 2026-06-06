@@ -1,6 +1,7 @@
 package com.oraculum.ui;
 
 import com.oraculum.ui.views.AnalysisView;
+import com.oraculum.ui.views.CompanyView;
 import com.oraculum.ui.views.RefreshView;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.applayout.AppLayout;
@@ -40,6 +41,7 @@ public class MainLayout extends AppLayout implements RouterLayout {
 
     private Component buildNav() {
         SideNav nav = new SideNav();
+        nav.addItem(new SideNavItem("Company", CompanyView.class, com.vaadin.flow.component.icon.VaadinIcon.OFFICE.create()));
         nav.addItem(new SideNavItem("Analysis", AnalysisView.class, com.vaadin.flow.component.icon.VaadinIcon.CHART_LINE.create()));
         nav.addItem(new SideNavItem("Refresh", RefreshView.class, com.vaadin.flow.component.icon.VaadinIcon.REFRESH.create()));
         return nav;
