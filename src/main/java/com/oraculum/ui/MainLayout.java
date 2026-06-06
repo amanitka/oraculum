@@ -5,16 +5,12 @@ import com.oraculum.ui.views.RefreshView;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
-import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Footer;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.icon.Icon;
-import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.orderedlayout.FlexComponent;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.sidenav.SideNav;
+import com.vaadin.flow.component.sidenav.SideNavItem;
 import com.vaadin.flow.router.RouterLayout;
-import com.vaadin.flow.router.RouterLink;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 
 public class MainLayout extends AppLayout implements RouterLayout {
@@ -43,39 +39,10 @@ public class MainLayout extends AppLayout implements RouterLayout {
     }
 
     private Component buildNav() {
-        Div navContainer = new Div();
-        navContainer.addClassNames(LumoUtility.Display.FLEX,
-                LumoUtility.FlexDirection.COLUMN,
-                LumoUtility.Gap.SMALL,
-                LumoUtility.Padding.Vertical.MEDIUM);
-
-        RouterLink analysisLink = createNavLink("Analysis", AnalysisView.class, VaadinIcon.CHART_LINE);
-        RouterLink refreshLink = createNavLink("Refresh", RefreshView.class, VaadinIcon.REFRESH);
-
-        navContainer.add(analysisLink, refreshLink);
-        return navContainer;
-    }
-
-    private RouterLink createNavLink(String text, Class<? extends Component> navigationTarget, VaadinIcon icon) {
-        RouterLink link = new RouterLink();
-        link.setRoute(navigationTarget);
-        link.addClassNames("nav-link");
-
-        HorizontalLayout content = new HorizontalLayout();
-        content.setSpacing(true);
-        content.setAlignItems(FlexComponent.Alignment.CENTER);
-        content.addClassNames(LumoUtility.Padding.Horizontal.MEDIUM, LumoUtility.Padding.Vertical.SMALL);
-
-        Icon iconElement = icon.create();
-        iconElement.addClassNames(LumoUtility.TextColor.SECONDARY);
-
-        Span textSpan = new Span(text);
-        textSpan.addClassNames(LumoUtility.FontWeight.MEDIUM);
-
-        content.add(iconElement, textSpan);
-        link.add(content);
-
-        return link;
+        SideNav nav = new SideNav();
+        nav.addItem(new SideNavItem("Analysis", AnalysisView.class, com.vaadin.flow.component.icon.VaadinIcon.CHART_LINE.create()));
+        nav.addItem(new SideNavItem("Refresh", RefreshView.class, com.vaadin.flow.component.icon.VaadinIcon.REFRESH.create()));
+        return nav;
     }
 
     private Footer buildFooter() {

@@ -19,7 +19,6 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.dialog.Dialog;
-import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Anchor;
@@ -63,8 +62,7 @@ public class AnalysisView extends VerticalLayout {
     private ComboBox<CompanyDto> companyComboBox;
     private Grid<CompanyAnalysisDto> grid;
 
-    public AnalysisView(CompanyApi companyApi, CompanyAnalysisApi companyAnalysisApi,
-                        AnalysisRequestService analysisRequestService) {
+    public AnalysisView(CompanyApi companyApi, CompanyAnalysisApi companyAnalysisApi, AnalysisRequestService analysisRequestService) {
         this.companyApi = companyApi;
         this.companyAnalysisApi = companyAnalysisApi;
         this.analysisRequestService = analysisRequestService;
@@ -82,14 +80,10 @@ public class AnalysisView extends VerticalLayout {
 
     private Component createTriggerCard() {
         Div card = new Div();
-        card.addClassNames(
-                LumoUtility.Background.BASE,
+        card.addClassNames(LumoUtility.Background.BASE,
                 LumoUtility.BorderRadius.MEDIUM,
-                LumoUtility.BoxShadow.SMALL,
-                LumoUtility.Padding.MEDIUM,
-                LumoUtility.Border.ALL,
-                LumoUtility.BorderColor.CONTRAST_10
-        );
+                LumoUtility.BoxShadow.XSMALL,
+                LumoUtility.Padding.MEDIUM);
         card.setWidthFull();
 
         H3 title = new H3("Run New Analysis");
@@ -98,12 +92,12 @@ public class AnalysisView extends VerticalLayout {
         ComboBox<MarketDto> marketComboBox = new ComboBox<>("Market");
         marketComboBox.setItems(companyApi.getAllMarkets());
         marketComboBox.setItemLabelGenerator(MarketDto::marketName);
-        marketComboBox.setWidthFull();
+        marketComboBox.setWidth("200px");
 
         companyComboBox = new ComboBox<>("Company");
         companyComboBox.setEnabled(false);
         companyComboBox.setItemLabelGenerator(c -> String.format("%s - %s", c.ticker(), c.companyName()));
-        companyComboBox.setWidthFull();
+        companyComboBox.setWidth("300px");
 
         marketComboBox.addValueChangeListener(e -> {
             if (e.getValue() == null) {
@@ -125,28 +119,23 @@ public class AnalysisView extends VerticalLayout {
         Details advancedDetails = new Details("Advanced Options", variantComboBox);
         advancedDetails.setOpened(false);
         advancedDetails.addClassNames(LumoUtility.Margin.Bottom.NONE);
-        advancedDetails.getStyle().set("min-width", "220px");
-        advancedDetails.getStyle().set("flex-grow", "1");
 
         Button analyzeButton = new Button("Analyze", VaadinIcon.PLAY.create());
         analyzeButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        analyzeButton.getStyle().set("flex-grow", "0");
         analyzeButton.addClickListener(_ -> triggerAnalysis(companyComboBox.getValue(), variantComboBox.getValue()));
 
-        FormLayout dropdownsForm = new FormLayout(marketComboBox, companyComboBox);
-        dropdownsForm.setResponsiveSteps(
-                new FormLayout.ResponsiveStep("0", 1),
-                new FormLayout.ResponsiveStep("600px", 2)
-        );
-        dropdownsForm.getStyle().set("flex-grow", "2");
+        HorizontalLayout rightGroup = new HorizontalLayout(advancedDetails, analyzeButton);
+        rightGroup.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.BASELINE);
+        rightGroup.setSpacing(true);
 
-        HorizontalLayout formRow = new HorizontalLayout();
+        HorizontalLayout leftGroup = new HorizontalLayout(marketComboBox, companyComboBox);
+        leftGroup.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.BASELINE);
+        leftGroup.setSpacing(true);
+
+        HorizontalLayout formRow = new HorizontalLayout(leftGroup, rightGroup);
         formRow.setWidthFull();
-        formRow.setAlignItems(FlexComponent.Alignment.END);
-        formRow.setSpacing(true);
-        formRow.addClassNames(LumoUtility.FlexWrap.WRAP);
-
-        formRow.add(dropdownsForm, advancedDetails, analyzeButton);
+        formRow.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.BASELINE);
+        formRow.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
 
         card.add(title, formRow);
         return card;
@@ -167,7 +156,7 @@ public class AnalysisView extends VerticalLayout {
 
         grid.addColumn(CompanyAnalysisDto::getTicker).setHeader("Ticker");
         grid.addColumn(CompanyAnalysisDto::getMarket).setHeader("Market");
-        
+
         grid.addColumn(new ComponentRenderer<>(analysis -> {
             AnalysisStatus status = analysis.getStatus();
             String statusName = status != null ? status.name() : "PENDING";
@@ -229,7 +218,7 @@ public class AnalysisView extends VerticalLayout {
         })).setHeader("Recommendation");
 
         grid.addColumn(CompanyAnalysisDto::getAnalysisDate).setHeader("Analysis Date");
-        
+
         grid.addColumn(new ComponentRenderer<>(analysis -> {
             Button viewBtn = new Button(VaadinIcon.EYE.create());
             viewBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ICON);
@@ -241,8 +230,8 @@ public class AnalysisView extends VerticalLayout {
 
         grid.addItemDoubleClickListener(event -> showAnalysisDetails(event.getItem()));
 
-        grid.setItems(q -> companyAnalysisApi.getCompanyAnalysisList(PageRequest.of(q.getPage(), q.getPageSize()))
-                .stream(), _ -> (int) companyAnalysisApi.getAnalysisCount());
+        grid.setItems(q -> companyAnalysisApi.getCompanyAnalysisList(PageRequest.of(q.getPage(), q.getPageSize())).stream(),
+                _ -> (int) companyAnalysisApi.getAnalysisCount());
 
         layout.add(title, grid);
         layout.setFlexGrow(1, grid);
@@ -366,10 +355,7 @@ public class AnalysisView extends VerticalLayout {
             String htmlContent = renderer.render(parser.parse(markdown));
 
             Div container = new Div();
-            container.getStyle()
-                    .set("padding", "24px")
-                    .set("line-height", "1.6")
-                    .set("color", "var(--lumo-body-text-color)");
+            container.getStyle().set("padding", "24px").set("line-height", "1.6").set("color", "var(--lumo-body-text-color)");
 
             String css = """
                         <style>
@@ -508,12 +494,10 @@ public class AnalysisView extends VerticalLayout {
 
         DownloadHandler downloadHandler = DownloadHandler.fromInputStream(event -> {
             byte[] bytes = finalPrettyJson.getBytes(StandardCharsets.UTF_8);
-            return new DownloadResponse(
-                    new ByteArrayInputStream(bytes),
+            return new DownloadResponse(new ByteArrayInputStream(bytes),
                     analysis.getTicker() + "_analysis.json",
                     "application/json",
-                    bytes.length
-            );
+                    bytes.length);
         });
         Anchor downloadLink = new Anchor(downloadHandler, "");
         downloadLink.getElement().setAttribute("download", true);
@@ -559,12 +543,10 @@ public class AnalysisView extends VerticalLayout {
     }
 
     private void showError(String message) {
-        Notification.show(message, 3000, Notification.Position.BOTTOM_END)
-                .addThemeVariants(NotificationVariant.LUMO_ERROR);
+        Notification.show(message, 3000, Notification.Position.BOTTOM_END).addThemeVariants(NotificationVariant.LUMO_ERROR);
     }
 
     private void showSuccess(String message) {
-        Notification.show(message, 3000, Notification.Position.BOTTOM_END)
-                .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        Notification.show(message, 3000, Notification.Position.BOTTOM_END).addThemeVariants(NotificationVariant.LUMO_SUCCESS);
     }
 }

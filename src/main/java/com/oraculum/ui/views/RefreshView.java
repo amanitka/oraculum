@@ -7,7 +7,6 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.datepicker.DatePicker;
-import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.H4;
@@ -20,8 +19,6 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteAlias;
 import com.vaadin.flow.theme.lumo.LumoUtility;
-
-import java.time.LocalDate;
 
 @Route(value = "refresh", layout = MainLayout.class)
 @RouteAlias(value = "", layout = MainLayout.class)
@@ -66,8 +63,9 @@ public class RefreshView extends VerticalLayout {
         Div grid = new Div();
         grid.setWidthFull();
         grid.addClassNames(LumoUtility.Display.GRID);
-        grid.getStyle().set("grid-template-columns", "repeat(auto-fill, minmax(300px, 1fr))");
+        grid.getStyle().set("grid-template-columns", "repeat(auto-fill, minmax(280px, 1fr))");
         grid.getStyle().set("gap", "var(--lumo-space-m)");
+        grid.getStyle().set("width", "100%");
 
         grid.add(createSimpleActionCard("Market Data",
                 "Refreshes the list of all supported stock markets.",
@@ -96,17 +94,12 @@ public class RefreshView extends VerticalLayout {
 
     private Div createCard(String title) {
         Div card = new Div();
-        card.addClassNames(
-                LumoUtility.Background.BASE,
+        card.addClassNames(LumoUtility.Background.BASE,
+                LumoUtility.BoxShadow.SMALL,
                 LumoUtility.BorderRadius.MEDIUM,
-                LumoUtility.BoxShadow.XSMALL,
                 LumoUtility.Padding.MEDIUM,
                 LumoUtility.Display.FLEX,
-                LumoUtility.FlexDirection.COLUMN,
-                LumoUtility.Border.ALL,
-                LumoUtility.BorderColor.CONTRAST_10,
-                "refresh-card"
-        );
+                LumoUtility.FlexDirection.COLUMN);
         card.setWidthFull();
 
         H4 cardTitle = new H4(title);
@@ -149,16 +142,17 @@ public class RefreshView extends VerticalLayout {
             }
         });
 
-        FormLayout form = new FormLayout(incremental, fromDate);
+        VerticalLayout form = new VerticalLayout(incremental, fromDate);
+        form.setPadding(false);
+        form.setSpacing(false);
         form.setWidthFull();
         form.addClassNames(LumoUtility.Margin.Bottom.MEDIUM);
 
         Button btn = new Button("Refresh", VaadinIcon.REFRESH.create());
         btn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         btn.addClassNames(LumoUtility.Margin.Top.AUTO); // mt-auto
-        btn.addClickListener(e -> executeRefresh("Share Prices", () ->
-                harvesterRequestApi.refreshSharePrices(incremental.getValue(), fromDate.getValue())
-        ));
+        btn.addClickListener(e -> executeRefresh("Share Prices",
+                () -> harvesterRequestApi.refreshSharePrices(incremental.getValue(), fromDate.getValue())));
 
         card.add(desc, form, btn);
         return card;
