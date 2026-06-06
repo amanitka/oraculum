@@ -87,4 +87,8 @@ public class CompanyFactSheetData {
         }
         return recentNewsCache;
     }
-}
+
+    public List<NewsTickerDto> getRecentNewsList() {
+        return recentNews;
+    }
+}

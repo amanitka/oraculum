@@ -1,27 +1,28 @@
 package com.oraculum.company.api.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.oraculum.company.domain.NewsEntity;
 import com.oraculum.company.domain.NewsTickerEntity;
 
 import java.time.OffsetDateTime;
 
 public record NewsTickerDto(
-        String id,
+        @JsonIgnore String id,
         String title,
-        String url,
+        @JsonIgnore String url,
         OffsetDateTime timePublished,
-        String authors,
+        @JsonIgnore String authors,
         String summary,
         String source,
-        String categoryWithinSource,
-        String sourceDomain,
-        String topics,
+        @JsonIgnore String categoryWithinSource,
+        @JsonIgnore String sourceDomain,
+        @JsonIgnore String topics,
         Float overallSentimentScore,
         String overallSentimentLabel,
-        OffsetDateTime extractedAt,
-        String sentimentScoreDefinition,
-        String relevanceScoreDefinition,
-        String ticker,
+        @JsonIgnore OffsetDateTime extractedAt,
+        @JsonIgnore String sentimentScoreDefinition,
+        @JsonIgnore String relevanceScoreDefinition,
+        @JsonIgnore String ticker,
         Float relevanceScore,
         Float tickerSentimentScore,
         String tickerSentimentLabel

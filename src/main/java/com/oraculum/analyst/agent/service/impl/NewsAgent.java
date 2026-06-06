@@ -7,12 +7,15 @@ import com.oraculum.analyst.agent.service.Agent;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.AgentType;
 import com.oraculum.analyst.domain.PromptType;
+import com.oraculum.company.api.dto.NewsTickerDto;
 import com.oraculum.llm.api.LlmRouterApi;
 import com.oraculum.llm.api.dto.LlmResponse;
 import com.oraculum.llm.api.dto.LlmTierType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Slf4j
 @Component
@@ -35,21 +38,32 @@ public class NewsAgent implements Agent<NewsAgentOutput> {
     @Override
     public AgentOutput<NewsAgentOutput> run(AgentContext ctx) {
         log.info("NewsAgent starting analysis for ticker: {}", ctx.ticker());
-
         String newsMarkdown = ctx.factSheetData().getRecentNews();
+        List<NewsTickerDto> newsList = ctx.factSheetData().getRecentNewsList();
 
-        if (newsMarkdown.contains("No recent news found")) {
+        if (newsMarkdown == null || "[]".equals(newsMarkdown) || newsMarkdown.isBlank() || newsList == null || newsList.isEmpty()) {
             log.warn("No recent news found for ticker: {}", ctx.ticker());
             return new AgentOutput<>(new NewsAgentOutput("No significant recent news found for this ticker."), 0);
         }
 
-        String systemPrompt = promptRegistry.getPrompt(PromptType.NEWS);
-        String userPrompt = String.format("Here is the recent news for %s:\n\n%s", ctx.ticker(), newsMarkdown);
+        // Extract definitions from the first news item dynamically to prevent hardcoding
+        NewsTickerDto firstNews = newsList.get(0);
+        String relevanceDef = firstNews.relevanceScoreDefinition() != null ? firstNews.relevanceScoreDefinition() : "No definition " +
+                                                                                                                    "provided";
+        String sentimentDef = firstNews.sentimentScoreDefinition() != null ? firstNews.sentimentScoreDefinition() : "No definition " +
+                                                                                                                    "provided";
+
+        String systemPrompt = promptRegistry.getPrompt(PromptType.NEWS)
+                .replace("{{ relevance_score_definition }}", relevanceDef)
+                .replace("{{ sentiment_score_definition }}", sentimentDef)
+                .replace("{{ recent_news }}", newsMarkdown);
+
+        String userPrompt = String.format("Analyze the recent news and sentiment for %s as of %s based on the provided data.",
+                ctx.ticker(),
+                ctx.analysisDate());
         String fullPrompt = systemPrompt + "\n" + userPrompt;
 
-        LlmResponse<NewsAgentOutput> response = llmRouterApi.executeCall(LlmTierType.MINI,
-                fullPrompt,
-                NewsAgentOutput.class);
+        LlmResponse<NewsAgentOutput> response = llmRouterApi.executeCall(LlmTierType.MINI, fullPrompt, NewsAgentOutput.class);
 
         log.info("NewsAgent successfully generated summary for ticker: {}", ctx.ticker());
         return new AgentOutput<>(response.result(), response.metrics().totalTokens());

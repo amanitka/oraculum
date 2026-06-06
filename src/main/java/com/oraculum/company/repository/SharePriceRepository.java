@@ -3,6 +3,7 @@ package com.oraculum.company.repository;
 import com.oraculum.company.domain.SharePriceEntity;
 import com.oraculum.company.domain.SharePriceId;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -15,5 +16,6 @@ public interface SharePriceRepository extends JpaRepository<SharePriceEntity, Sh
 
     List<SharePriceEntity> findByCompanyIdAndTradeDateAfterAndFlagLastDayOfMonth(int companyId, LocalDate after, String flagLastDayOfMonth);
 
+    @Query("SELECT MAX(sp.tradeDate) FROM SharePriceEntity sp")
     Optional<LocalDate> findMaxTradeDate();
 }
