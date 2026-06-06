@@ -1,0 +1,47 @@
+/* Sidebar/Drawer styles */
+vaadin-app-layout [part="drawer"] {
+    background-color: var(--lumo-contrast-5pct) !important;
+    border-right: 1px solid var(--lumo-contrast-10pct);
+    display: flex;
+    flex-direction: column;
+}
+
+/* Navigation links */
+.nav-link {
+    display: block;
+    text-decoration: none;
+    color: var(--lumo-secondary-text-color) !important;
+    border-left: 4px solid transparent;
+    transition: all 0.25s ease-in-out;
+}
+
+.nav-link:hover {
+    background-color: var(--lumo-contrast-5pct);
+    color: var(--lumo-primary-color) !important;
+}
+
+.nav-link:hover vaadin-icon {
+    color: var(--lumo-primary-color) !important;
+}
+
+/* Clear active state: bold text, primary border on left, subtle primary background */
+.nav-link[active], .nav-link[highlight], .nav-link.active {
+    font-weight: 600;
+    color: var(--lumo-primary-color) !important;
+    border-left-color: var(--lumo-primary-color);
+    background-color: var(--lumo-primary-color-10pct);
+}
+
+.nav-link[active] vaadin-icon, .nav-link[highlight] vaadin-icon, .nav-link.active vaadin-icon {
+    color: var(--lumo-primary-color) !important;
+}
+
+/* Micro-animations and hover effects for cards */
+.refresh-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.refresh-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--lumo-box-shadow-s) !important;
+}

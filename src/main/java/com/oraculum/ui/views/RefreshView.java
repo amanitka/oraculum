@@ -65,8 +65,9 @@ public class RefreshView extends VerticalLayout {
     private Component createGridSection() {
         Div grid = new Div();
         grid.setWidthFull();
-        grid.addClassNames(LumoUtility.Display.GRID, LumoUtility.Gap.MEDIUM);
-        grid.getStyle().set("grid-template-columns", "repeat(auto-fit, minmax(350px, 1fr))");
+        grid.addClassNames(LumoUtility.Display.GRID);
+        grid.getStyle().set("grid-template-columns", "repeat(auto-fill, minmax(300px, 1fr))");
+        grid.getStyle().set("gap", "var(--lumo-space-m)");
 
         grid.add(createSimpleActionCard("Market Data",
                 "Refreshes the list of all supported stock markets.",
@@ -93,32 +94,38 @@ public class RefreshView extends VerticalLayout {
         return grid;
     }
 
-    private VerticalLayout createCard(String title) {
-        VerticalLayout card = new VerticalLayout();
-        card.addClassNames(LumoUtility.Background.BASE,
+    private Div createCard(String title) {
+        Div card = new Div();
+        card.addClassNames(
+                LumoUtility.Background.BASE,
                 LumoUtility.BorderRadius.MEDIUM,
-                LumoUtility.BoxShadow.SMALL,
+                LumoUtility.BoxShadow.XSMALL,
                 LumoUtility.Padding.MEDIUM,
+                LumoUtility.Display.FLEX,
+                LumoUtility.FlexDirection.COLUMN,
                 LumoUtility.Border.ALL,
-                LumoUtility.BorderColor.CONTRAST_10);
+                LumoUtility.BorderColor.CONTRAST_10,
+                "refresh-card"
+        );
         card.setWidthFull();
 
         H4 cardTitle = new H4(title);
-        cardTitle.addClassNames(LumoUtility.Margin.Top.NONE, LumoUtility.Margin.Bottom.MEDIUM);
+        cardTitle.addClassNames(LumoUtility.Margin.Top.NONE, LumoUtility.Margin.Bottom.SMALL);
         card.add(cardTitle);
 
         return card;
     }
 
     private Component createSimpleActionCard(String title, String description, Runnable action) {
-        VerticalLayout card = createCard(title);
+        Div card = createCard(title);
 
         Paragraph desc = new Paragraph(description);
         desc.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.Margin.Bottom.MEDIUM, LumoUtility.Margin.Top.NONE);
-        desc.getStyle().set("flex-grow", "1");
 
         Button btn = new Button("Refresh", VaadinIcon.REFRESH.create());
         btn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        btn.addClassNames(LumoUtility.Margin.Top.AUTO); // mt-auto
+
         btn.addClickListener(e -> executeRefresh(title, action));
 
         card.add(desc, btn);
@@ -126,11 +133,10 @@ public class RefreshView extends VerticalLayout {
     }
 
     private Component createSharePriceRefreshCard() {
-        VerticalLayout card = createCard("Share Prices");
+        Div card = createCard("Share Prices");
 
         Paragraph desc = new Paragraph("Refreshes historical daily share prices for all companies.");
         desc.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.Margin.Bottom.SMALL, LumoUtility.Margin.Top.NONE);
-        desc.getStyle().set("flex-grow", "1");
 
         Checkbox incremental = new Checkbox("Incremental Refresh", true);
         DatePicker fromDate = new DatePicker("From Date");
@@ -149,6 +155,7 @@ public class RefreshView extends VerticalLayout {
 
         Button btn = new Button("Refresh", VaadinIcon.REFRESH.create());
         btn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        btn.addClassNames(LumoUtility.Margin.Top.AUTO); // mt-auto
         btn.addClickListener(e -> executeRefresh("Share Prices", () ->
                 harvesterRequestApi.refreshSharePrices(incremental.getValue(), fromDate.getValue())
         ));

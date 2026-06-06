@@ -21,6 +21,7 @@ import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
@@ -32,7 +33,6 @@ import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.splitlayout.SplitLayout;
 import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
@@ -70,20 +70,27 @@ public class AnalysisView extends VerticalLayout {
         this.analysisRequestService = analysisRequestService;
 
         setSizeFull();
-        addClassNames(LumoUtility.Padding.MEDIUM);
+        addClassNames(LumoUtility.Padding.MEDIUM, LumoUtility.Gap.MEDIUM);
 
-        SplitLayout splitLayout = new SplitLayout(createTriggerCard(), createHistoryGrid());
-        splitLayout.setSplitterPosition(30);
-        splitLayout.setSizeFull();
+        Component triggerCard = createTriggerCard();
+        Component historyGrid = createHistoryGrid();
 
-        add(splitLayout);
+        add(triggerCard, historyGrid);
+        setFlexGrow(0, triggerCard);
+        setFlexGrow(1, historyGrid);
     }
 
     private Component createTriggerCard() {
-        VerticalLayout card = new VerticalLayout();
+        Div card = new Div();
+        card.addClassNames(
+                LumoUtility.Background.BASE,
+                LumoUtility.BorderRadius.MEDIUM,
+                LumoUtility.BoxShadow.SMALL,
+                LumoUtility.Padding.MEDIUM,
+                LumoUtility.Border.ALL,
+                LumoUtility.BorderColor.CONTRAST_10
+        );
         card.setWidthFull();
-        card.setPadding(false);
-        card.setSpacing(false);
 
         H3 title = new H3("Run New Analysis");
         title.addClassNames(LumoUtility.Margin.Top.NONE, LumoUtility.Margin.Bottom.MEDIUM);
@@ -91,10 +98,12 @@ public class AnalysisView extends VerticalLayout {
         ComboBox<MarketDto> marketComboBox = new ComboBox<>("Market");
         marketComboBox.setItems(companyApi.getAllMarkets());
         marketComboBox.setItemLabelGenerator(MarketDto::marketName);
+        marketComboBox.setWidthFull();
 
         companyComboBox = new ComboBox<>("Company");
         companyComboBox.setEnabled(false);
         companyComboBox.setItemLabelGenerator(c -> String.format("%s - %s", c.ticker(), c.companyName()));
+        companyComboBox.setWidthFull();
 
         marketComboBox.addValueChangeListener(e -> {
             if (e.getValue() == null) {
@@ -111,16 +120,35 @@ public class AnalysisView extends VerticalLayout {
         variantComboBox.setItems(StatementVariant.values());
         variantComboBox.setPlaceholder("Auto (Planner Decides)");
         variantComboBox.setClearButtonVisible(true);
+        variantComboBox.setWidthFull();
 
         Details advancedDetails = new Details("Advanced Options", variantComboBox);
         advancedDetails.setOpened(false);
+        advancedDetails.addClassNames(LumoUtility.Margin.Bottom.NONE);
+        advancedDetails.getStyle().set("min-width", "220px");
+        advancedDetails.getStyle().set("flex-grow", "1");
 
-        Button analyzeButton = new Button("Analyze");
+        Button analyzeButton = new Button("Analyze", VaadinIcon.PLAY.create());
         analyzeButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        analyzeButton.getStyle().set("flex-grow", "0");
         analyzeButton.addClickListener(_ -> triggerAnalysis(companyComboBox.getValue(), variantComboBox.getValue()));
 
-        FormLayout formLayout = new FormLayout(marketComboBox, companyComboBox, advancedDetails);
-        card.add(title, formLayout, analyzeButton);
+        FormLayout dropdownsForm = new FormLayout(marketComboBox, companyComboBox);
+        dropdownsForm.setResponsiveSteps(
+                new FormLayout.ResponsiveStep("0", 1),
+                new FormLayout.ResponsiveStep("600px", 2)
+        );
+        dropdownsForm.getStyle().set("flex-grow", "2");
+
+        HorizontalLayout formRow = new HorizontalLayout();
+        formRow.setWidthFull();
+        formRow.setAlignItems(FlexComponent.Alignment.END);
+        formRow.setSpacing(true);
+        formRow.addClassNames(LumoUtility.FlexWrap.WRAP);
+
+        formRow.add(dropdownsForm, advancedDetails, analyzeButton);
+
+        card.add(title, formRow);
         return card;
     }
 
@@ -130,28 +158,83 @@ public class AnalysisView extends VerticalLayout {
         layout.setSpacing(false);
         layout.setSizeFull();
 
+        H3 title = new H3("Analysis History");
+        title.addClassNames(LumoUtility.Margin.Top.NONE, LumoUtility.Margin.Bottom.SMALL);
+
         grid = new Grid<>(CompanyAnalysisDto.class, false);
+        grid.setSizeFull();
+        grid.addThemeVariants(GridVariant.LUMO_NO_BORDER, GridVariant.LUMO_ROW_STRIPES);
+
         grid.addColumn(CompanyAnalysisDto::getTicker).setHeader("Ticker");
         grid.addColumn(CompanyAnalysisDto::getMarket).setHeader("Market");
+        
         grid.addColumn(new ComponentRenderer<>(analysis -> {
             AnalysisStatus status = analysis.getStatus();
+            String statusName = status != null ? status.name() : "PENDING";
+            Span badge = new Span(statusName);
             String theme = "badge";
-            switch (status) {
-                case COMPLETED -> theme += " success";
-                case FAILED -> theme += " error";
+            if (status != null) {
+                switch (status) {
+                    case COMPLETED -> theme += " success";
+                    case FAILED -> theme += " error";
+                    default -> theme += " warning";
+                }
             }
-            Div statusBadge = new Div();
-            statusBadge.setText(status.name());
-            statusBadge.getElement().getThemeList().add(theme);
-            return statusBadge;
+            badge.getElement().getThemeList().add(theme);
+            return badge;
         })).setHeader("Status");
+
         grid.addColumn(CompanyAnalysisDto::getConviction).setHeader("Conviction");
-        grid.addColumn(CompanyAnalysisDto::getOutlook).setHeader("Outlook");
-        grid.addColumn(CompanyAnalysisDto::getRecommendation).setHeader("Recommendation");
-        grid.addColumn(CompanyAnalysisDto::getAnalysisDate).setHeader("Analysis Date");
+
         grid.addColumn(new ComponentRenderer<>(analysis -> {
-            Button viewBtn = new Button("View", VaadinIcon.EYE.create());
-            viewBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
+            var outlook = analysis.getOutlook();
+            if (outlook == null) {
+                Span empty = new Span("PENDING");
+                empty.getElement().getThemeList().add("badge contrast");
+                return empty;
+            }
+            String name = outlook.name();
+            Span badge = new Span(name);
+            String theme = "badge";
+            if (name.contains("BULLISH")) {
+                theme += " success";
+            } else if (name.contains("BEARISH")) {
+                theme += " error";
+            } else {
+                theme += " contrast";
+            }
+            badge.getElement().getThemeList().add(theme);
+            return badge;
+        })).setHeader("Outlook");
+
+        grid.addColumn(new ComponentRenderer<>(analysis -> {
+            var rec = analysis.getRecommendation();
+            if (rec == null) {
+                Span empty = new Span("PENDING");
+                empty.getElement().getThemeList().add("badge contrast");
+                return empty;
+            }
+            String name = rec.name();
+            Span badge = new Span(name);
+            String theme = "badge";
+            if (name.contains("BUY")) {
+                theme += " success primary";
+            } else if (name.contains("SELL")) {
+                theme += " error";
+            } else {
+                theme += " contrast";
+            }
+            badge.getElement().getThemeList().add(theme);
+            return badge;
+        })).setHeader("Recommendation");
+
+        grid.addColumn(CompanyAnalysisDto::getAnalysisDate).setHeader("Analysis Date");
+        
+        grid.addColumn(new ComponentRenderer<>(analysis -> {
+            Button viewBtn = new Button(VaadinIcon.EYE.create());
+            viewBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ICON);
+            viewBtn.setAriaLabel("View details");
+            viewBtn.setTooltipText("View details");
             viewBtn.addClickListener(e -> showAnalysisDetails(analysis));
             return viewBtn;
         })).setHeader("Actions");
@@ -161,7 +244,8 @@ public class AnalysisView extends VerticalLayout {
         grid.setItems(q -> companyAnalysisApi.getCompanyAnalysisList(PageRequest.of(q.getPage(), q.getPageSize()))
                 .stream(), _ -> (int) companyAnalysisApi.getAnalysisCount());
 
-        layout.add(grid);
+        layout.add(title, grid);
+        layout.setFlexGrow(1, grid);
         return layout;
     }
 
