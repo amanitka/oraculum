@@ -36,7 +36,17 @@ public class MainLayout extends AppLayout implements RouterLayout {
     }
 
     private void addDrawerContent() {
-        addToDrawer(buildNav(), buildFooter());
+        com.vaadin.flow.component.orderedlayout.VerticalLayout drawerLayout = new com.vaadin.flow.component.orderedlayout.VerticalLayout();
+        drawerLayout.setSizeFull();
+        drawerLayout.setPadding(false);
+        drawerLayout.setSpacing(false);
+        drawerLayout.addClassNames(LumoUtility.Background.CONTRAST_5);
+
+        Component nav = buildNav();
+        drawerLayout.add(nav, buildFooter());
+        drawerLayout.expand(nav);
+
+        addToDrawer(drawerLayout);
     }
 
     private Component buildNav() {
