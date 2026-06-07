@@ -79,7 +79,6 @@ public class CompanyAnalysisWorkflowService {
                 null,
                 analystProperties.tokenBudget(),
                 new EnumMap<>(AgentType.class));
-
         try {
             log.info("Starting Planner phase");
             Agent<PlannerPlan> planner = (Agent<PlannerPlan>) agents.get(AgentType.PLANNER);
