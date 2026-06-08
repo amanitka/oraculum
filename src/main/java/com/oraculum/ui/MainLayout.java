@@ -5,65 +5,71 @@ import com.oraculum.ui.views.CompanyView;
 import com.oraculum.ui.views.RefreshView;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.applayout.AppLayout;
-import com.vaadin.flow.component.applayout.DrawerToggle;
-import com.vaadin.flow.component.html.Footer;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H1;
-import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.sidenav.SideNav;
-import com.vaadin.flow.component.sidenav.SideNavItem;
+import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.router.RouterLayout;
+import com.vaadin.flow.router.RouterLink;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 
 public class MainLayout extends AppLayout implements RouterLayout {
 
     public MainLayout() {
-        setPrimarySection(Section.DRAWER);
-        addDrawerContent();
         addHeaderContent();
     }
 
     private void addHeaderContent() {
-        DrawerToggle toggle = new DrawerToggle();
-        toggle.setAriaLabel("Menu toggle");
+        HorizontalLayout header = new HorizontalLayout();
+        header.setWidthFull();
+        header.setPadding(true);
+        header.setAlignItems(Alignment.CENTER);
+        header.setJustifyContentMode(JustifyContentMode.BETWEEN);
 
+        // Left Zone: Logo
         H1 viewTitle = new H1("Oraculum");
-        viewTitle.addClassNames(LumoUtility.FontSize.LARGE,
+        viewTitle.addClassNames(LumoUtility.FontSize.XLARGE,
                 LumoUtility.Margin.NONE,
                 LumoUtility.TextColor.PRIMARY,
                 LumoUtility.FontWeight.BOLD);
 
-        addToNavbar(true, toggle, viewTitle);
+        // Center Zone: Navigation Links
+        HorizontalLayout navLayout = new HorizontalLayout();
+        navLayout.addClassNames(LumoUtility.Gap.LARGE);
+        navLayout.setAlignItems(Alignment.CENTER);
+
+        RouterLink companyLink = new RouterLink("Company", CompanyView.class);
+        companyLink.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontWeight.MEDIUM);
+
+        RouterLink analysisLink = new RouterLink("Analysis", AnalysisView.class);
+        analysisLink.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontWeight.MEDIUM);
+
+        RouterLink refreshLink = new RouterLink("Refresh", RefreshView.class);
+        refreshLink.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontWeight.MEDIUM);
+
+        companyLink.addClassName("nav-link");
+        analysisLink.addClassName("nav-link");
+        refreshLink.addClassName("nav-link");
+
+        navLayout.add(companyLink, analysisLink, refreshLink);
+
+        // Right Zone: Action/profile icon
+        Component userIcon = VaadinIcon.USER.create();
+
+        header.add(viewTitle, navLayout, userIcon);
+
+        addToNavbar(true, header);
     }
 
-    private void addDrawerContent() {
-        com.vaadin.flow.component.orderedlayout.VerticalLayout drawerLayout = new com.vaadin.flow.component.orderedlayout.VerticalLayout();
-        drawerLayout.setSizeFull();
-        drawerLayout.setPadding(false);
-        drawerLayout.setSpacing(false);
-        drawerLayout.addClassNames(LumoUtility.Background.CONTRAST_5);
-
-        Component nav = buildNav();
-        drawerLayout.add(nav, buildFooter());
-        drawerLayout.expand(nav);
-
-        addToDrawer(drawerLayout);
-    }
-
-    private Component buildNav() {
-        SideNav nav = new SideNav();
-        nav.addItem(new SideNavItem("Company", CompanyView.class, com.vaadin.flow.component.icon.VaadinIcon.OFFICE.create()));
-        nav.addItem(new SideNavItem("Analysis", AnalysisView.class, com.vaadin.flow.component.icon.VaadinIcon.CHART_LINE.create()));
-        nav.addItem(new SideNavItem("Refresh", RefreshView.class, com.vaadin.flow.component.icon.VaadinIcon.REFRESH.create()));
-        return nav;
-    }
-
-    private Footer buildFooter() {
-        Footer footer = new Footer();
-        footer.addClassNames(LumoUtility.Padding.MEDIUM, LumoUtility.Margin.Top.AUTO);
-        Span footerText = new Span("v1.0.0");
-        footerText.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontSize.SMALL);
-        footer.add(footerText);
-        return footer;
+    @Override
+    public void setContent(Component content) {
+        Div wrapper = new Div();
+        wrapper.setWidthFull();
+        wrapper.setMaxWidth("1440px");
+        wrapper.addClassNames(LumoUtility.Margin.Horizontal.AUTO, LumoUtility.Padding.Horizontal.LARGE);
+        wrapper.add(content);
+        super.setContent(wrapper);
     }
 }
-

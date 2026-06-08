@@ -40,6 +40,7 @@ public class CompanyView extends VerticalLayout {
         setSizeFull();
         setPadding(false);
         setSpacing(false);
+        setDefaultHorizontalComponentAlignment(Alignment.CENTER);
 
         // Header
         HorizontalLayout header = createHeader();
@@ -61,7 +62,7 @@ public class CompanyView extends VerticalLayout {
         header.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.BASELINE);
 
         companyComboBox = new ComboBox<>("Search Company or Ticker...");
-        companyComboBox.setWidth("300px");
+        companyComboBox.setWidth("600px");
 
         List<CompanyDto> allCompanies = new ArrayList<>();
         for (MarketDto market : companyApi.getAllMarkets()) {
@@ -83,13 +84,14 @@ public class CompanyView extends VerticalLayout {
 
         chartCard = new Div();
         chartCard.setWidthFull();
+        chartCard.setMaxWidth("1200px");
         chartCard.setMinHeight("400px");
-        chartCard.addClassNames(LumoUtility.Background.BASE,
-                LumoUtility.BorderRadius.MEDIUM,
-                LumoUtility.BoxShadow.SMALL,
-                LumoUtility.Padding.MEDIUM,
+        chartCard.addClassNames(LumoUtility.Background.CONTRAST_5,
+                LumoUtility.BorderRadius.LARGE,
+                LumoUtility.Padding.LARGE,
                 LumoUtility.Display.FLEX,
                 LumoUtility.FlexDirection.COLUMN);
+        chartCard.getStyle().set("overflow", "hidden");
 
         HorizontalLayout chartHeader = new HorizontalLayout();
         chartHeader.setWidthFull();
@@ -108,6 +110,7 @@ public class CompanyView extends VerticalLayout {
         chartCard.add(chartHeader);
 
         mainDashboard.add(chartCard);
+        mainDashboard.setDefaultHorizontalComponentAlignment(Alignment.CENTER);
         return mainDashboard;
     }
 
@@ -172,6 +175,7 @@ public class CompanyView extends VerticalLayout {
         ApexCharts lineChart = ApexChartsBuilder.get()
                 .withChart(com.github.appreciated.apexcharts.config.builder.ChartBuilder.get()
                         .withType(com.github.appreciated.apexcharts.config.chart.Type.LINE)
+                        .withBackground("transparent")
                         .withZoom(com.github.appreciated.apexcharts.config.chart.builder.ZoomBuilder.get().withEnabled(true).build())
                         .build())
                 .withStroke(com.github.appreciated.apexcharts.config.builder.StrokeBuilder.get()
@@ -188,6 +192,9 @@ public class CompanyView extends VerticalLayout {
                         .withLabels(com.github.appreciated.apexcharts.config.yaxis.builder.LabelsBuilder.get()
                                 .withFormatter("function (value) { return value.toFixed(2); }")
                                 .build())
+                        .build())
+                .withTheme(com.github.appreciated.apexcharts.config.builder.ThemeBuilder.get()
+                        .withMode(com.github.appreciated.apexcharts.config.theme.Mode.DARK)
                         .build())
                 .withColors("#1676f3")
                 .build();

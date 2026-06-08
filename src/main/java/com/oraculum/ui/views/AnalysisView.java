@@ -69,22 +69,23 @@ public class AnalysisView extends VerticalLayout {
 
         setSizeFull();
         addClassNames(LumoUtility.Padding.MEDIUM, LumoUtility.Gap.MEDIUM);
+        setDefaultHorizontalComponentAlignment(Alignment.CENTER);
 
         Component triggerCard = createTriggerCard();
         Component historyGrid = createHistoryGrid();
 
         add(triggerCard, historyGrid);
         setFlexGrow(0, triggerCard);
-        setFlexGrow(1, historyGrid);
+        expand(historyGrid);
     }
 
     private Component createTriggerCard() {
         Div card = new Div();
-        card.addClassNames(LumoUtility.Background.BASE,
-                LumoUtility.BorderRadius.MEDIUM,
-                LumoUtility.BoxShadow.XSMALL,
+        card.addClassNames(LumoUtility.Background.CONTRAST_5,
+                LumoUtility.BorderRadius.LARGE,
                 LumoUtility.Padding.MEDIUM);
         card.setWidthFull();
+        card.setMaxWidth("1000px");
 
         H3 title = new H3("Run New Analysis");
         title.addClassNames(LumoUtility.Margin.Top.NONE, LumoUtility.Margin.Bottom.MEDIUM);
@@ -234,7 +235,7 @@ public class AnalysisView extends VerticalLayout {
                 _ -> (int) companyAnalysisApi.getAnalysisCount());
 
         layout.add(title, grid);
-        layout.setFlexGrow(1, grid);
+        layout.expand(grid);
         return layout;
     }
 
@@ -492,7 +493,7 @@ public class AnalysisView extends VerticalLayout {
         Button downloadBtn = new Button("Download JSON", VaadinIcon.DOWNLOAD.create());
         downloadBtn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
 
-        DownloadHandler downloadHandler = DownloadHandler.fromInputStream(event -> {
+        DownloadHandler downloadHandler = DownloadHandler.fromInputStream(_ -> {
             byte[] bytes = finalPrettyJson.getBytes(StandardCharsets.UTF_8);
             return new DownloadResponse(new ByteArrayInputStream(bytes),
                     analysis.getTicker() + "_analysis.json",

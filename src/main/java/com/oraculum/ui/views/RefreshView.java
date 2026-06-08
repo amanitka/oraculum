@@ -7,13 +7,12 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.datepicker.DatePicker;
-import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.H3;
-import com.vaadin.flow.component.html.H4;
-import com.vaadin.flow.component.html.Paragraph;
+import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
@@ -61,78 +60,78 @@ public class RefreshView extends VerticalLayout {
 
     private Component createGridSection() {
         Div grid = new Div();
-        grid.setWidthFull();
-        grid.addClassNames(LumoUtility.Display.GRID);
-        grid.getStyle().set("grid-template-columns", "repeat(auto-fill, minmax(280px, 1fr))");
-        grid.getStyle().set("gap", "var(--lumo-space-m)");
+        grid.getStyle().set("display", "grid");
+        grid.getStyle().set("grid-template-columns", "repeat(auto-fill, minmax(350px, 1fr))");
+        grid.getStyle().set("gap", "var(--lumo-space-l)");
         grid.getStyle().set("width", "100%");
 
-        grid.add(createSimpleActionCard("Market Data",
+        grid.add(createSimpleActionTile("Market Data",
                 "Refreshes the list of all supported stock markets.",
                 harvesterRequestApi::refreshMarket));
 
-        grid.add(createSimpleActionCard("Industry Data",
+        grid.add(createSimpleActionTile("Industry Data",
                 "Refreshes the list of all industry classifications.",
                 harvesterRequestApi::refreshIndustry));
 
-        grid.add(createSimpleActionCard("Company List",
+        grid.add(createSimpleActionTile("Company List",
                 "Refreshes the list of companies across all supported markets.",
                 harvesterRequestApi::refreshCompany));
 
-        grid.add(createSimpleActionCard("Fundamentals",
+        grid.add(createSimpleActionTile("Fundamentals",
                 "Refreshes Income Statements, Balance Sheets, and Cash Flow Statements for all companies.",
                 harvesterRequestApi::refreshFundamentals));
 
-        grid.add(createSharePriceRefreshCard());
+        grid.add(createSharePriceRefreshTile());
 
-        grid.add(createSimpleActionCard("News & Sentiment",
+        grid.add(createSimpleActionTile("News & Sentiment",
                 "Refreshes recent news articles and sentiment data.",
                 harvesterRequestApi::refreshNews));
 
         return grid;
     }
 
-    private Div createCard(String title) {
-        Div card = new Div();
-        card.addClassNames(LumoUtility.Background.BASE,
-                LumoUtility.BoxShadow.SMALL,
-                LumoUtility.BorderRadius.MEDIUM,
-                LumoUtility.Padding.MEDIUM,
+    private Component createSimpleActionTile(String title, String description, Runnable action) {
+        VerticalLayout tile = new VerticalLayout();
+        tile.addClassNames(LumoUtility.Background.CONTRAST_5,
+                LumoUtility.BorderRadius.LARGE,
+                LumoUtility.Padding.LARGE,
                 LumoUtility.Display.FLEX,
                 LumoUtility.FlexDirection.COLUMN);
-        card.setWidthFull();
 
-        H4 cardTitle = new H4(title);
-        cardTitle.addClassNames(LumoUtility.Margin.Top.NONE, LumoUtility.Margin.Bottom.SMALL);
-        card.add(cardTitle);
+        H4 tileTitle = new H4(title);
+        tileTitle.addClassNames(LumoUtility.Margin.NONE);
+        Span desc = new Span(description);
+        desc.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.Margin.Top.SMALL);
 
-        return card;
-    }
-
-    private Component createSimpleActionCard(String title, String description, Runnable action) {
-        Div card = createCard(title);
-
-        Paragraph desc = new Paragraph(description);
-        desc.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.Margin.Bottom.MEDIUM, LumoUtility.Margin.Top.NONE);
+        HorizontalLayout buttonWrapper = new HorizontalLayout();
+        buttonWrapper.setWidthFull();
+        buttonWrapper.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
+        buttonWrapper.addClassNames(LumoUtility.Margin.Top.AUTO);
 
         Button btn = new Button("Refresh", VaadinIcon.REFRESH.create());
         btn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        btn.addClassNames(LumoUtility.Margin.Top.AUTO); // mt-auto
-
         btn.addClickListener(e -> executeRefresh(title, action));
 
-        card.add(desc, btn);
-        return card;
+        buttonWrapper.add(btn);
+        tile.add(tileTitle, desc, buttonWrapper);
+        return tile;
     }
 
-    private Component createSharePriceRefreshCard() {
-        Div card = createCard("Share Prices");
+    private Component createSharePriceRefreshTile() {
+        VerticalLayout tile = new VerticalLayout();
+        tile.addClassNames(LumoUtility.Background.CONTRAST_5,
+                LumoUtility.BorderRadius.LARGE,
+                LumoUtility.Padding.LARGE,
+                LumoUtility.Display.FLEX,
+                LumoUtility.FlexDirection.COLUMN);
 
-        Paragraph desc = new Paragraph("Refreshes historical daily share prices for all companies.");
-        desc.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.Margin.Bottom.SMALL, LumoUtility.Margin.Top.NONE);
+        H4 tileTitle = new H4("Share Prices");
+        tileTitle.addClassNames(LumoUtility.Margin.NONE);
+        Span desc = new Span("Refreshes historical daily share prices for all companies.");
+        desc.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.Margin.Top.SMALL);
 
         Checkbox incremental = new Checkbox("Incremental Refresh", true);
-        DatePicker fromDate = new DatePicker("From Date");
+        DatePicker fromDate = new DatePicker();
         fromDate.setPlaceholder("Auto (last trade date)");
 
         incremental.addValueChangeListener(e -> {
@@ -142,20 +141,23 @@ public class RefreshView extends VerticalLayout {
             }
         });
 
-        VerticalLayout form = new VerticalLayout(incremental, fromDate);
-        form.setPadding(false);
-        form.setSpacing(false);
-        form.setWidthFull();
-        form.addClassNames(LumoUtility.Margin.Bottom.MEDIUM);
+        HorizontalLayout controls = new HorizontalLayout(incremental, fromDate);
+        controls.setAlignItems(Alignment.CENTER);
+        controls.addClassNames(LumoUtility.Margin.Top.MEDIUM, LumoUtility.Gap.MEDIUM);
+
+        HorizontalLayout buttonWrapper = new HorizontalLayout();
+        buttonWrapper.setWidthFull();
+        buttonWrapper.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
+        buttonWrapper.addClassNames(LumoUtility.Margin.Top.AUTO);
 
         Button btn = new Button("Refresh", VaadinIcon.REFRESH.create());
         btn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        btn.addClassNames(LumoUtility.Margin.Top.AUTO); // mt-auto
         btn.addClickListener(e -> executeRefresh("Share Prices",
                 () -> harvesterRequestApi.refreshSharePrices(incremental.getValue(), fromDate.getValue())));
 
-        card.add(desc, form, btn);
-        return card;
+        buttonWrapper.add(btn);
+        tile.add(tileTitle, desc, controls, buttonWrapper);
+        return tile;
     }
 
     private void executeRefresh(String actionName, Runnable refreshAction) {
