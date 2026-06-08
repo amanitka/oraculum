@@ -10,7 +10,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @ConfigurationPropertiesScan
 @EnableScheduling
-@ColorScheme(ColorScheme.Value.DARK)
+@ColorScheme(ColorScheme.Value.LIGHT)
 public class OraculumApplication implements AppShellConfigurator {
 
     static void main(String[] args) {

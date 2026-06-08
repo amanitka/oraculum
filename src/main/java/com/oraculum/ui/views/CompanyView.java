@@ -175,7 +175,6 @@ public class CompanyView extends VerticalLayout {
         ApexCharts lineChart = ApexChartsBuilder.get()
                 .withChart(com.github.appreciated.apexcharts.config.builder.ChartBuilder.get()
                         .withType(com.github.appreciated.apexcharts.config.chart.Type.LINE)
-                        .withBackground("transparent")
                         .withZoom(com.github.appreciated.apexcharts.config.chart.builder.ZoomBuilder.get().withEnabled(true).build())
                         .build())
                 .withStroke(com.github.appreciated.apexcharts.config.builder.StrokeBuilder.get()
@@ -192,9 +191,6 @@ public class CompanyView extends VerticalLayout {
                         .withLabels(com.github.appreciated.apexcharts.config.yaxis.builder.LabelsBuilder.get()
                                 .withFormatter("function (value) { return value.toFixed(2); }")
                                 .build())
-                        .build())
-                .withTheme(com.github.appreciated.apexcharts.config.builder.ThemeBuilder.get()
-                        .withMode(com.github.appreciated.apexcharts.config.theme.Mode.DARK)
                         .build())
                 .withColors("#1676f3")
                 .build();

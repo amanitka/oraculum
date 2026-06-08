@@ -38,7 +38,7 @@ public class MainLayout extends AppLayout implements RouterLayout {
         // Center Zone: Navigation Links
         HorizontalLayout navLayout = new HorizontalLayout();
         navLayout.addClassNames(LumoUtility.Gap.LARGE);
-        navLayout.setAlignItems(Alignment.CENTER);
+        navLayout.setAlignItems(Alignment.AUTO);
 
         RouterLink companyLink = new RouterLink("Company", CompanyView.class);
         companyLink.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontWeight.MEDIUM);

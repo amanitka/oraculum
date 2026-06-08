@@ -29,11 +29,23 @@ public class RefreshView extends VerticalLayout {
     public RefreshView(HarvesterRequestApi harvesterRequestApi) {
         this.harvesterRequestApi = harvesterRequestApi;
 
-        addClassNames(LumoUtility.Padding.MEDIUM, LumoUtility.Gap.LARGE);
+        // 1. Configure the main view to take full space and center its contents
         setSizeFull();
+        setPadding(true);
+        setAlignItems(Alignment.CENTER); // This perfectly centers the content area below
 
-        add(createHeader());
-        add(createGridSection());
+        // 2. Create a constrained wrapper for the header and grid
+        VerticalLayout contentArea = new VerticalLayout();
+        contentArea.setWidthFull();
+        contentArea.setMaxWidth("1100px"); // Locks the width for the tile grid
+        contentArea.setPadding(false);
+        contentArea.addClassNames(LumoUtility.Gap.LARGE);
+
+        // Add header and grid to the centered wrapper
+        contentArea.add(createHeader(), createGridSection());
+
+        // Add the wrapper to the view
+        add(contentArea);
     }
 
     private static void showSuccess(String message) {
@@ -50,20 +62,25 @@ public class RefreshView extends VerticalLayout {
         VerticalLayout header = new VerticalLayout();
         header.setPadding(false);
         header.setSpacing(false);
+
         H3 title = new H3("Data Refresh Console");
         title.addClassNames(LumoUtility.Margin.Top.NONE, LumoUtility.Margin.Bottom.XSMALL);
+
         Paragraph caption = new Paragraph("Trigger data harvesting and refresh operations across all markets and sources.");
         caption.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.Margin.Bottom.NONE);
+
         header.add(title, caption);
+        // Note: Removed center alignment here. Left-aligned headers look cleaner above tile grids.
         return header;
     }
 
     private Component createGridSection() {
         Div grid = new Div();
         grid.getStyle().set("display", "grid");
-        grid.getStyle().set("grid-template-columns", "repeat(auto-fill, minmax(350px, 1fr))");
+        grid.getStyle().set("grid-template-columns", "repeat(auto-fill, minmax(320px, 1fr))");
         grid.getStyle().set("gap", "var(--lumo-space-l)");
-        grid.getStyle().set("width", "100%");
+        grid.setWidthFull(); // Takes full width of the 1100px contentArea
+        // Note: Removed margin: 0 auto. The parent VerticalLayout handles centering now.
 
         grid.add(createSimpleActionTile("Market Data",
                 "Refreshes the list of all supported stock markets.",
