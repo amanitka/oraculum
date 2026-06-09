@@ -1,10 +1,14 @@
 package com.oraculum.ui.views;
 
+import com.oraculum.analyst.api.dto.CompanyAnalysisRequest;
 import com.oraculum.company.api.CompanyApi;
 import com.oraculum.company.api.dto.ScreenerDto;
 import com.oraculum.company.api.dto.ScreenerMasterDto;
 import com.oraculum.ui.MainLayout;
+import com.oraculum.ui.service.AnalysisRequestService;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.grid.HeaderRow;
@@ -13,6 +17,10 @@ import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
@@ -26,8 +34,11 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 
 import java.text.NumberFormat;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 @Route(value = "screener", layout = MainLayout.class)
@@ -35,10 +46,12 @@ import java.util.function.Consumer;
 public class ScreenerView extends VerticalLayout {
 
     private final CompanyApi companyApi;
+    private final AnalysisRequestService analysisRequestService;
     private final VerticalLayout gridContainer;
 
-    public ScreenerView(CompanyApi companyApi) {
+    public ScreenerView(CompanyApi companyApi, AnalysisRequestService analysisRequestService) {
         this.companyApi = companyApi;
+        this.analysisRequestService = analysisRequestService;
         setSizeFull();
         setPadding(false);
 
@@ -71,12 +84,24 @@ public class ScreenerView extends VerticalLayout {
 
     private void setContent(String tabLabel) {
         gridContainer.removeAll();
+
+        // Create action toolbar right-aligned above the grid
+        HorizontalLayout toolbar = new HorizontalLayout();
+        toolbar.setWidthFull();
+        toolbar.setJustifyContentMode(com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode.END);
+        toolbar.addClassNames(LumoUtility.Padding.Bottom.SMALL);
+
+        Button runAnalysisBtn = new Button("Run Analysis", VaadinIcon.PLAY.create());
+        runAnalysisBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        toolbar.add(runAnalysisBtn);
+
         if ("Master Ranks".equals(tabLabel)) {
             Grid<ScreenerMasterDto> grid = createMasterGrid();
             List<ScreenerMasterDto> data = companyApi.getMasterScreener();
             GridListDataView<ScreenerMasterDto> dataView = grid.setItems(data);
             setupMasterFilters(grid, dataView);
-            gridContainer.add(wrapGrid(grid));
+            runAnalysisBtn.addClickListener(_ -> triggerAnalysisMaster(grid.getSelectedItems(), grid));
+            gridContainer.add(toolbar, wrapGrid(grid));
         } else {
             Grid<ScreenerDto> grid = createStandardGrid();
             List<ScreenerDto> data = switch (tabLabel) {
@@ -88,8 +113,55 @@ public class ScreenerView extends VerticalLayout {
             };
             GridListDataView<ScreenerDto> dataView = grid.setItems(data);
             setupStandardFilters(grid, dataView);
-            gridContainer.add(wrapGrid(grid));
+            runAnalysisBtn.addClickListener(_ -> triggerAnalysisStandard(grid.getSelectedItems(), grid));
+            gridContainer.add(toolbar, wrapGrid(grid));
         }
+    }
+
+    private void triggerAnalysisMaster(Set<ScreenerMasterDto> selectedItems, Grid<ScreenerMasterDto> grid) {
+        if (selectedItems.isEmpty()) {
+            Notification.show("Please select at least one company.", 3000, Notification.Position.BOTTOM_END)
+                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
+            return;
+        }
+        if (selectedItems.size() > 10) {
+            Notification.show("Maximum of 10 companies allowed per batch to prevent overload.", 4000, Notification.Position.BOTTOM_END)
+                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
+            return;
+        }
+
+        for (ScreenerMasterDto item : selectedItems) {
+            CompanyAnalysisRequest request = new CompanyAnalysisRequest(UUID.randomUUID(),
+                    item.companyId(), item.ticker(), item.market(), LocalDate.now(), null);
+            analysisRequestService.requestAnalysis(request);
+        }
+
+        Notification.show("Triggered analysis for " + selectedItems.size() + " companies.", 3000, Notification.Position.BOTTOM_END)
+                .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        grid.deselectAll();
+    }
+
+    private void triggerAnalysisStandard(Set<ScreenerDto> selectedItems, Grid<ScreenerDto> grid) {
+        if (selectedItems.isEmpty()) {
+            Notification.show("Please select at least one company.", 3000, Notification.Position.BOTTOM_END)
+                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
+            return;
+        }
+        if (selectedItems.size() > 10) {
+            Notification.show("Maximum of 10 companies allowed per batch to prevent overload.", 4000, Notification.Position.BOTTOM_END)
+                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
+            return;
+        }
+
+        for (ScreenerDto item : selectedItems) {
+            CompanyAnalysisRequest request = new CompanyAnalysisRequest(UUID.randomUUID(),
+                    item.companyId(), item.ticker(), item.market(), LocalDate.now(), null);
+            analysisRequestService.requestAnalysis(request);
+        }
+
+        Notification.show("Triggered analysis for " + selectedItems.size() + " companies.", 3000, Notification.Position.BOTTOM_END)
+                .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        grid.deselectAll();
     }
 
     private Div wrapGrid(Component grid) {
@@ -128,6 +200,7 @@ public class ScreenerView extends VerticalLayout {
         grid.setSizeFull();
         grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
         grid.addClassName("screener-grid");
+        grid.setSelectionMode(Grid.SelectionMode.MULTI);
 
         grid.addColumn(ScreenerMasterDto::ticker).setHeader("Ticker").setAutoWidth(true).setFrozen(true).setKey("ticker").setSortable(true);
 
@@ -159,6 +232,7 @@ public class ScreenerView extends VerticalLayout {
         grid.setSizeFull();
         grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
         grid.addClassName("screener-grid");
+        grid.setSelectionMode(Grid.SelectionMode.MULTI);
 
         grid.addColumn(ScreenerDto::ticker).setHeader("Ticker").setAutoWidth(true).setFrozen(true).setKey("ticker").setSortable(true);
 
