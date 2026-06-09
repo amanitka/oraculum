@@ -4,6 +4,8 @@ import com.oraculum.company.api.CompanyApi;
 import com.oraculum.company.api.dto.ScreenerDto;
 import com.oraculum.company.api.dto.ScreenerMasterDto;
 import com.oraculum.ui.MainLayout;
+import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.grid.HeaderRow;
@@ -73,7 +75,7 @@ public class ScreenerView extends VerticalLayout {
             List<ScreenerMasterDto> data = companyApi.getMasterScreener();
             GridListDataView<ScreenerMasterDto> dataView = grid.setItems(data);
             setupMasterFilters(grid, dataView);
-            gridContainer.add(grid);
+            gridContainer.add(wrapGrid(grid));
         } else {
             Grid<ScreenerDto> grid = createStandardGrid();
             List<ScreenerDto> data = switch (tabLabel) {
@@ -85,8 +87,16 @@ public class ScreenerView extends VerticalLayout {
             };
             GridListDataView<ScreenerDto> dataView = grid.setItems(data);
             setupStandardFilters(grid, dataView);
-            gridContainer.add(grid);
+            gridContainer.add(wrapGrid(grid));
         }
+    }
+
+    private Div wrapGrid(Component grid) {
+        Div card = new Div();
+        card.addClassName("screener-card");
+        card.setSizeFull();
+        card.add(grid);
+        return card;
     }
 
     private Span createSignalBadge(String signal) {
@@ -115,7 +125,8 @@ public class ScreenerView extends VerticalLayout {
     private Grid<ScreenerMasterDto> createMasterGrid() {
         Grid<ScreenerMasterDto> grid = new Grid<>(ScreenerMasterDto.class, false);
         grid.setSizeFull();
-        grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES, GridVariant.LUMO_COMPACT, GridVariant.LUMO_COLUMN_BORDERS);
+        grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES, GridVariant.LUMO_COMPACT);
+        grid.addClassName("screener-grid");
 
         grid.addColumn(ScreenerMasterDto::ticker).setHeader("Ticker").setAutoWidth(true).setFrozen(true).setKey("ticker");
 
@@ -143,7 +154,8 @@ public class ScreenerView extends VerticalLayout {
     private Grid<ScreenerDto> createStandardGrid() {
         Grid<ScreenerDto> grid = new Grid<>(ScreenerDto.class, false);
         grid.setSizeFull();
-        grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES, GridVariant.LUMO_COMPACT, GridVariant.LUMO_COLUMN_BORDERS);
+        grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES, GridVariant.LUMO_COMPACT);
+        grid.addClassName("screener-grid");
 
         grid.addColumn(ScreenerDto::ticker).setHeader("Ticker").setAutoWidth(true).setFrozen(true).setKey("ticker");
 

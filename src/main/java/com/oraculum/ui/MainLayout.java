@@ -69,11 +69,21 @@ public class MainLayout extends AppLayout implements RouterLayout {
 
     @Override
     public void setContent(Component content) {
+        Div outer = new Div();
+        outer.setSizeFull();
+        outer.getStyle().set("display", "flex");
+        outer.getStyle().set("justify-content", "center");
+
         Div wrapper = new Div();
         wrapper.setWidthFull();
         wrapper.setMaxWidth("1440px");
-        wrapper.addClassNames(LumoUtility.Margin.Horizontal.AUTO, LumoUtility.Padding.Horizontal.LARGE);
+        wrapper.getStyle().set("height", "100%");
+        wrapper.getStyle().set("display", "flex");
+        wrapper.getStyle().set("flex-direction", "column");
+        wrapper.addClassNames(LumoUtility.Padding.Horizontal.LARGE);
         wrapper.add(content);
-        super.setContent(wrapper);
+        
+        outer.add(wrapper);
+        super.setContent(outer);
     }
 }
