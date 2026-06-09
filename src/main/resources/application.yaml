@@ -101,7 +101,7 @@ oraculum:
     common:
       temperature: 0.0
       max-completion-tokens: 8192
-      timeout: 120s
+      timeout: 120
       provider-fallback-order:
         - gemini
         - openai
