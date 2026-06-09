@@ -7,7 +7,6 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H1;
-import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -22,49 +21,71 @@ public class MainLayout extends AppLayout implements RouterLayout {
     }
 
     private void addHeaderContent() {
+        // Outer wrapper unconditionally taking full space with FlexBox centering
+        Div outerHeader = new Div();
+        outerHeader.setWidthFull();
+        outerHeader.getStyle().set("display", "flex");
+        outerHeader.getStyle().set("justify-content", "center");
+        outerHeader.getStyle().set("box-shadow", "var(--lumo-box-shadow-xs)");
+
+        // Inner max-width container that holds the header content
         HorizontalLayout header = new HorizontalLayout();
         header.setWidthFull();
+        header.setMaxWidth("1440px");
         header.setPadding(true);
+        header.addClassNames(LumoUtility.Padding.Horizontal.LARGE);
         header.setAlignItems(Alignment.CENTER);
         header.setJustifyContentMode(JustifyContentMode.BETWEEN);
 
-        // Left Zone: Logo
-        H1 viewTitle = new H1("Oraculum");
-        viewTitle.addClassNames(LumoUtility.FontSize.XLARGE,
+        // Left Zone: Title and Logo
+        HorizontalLayout logoLayout = new HorizontalLayout();
+        logoLayout.setAlignItems(Alignment.CENTER);
+        logoLayout.addClassNames(LumoUtility.Gap.SMALL); // Minimal gap between text and logo
+
+        H1 viewTitle = new H1("oraculum");
+        viewTitle.addClassNames(LumoUtility.FontSize.LARGE,
                 LumoUtility.Margin.NONE,
-                LumoUtility.TextColor.PRIMARY,
+                LumoUtility.TextColor.BODY,
                 LumoUtility.FontWeight.BOLD);
 
-        // Center Zone: Navigation Links
-        HorizontalLayout navLayout = new HorizontalLayout();
-        navLayout.addClassNames(LumoUtility.Gap.LARGE);
-        navLayout.setAlignItems(Alignment.AUTO);
+        com.vaadin.flow.component.html.Image logo = new com.vaadin.flow.component.html.Image("images/logo.svg", "Oraculum Logo");
+        logo.setHeight("30px"); // Even smaller to match text exactly
+        logo.getStyle().set("margin-top", "6px"); // Nudge down slightly to align with the text baseline
 
+        logoLayout.add(viewTitle, logo);
+
+        // Navigation Links using Vaadin Tabs
         RouterLink companyLink = new RouterLink("Company", CompanyView.class);
-        companyLink.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontWeight.MEDIUM);
-
         RouterLink screenerLink = new RouterLink("Screener", com.oraculum.ui.views.ScreenerView.class);
-        screenerLink.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontWeight.MEDIUM);
-
         RouterLink analysisLink = new RouterLink("Analysis", AnalysisView.class);
-        analysisLink.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontWeight.MEDIUM);
-
         RouterLink refreshLink = new RouterLink("Refresh", RefreshView.class);
-        refreshLink.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontWeight.MEDIUM);
 
-        companyLink.addClassName("nav-link");
-        screenerLink.addClassName("nav-link");
-        analysisLink.addClassName("nav-link");
-        refreshLink.addClassName("nav-link");
+        companyLink.addClassNames(LumoUtility.TextColor.BODY, LumoUtility.FontWeight.BOLD, LumoUtility.FontSize.XLARGE);
+        screenerLink.addClassNames(LumoUtility.TextColor.BODY, LumoUtility.FontSize.XLARGE);
+        analysisLink.addClassNames(LumoUtility.TextColor.BODY, LumoUtility.FontSize.XLARGE);
+        refreshLink.addClassNames(LumoUtility.TextColor.BODY, LumoUtility.FontSize.XLARGE);
 
-        navLayout.add(companyLink, screenerLink, analysisLink, refreshLink);
+        companyLink.getStyle().set("text-decoration", "none");
+        screenerLink.getStyle().set("text-decoration", "none");
+        analysisLink.getStyle().set("text-decoration", "none");
+        refreshLink.getStyle().set("text-decoration", "none");
 
-        // Right Zone: Action/profile icon
-        Component userIcon = VaadinIcon.USER.create();
+        com.vaadin.flow.component.tabs.Tab tabCompany = new com.vaadin.flow.component.tabs.Tab(companyLink);
+        com.vaadin.flow.component.tabs.Tab tabScreener = new com.vaadin.flow.component.tabs.Tab(screenerLink);
+        com.vaadin.flow.component.tabs.Tab tabAnalysis = new com.vaadin.flow.component.tabs.Tab(analysisLink);
+        com.vaadin.flow.component.tabs.Tab tabRefresh = new com.vaadin.flow.component.tabs.Tab(refreshLink);
 
-        header.add(viewTitle, navLayout, userIcon);
+        com.vaadin.flow.component.tabs.Tabs tabs = new com.vaadin.flow.component.tabs.Tabs(tabCompany, tabScreener, tabAnalysis, tabRefresh);
 
-        addToNavbar(true, header);
+        // Group Logo and Nav together on the left
+        HorizontalLayout leftGroup = new HorizontalLayout(logoLayout, tabs);
+        leftGroup.setAlignItems(Alignment.CENTER);
+        leftGroup.getStyle().set("gap", "48px"); // Exactly 48px distance as requested
+
+        header.add(leftGroup);
+
+        outerHeader.add(header);
+        addToNavbar(true, outerHeader);
     }
 
     @Override
@@ -82,7 +103,7 @@ public class MainLayout extends AppLayout implements RouterLayout {
         wrapper.getStyle().set("flex-direction", "column");
         wrapper.addClassNames(LumoUtility.Padding.Horizontal.LARGE);
         wrapper.add(content);
-        
+
         outer.add(wrapper);
         super.setContent(outer);
     }

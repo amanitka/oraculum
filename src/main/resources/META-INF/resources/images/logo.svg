@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Outer dark blue ring (cobalt/navy) -->
+  <circle cx="50" cy="50" r="48" fill="#003580" />
+  
+  <!-- Subtle shadow/bevel effect for a modern UI feel -->
+  <circle cx="50" cy="50" r="48" fill="none" stroke="#001d4a" stroke-width="2" opacity="0.3" />
+
+  <!-- White ring -->
+  <circle cx="50" cy="50" r="32" fill="#ffffff" />
+
+  <!-- Light blue iris -->
+  <circle cx="50" cy="50" r="18" fill="#20a5d6" />
+
+  <!-- Black/Dark pupil -->
+  <circle cx="50" cy="50" r="8" fill="#0b0f19" />
+</svg>

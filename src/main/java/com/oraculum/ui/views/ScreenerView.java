@@ -5,11 +5,11 @@ import com.oraculum.company.api.dto.ScreenerDto;
 import com.oraculum.company.api.dto.ScreenerMasterDto;
 import com.oraculum.ui.MainLayout;
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.grid.HeaderRow;
 import com.vaadin.flow.component.grid.dataview.GridListDataView;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
@@ -125,28 +125,30 @@ public class ScreenerView extends VerticalLayout {
     private Grid<ScreenerMasterDto> createMasterGrid() {
         Grid<ScreenerMasterDto> grid = new Grid<>(ScreenerMasterDto.class, false);
         grid.setSizeFull();
-        grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES, GridVariant.LUMO_COMPACT);
+        grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES, GridVariant.LUMO_NO_BORDER);
         grid.addClassName("screener-grid");
 
-        grid.addColumn(ScreenerMasterDto::ticker).setHeader("Ticker").setAutoWidth(true).setFrozen(true).setKey("ticker");
+        grid.addColumn(ScreenerMasterDto::ticker).setHeader("Ticker").setAutoWidth(true).setFrozen(true).setKey("ticker").setSortable(true);
 
         Grid.Column<ScreenerMasterDto> nameCol = grid.addColumn(ScreenerMasterDto::companyName)
-                .setHeader("Company").setAutoWidth(true).setFrozen(true).setKey("companyName");
+                .setHeader("Company").setAutoWidth(true).setFrozen(true).setKey("companyName").setSortable(true);
         nameCol.setTooltipGenerator(ScreenerMasterDto::description);
 
-        grid.addColumn(ScreenerMasterDto::sectorName).setHeader("Sector").setAutoWidth(true).setKey("sector");
-        grid.addColumn(ScreenerMasterDto::companySize).setHeader("Size").setAutoWidth(true).setKey("size");
+        grid.addColumn(ScreenerMasterDto::sectorName).setHeader("Sector").setAutoWidth(true).setKey("sector").setSortable(true);
+        grid.addColumn(ScreenerMasterDto::companySize).setHeader("Size").setAutoWidth(true).setKey("size").setSortable(true);
 
-        grid.addColumn(new ComponentRenderer<>(item -> createSignalBadge(item.compositeSignal()))).setHeader("Signal").setAutoWidth(true);
-        grid.addColumn(new ComponentRenderer<>(item -> createQualitySpan(item.qualityScore()))).setHeader("Quality").setAutoWidth(true);
+        grid.addColumn(new ComponentRenderer<>(item -> createSignalBadge(item.compositeSignal()))).setHeader("Signal").setAutoWidth(true).setKey("signal")
+                .setComparator(java.util.Comparator.comparing(ScreenerMasterDto::compositeSignal, java.util.Comparator.nullsLast(String::compareTo)));
+        grid.addColumn(new ComponentRenderer<>(item -> createQualitySpan(item.qualityScore()))).setHeader("Quality").setAutoWidth(true).setKey("quality")
+                .setComparator(java.util.Comparator.comparing(ScreenerMasterDto::qualityScore, java.util.Comparator.nullsLast(Float::compareTo)));
 
-        grid.addColumn(ScreenerMasterDto::piotroskiFScore).setHeader("F-Score").setAutoWidth(true);
-        grid.addColumn(new NumberRenderer<>(ScreenerMasterDto::sharePrice, NumberFormat.getCurrencyInstance(Locale.US))).setHeader("Price").setAutoWidth(true);
-        grid.addColumn(ScreenerMasterDto::peRatio).setHeader("P/E").setAutoWidth(true);
+        grid.addColumn(ScreenerMasterDto::piotroskiFScore).setHeader("F-Score").setAutoWidth(true).setSortable(true);
+        grid.addColumn(new NumberRenderer<>(ScreenerMasterDto::sharePrice, NumberFormat.getCurrencyInstance(Locale.US))).setHeader("Price").setAutoWidth(true).setSortable(true);
+        grid.addColumn(ScreenerMasterDto::peRatio).setHeader("P/E").setAutoWidth(true).setSortable(true);
 
-        grid.addColumn(ScreenerMasterDto::qualityRank).setHeader("Q-Rank").setAutoWidth(true);
-        grid.addColumn(ScreenerMasterDto::valueRank).setHeader("V-Rank").setAutoWidth(true);
-        grid.addColumn(ScreenerMasterDto::fscoreRank).setHeader("F-Rank").setAutoWidth(true);
+        grid.addColumn(ScreenerMasterDto::qualityRank).setHeader("Q-Rank").setAutoWidth(true).setSortable(true);
+        grid.addColumn(ScreenerMasterDto::valueRank).setHeader("V-Rank").setAutoWidth(true).setSortable(true);
+        grid.addColumn(ScreenerMasterDto::fscoreRank).setHeader("F-Rank").setAutoWidth(true).setSortable(true);
 
         return grid;
     }
@@ -154,24 +156,26 @@ public class ScreenerView extends VerticalLayout {
     private Grid<ScreenerDto> createStandardGrid() {
         Grid<ScreenerDto> grid = new Grid<>(ScreenerDto.class, false);
         grid.setSizeFull();
-        grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES, GridVariant.LUMO_COMPACT);
+        grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
         grid.addClassName("screener-grid");
 
-        grid.addColumn(ScreenerDto::ticker).setHeader("Ticker").setAutoWidth(true).setFrozen(true).setKey("ticker");
+        grid.addColumn(ScreenerDto::ticker).setHeader("Ticker").setAutoWidth(true).setFrozen(true).setKey("ticker").setSortable(true);
 
         Grid.Column<ScreenerDto> nameCol = grid.addColumn(ScreenerDto::companyName)
-                .setHeader("Company").setAutoWidth(true).setFrozen(true).setKey("companyName");
+                .setHeader("Company").setAutoWidth(true).setFrozen(true).setKey("companyName").setSortable(true);
         nameCol.setTooltipGenerator(ScreenerDto::description);
 
-        grid.addColumn(ScreenerDto::sectorName).setHeader("Sector").setAutoWidth(true).setKey("sector");
-        grid.addColumn(ScreenerDto::companySize).setHeader("Size").setAutoWidth(true).setKey("size");
+        grid.addColumn(ScreenerDto::sectorName).setHeader("Sector").setAutoWidth(true).setKey("sector").setSortable(true);
+        grid.addColumn(ScreenerDto::companySize).setHeader("Size").setAutoWidth(true).setKey("size").setSortable(true);
 
-        grid.addColumn(new ComponentRenderer<>(item -> createSignalBadge(item.compositeSignal()))).setHeader("Signal").setAutoWidth(true);
-        grid.addColumn(new ComponentRenderer<>(item -> createQualitySpan(item.qualityScore()))).setHeader("Quality").setAutoWidth(true);
+        grid.addColumn(new ComponentRenderer<>(item -> createSignalBadge(item.compositeSignal()))).setHeader("Signal").setAutoWidth(true).setKey("signal")
+                .setComparator(java.util.Comparator.comparing(ScreenerDto::compositeSignal, java.util.Comparator.nullsLast(String::compareTo)));
+        grid.addColumn(new ComponentRenderer<>(item -> createQualitySpan(item.qualityScore()))).setHeader("Quality").setAutoWidth(true).setKey("quality")
+                .setComparator(java.util.Comparator.comparing(ScreenerDto::qualityScore, java.util.Comparator.nullsLast(Float::compareTo)));
 
-        grid.addColumn(ScreenerDto::piotroskiFScore).setHeader("F-Score").setAutoWidth(true);
-        grid.addColumn(new NumberRenderer<>(ScreenerDto::sharePrice, NumberFormat.getCurrencyInstance(Locale.US))).setHeader("Price").setAutoWidth(true);
-        grid.addColumn(ScreenerDto::peRatio).setHeader("P/E").setAutoWidth(true);
+        grid.addColumn(ScreenerDto::piotroskiFScore).setHeader("F-Score").setAutoWidth(true).setSortable(true);
+        grid.addColumn(new NumberRenderer<>(ScreenerDto::sharePrice, NumberFormat.getCurrencyInstance(Locale.US))).setHeader("Price").setAutoWidth(true).setSortable(true);
+        grid.addColumn(ScreenerDto::peRatio).setHeader("P/E").setAutoWidth(true).setSortable(true);
 
         return grid;
     }
@@ -186,6 +190,12 @@ public class ScreenerView extends VerticalLayout {
             dataView.refreshAll();
         });
         filterRow.getCell(grid.getColumnByKey("ticker")).setComponent(tickerFilter);
+
+        TextField nameFilter = createFilterField("Company", val -> {
+            filter.companyName = val;
+            dataView.refreshAll();
+        });
+        filterRow.getCell(grid.getColumnByKey("companyName")).setComponent(nameFilter);
 
         TextField sectorFilter = createFilterField("Sector", val -> {
             filter.sector = val;
@@ -210,6 +220,12 @@ public class ScreenerView extends VerticalLayout {
             dataView.refreshAll();
         });
         filterRow.getCell(grid.getColumnByKey("ticker")).setComponent(tickerFilter);
+
+        TextField nameFilter = createFilterField("Company", val -> {
+            filter.companyName = val;
+            dataView.refreshAll();
+        });
+        filterRow.getCell(grid.getColumnByKey("companyName")).setComponent(nameFilter);
 
         TextField sectorFilter = createFilterField("Sector", val -> {
             filter.sector = val;
@@ -237,11 +253,12 @@ public class ScreenerView extends VerticalLayout {
 
     private static class MasterFilter {
         String ticker = "";
+        String companyName = "";
         String sector = "";
         String size = "";
 
         boolean test(ScreenerMasterDto dto) {
-            return matches(dto.ticker(), ticker) && matches(dto.sectorName(), sector) && matches(dto.companySize(), size);
+            return matches(dto.ticker(), ticker) && matches(dto.companyName(), companyName) && matches(dto.sectorName(), sector) && matches(dto.companySize(), size);
         }
 
         private boolean matches(String value, String searchTerm) {
@@ -251,11 +268,12 @@ public class ScreenerView extends VerticalLayout {
 
     private static class StandardFilter {
         String ticker = "";
+        String companyName = "";
         String sector = "";
         String size = "";
 
         boolean test(ScreenerDto dto) {
-            return matches(dto.ticker(), ticker) && matches(dto.sectorName(), sector) && matches(dto.companySize(), size);
+            return matches(dto.ticker(), ticker) && matches(dto.companyName(), companyName) && matches(dto.sectorName(), sector) && matches(dto.companySize(), size);
         }
 
         private boolean matches(String value, String searchTerm) {
