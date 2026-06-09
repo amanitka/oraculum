@@ -38,6 +38,12 @@ public abstract class BaseScreenerEntity {
     @Column(name = "currency")
     private String currency;
 
+    @Column(name = "company_name")
+    private String companyName;
+
+    @Column(name = "description")
+    private String description;
+
     @Column(name = "sector_name")
     private String sectorName;
 

@@ -271,13 +271,15 @@ WITH fundamental_timeline AS (SELECT
                         AVG(p.volume) OVER (PARTITION BY p.company_id ORDER BY p.trade_date ROWS BETWEEN 29 PRECEDING AND CURRENT ROW) AS vol_30
                      FROM public.t_share_price p
                      ),
-     signals_base AS (SELECT
+                     signals_base AS (SELECT
                          p.trade_date,
                          CASE
                              WHEN p.trade_date = MAX(p.trade_date) OVER (PARTITION BY p.company_id, DATE_TRUNC('month', p.trade_date)) THEN 'Y'
                              ELSE 'N'
                              END                                                         AS flag_last_day_of_month,
                          p.company_id,
+                         c.company_name,
+                         c.description,
                          c.sector_name,
                          c.industry_name,
                          p.ticker,

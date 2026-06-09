@@ -176,15 +176,6 @@ public class SharePriceSignalEntity {
     @Column(name = "composite_signal")
     private String compositeSignal;
 
-    @Column(name = "company_size")
-    private String companySize;
-
-    @Column(name = "sector_name")
-    private String sectorName;
-
-    @Column(name = "industry_name")
-    private String industryName;
-
     public static class SharePriceSignalId implements Serializable {
         private LocalDate tradeDate;
         private int companyId;

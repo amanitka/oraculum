@@ -43,6 +43,9 @@ public class MainLayout extends AppLayout implements RouterLayout {
         RouterLink companyLink = new RouterLink("Company", CompanyView.class);
         companyLink.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontWeight.MEDIUM);
 
+        RouterLink screenerLink = new RouterLink("Screener", com.oraculum.ui.views.ScreenerView.class);
+        screenerLink.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontWeight.MEDIUM);
+
         RouterLink analysisLink = new RouterLink("Analysis", AnalysisView.class);
         analysisLink.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontWeight.MEDIUM);
 
@@ -50,10 +53,11 @@ public class MainLayout extends AppLayout implements RouterLayout {
         refreshLink.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontWeight.MEDIUM);
 
         companyLink.addClassName("nav-link");
+        screenerLink.addClassName("nav-link");
         analysisLink.addClassName("nav-link");
         refreshLink.addClassName("nav-link");
 
-        navLayout.add(companyLink, analysisLink, refreshLink);
+        navLayout.add(companyLink, screenerLink, analysisLink, refreshLink);
 
         // Right Zone: Action/profile icon
         Component userIcon = VaadinIcon.USER.create();
