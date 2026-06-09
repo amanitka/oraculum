@@ -36,6 +36,11 @@ public class CompanyServiceImpl implements CompanyService {
     private final SharePriceRepository sharePriceRepository;
     private final SharePriceSignalRepository sharePriceSignalRepository;
     private final CompanyFinancialRatiosRepository companyFinancialRatiosRepository;
+    private final ScreenerMasterRepository screenerMasterRepository;
+    private final ScreenerUndervaluedRepository screenerUndervaluedRepository;
+    private final ScreenerQualityCompoundersRepository screenerQualityCompoundersRepository;
+    private final ScreenerGrahamDeepValueRepository screenerGrahamDeepValueRepository;
+    private final ScreenerPiotroskiRepository screenerPiotroskiRepository;
 
     @Override
     public CompanyDto getCompanyById(int companyId) {
@@ -149,6 +154,51 @@ public class CompanyServiceImpl implements CompanyService {
                 .stream()
                 .map(CompanyFinancialRatiosDto::fromEntity)
                 .sorted(Comparator.comparing(CompanyFinancialRatiosDto::reportDate).reversed())
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ScreenerMasterDto> getMasterScreener() {
+        return screenerMasterRepository.findAll()
+                .stream()
+                .map(ScreenerMasterDto::fromEntity)
+                .sorted(Comparator.comparing(ScreenerMasterDto::qualityRank, Comparator.nullsLast(Comparator.naturalOrder())))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ScreenerDto> getUndervaluedScreener() {
+        return screenerUndervaluedRepository.findAll()
+                .stream()
+                .map(ScreenerDto::fromEntity)
+                .sorted(Comparator.comparing(ScreenerDto::qualityScore, Comparator.nullsLast(Comparator.reverseOrder())))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ScreenerDto> getQualityCompoundersScreener() {
+        return screenerQualityCompoundersRepository.findAll()
+                .stream()
+                .map(ScreenerDto::fromEntity)
+                .sorted(Comparator.comparing(ScreenerDto::qualityScore, Comparator.nullsLast(Comparator.reverseOrder())))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ScreenerDto> getGrahamDeepValueScreener() {
+        return screenerGrahamDeepValueRepository.findAll()
+                .stream()
+                .map(ScreenerDto::fromEntity)
+                .sorted(Comparator.comparing(ScreenerDto::piotroskiFScore, Comparator.nullsLast(Comparator.reverseOrder())))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ScreenerDto> getPiotroskiScreener() {
+        return screenerPiotroskiRepository.findAll()
+                .stream()
+                .map(ScreenerDto::fromEntity)
+                .sorted(Comparator.comparing(ScreenerDto::piotroskiFScore, Comparator.nullsLast(Comparator.reverseOrder())))
                 .collect(Collectors.toList());
     }
 

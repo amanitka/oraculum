@@ -41,4 +41,14 @@ public interface CompanyApi {
     List<SharePriceSignalDto> getMonthlySharePriceSignalsByCompanyId(int companyId, LocalDate after);
 
     List<CompanyFinancialRatiosDto> getCompanyFinancialRatiosByCompanyId(int companyId, LocalDate after);
+
+    List<ScreenerMasterDto> getMasterScreener();
+
+    List<ScreenerDto> getUndervaluedScreener();
+
+    List<ScreenerDto> getQualityCompoundersScreener();
+
+    List<ScreenerDto> getGrahamDeepValueScreener();
+
+    List<ScreenerDto> getPiotroskiScreener();
 }

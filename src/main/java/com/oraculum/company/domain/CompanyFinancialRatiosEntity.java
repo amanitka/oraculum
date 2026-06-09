@@ -97,4 +97,43 @@ public class CompanyFinancialRatiosEntity {
 
     @Column(name = "interest_coverage_ratio")
     private Float interestCoverageRatio;
+
+    @Column(name = "revenue_yoy_growth")
+    private Float revenueYoyGrowth;
+
+    @Column(name = "net_income_yoy_growth")
+    private Float netIncomeYoyGrowth;
+
+    @Column(name = "ebitda_yoy_growth")
+    private Float ebitdaYoyGrowth;
+
+    @Column(name = "fcf_yoy_growth")
+    private Float fcfYoyGrowth;
+
+    @Column(name = "eps_yoy_growth")
+    private Float epsYoyGrowth;
+
+    @Column(name = "piotroski_f_score")
+    private Integer piotroskiFScore;
+
+    @Column(name = "earnings_quality_ratio")
+    private Float earningsQualityRatio;
+
+    @Column(name = "is_cash_earnings")
+    private Integer isCashEarnings;
+
+    @Column(name = "is_negative_equity")
+    private Integer isNegativeEquity;
+
+    @Column(name = "margin_expansion_signal")
+    private Integer marginExpansionSignal;
+
+    @Column(name = "revenue_growth_streak")
+    private Integer revenueGrowthStreak;
+
+    @Column(name = "positive_fcf_streak")
+    private Integer positiveFcfStreak;
+
+    @Column(name = "positive_earnings_streak")
+    private Integer positiveEarningsStreak;
 }

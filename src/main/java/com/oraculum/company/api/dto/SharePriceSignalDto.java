@@ -43,7 +43,22 @@ public record SharePriceSignalDto(
     Float operatingMargin,
     Float fcfMargin,
     Float quickRatio,
-    Float interestCoverageRatio
+    Float interestCoverageRatio,
+    Float grahamMarginOfSafety,
+    Integer isGrahamDefensive,
+    Float revenueYoyGrowth,
+    Float epsYoyGrowth,
+    Integer piotroskiFScore,
+    Integer revenueGrowthStreak,
+    Integer positiveFcfStreak,
+    Integer positiveEarningsStreak,
+    Integer isCashEarnings,
+    Integer isNegativeEquity,
+    Float qualityScore,
+    String compositeSignal,
+    String companySize,
+    String sectorName,
+    String industryName
 ) {
     public static SharePriceSignalDto fromEntity(SharePriceSignalEntity entity) {
         if (entity == null)
@@ -87,7 +102,22 @@ public record SharePriceSignalDto(
                 entity.getOperatingMargin(),
                 entity.getFcfMargin(),
                 entity.getQuickRatio(),
-                entity.getInterestCoverageRatio()
+                entity.getInterestCoverageRatio(),
+                entity.getGrahamMarginOfSafety(),
+                entity.getIsGrahamDefensive(),
+                entity.getRevenueYoyGrowth(),
+                entity.getEpsYoyGrowth(),
+                entity.getPiotroskiFScore(),
+                entity.getRevenueGrowthStreak(),
+                entity.getPositiveFcfStreak(),
+                entity.getPositiveEarningsStreak(),
+                entity.getIsCashEarnings(),
+                entity.getIsNegativeEquity(),
+                entity.getQualityScore(),
+                entity.getCompositeSignal(),
+                entity.getCompanySize(),
+                entity.getSectorName(),
+                entity.getIndustryName()
         );
     }
 }

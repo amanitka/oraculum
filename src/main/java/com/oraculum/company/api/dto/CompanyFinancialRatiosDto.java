@@ -30,7 +30,20 @@ public record CompanyFinancialRatiosDto(String id,
                                         Float operatingMargin,
                                         Float fcfMargin,
                                         Float quickRatio,
-                                        Float interestCoverageRatio) {
+                                        Float interestCoverageRatio,
+                                        Float revenueYoyGrowth,
+                                        Float netIncomeYoyGrowth,
+                                        Float ebitdaYoyGrowth,
+                                        Float fcfYoyGrowth,
+                                        Float epsYoyGrowth,
+                                        Integer piotroskiFScore,
+                                        Float earningsQualityRatio,
+                                        Integer isCashEarnings,
+                                        Integer isNegativeEquity,
+                                        Integer marginExpansionSignal,
+                                        Integer revenueGrowthStreak,
+                                        Integer positiveFcfStreak,
+                                        Integer positiveEarningsStreak) {
     public static CompanyFinancialRatiosDto fromEntity(CompanyFinancialRatiosEntity entity) {
         if (entity == null)
             return null;
@@ -58,6 +71,19 @@ public record CompanyFinancialRatiosDto(String id,
                 entity.getOperatingMargin(),
                 entity.getFcfMargin(),
                 entity.getQuickRatio(),
-                entity.getInterestCoverageRatio());
+                entity.getInterestCoverageRatio(),
+                entity.getRevenueYoyGrowth(),
+                entity.getNetIncomeYoyGrowth(),
+                entity.getEbitdaYoyGrowth(),
+                entity.getFcfYoyGrowth(),
+                entity.getEpsYoyGrowth(),
+                entity.getPiotroskiFScore(),
+                entity.getEarningsQualityRatio(),
+                entity.getIsCashEarnings(),
+                entity.getIsNegativeEquity(),
+                entity.getMarginExpansionSignal(),
+                entity.getRevenueGrowthStreak(),
+                entity.getPositiveFcfStreak(),
+                entity.getPositiveEarningsStreak());
     }
 }

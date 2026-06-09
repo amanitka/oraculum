@@ -140,6 +140,51 @@ public class SharePriceSignalEntity {
     @Column(name = "interest_coverage_ratio")
     private Float interestCoverageRatio;
 
+    @Column(name = "graham_margin_of_safety")
+    private Float grahamMarginOfSafety;
+
+    @Column(name = "is_graham_defensive")
+    private Integer isGrahamDefensive;
+
+    @Column(name = "revenue_yoy_growth")
+    private Float revenueYoyGrowth;
+
+    @Column(name = "eps_yoy_growth")
+    private Float epsYoyGrowth;
+
+    @Column(name = "piotroski_f_score")
+    private Integer piotroskiFScore;
+
+    @Column(name = "revenue_growth_streak")
+    private Integer revenueGrowthStreak;
+
+    @Column(name = "positive_fcf_streak")
+    private Integer positiveFcfStreak;
+
+    @Column(name = "positive_earnings_streak")
+    private Integer positiveEarningsStreak;
+
+    @Column(name = "is_cash_earnings")
+    private Integer isCashEarnings;
+
+    @Column(name = "is_negative_equity")
+    private Integer isNegativeEquity;
+
+    @Column(name = "quality_score")
+    private Float qualityScore;
+
+    @Column(name = "composite_signal")
+    private String compositeSignal;
+
+    @Column(name = "company_size")
+    private String companySize;
+
+    @Column(name = "sector_name")
+    private String sectorName;
+
+    @Column(name = "industry_name")
+    private String industryName;
+
     public static class SharePriceSignalId implements Serializable {
         private LocalDate tradeDate;
         private int companyId;
