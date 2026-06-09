@@ -10,7 +10,7 @@ import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.grid.HeaderRow;
 import com.vaadin.flow.component.grid.dataview.GridListDataView;
 import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -42,8 +42,9 @@ public class ScreenerView extends VerticalLayout {
         setSizeFull();
         setPadding(false);
 
-        H2 title = new H2("Investment Screeners");
-        title.addClassNames(LumoUtility.Margin.Top.LARGE, LumoUtility.Margin.Bottom.NONE);
+        H3 title = new H3("Investment Screeners");
+        title.addClassNames(LumoUtility.Margin.Bottom.NONE);
+        title.getStyle().set("margin-top", "4rem"); // Pushes the text down significantly from the top menu
         Paragraph description = new Paragraph("Select a screening strategy below to view fully-materialized market data.");
         description.addClassNames(LumoUtility.TextColor.SECONDARY);
 
@@ -125,7 +126,7 @@ public class ScreenerView extends VerticalLayout {
     private Grid<ScreenerMasterDto> createMasterGrid() {
         Grid<ScreenerMasterDto> grid = new Grid<>(ScreenerMasterDto.class, false);
         grid.setSizeFull();
-        grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES, GridVariant.LUMO_NO_BORDER);
+        grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
         grid.addClassName("screener-grid");
 
         grid.addColumn(ScreenerMasterDto::ticker).setHeader("Ticker").setAutoWidth(true).setFrozen(true).setKey("ticker").setSortable(true);

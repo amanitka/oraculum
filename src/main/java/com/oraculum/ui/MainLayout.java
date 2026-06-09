@@ -60,11 +60,6 @@ public class MainLayout extends AppLayout implements RouterLayout {
         RouterLink analysisLink = new RouterLink("Analysis", AnalysisView.class);
         RouterLink refreshLink = new RouterLink("Refresh", RefreshView.class);
 
-        companyLink.addClassNames(LumoUtility.TextColor.BODY, LumoUtility.FontWeight.BOLD, LumoUtility.FontSize.XLARGE);
-        screenerLink.addClassNames(LumoUtility.TextColor.BODY, LumoUtility.FontSize.XLARGE);
-        analysisLink.addClassNames(LumoUtility.TextColor.BODY, LumoUtility.FontSize.XLARGE);
-        refreshLink.addClassNames(LumoUtility.TextColor.BODY, LumoUtility.FontSize.XLARGE);
-
         companyLink.getStyle().set("text-decoration", "none");
         screenerLink.getStyle().set("text-decoration", "none");
         analysisLink.getStyle().set("text-decoration", "none");
@@ -76,6 +71,10 @@ public class MainLayout extends AppLayout implements RouterLayout {
         com.vaadin.flow.component.tabs.Tab tabRefresh = new com.vaadin.flow.component.tabs.Tab(refreshLink);
 
         com.vaadin.flow.component.tabs.Tabs tabs = new com.vaadin.flow.component.tabs.Tabs(tabCompany, tabScreener, tabAnalysis, tabRefresh);
+
+        // Override the internal Lumo CSS variables that vaadin-tabs use inside their shadow DOM
+        tabs.getStyle().set("--lumo-font-size-m", "var(--lumo-font-size-xl)"); // Make text large (H2/H3 scale)
+        tabs.getStyle().set("--lumo-secondary-text-color", "var(--lumo-body-text-color)"); // Make inactive tabs black instead of grey/blue
 
         // Group Logo and Nav together on the left
         HorizontalLayout leftGroup = new HorizontalLayout(logoLayout, tabs);
