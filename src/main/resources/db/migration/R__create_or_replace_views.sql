@@ -1,18 +1,21 @@
 -- Flyway repeatable migration script for creating/replacing views
--- Description: Core views containing corrected logic and advanced financial metrics
+-- Description: Core views containing corrected logic and advanced financial metrics, utilizing materialized views for performance
 
-DROP VIEW IF EXISTS v_screener_master;
-DROP VIEW IF EXISTS v_screener_piotroski;
-DROP VIEW IF EXISTS v_screener_graham_deep_value;
-DROP VIEW IF EXISTS v_screener_quality_compounders;
-DROP VIEW IF EXISTS v_screener_undervalued;
-DROP VIEW IF EXISTS v_share_price_signals;
-DROP VIEW IF EXISTS v_company_financial_ratios;
+DROP VIEW IF EXISTS v_screener_master CASCADE;
+DROP VIEW IF EXISTS v_screener_piotroski CASCADE;
+DROP VIEW IF EXISTS v_screener_graham_deep_value CASCADE;
+DROP VIEW IF EXISTS v_screener_quality_compounders CASCADE;
+DROP VIEW IF EXISTS v_screener_undervalued CASCADE;
+DROP MATERIALIZED VIEW IF EXISTS mv_share_price_signals_recent CASCADE;
+DROP VIEW IF EXISTS v_share_price_signals CASCADE;
+DROP MATERIALIZED VIEW IF EXISTS mv_company_financial_ratios CASCADE;
+DROP VIEW IF EXISTS v_company_financial_ratios CASCADE;
 
 -- =================================================================
 -- VIEW: v_company_financial_ratios
 -- Description: Core derived metrics for fundamental analysis
 -- =================================================================
+DO $$ BEGIN RAISE NOTICE 'Creating view: v_company_financial_ratios'; END $$;
 CREATE VIEW v_company_financial_ratios AS
 WITH statement_values AS (SELECT
                              income.id,
@@ -171,11 +174,13 @@ SELECT
     fcf_per_share,
     revenue,
     net_income,
+    
     (revenue - prev_revenue) / NULLIF(ABS(prev_revenue), 0) AS revenue_yoy_growth,
     (net_income - prev_net_income) / NULLIF(ABS(prev_net_income), 0) AS net_income_yoy_growth,
     (ebitda - prev_ebitda) / NULLIF(ABS(prev_ebitda), 0) AS ebitda_yoy_growth,
     (free_cash_flow - prev_fcf) / NULLIF(ABS(prev_fcf), 0) AS fcf_yoy_growth,
     (earnings_per_share - prev_eps) / NULLIF(ABS(prev_eps), 0) AS eps_yoy_growth,
+    
     (CASE WHEN return_on_assets > 0 THEN 1 ELSE 0 END) +
     (CASE WHEN net_cash_from_operating_activities > 0 THEN 1 ELSE 0 END) +
     (CASE WHEN return_on_assets > prev_roa THEN 1 ELSE 0 END) +
@@ -185,6 +190,7 @@ SELECT
     (CASE WHEN shares_stabilized <= prev_shares_stabilized THEN 1 ELSE 0 END) +
     (CASE WHEN gross_margin > prev_gross_margin THEN 1 ELSE 0 END) +
     (CASE WHEN asset_turnover > prev_asset_turnover THEN 1 ELSE 0 END) AS piotroski_f_score,
+    
     net_cash_from_operating_activities / NULLIF(net_income, 0) AS earnings_quality_ratio,
     (CASE WHEN net_cash_from_operating_activities > net_income THEN 1 ELSE 0 END) AS is_cash_earnings,
     (CASE WHEN total_equity < 0 THEN 1 ELSE 0 END) AS is_negative_equity,
@@ -196,10 +202,24 @@ SELECT
     positive_earnings_streak
 FROM enriched_windows;
 
+-- MATERIALIZE Fundamental Ratios
+DO $$ BEGIN RAISE NOTICE 'Materializing view: mv_company_financial_ratios (This may take a while...)'; END $$;
+CREATE MATERIALIZED VIEW mv_company_financial_ratios AS 
+SELECT * FROM v_company_financial_ratios
+WHERE UPPER(variant) = 'TTM'
+  AND publish_date IS NOT NULL;
+
+CREATE UNIQUE INDEX idx_mv_cfr_company_variant_year_period 
+ON mv_company_financial_ratios (company_id, variant, fiscal_year, fiscal_period);
+
+CREATE INDEX idx_mv_cfr_company_id ON mv_company_financial_ratios (company_id);
+
+
 -- =================================================================
 -- VIEW: v_share_price_signals
 -- Description: Daily technical and fundamental momentum signals
 -- =================================================================
+DO $$ BEGIN RAISE NOTICE 'Creating view: v_share_price_signals'; END $$;
 CREATE VIEW v_share_price_signals AS
 WITH fundamental_timeline AS (SELECT
                                  company_id,
@@ -242,9 +262,7 @@ WITH fundamental_timeline AS (SELECT
                                  positive_earnings_streak,
                                  is_cash_earnings,
                                  is_negative_equity
-                              FROM v_company_financial_ratios
-                              WHERE UPPER(variant) = 'TTM'
-                                AND publish_date IS NOT NULL
+                              FROM mv_company_financial_ratios
                               ),
      share_price AS (SELECT
                         p.*,
@@ -276,6 +294,12 @@ WITH fundamental_timeline AS (SELECT
                          f.fiscal_period                                                 AS active_fiscal_period,
                          f.valid_from                                                    AS active_report_publish_date,
                          (p.close * COALESCE(p.shares_outstanding, f.shares_stabilized)) AS market_capitalization,
+                         CASE 
+                             WHEN (p.close * COALESCE(p.shares_outstanding, f.shares_stabilized)) >= 10000000000 THEN 'LARGE'
+                             WHEN (p.close * COALESCE(p.shares_outstanding, f.shares_stabilized)) >= 2000000000 THEN 'MID'
+                             WHEN (p.close * COALESCE(p.shares_outstanding, f.shares_stabilized)) >= 300000000 THEN 'SMALL'
+                             ELSE 'MICRO'
+                         END                                                             AS company_size,
                          p.close / NULLIF(f.earnings_per_share, 0)                       AS pe_ratio,
                          f.earnings_per_share / NULLIF(p.close, 0)                       AS earnings_yield,
                          p.close / NULLIF(f.fcf_per_share, 0)                            AS price_to_fcf,
@@ -375,18 +399,29 @@ SELECT
        END                                                         AS composite_signal
 FROM signals_base;
 
+-- MATERIALIZE Recent Share Price Signals
+DO $$ BEGIN RAISE NOTICE 'Materializing view: mv_share_price_signals_recent (Caching last 30 days...)'; END $$;
+CREATE MATERIALIZED VIEW mv_share_price_signals_recent AS 
+SELECT * FROM v_share_price_signals 
+WHERE trade_date >= CURRENT_DATE - INTERVAL '30 days';
+
+CREATE UNIQUE INDEX idx_mv_sps_company_trade_date 
+ON mv_share_price_signals_recent (company_id, trade_date);
+
+CREATE INDEX idx_mv_sps_company_id ON mv_share_price_signals_recent (company_id);
+
 -- =================================================================
 -- VIEW: v_screener_master
 -- Description: Master screener with all valid latest records and rankings
 -- =================================================================
+DO $$ BEGIN RAISE NOTICE 'Creating thin screener views...'; END $$;
 CREATE VIEW v_screener_master AS
 SELECT s.*,
        RANK() OVER (ORDER BY s.quality_score DESC NULLS LAST) AS quality_rank,
        RANK() OVER (ORDER BY s.earnings_yield DESC NULLS LAST) AS value_rank,
        RANK() OVER (ORDER BY s.piotroski_f_score DESC NULLS LAST) AS fscore_rank
-FROM v_share_price_signals s
-WHERE s.trade_date = (SELECT MAX(trade_date) FROM v_share_price_signals WHERE company_id = s.company_id)
-  AND s.trade_date >= CURRENT_DATE - INTERVAL '30 days'
+FROM mv_share_price_signals_recent s
+WHERE s.trade_date = (SELECT MAX(trade_date) FROM mv_share_price_signals_recent WHERE company_id = s.company_id)
   AND s.market_capitalization IS NOT NULL;
 
 -- =================================================================
@@ -395,9 +430,8 @@ WHERE s.trade_date = (SELECT MAX(trade_date) FROM v_share_price_signals WHERE co
 -- =================================================================
 CREATE VIEW v_screener_undervalued AS
 SELECT s.*
-FROM v_share_price_signals s
-WHERE s.trade_date = (SELECT MAX(trade_date) FROM v_share_price_signals WHERE company_id = s.company_id)
-  AND s.trade_date >= CURRENT_DATE - INTERVAL '30 days'
+FROM mv_share_price_signals_recent s
+WHERE s.trade_date = (SELECT MAX(trade_date) FROM mv_share_price_signals_recent WHERE company_id = s.company_id)
   AND s.quality_score >= 50
   AND (s.earnings_yield > 0.05 OR s.fcf_yield > 0.05 OR (s.pe_ratio > 0 AND s.pe_ratio <= 15.0))
   AND s.piotroski_f_score >= 5;
@@ -408,9 +442,8 @@ WHERE s.trade_date = (SELECT MAX(trade_date) FROM v_share_price_signals WHERE co
 -- =================================================================
 CREATE VIEW v_screener_quality_compounders AS
 SELECT s.*
-FROM v_share_price_signals s
-WHERE s.trade_date = (SELECT MAX(trade_date) FROM v_share_price_signals WHERE company_id = s.company_id)
-  AND s.trade_date >= CURRENT_DATE - INTERVAL '30 days'
+FROM mv_share_price_signals_recent s
+WHERE s.trade_date = (SELECT MAX(trade_date) FROM mv_share_price_signals_recent WHERE company_id = s.company_id)
   AND s.quality_score >= 70
   AND s.revenue_growth_streak >= 3
   AND s.positive_fcf_streak >= 3
@@ -422,9 +455,8 @@ WHERE s.trade_date = (SELECT MAX(trade_date) FROM v_share_price_signals WHERE co
 -- =================================================================
 CREATE VIEW v_screener_graham_deep_value AS
 SELECT s.*
-FROM v_share_price_signals s
-WHERE s.trade_date = (SELECT MAX(trade_date) FROM v_share_price_signals WHERE company_id = s.company_id)
-  AND s.trade_date >= CURRENT_DATE - INTERVAL '30 days'
+FROM mv_share_price_signals_recent s
+WHERE s.trade_date = (SELECT MAX(trade_date) FROM mv_share_price_signals_recent WHERE company_id = s.company_id)
   AND (s.is_graham_net_net = 1 OR s.is_graham_defensive = 1 OR s.price_to_ncav < 1.0)
   AND s.current_ratio > 1.5;
 
@@ -434,7 +466,6 @@ WHERE s.trade_date = (SELECT MAX(trade_date) FROM v_share_price_signals WHERE co
 -- =================================================================
 CREATE VIEW v_screener_piotroski AS
 SELECT s.*
-FROM v_share_price_signals s
-WHERE s.trade_date = (SELECT MAX(trade_date) FROM v_share_price_signals WHERE company_id = s.company_id)
-  AND s.trade_date >= CURRENT_DATE - INTERVAL '30 days'
+FROM mv_share_price_signals_recent s
+WHERE s.trade_date = (SELECT MAX(trade_date) FROM mv_share_price_signals_recent WHERE company_id = s.company_id)
   AND s.piotroski_f_score >= 7;

@@ -49,4 +49,21 @@ public class DatabaseMaintenanceScheduler {
             log.error("Scheduled database partition management failed", e);
         }
     }
+
+    @Scheduled(cron = "${oraculum.database.maintenance.mv-refresh-cron:-}")
+    public void refreshMaterializedViews() {
+        log.info("Starting refresh of materialized views...");
+        try {
+            // Concurrent refresh requires unique indexes, which we have created in the R__ migration
+            jdbcTemplate.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY mv_company_financial_ratios");
+            jdbcTemplate.execute("ANALYZE mv_company_financial_ratios");
+            
+            jdbcTemplate.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY mv_share_price_signals_recent");
+            jdbcTemplate.execute("ANALYZE mv_share_price_signals_recent");
+            
+            log.info("Materialized views refresh & statistics update completed successfully.");
+        } catch (Exception e) {
+            log.error("Materialized views refresh failed", e);
+        }
+    }
 }

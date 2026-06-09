@@ -59,6 +59,7 @@ oraculum:
       enabled: true
       vacuum-cron: "0 0 4 * * SUN"
       partition-cron: "0 0 5 1 * *"
+      mv-refresh-cron: "0 0 4 * * TUE-SAT"
 
   simfin:
     api-key: ${ORACULUM_SIMFIN_API_KEY}
