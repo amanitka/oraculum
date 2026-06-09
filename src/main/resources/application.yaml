@@ -43,7 +43,7 @@ oraculum:
     fundamentals:
       cron: "0 0 2 * * TUE"
     share-price:
-      incremental-window-days: 5
+      incremental-window-days: 10
       cron: "0 0 3 * * TUE-SAT"
     news:
       incremental-window-hours: 1
