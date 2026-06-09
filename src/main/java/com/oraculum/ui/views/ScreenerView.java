@@ -44,7 +44,7 @@ public class ScreenerView extends VerticalLayout {
 
         H3 title = new H3("Investment Screeners");
         title.addClassNames(LumoUtility.Margin.Bottom.NONE);
-        title.getStyle().set("margin-top", "4rem"); // Pushes the text down significantly from the top menu
+        title.getStyle().set("margin-top", "2rem"); // Pushes the text down significantly from the top menu
         Paragraph description = new Paragraph("Select a screening strategy below to view fully-materialized market data.");
         description.addClassNames(LumoUtility.TextColor.SECONDARY);
 
