@@ -14,7 +14,7 @@ public interface CompanyApi {
 
     CompanyDto getCompanyById(int companyId);
 
-    List<CompanyDto> getCompaniesByMarket(String market);
+    List<CompanyDto> getAllCompanies();
 
     List<MarketDto> getAllMarkets();
 

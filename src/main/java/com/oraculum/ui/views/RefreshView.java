@@ -3,6 +3,7 @@ package com.oraculum.ui.views;
 import com.oraculum.database.api.event.RefreshMaterializedViewsEvent;
 import com.oraculum.harvester.api.HarvesterRequestApi;
 import com.oraculum.ui.MainLayout;
+import com.oraculum.ui.ViewHelper;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -10,8 +11,6 @@ import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -53,15 +52,7 @@ public class RefreshView extends VerticalLayout {
         add(contentArea);
     }
 
-    private static void showSuccess(String message) {
-        Notification n = Notification.show(message, 4000, Notification.Position.BOTTOM_END);
-        n.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-    }
 
-    private static void showError(String message) {
-        Notification n = Notification.show(message, 5000, Notification.Position.BOTTOM_END);
-        n.addThemeVariants(NotificationVariant.LUMO_ERROR);
-    }
 
     private Component createHeader() {
         VerticalLayout header = new VerticalLayout();
@@ -189,9 +180,9 @@ public class RefreshView extends VerticalLayout {
     private void executeRefresh(String actionName, Runnable refreshAction) {
         try {
             refreshAction.run();
-            showSuccess("Triggered refresh for: " + actionName);
+            ViewHelper.showSuccess("Triggered refresh for: " + actionName);
         } catch (Exception ex) {
-            showError("Failed to trigger refresh for " + actionName + ": " + ex.getMessage());
+            ViewHelper.showError("Failed to trigger refresh for " + actionName + ": " + ex.getMessage());
         }
     }
 }

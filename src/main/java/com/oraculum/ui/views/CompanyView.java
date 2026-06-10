@@ -4,7 +4,6 @@ import com.github.appreciated.apexcharts.ApexCharts;
 import com.github.appreciated.apexcharts.ApexChartsBuilder;
 import com.oraculum.company.api.CompanyApi;
 import com.oraculum.company.api.dto.CompanyDto;
-import com.oraculum.company.api.dto.MarketDto;
 import com.oraculum.company.api.dto.SharePriceDto;
 import com.oraculum.ui.MainLayout;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -64,11 +63,7 @@ public class CompanyView extends VerticalLayout {
         companyComboBox = new ComboBox<>("Search Company or Ticker...");
         companyComboBox.setWidth("600px");
 
-        List<CompanyDto> allCompanies = new ArrayList<>();
-        for (MarketDto market : companyApi.getAllMarkets()) {
-            allCompanies.addAll(companyApi.getCompaniesByMarket(market.marketId()));
-        }
-        companyComboBox.setItems(allCompanies);
+        companyComboBox.setItems(companyApi.getAllCompanies());
         companyComboBox.setItemLabelGenerator(c -> String.format("%s - %s", c.ticker(), c.companyName()));
 
         companyComboBox.addValueChangeListener(_ -> loadChartData());

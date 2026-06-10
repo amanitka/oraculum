@@ -5,30 +5,24 @@ import com.oraculum.company.api.CompanyApi;
 import com.oraculum.company.api.dto.ScreenerDto;
 import com.oraculum.company.api.dto.ScreenerMasterDto;
 import com.oraculum.ui.MainLayout;
+import com.oraculum.ui.ViewHelper;
 import com.oraculum.ui.service.AnalysisRequestService;
-import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.grid.HeaderRow;
 import com.vaadin.flow.component.grid.dataview.GridListDataView;
-import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Paragraph;
-import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
-import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.component.textfield.TextFieldVariant;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.data.renderer.NumberRenderer;
-import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
@@ -39,7 +33,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Consumer;
 
 @Route(value = "screener", layout = MainLayout.class)
 @PageTitle("Screener")
@@ -85,23 +78,15 @@ public class ScreenerView extends VerticalLayout {
     private void setContent(String tabLabel) {
         gridContainer.removeAll();
 
-        // Create action toolbar right-aligned above the grid
-        HorizontalLayout toolbar = new HorizontalLayout();
-        toolbar.setWidthFull();
-        toolbar.setJustifyContentMode(com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode.END);
-        toolbar.addClassNames(LumoUtility.Padding.Bottom.SMALL);
-
-        Button runAnalysisBtn = new Button("Run Analysis", VaadinIcon.PLAY.create());
-        runAnalysisBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        toolbar.add(runAnalysisBtn);
+        HorizontalLayout toolbar = createToolbar();
+        Button runAnalysisBtn = (Button) toolbar.getComponentAt(0);
 
         if ("Master Ranks".equals(tabLabel)) {
             Grid<ScreenerMasterDto> grid = createMasterGrid();
-            List<ScreenerMasterDto> data = companyApi.getMasterScreener();
-            GridListDataView<ScreenerMasterDto> dataView = grid.setItems(data);
-            setupMasterFilters(grid, dataView);
+            GridListDataView<ScreenerMasterDto> dataView = grid.setItems(companyApi.getMasterScreener());
+            setupFilters(grid, dataView, true);
             runAnalysisBtn.addClickListener(_ -> triggerAnalysisMaster(grid.getSelectedItems(), grid));
-            gridContainer.add(toolbar, wrapGrid(grid));
+            gridContainer.add(toolbar, ViewHelper.wrapInCard(grid));
         } else {
             Grid<ScreenerDto> grid = createStandardGrid();
             List<ScreenerDto> data = switch (tabLabel) {
@@ -112,88 +97,56 @@ public class ScreenerView extends VerticalLayout {
                 default -> List.of();
             };
             GridListDataView<ScreenerDto> dataView = grid.setItems(data);
-            setupStandardFilters(grid, dataView);
+            setupFilters(grid, dataView, false);
             runAnalysisBtn.addClickListener(_ -> triggerAnalysisStandard(grid.getSelectedItems(), grid));
-            gridContainer.add(toolbar, wrapGrid(grid));
+            gridContainer.add(toolbar, ViewHelper.wrapInCard(grid));
         }
     }
 
+    private HorizontalLayout createToolbar() {
+        HorizontalLayout toolbar = new HorizontalLayout();
+        toolbar.setWidthFull();
+        toolbar.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
+        toolbar.addClassNames(LumoUtility.Padding.Bottom.SMALL);
+
+        Button runAnalysisBtn = new Button("Run Analysis", VaadinIcon.PLAY.create());
+        runAnalysisBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        toolbar.add(runAnalysisBtn);
+        return toolbar;
+    }
+
     private void triggerAnalysisMaster(Set<ScreenerMasterDto> selectedItems, Grid<ScreenerMasterDto> grid) {
-        if (selectedItems.isEmpty()) {
-            Notification.show("Please select at least one company.", 3000, Notification.Position.BOTTOM_END)
-                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
-            return;
-        }
-        if (selectedItems.size() > 10) {
-            Notification.show("Maximum of 10 companies allowed per batch to prevent overload.", 4000, Notification.Position.BOTTOM_END)
-                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
-            return;
-        }
-
+        if (!validateBatchSelection(selectedItems.size())) return;
         for (ScreenerMasterDto item : selectedItems) {
-            CompanyAnalysisRequest request = new CompanyAnalysisRequest(UUID.randomUUID(),
-                    item.companyId(), item.ticker(), item.market(), LocalDate.now(), null);
-            analysisRequestService.requestAnalysis(request);
+            analysisRequestService.requestAnalysis(new CompanyAnalysisRequest(UUID.randomUUID(),
+                    item.companyId(), item.ticker(), item.market(), LocalDate.now(), null));
         }
-
-        Notification.show("Triggered analysis for " + selectedItems.size() + " companies.", 3000, Notification.Position.BOTTOM_END)
-                .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        ViewHelper.showSuccess("Triggered analysis for " + selectedItems.size() + " companies.");
         grid.deselectAll();
     }
 
     private void triggerAnalysisStandard(Set<ScreenerDto> selectedItems, Grid<ScreenerDto> grid) {
-        if (selectedItems.isEmpty()) {
-            Notification.show("Please select at least one company.", 3000, Notification.Position.BOTTOM_END)
-                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
-            return;
-        }
-        if (selectedItems.size() > 10) {
-            Notification.show("Maximum of 10 companies allowed per batch to prevent overload.", 4000, Notification.Position.BOTTOM_END)
-                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
-            return;
-        }
-
+        if (!validateBatchSelection(selectedItems.size())) return;
         for (ScreenerDto item : selectedItems) {
-            CompanyAnalysisRequest request = new CompanyAnalysisRequest(UUID.randomUUID(),
-                    item.companyId(), item.ticker(), item.market(), LocalDate.now(), null);
-            analysisRequestService.requestAnalysis(request);
+            analysisRequestService.requestAnalysis(new CompanyAnalysisRequest(UUID.randomUUID(),
+                    item.companyId(), item.ticker(), item.market(), LocalDate.now(), null));
         }
-
-        Notification.show("Triggered analysis for " + selectedItems.size() + " companies.", 3000, Notification.Position.BOTTOM_END)
-                .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        ViewHelper.showSuccess("Triggered analysis for " + selectedItems.size() + " companies.");
         grid.deselectAll();
     }
 
-    private Div wrapGrid(Component grid) {
-        Div card = new Div();
-        card.addClassName("screener-card");
-        card.setSizeFull();
-        card.add(grid);
-        return card;
+    private boolean validateBatchSelection(int count) {
+        if (count == 0) {
+            ViewHelper.showError("Please select at least one company.");
+            return false;
+        }
+        if (count > 10) {
+            ViewHelper.showError("Maximum of 10 companies allowed per batch.");
+            return false;
+        }
+        return true;
     }
 
-    private Span createSignalBadge(String signal) {
-        Span badge = new Span(signal != null ? signal : "N/A");
-        badge.getElement().getThemeList().add("badge");
-        if ("STRONG_BUY".equals(signal) || "BUY".equals(signal)) {
-            badge.getElement().getThemeList().add("success");
-        } else if ("AVOID".equals(signal) || "SELL".equals(signal)) {
-            badge.getElement().getThemeList().add("error");
-        } else {
-            badge.getElement().getThemeList().add("contrast");
-        }
-        return badge;
-    }
-
-    private Span createQualitySpan(Float score) {
-        Span span = new Span(score != null ? String.format(Locale.US, "%.1f", score) : "-");
-        if (score != null) {
-            if (score >= 80) span.addClassName(LumoUtility.TextColor.SUCCESS);
-            else if (score < 40) span.addClassName(LumoUtility.TextColor.ERROR);
-        }
-        span.addClassName(LumoUtility.FontWeight.BOLD);
-        return span;
-    }
 
     private Grid<ScreenerMasterDto> createMasterGrid() {
         Grid<ScreenerMasterDto> grid = new Grid<>(ScreenerMasterDto.class, false);
@@ -211,9 +164,9 @@ public class ScreenerView extends VerticalLayout {
         grid.addColumn(ScreenerMasterDto::sectorName).setHeader("Sector").setAutoWidth(true).setKey("sector").setSortable(true);
         grid.addColumn(ScreenerMasterDto::companySize).setHeader("Size").setAutoWidth(true).setKey("size").setSortable(true);
 
-        grid.addColumn(new ComponentRenderer<>(item -> createSignalBadge(item.compositeSignal()))).setHeader("Signal").setAutoWidth(true).setKey("signal")
+        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.signalBadge(item.compositeSignal()))).setHeader("Signal").setAutoWidth(true).setKey("signal")
                 .setComparator(java.util.Comparator.comparing(ScreenerMasterDto::compositeSignal, java.util.Comparator.nullsLast(String::compareTo)));
-        grid.addColumn(new ComponentRenderer<>(item -> createQualitySpan(item.qualityScore()))).setHeader("Quality").setAutoWidth(true).setKey("quality")
+        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.qualitySpan(item.qualityScore()))).setHeader("Quality").setAutoWidth(true).setKey("quality")
                 .setComparator(java.util.Comparator.comparing(ScreenerMasterDto::qualityScore, java.util.Comparator.nullsLast(Float::compareTo)));
 
         grid.addColumn(ScreenerMasterDto::piotroskiFScore).setHeader("F-Score").setAutoWidth(true).setSortable(true);
@@ -243,9 +196,9 @@ public class ScreenerView extends VerticalLayout {
         grid.addColumn(ScreenerDto::sectorName).setHeader("Sector").setAutoWidth(true).setKey("sector").setSortable(true);
         grid.addColumn(ScreenerDto::companySize).setHeader("Size").setAutoWidth(true).setKey("size").setSortable(true);
 
-        grid.addColumn(new ComponentRenderer<>(item -> createSignalBadge(item.compositeSignal()))).setHeader("Signal").setAutoWidth(true).setKey("signal")
+        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.signalBadge(item.compositeSignal()))).setHeader("Signal").setAutoWidth(true).setKey("signal")
                 .setComparator(java.util.Comparator.comparing(ScreenerDto::compositeSignal, java.util.Comparator.nullsLast(String::compareTo)));
-        grid.addColumn(new ComponentRenderer<>(item -> createQualitySpan(item.qualityScore()))).setHeader("Quality").setAutoWidth(true).setKey("quality")
+        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.qualitySpan(item.qualityScore()))).setHeader("Quality").setAutoWidth(true).setKey("quality")
                 .setComparator(java.util.Comparator.comparing(ScreenerDto::qualityScore, java.util.Comparator.nullsLast(Float::compareTo)));
 
         grid.addColumn(ScreenerDto::piotroskiFScore).setHeader("F-Score").setAutoWidth(true).setSortable(true);
@@ -255,104 +208,60 @@ public class ScreenerView extends VerticalLayout {
         return grid;
     }
 
-    private void setupMasterFilters(Grid<ScreenerMasterDto> grid, GridListDataView<ScreenerMasterDto> dataView) {
+    private <T> void setupFilters(Grid<T> grid, GridListDataView<T> dataView, boolean isMaster) {
         HeaderRow filterRow = grid.appendHeaderRow();
-        MasterFilter filter = new MasterFilter();
+        ScreenerFilter<T> filter = new ScreenerFilter<>(isMaster);
         dataView.setFilter(filter::test);
 
-        TextField tickerFilter = createFilterField("Ticker", val -> {
-            filter.ticker = val;
+        ViewHelper.addFilter(grid, filterRow, "ticker", "Ticker", v -> {
+            filter.ticker = v;
             dataView.refreshAll();
         });
-        filterRow.getCell(grid.getColumnByKey("ticker")).setComponent(tickerFilter);
-
-        TextField nameFilter = createFilterField("Company", val -> {
-            filter.companyName = val;
+        ViewHelper.addFilter(grid, filterRow, "companyName", "Company", v -> {
+            filter.companyName = v;
             dataView.refreshAll();
         });
-        filterRow.getCell(grid.getColumnByKey("companyName")).setComponent(nameFilter);
-
-        TextField sectorFilter = createFilterField("Sector", val -> {
-            filter.sector = val;
+        ViewHelper.addFilter(grid, filterRow, "sector", "Sector", v -> {
+            filter.sector = v;
             dataView.refreshAll();
         });
-        filterRow.getCell(grid.getColumnByKey("sector")).setComponent(sectorFilter);
-
-        TextField sizeFilter = createFilterField("Size", val -> {
-            filter.size = val;
+        ViewHelper.addFilter(grid, filterRow, "size", "Size", v -> {
+            filter.size = v;
             dataView.refreshAll();
         });
-        filterRow.getCell(grid.getColumnByKey("size")).setComponent(sizeFilter);
     }
 
-    private void setupStandardFilters(Grid<ScreenerDto> grid, GridListDataView<ScreenerDto> dataView) {
-        HeaderRow filterRow = grid.appendHeaderRow();
-        StandardFilter filter = new StandardFilter();
-        dataView.setFilter(filter::test);
 
-        TextField tickerFilter = createFilterField("Ticker", val -> {
-            filter.ticker = val;
-            dataView.refreshAll();
-        });
-        filterRow.getCell(grid.getColumnByKey("ticker")).setComponent(tickerFilter);
+    /**
+     * Unified filter for both Master and Standard screener grids.
+     * Uses duck-typing via accessor lambdas set in the constructor.
+     */
+    private static class ScreenerFilter<T> {
+        private final java.util.function.Function<T, String> tickerFn;
+        private final java.util.function.Function<T, String> nameFn;
+        private final java.util.function.Function<T, String> sectorFn;
+        private final java.util.function.Function<T, String> sizeFn;
+        String ticker = "", companyName = "", sector = "", size = "";
 
-        TextField nameFilter = createFilterField("Company", val -> {
-            filter.companyName = val;
-            dataView.refreshAll();
-        });
-        filterRow.getCell(grid.getColumnByKey("companyName")).setComponent(nameFilter);
-
-        TextField sectorFilter = createFilterField("Sector", val -> {
-            filter.sector = val;
-            dataView.refreshAll();
-        });
-        filterRow.getCell(grid.getColumnByKey("sector")).setComponent(sectorFilter);
-
-        TextField sizeFilter = createFilterField("Size", val -> {
-            filter.size = val;
-            dataView.refreshAll();
-        });
-        filterRow.getCell(grid.getColumnByKey("size")).setComponent(sizeFilter);
-    }
-
-    private TextField createFilterField(String placeholder, Consumer<String> filterAction) {
-        TextField filter = new TextField();
-        filter.setPlaceholder("Filter " + placeholder);
-        filter.setClearButtonVisible(true);
-        filter.setWidthFull();
-        filter.addThemeVariants(TextFieldVariant.LUMO_SMALL);
-        filter.setValueChangeMode(ValueChangeMode.EAGER);
-        filter.addValueChangeListener(e -> filterAction.accept(e.getValue()));
-        return filter;
-    }
-
-    private static class MasterFilter {
-        String ticker = "";
-        String companyName = "";
-        String sector = "";
-        String size = "";
-
-        boolean test(ScreenerMasterDto dto) {
-            return matches(dto.ticker(), ticker) && matches(dto.companyName(), companyName) && matches(dto.sectorName(), sector) && matches(dto.companySize(), size);
+        ScreenerFilter(boolean isMaster) {
+            if (isMaster) {
+                tickerFn = t -> ((ScreenerMasterDto) t).ticker();
+                nameFn = t -> ((ScreenerMasterDto) t).companyName();
+                sectorFn = t -> ((ScreenerMasterDto) t).sectorName();
+                sizeFn = t -> ((ScreenerMasterDto) t).companySize();
+            } else {
+                tickerFn = t -> ((ScreenerDto) t).ticker();
+                nameFn = t -> ((ScreenerDto) t).companyName();
+                sectorFn = t -> ((ScreenerDto) t).sectorName();
+                sizeFn = t -> ((ScreenerDto) t).companySize();
+            }
         }
 
-        private boolean matches(String value, String searchTerm) {
-            return searchTerm == null || searchTerm.isEmpty() || (value != null && value.toLowerCase().contains(searchTerm.toLowerCase()));
-        }
-    }
-
-    private static class StandardFilter {
-        String ticker = "";
-        String companyName = "";
-        String sector = "";
-        String size = "";
-
-        boolean test(ScreenerDto dto) {
-            return matches(dto.ticker(), ticker) && matches(dto.companyName(), companyName) && matches(dto.sectorName(), sector) && matches(dto.companySize(), size);
-        }
-
-        private boolean matches(String value, String searchTerm) {
-            return searchTerm == null || searchTerm.isEmpty() || (value != null && value.toLowerCase().contains(searchTerm.toLowerCase()));
+        boolean test(T item) {
+            return ViewHelper.matches(tickerFn.apply(item), ticker)
+                    && ViewHelper.matches(nameFn.apply(item), companyName)
+                    && ViewHelper.matches(sectorFn.apply(item), sector)
+                    && ViewHelper.matches(sizeFn.apply(item), size);
         }
     }
 }
