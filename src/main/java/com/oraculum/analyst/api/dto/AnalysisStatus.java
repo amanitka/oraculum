@@ -1,8 +1,10 @@
 package com.oraculum.analyst.api.dto;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
+@Getter
 public enum AnalysisStatus {
     PENDING("Pending"),
     RUNNING("Running"),
@@ -10,4 +12,8 @@ public enum AnalysisStatus {
     FAILED("Failed");
 
     private final String name;
+
+    public boolean isCompleted() {
+        return COMPLETED.equals(this);
+    }
 }

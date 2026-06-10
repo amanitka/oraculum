@@ -27,6 +27,12 @@ public class CompanyAnalysisServiceImpl implements CompanyAnalysisService {
     }
 
     @Override
+    public boolean isAnalysisCompleted(UUID id) {
+        var analysis = companyAnalysisRepository.findById(id);
+        return analysis.isPresent() && analysis.get().getStatus().isCompleted();
+    }
+
+    @Override
     public CompanyAnalysisDto getById(UUID id) {
         return companyAnalysisRepository.findById(id)
                 .map(CompanyAnalysisDto::fromEntity)

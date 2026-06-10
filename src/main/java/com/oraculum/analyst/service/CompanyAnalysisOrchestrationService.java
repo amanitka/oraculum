@@ -7,6 +7,7 @@ import com.oraculum.analyst.dto.CompanyAnalysisResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
@@ -20,8 +21,13 @@ public class CompanyAnalysisOrchestrationService {
     private final CompanyAnalysisWorkflowService workflow;
     private final ObjectMapper objectMapper;
 
+    @Transactional
     public void executeAnalysis(CompanyAnalysisRequest request) {
         log.info("Handling orchestrated company analysis request for {}", request.ticker());
+        if (companyAnalysisService.isAnalysisCompleted(request.correlationId())) {
+            log.info("Analysis already completed for ticker {}, correlation id {}", request.ticker(), request.correlationId());
+            return;
+        }
         CompanyAnalysisEntity companyAnalysis = initAnalysis(request);
         try {
             markAsRunning(companyAnalysis);
