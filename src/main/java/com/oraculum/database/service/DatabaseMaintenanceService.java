@@ -1,32 +1,29 @@
-package com.oraculum.database.maintenance;
+package com.oraculum.database.service;
 
+import com.oraculum.database.api.DatabaseApi;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
+
 
 @Slf4j
-@Component
+@Service
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "oraculum.database.maintenance.enabled", havingValue = "true", matchIfMissing = true)
-public class DatabaseMaintenanceScheduler {
+public class DatabaseMaintenanceService implements DatabaseApi {
 
     private final JdbcTemplate jdbcTemplate;
 
-    @Scheduled(cron = "${oraculum.database.maintenance.vacuum-cron}")
     public void runVacuum() {
-        log.info("Starting scheduled database VACUUM ANALYZE...");
+        log.info("Starting database VACUUM ANALYZE...");
         try {
             jdbcTemplate.execute("VACUUM ANALYZE");
             log.info("Database VACUUM ANALYZE completed successfully.");
         } catch (Exception e) {
-            log.error("Scheduled database VACUUM ANALYZE failed", e);
+            log.error("Database VACUUM ANALYZE failed", e);
         }
     }
 
-    @Scheduled(cron = "${oraculum.database.maintenance.partition-cron}")
     public void runPartitionManagement() {
         log.info("Starting scheduled database partition management (creation & purging)...");
         try {
@@ -50,17 +47,16 @@ public class DatabaseMaintenanceScheduler {
         }
     }
 
-    @Scheduled(cron = "${oraculum.database.maintenance.mv-refresh-cron:-}")
+    @Override
     public void refreshMaterializedViews() {
         log.info("Starting refresh of materialized views...");
         try {
-            // Concurrent refresh requires unique indexes, which we have created in the R__ migration
             jdbcTemplate.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY mv_company_financial_ratios");
             jdbcTemplate.execute("ANALYZE mv_company_financial_ratios");
-            
+
             jdbcTemplate.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY mv_share_price_signals_recent");
             jdbcTemplate.execute("ANALYZE mv_share_price_signals_recent");
-            
+
             log.info("Materialized views refresh & statistics update completed successfully.");
         } catch (Exception e) {
             log.error("Materialized views refresh failed", e);
