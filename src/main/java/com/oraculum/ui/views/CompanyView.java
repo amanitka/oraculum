@@ -7,6 +7,7 @@ import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.company.api.dto.SharePriceDto;
 import com.oraculum.ui.MainLayout;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.Html;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dependency.NpmPackage;
 import com.vaadin.flow.component.html.Div;
@@ -28,6 +29,25 @@ import java.util.List;
 @NpmPackage(value = "@webcomponents/shadycss", version = "1.11.2")
 public class CompanyView extends VerticalLayout {
 
+    private static final String CHART_CSS = """
+            <style>
+            .apexcharts-tooltip {
+                background: var(--lumo-base-color) !important;
+                border: 1px solid var(--lumo-contrast-10pct) !important;
+                box-shadow: var(--lumo-box-shadow-s) !important;
+                color: var(--lumo-body-text-color) !important;
+            }
+            .apexcharts-tooltip-title {
+                background: var(--lumo-contrast-5pct) !important;
+                border-bottom: 1px solid var(--lumo-contrast-10pct) !important;
+                font-family: var(--lumo-font-family) !important;
+                font-weight: 600 !important;
+            }
+            .apexcharts-tooltip-text {
+                color: var(--lumo-body-text-color) !important;
+            }
+            </style>
+            """;
     private final CompanyApi companyApi;
     private final Div chartPlaceholder;
     private ComboBox<CompanyDto> companyComboBox;
@@ -53,6 +73,9 @@ public class CompanyView extends VerticalLayout {
 
         this.chartPlaceholder = createChartPlaceholder();
         chartCard.add(chartPlaceholder);
+
+        // Inject CSS for Tooltip dark/light mode support
+        add(new Html(CHART_CSS));
     }
 
     private Component createHeader() {
