@@ -6,6 +6,7 @@ import com.oraculum.company.api.CompanyApi;
 import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.company.api.dto.SharePriceDto;
 import com.oraculum.ui.MainLayout;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dependency.NpmPackage;
 import com.vaadin.flow.component.html.Div;
@@ -42,7 +43,7 @@ public class CompanyView extends VerticalLayout {
         setDefaultHorizontalComponentAlignment(Alignment.CENTER);
 
         // Header
-        HorizontalLayout header = createHeader();
+        Component header = createHeader();
         add(header);
 
         // Main Dashboard Area
@@ -54,32 +55,42 @@ public class CompanyView extends VerticalLayout {
         chartCard.add(chartPlaceholder);
     }
 
-    private HorizontalLayout createHeader() {
-        HorizontalLayout header = new HorizontalLayout();
-        header.setWidthFull();
-        header.addClassNames(LumoUtility.Padding.MEDIUM, LumoUtility.Background.BASE, LumoUtility.BoxShadow.XSMALL);
-        header.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.BASELINE);
+    private Component createHeader() {
+        VerticalLayout wrapper = new VerticalLayout();
+        wrapper.setWidthFull();
+        wrapper.setPadding(true);
+        wrapper.setSpacing(false);
+        wrapper.getStyle().set("margin-bottom", "1rem");
 
-        companyComboBox = new ComboBox<>("Search Company or Ticker...");
-        companyComboBox.setWidth("600px");
+        H3 title = new H3("Select company");
+        title.getStyle().set("margin-top", "1rem");
+        title.getStyle().set("margin-bottom", "0.5rem");
+
+        companyComboBox = new ComboBox<>();
+        companyComboBox.setPlaceholder("Search Company or Ticker...");
+        companyComboBox.setWidth("400px");
+        companyComboBox.setClearButtonVisible(true);
 
         companyComboBox.setItems(companyApi.getAllCompanies());
         companyComboBox.setItemLabelGenerator(c -> String.format("%s - %s", c.ticker(), c.companyName()));
 
         companyComboBox.addValueChangeListener(_ -> loadChartData());
 
-        header.add(companyComboBox);
-        return header;
+        HorizontalLayout row = new HorizontalLayout(companyComboBox);
+        row.setWidthFull();
+        row.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.BASELINE);
+
+        wrapper.add(title, row);
+        return wrapper;
     }
 
     private VerticalLayout createMainDashboard() {
         VerticalLayout mainDashboard = new VerticalLayout();
         mainDashboard.setSizeFull();
-        mainDashboard.addClassNames(LumoUtility.Padding.LARGE, LumoUtility.Background.CONTRAST_5);
+        mainDashboard.addClassNames(LumoUtility.Background.CONTRAST_5);
 
         chartCard = new Div();
         chartCard.setWidthFull();
-        chartCard.setMaxWidth("1200px");
         chartCard.setMinHeight("400px");
         chartCard.addClassNames(LumoUtility.Background.CONTRAST_5,
                 LumoUtility.BorderRadius.LARGE,
@@ -94,8 +105,6 @@ public class CompanyView extends VerticalLayout {
         chartHeader.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.BASELINE);
 
         H3 title = new H3("Price History");
-        title.addClassNames(LumoUtility.Margin.Top.NONE, LumoUtility.Margin.Bottom.NONE);
-
         timeframeComboBox = new ComboBox<>("Timeframe");
         timeframeComboBox.setItems("1M", "3M", "6M", "1Y", "5Y", "All");
         timeframeComboBox.setValue("3M");
@@ -118,9 +127,6 @@ public class CompanyView extends VerticalLayout {
                 LumoUtility.TextColor.SECONDARY,
                 LumoUtility.Background.CONTRAST_5,
                 LumoUtility.BorderRadius.MEDIUM);
-        placeholder.getStyle().set("flex-grow", "1");
-        placeholder.getStyle().set("margin-top", "var(--lumo-space-m)");
-
         Span text = new Span("Chart component will render here");
         text.addClassNames(LumoUtility.FontSize.LARGE, LumoUtility.FontWeight.MEDIUM);
         placeholder.add(text);
@@ -171,6 +177,8 @@ public class CompanyView extends VerticalLayout {
                 .withChart(com.github.appreciated.apexcharts.config.builder.ChartBuilder.get()
                         .withType(com.github.appreciated.apexcharts.config.chart.Type.LINE)
                         .withZoom(com.github.appreciated.apexcharts.config.chart.builder.ZoomBuilder.get().withEnabled(true).build())
+                        .withForeColor("var(--lumo-body-text-color)")
+                        .withBackground("transparent")
                         .build())
                 .withStroke(com.github.appreciated.apexcharts.config.builder.StrokeBuilder.get()
                         .withCurve(com.github.appreciated.apexcharts.config.stroke.Curve.STRAIGHT)
