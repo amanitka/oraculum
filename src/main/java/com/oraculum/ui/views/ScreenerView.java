@@ -356,22 +356,30 @@ public class ScreenerView extends VerticalLayout {
         ScreenerFilter<T> filter = new ScreenerFilter<>(type);
         dataView.setFilter(filter::test);
 
-        ViewHelper.addFilter(grid, filterRow, "ticker", "Ticker", v -> {
-            filter.ticker = v;
-            dataView.refreshAll();
-        });
-        ViewHelper.addFilter(grid, filterRow, "companyName", "Company", v -> {
-            filter.companyName = v;
-            dataView.refreshAll();
-        });
-        ViewHelper.addFilter(grid, filterRow, "sector", "Sector", v -> {
-            filter.sector = v;
-            dataView.refreshAll();
-        });
-        ViewHelper.addFilter(grid, filterRow, "size", "Size", v -> {
-            filter.size = v;
-            dataView.refreshAll();
-        });
+        if (grid.getColumnByKey("ticker") != null) {
+            ViewHelper.addFilter(grid, filterRow, "ticker", "Ticker", v -> {
+                filter.ticker = v;
+                dataView.refreshAll();
+            });
+        }
+        if (grid.getColumnByKey("companyName") != null) {
+            ViewHelper.addFilter(grid, filterRow, "companyName", "Company", v -> {
+                filter.companyName = v;
+                dataView.refreshAll();
+            });
+        }
+        if (grid.getColumnByKey("sector") != null) {
+            ViewHelper.addFilter(grid, filterRow, "sector", "Sector", v -> {
+                filter.sector = v;
+                dataView.refreshAll();
+            });
+        }
+        if (grid.getColumnByKey("size") != null) {
+            ViewHelper.addFilter(grid, filterRow, "size", "Size", v -> {
+                filter.size = v;
+                dataView.refreshAll();
+            });
+        }
     }
 
 
