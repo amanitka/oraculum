@@ -45,8 +45,9 @@ public class ScreenerView extends VerticalLayout {
     public ScreenerView(CompanyApi companyApi, AnalysisRequestService analysisRequestService) {
         this.companyApi = companyApi;
         this.analysisRequestService = analysisRequestService;
+        setPadding(true);
+        setSpacing(false);
         setSizeFull();
-        setPadding(false);
 
         H3 title = new H3("Investment Screeners");
         title.addClassNames(LumoUtility.Margin.Bottom.NONE);
@@ -112,6 +113,8 @@ public class ScreenerView extends VerticalLayout {
         Button runAnalysisBtn = new Button("Run Analysis", VaadinIcon.PLAY.create());
         runAnalysisBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         toolbar.add(runAnalysisBtn);
+        toolbar.getStyle().set("margin-top", "1rem");
+        toolbar.getStyle().set("margin-bottom", "0.5rem");
         return toolbar;
     }
 

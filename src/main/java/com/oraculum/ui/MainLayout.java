@@ -32,7 +32,7 @@ public class MainLayout extends AppLayout implements RouterLayout {
         HorizontalLayout header = new HorizontalLayout();
         header.setWidthFull();
         header.setMaxWidth("1440px");
-        header.setPadding(true);
+        header.setPadding(false);
         header.addClassNames(LumoUtility.Padding.Horizontal.LARGE);
         header.setAlignItems(Alignment.CENTER);
         header.setJustifyContentMode(JustifyContentMode.BETWEEN);
@@ -52,7 +52,7 @@ public class MainLayout extends AppLayout implements RouterLayout {
         logo.setHeight("30px"); // Even smaller to match text exactly
         logo.getStyle().set("margin-top", "6px"); // Nudge down slightly to align with the text baseline
 
-        logoLayout.add(viewTitle, logo);
+        logoLayout.add(logo, viewTitle);
 
         // Navigation Links using Vaadin Tabs
         RouterLink companyLink = new RouterLink("Company", CompanyView.class);

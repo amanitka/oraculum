@@ -20,11 +20,16 @@ import com.vaadin.flow.router.RouteAlias;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import org.springframework.context.ApplicationEventPublisher;
 
-
 @Route(value = "refresh", layout = MainLayout.class)
 @RouteAlias(value = "", layout = MainLayout.class)
 @PageTitle("Refresh | Oraculum")
 public class RefreshView extends VerticalLayout {
+
+    private static final String TILE_STYLE =
+            "background: var(--lumo-contrast-5pct);" +
+                    "border: 1px solid var(--lumo-contrast-10pct);" +
+                    "border-radius: var(--lumo-border-radius-l);" +
+                    "padding: var(--lumo-space-l)";
 
     private final HarvesterRequestApi harvesterRequestApi;
     private final ApplicationEventPublisher eventPublisher;
@@ -33,26 +38,20 @@ public class RefreshView extends VerticalLayout {
         this.harvesterRequestApi = harvesterRequestApi;
         this.eventPublisher = eventPublisher;
 
-        // 1. Configure the main view to take full space and center its contents
         setSizeFull();
         setPadding(true);
-        setAlignItems(Alignment.CENTER); // This perfectly centers the content area below
+        setAlignItems(Alignment.CENTER);
 
-        // 2. Create a constrained wrapper for the header and grid
         VerticalLayout contentArea = new VerticalLayout();
         contentArea.setWidthFull();
-        contentArea.setMaxWidth("1100px"); // Locks the width for the tile grid
         contentArea.setPadding(false);
         contentArea.addClassNames(LumoUtility.Gap.LARGE);
 
-        // Add header and grid to the centered wrapper
         contentArea.add(createHeader(), createGridSection());
-
-        // Add the wrapper to the view
         add(contentArea);
     }
 
-
+    // ── Header ─────────────────────────────────────────────────────────────
 
     private Component createHeader() {
         VerticalLayout header = new VerticalLayout();
@@ -60,92 +59,75 @@ public class RefreshView extends VerticalLayout {
         header.setSpacing(false);
 
         H3 title = new H3("Data Refresh Console");
-        title.addClassNames(LumoUtility.Margin.Top.NONE, LumoUtility.Margin.Bottom.XSMALL);
+        title.getStyle().set("margin-top", "2rem");
+        title.getStyle().set("margin-bottom", "1rem");
 
         Paragraph caption = new Paragraph("Trigger data harvesting and refresh operations across all markets and sources.");
         caption.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.Margin.Bottom.NONE);
 
         header.add(title, caption);
-        // Note: Removed center alignment here. Left-aligned headers look cleaner above tile grids.
         return header;
     }
+
+    // ── Tile Grid ──────────────────────────────────────────────────────────
 
     private Component createGridSection() {
         Div grid = new Div();
         grid.getStyle().set("display", "grid");
         grid.getStyle().set("grid-template-columns", "repeat(auto-fill, minmax(320px, 1fr))");
         grid.getStyle().set("gap", "var(--lumo-space-l)");
-        grid.setWidthFull(); // Takes full width of the 1100px contentArea
-        // Note: Removed margin: 0 auto. The parent VerticalLayout handles centering now.
+        grid.setWidthFull();
 
-        grid.add(createSimpleActionTile("Market Data",
+        grid.add(createTile("Market Data",
                 "Refreshes the list of all supported stock markets.",
                 harvesterRequestApi::refreshMarket));
 
-        grid.add(createSimpleActionTile("Industry Data",
+        grid.add(createTile("Industry Data",
                 "Refreshes the list of all industry classifications.",
                 harvesterRequestApi::refreshIndustry));
 
-        grid.add(createSimpleActionTile("Company List",
+        grid.add(createTile("Company List",
                 "Refreshes the list of companies across all supported markets.",
                 harvesterRequestApi::refreshCompany));
 
-        grid.add(createSimpleActionTile("Fundamentals",
+        grid.add(createTile("Fundamentals",
                 "Refreshes Income Statements, Balance Sheets, and Cash Flow Statements for all companies.",
                 harvesterRequestApi::refreshFundamentals));
 
-        grid.add(createSharePriceRefreshTile());
+        grid.add(createSharePriceTile());
 
-        grid.add(createSimpleActionTile("Materialized Views",
-                "Rebuilds all materialized views and refreshes screener cache. Runs asynchronously.",
-                () -> eventPublisher.publishEvent(new RefreshMaterializedViewsEvent())));
-
-        grid.add(createSimpleActionTile("News & Sentiment",
+        grid.add(createTile("News & Sentiment",
                 "Refreshes recent news articles and sentiment data.",
                 harvesterRequestApi::refreshNews));
+
+        grid.add(createTile("Materialized Views",
+                "Rebuilds all materialized views and refreshes screener cache. Runs asynchronously.",
+                () -> eventPublisher.publishEvent(new RefreshMaterializedViewsEvent())));
 
         return grid;
     }
 
-    private Component createSimpleActionTile(String title, String description, Runnable action) {
-        VerticalLayout tile = new VerticalLayout();
-        tile.addClassNames(LumoUtility.Background.CONTRAST_5,
-                LumoUtility.BorderRadius.LARGE,
-                LumoUtility.Padding.LARGE,
-                LumoUtility.Display.FLEX,
-                LumoUtility.FlexDirection.COLUMN);
+    // ── Simple Tile ────────────────────────────────────────────────────────
 
-        H4 tileTitle = new H4(title);
-        tileTitle.addClassNames(LumoUtility.Margin.NONE);
+    private Component createTile(String title, String description, Runnable action) {
+        Div tile = new Div();
+        tile.getStyle().set("cssText", TILE_STYLE);
+
+        HorizontalLayout header = tileHeader(title, createRefreshButton(title, action));
+
         Span desc = new Span(description);
-        desc.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.Margin.Top.SMALL);
+        desc.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontSize.SMALL);
+        desc.getStyle().set("margin-top", "var(--lumo-space-s)").set("display", "block");
 
-        HorizontalLayout buttonWrapper = new HorizontalLayout();
-        buttonWrapper.setWidthFull();
-        buttonWrapper.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
-        buttonWrapper.addClassNames(LumoUtility.Margin.Top.AUTO);
-
-        Button btn = new Button("Refresh", VaadinIcon.REFRESH.create());
-        btn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        btn.addClickListener(e -> executeRefresh(title, action));
-
-        buttonWrapper.add(btn);
-        tile.add(tileTitle, desc, buttonWrapper);
+        tile.add(header, desc);
         return tile;
     }
 
-    private Component createSharePriceRefreshTile() {
-        VerticalLayout tile = new VerticalLayout();
-        tile.addClassNames(LumoUtility.Background.CONTRAST_5,
-                LumoUtility.BorderRadius.LARGE,
-                LumoUtility.Padding.LARGE,
-                LumoUtility.Display.FLEX,
-                LumoUtility.FlexDirection.COLUMN);
+    // ── Share Price Tile ───────────────────────────────────────────────────
 
-        H4 tileTitle = new H4("Share Prices");
-        tileTitle.addClassNames(LumoUtility.Margin.NONE);
-        Span desc = new Span("Refreshes historical daily share prices for all companies.");
-        desc.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.Margin.Top.SMALL);
+    private Component createSharePriceTile() {
+        Div tile = new Div();
+        tile.getStyle().set("cssText", TILE_STYLE);
 
         Checkbox incremental = new Checkbox("Incremental Refresh", true);
         DatePicker fromDate = new DatePicker();
@@ -153,28 +135,45 @@ public class RefreshView extends VerticalLayout {
 
         incremental.addValueChangeListener(e -> {
             fromDate.setEnabled(e.getValue());
-            if (!e.getValue()) {
-                fromDate.setValue(null);
-            }
+            if (!e.getValue()) fromDate.setValue(null);
         });
+
+        Button btn = createRefreshButton("Share Prices",
+                () -> harvesterRequestApi.refreshSharePrices(incremental.getValue(), fromDate.getValue()));
+
+        HorizontalLayout header = tileHeader("Share Prices", btn);
+
+        Span desc = new Span("Refreshes historical daily share prices for all companies.");
+        desc.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontSize.SMALL);
+        desc.getStyle().set("margin-top", "var(--lumo-space-s)").set("display", "block");
 
         HorizontalLayout controls = new HorizontalLayout(incremental, fromDate);
         controls.setAlignItems(Alignment.CENTER);
-        controls.addClassNames(LumoUtility.Margin.Top.MEDIUM, LumoUtility.Gap.MEDIUM);
+        controls.addClassNames(LumoUtility.Gap.MEDIUM);
+        controls.getStyle().set("margin-top", "var(--lumo-space-m)");
 
-        HorizontalLayout buttonWrapper = new HorizontalLayout();
-        buttonWrapper.setWidthFull();
-        buttonWrapper.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
-        buttonWrapper.addClassNames(LumoUtility.Margin.Top.AUTO);
-
-        Button btn = new Button("Refresh", VaadinIcon.REFRESH.create());
-        btn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        btn.addClickListener(e -> executeRefresh("Share Prices",
-                () -> harvesterRequestApi.refreshSharePrices(incremental.getValue(), fromDate.getValue())));
-
-        buttonWrapper.add(btn);
-        tile.add(tileTitle, desc, controls, buttonWrapper);
+        tile.add(header, desc, controls);
         return tile;
+    }
+
+    // ── Helpers ─────────────────────────────────────────────────────────────
+
+    private HorizontalLayout tileHeader(String title, Button button) {
+        H4 heading = new H4(title);
+        heading.addClassNames(LumoUtility.Margin.NONE);
+
+        HorizontalLayout row = new HorizontalLayout(heading, button);
+        row.setWidthFull();
+        row.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER);
+        row.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
+        return row;
+    }
+
+    private Button createRefreshButton(String actionName, Runnable action) {
+        Button btn = new Button("Refresh", VaadinIcon.REFRESH.create());
+        btn.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
+        btn.addClickListener(_ -> executeRefresh(actionName, action));
+        return btn;
     }
 
     private void executeRefresh(String actionName, Runnable refreshAction) {
