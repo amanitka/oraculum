@@ -183,18 +183,18 @@ public class AnalysisView extends VerticalLayout {
         wrapper.setSpacing(false);
         wrapper.getStyle().set("margin-bottom", "1rem");
 
-        Span label = new Span("Run New Analysis");
-        label.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.FontWeight.SEMIBOLD,
+        H3 title = new H3("Run New Analysis");
+        title.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.FontWeight.SEMIBOLD,
                 LumoUtility.TextColor.SECONDARY);
-        label.getStyle().set("margin-bottom", "0.5rem");
+        title.getStyle().set("margin-bottom", "1rem");
+        title.getStyle().set("margin-top", "2rem");
 
         companyComboBox = new ComboBox<>();
         companyComboBox.setPlaceholder("Select company...");
         companyComboBox.setItemLabelGenerator(c -> String.format("%s - %s", c.ticker(), c.companyName()));
-        companyComboBox.setWidthFull();
-        companyComboBox.setMaxWidth("400px");
+        companyComboBox.setWidth("400px");
         companyComboBox.setClearButtonVisible(true);
-        loadAllCompanies();
+        companyComboBox.setItems(companyApi.getAllCompanies());
 
         variantComboBox = new ComboBox<>("Statement Variant");
         variantComboBox.setItems(StatementVariant.values());
@@ -205,25 +205,23 @@ public class AnalysisView extends VerticalLayout {
         Details advancedDetails = new Details("Advanced Options", variantComboBox);
         advancedDetails.setOpened(false);
 
+        HorizontalLayout leftGroup = new HorizontalLayout(companyComboBox, advancedDetails);
+        leftGroup.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.BASELINE);
+        leftGroup.setSpacing(true);
+
         Button analyzeButton = new Button("Analyze", VaadinIcon.PLAY.create());
         analyzeButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         analyzeButton.addClickListener(_ -> triggerAnalysis());
 
-        HorizontalLayout row = new HorizontalLayout(companyComboBox, advancedDetails, analyzeButton);
+        HorizontalLayout row = new HorizontalLayout(leftGroup, analyzeButton);
         row.setWidthFull();
         row.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.BASELINE);
         row.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
-        row.setFlexGrow(1, companyComboBox);
 
-        wrapper.add(label, row);
+        wrapper.add(title, row);
         return wrapper;
     }
 
-    // ── History Grid ───────────────────────────────────────────────────────
-
-    private void loadAllCompanies() {
-        companyComboBox.setItems(companyApi.getAllCompanies());
-    }
 
     private void triggerAnalysis() {
         CompanyDto company = companyComboBox.getValue();
@@ -251,7 +249,8 @@ public class AnalysisView extends VerticalLayout {
 
         H3 title = new H3("Analysis History");
         title.addClassNames(LumoUtility.Margin.Top.NONE, LumoUtility.Margin.Bottom.SMALL);
-
+        title.getStyle().set("margin-bottom", "1rem");
+        title.getStyle().set("margin-top", "1rem");
         grid = buildGrid();
 
         List<CompanyAnalysisDto> data = companyAnalysisApi.getCompanyAnalysisList(PageRequest.of(0, 1000)).getContent();
