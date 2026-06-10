@@ -1,5 +1,7 @@
 package com.oraculum.ui;
 
+import com.oraculum.company.api.domain.NewsSentimentLabel;
+import com.oraculum.company.api.domain.ScreenerSignal;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.HeaderRow;
@@ -117,12 +119,35 @@ public final class ViewHelper {
     /**
      * Creates a themed badge for screener signal values (STRONG_BUY, BUY, AVOID, SELL).
      */
-    public static Span signalBadge(String signal) {
-        Span badge = new Span(signal != null ? signal : "N/A");
+    public static Span signalBadge(String signalCode) {
+        ScreenerSignal signal = ScreenerSignal.fromCode(signalCode);
+        String text = signal != null ? signal.getDisplayName() : (signalCode != null ? signalCode : "N/A");
+        Span badge = new Span(text);
         badge.getElement().getThemeList().add("badge");
-        if ("STRONG_BUY".equals(signal) || "BUY".equals(signal)) {
+        if (signal == ScreenerSignal.STRONG_BUY || signal == ScreenerSignal.BUY) {
             badge.getElement().getThemeList().add("success");
-        } else if ("AVOID".equals(signal) || "SELL".equals(signal)) {
+        } else if (signal == ScreenerSignal.AVOID) {
+            badge.getElement().getThemeList().add("error");
+        } else {
+            badge.getElement().getThemeList().add("contrast");
+        }
+        return badge;
+    }
+
+    /**
+     * Creates a themed badge for news sentiment values (BULLISH, SOMEWHAT_BULLISH, NEUTRAL, etc.).
+     */
+    public static Span newsSentimentBadge(String labelCode, Float score) {
+        NewsSentimentLabel label = NewsSentimentLabel.fromCode(labelCode);
+        String text = label != null ? label.getDisplayName() : "No News";
+        if (score != null) {
+            text += String.format(Locale.US, " (%+.2f)", score);
+        }
+        Span badge = new Span(text);
+        badge.getElement().getThemeList().add("badge");
+        if (label == NewsSentimentLabel.BULLISH || label == NewsSentimentLabel.SOMEWHAT_BULLISH) {
+            badge.getElement().getThemeList().add("success");
+        } else if (label == NewsSentimentLabel.BEARISH || label == NewsSentimentLabel.SOMEWHAT_BEARISH) {
             badge.getElement().getThemeList().add("error");
         } else {
             badge.getElement().getThemeList().add("contrast");

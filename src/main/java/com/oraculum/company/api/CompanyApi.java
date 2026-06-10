@@ -44,6 +44,8 @@ public interface CompanyApi {
 
     List<ScreenerMasterDto> getMasterScreener();
 
+    List<ScreenerNewsSentimentDto> getNewsSentimentScreener();
+
     List<ScreenerDto> getUndervaluedScreener();
 
     List<ScreenerDto> getQualityCompoundersScreener();

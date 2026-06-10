@@ -1,6 +1,8 @@
 -- Flyway repeatable migration script for creating/replacing views
 -- Description: Core views containing corrected logic and advanced financial metrics, utilizing materialized views for performance
 
+DROP VIEW IF EXISTS v_screener_news_sentiment CASCADE;
+DROP VIEW IF EXISTS v_ticker_news_sentiment CASCADE;
 DROP VIEW IF EXISTS v_screener_master CASCADE;
 DROP VIEW IF EXISTS v_screener_piotroski CASCADE;
 DROP VIEW IF EXISTS v_screener_graham_deep_value CASCADE;
@@ -413,16 +415,120 @@ ON mv_share_price_signals_recent (company_id, trade_date);
 CREATE INDEX idx_mv_sps_company_id ON mv_share_price_signals_recent (company_id);
 
 -- =================================================================
+-- VIEW: v_ticker_news_sentiment
+-- Description: 7, 14, and 30-day time-decayed relevance-weighted sentiment
+-- =================================================================
+DO $$ BEGIN RAISE NOTICE 'Creating view: v_ticker_news_sentiment'; END $$;
+CREATE VIEW v_ticker_news_sentiment AS
+WITH sentiment_calc AS (
+    SELECT 
+        ticker,
+        
+        -- 7 Days
+        COUNT(CASE WHEN time_published >= NOW() - INTERVAL '7 days' THEN 1 END) as news_count_7d,
+        SUM(CASE WHEN time_published >= NOW() - INTERVAL '7 days' THEN ticker_sentiment_score * relevance_score * EXP(-0.231 * (GREATEST(0, EXTRACT(EPOCH FROM (NOW() - time_published)) / 86400.0))) END)
+        / NULLIF(SUM(CASE WHEN time_published >= NOW() - INTERVAL '7 days' THEN relevance_score * EXP(-0.231 * (GREATEST(0, EXTRACT(EPOCH FROM (NOW() - time_published)) / 86400.0))) END), 0) as news_sentiment_7d,
+        AVG(CASE WHEN time_published >= NOW() - INTERVAL '7 days' THEN relevance_score END) as avg_relevance_7d,
+
+        -- 14 Days
+        COUNT(CASE WHEN time_published >= NOW() - INTERVAL '14 days' THEN 1 END) as news_count_14d,
+        SUM(CASE WHEN time_published >= NOW() - INTERVAL '14 days' THEN ticker_sentiment_score * relevance_score * EXP(-0.231 * (GREATEST(0, EXTRACT(EPOCH FROM (NOW() - time_published)) / 86400.0))) END)
+        / NULLIF(SUM(CASE WHEN time_published >= NOW() - INTERVAL '14 days' THEN relevance_score * EXP(-0.231 * (GREATEST(0, EXTRACT(EPOCH FROM (NOW() - time_published)) / 86400.0))) END), 0) as news_sentiment_14d,
+        AVG(CASE WHEN time_published >= NOW() - INTERVAL '14 days' THEN relevance_score END) as avg_relevance_14d,
+
+        -- 30 Days
+        COUNT(CASE WHEN time_published >= NOW() - INTERVAL '30 days' THEN 1 END) as news_count_30d,
+        SUM(CASE WHEN time_published >= NOW() - INTERVAL '30 days' THEN ticker_sentiment_score * relevance_score * EXP(-0.231 * (GREATEST(0, EXTRACT(EPOCH FROM (NOW() - time_published)) / 86400.0))) END)
+        / NULLIF(SUM(CASE WHEN time_published >= NOW() - INTERVAL '30 days' THEN relevance_score * EXP(-0.231 * (GREATEST(0, EXTRACT(EPOCH FROM (NOW() - time_published)) / 86400.0))) END), 0) as news_sentiment_30d,
+        AVG(CASE WHEN time_published >= NOW() - INTERVAL '30 days' THEN relevance_score END) as avg_relevance_30d
+
+    FROM public.t_news_ticker
+    WHERE time_published >= NOW() - INTERVAL '30 days'
+    GROUP BY ticker
+)
+SELECT 
+    ticker,
+    
+    -- 7 Days projected
+    news_count_7d,
+    ROUND(news_sentiment_7d::numeric, 4) as news_sentiment_7d,
+    ROUND(avg_relevance_7d::numeric, 4) as avg_relevance_7d,
+    CASE 
+        WHEN news_sentiment_7d <= -0.35 THEN 'BEARISH'
+        WHEN news_sentiment_7d <= -0.15 THEN 'SOMEWHAT_BEARISH'
+        WHEN news_sentiment_7d < 0.15 THEN 'NEUTRAL'
+        WHEN news_sentiment_7d < 0.35 THEN 'SOMEWHAT_BULLISH'
+        ELSE 'BULLISH'
+    END as news_sentiment_label_7d,
+
+    -- 14 Days projected
+    news_count_14d,
+    ROUND(news_sentiment_14d::numeric, 4) as news_sentiment_14d,
+    ROUND(avg_relevance_14d::numeric, 4) as avg_relevance_14d,
+    CASE 
+        WHEN news_sentiment_14d <= -0.35 THEN 'BEARISH'
+        WHEN news_sentiment_14d <= -0.15 THEN 'SOMEWHAT_BEARISH'
+        WHEN news_sentiment_14d < 0.15 THEN 'NEUTRAL'
+        WHEN news_sentiment_14d < 0.35 THEN 'SOMEWHAT_BULLISH'
+        ELSE 'BULLISH'
+    END as news_sentiment_label_14d,
+
+    -- 30 Days projected
+    news_count_30d,
+    ROUND(news_sentiment_30d::numeric, 4) as news_sentiment_30d,
+    ROUND(avg_relevance_30d::numeric, 4) as avg_relevance_30d,
+    CASE 
+        WHEN news_sentiment_30d <= -0.35 THEN 'BEARISH'
+        WHEN news_sentiment_30d <= -0.15 THEN 'SOMEWHAT_BEARISH'
+        WHEN news_sentiment_30d < 0.15 THEN 'NEUTRAL'
+        WHEN news_sentiment_30d < 0.35 THEN 'SOMEWHAT_BULLISH'
+        ELSE 'BULLISH'
+    END as news_sentiment_label_30d
+
+FROM sentiment_calc;
+
+-- =================================================================
 -- VIEW: v_screener_master
 -- Description: Master screener with all valid latest records and rankings
 -- =================================================================
 DO $$ BEGIN RAISE NOTICE 'Creating thin screener views...'; END $$;
 CREATE VIEW v_screener_master AS
 SELECT s.*,
+       n.news_sentiment_30d as news_sentiment_score,
+       n.news_sentiment_label_30d as news_sentiment_label,
+       n.news_count_30d,
+
        RANK() OVER (ORDER BY s.quality_score DESC NULLS LAST) AS quality_rank,
        RANK() OVER (ORDER BY s.earnings_yield DESC NULLS LAST) AS value_rank,
        RANK() OVER (ORDER BY s.piotroski_f_score DESC NULLS LAST) AS fscore_rank
 FROM mv_share_price_signals_recent s
+LEFT JOIN v_ticker_news_sentiment n ON n.ticker = s.ticker
+WHERE s.trade_date = (SELECT MAX(trade_date) FROM mv_share_price_signals_recent WHERE company_id = s.company_id)
+  AND s.market_capitalization IS NOT NULL;
+
+-- =================================================================
+-- VIEW: v_screener_news_sentiment
+-- Description: Detailed news sentiment screener view
+-- =================================================================
+DO $$ BEGIN RAISE NOTICE 'Creating view: v_screener_news_sentiment'; END $$;
+CREATE VIEW v_screener_news_sentiment AS
+SELECT s.*,
+       n.news_count_7d,
+       n.news_sentiment_7d,
+       n.avg_relevance_7d,
+       n.news_sentiment_label_7d,
+       
+       n.news_count_14d,
+       n.news_sentiment_14d,
+       n.avg_relevance_14d,
+       n.news_sentiment_label_14d,
+       
+       n.news_count_30d,
+       n.news_sentiment_30d,
+       n.avg_relevance_30d,
+       n.news_sentiment_label_30d
+FROM mv_share_price_signals_recent s
+LEFT JOIN v_ticker_news_sentiment n ON n.ticker = s.ticker
 WHERE s.trade_date = (SELECT MAX(trade_date) FROM mv_share_price_signals_recent WHERE company_id = s.company_id)
   AND s.market_capitalization IS NOT NULL;
 

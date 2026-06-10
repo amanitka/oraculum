@@ -22,4 +22,13 @@ public class ScreenerMasterEntity extends BaseScreenerEntity {
 
     @Column(name = "fscore_rank")
     private Long fscoreRank;
+
+    @Column(name = "news_sentiment_score")
+    private Float newsSentimentScore;
+
+    @Column(name = "news_sentiment_label")
+    private String newsSentimentLabel;
+
+    @Column(name = "news_count_30d")
+    private Integer newsCount30d;
 }

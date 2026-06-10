@@ -37,6 +37,7 @@ public class CompanyServiceImpl implements CompanyService {
     private final SharePriceSignalRepository sharePriceSignalRepository;
     private final CompanyFinancialRatiosRepository companyFinancialRatiosRepository;
     private final ScreenerMasterRepository screenerMasterRepository;
+    private final ScreenerNewsSentimentRepository screenerNewsSentimentRepository;
     private final ScreenerUndervaluedRepository screenerUndervaluedRepository;
     private final ScreenerQualityCompoundersRepository screenerQualityCompoundersRepository;
     private final ScreenerGrahamDeepValueRepository screenerGrahamDeepValueRepository;
@@ -165,6 +166,15 @@ public class CompanyServiceImpl implements CompanyService {
                 .stream()
                 .map(ScreenerMasterDto::fromEntity)
                 .sorted(Comparator.comparing(ScreenerMasterDto::qualityRank, Comparator.nullsLast(Comparator.naturalOrder())))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ScreenerNewsSentimentDto> getNewsSentimentScreener() {
+        return screenerNewsSentimentRepository.findAll()
+                .stream()
+                .map(ScreenerNewsSentimentDto::fromEntity)
+                .sorted(Comparator.comparing(ScreenerNewsSentimentDto::newsSentiment30d, Comparator.nullsLast(Comparator.reverseOrder())))
                 .collect(Collectors.toList());
     }
 

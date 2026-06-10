@@ -1,10 +1,10 @@
 package com.oraculum.company.api.dto;
 
-import com.oraculum.company.domain.ScreenerMasterEntity;
+import com.oraculum.company.domain.ScreenerNewsSentimentEntity;
 
 import java.time.LocalDate;
 
-public record ScreenerMasterDto(
+public record ScreenerNewsSentimentDto(
         LocalDate tradeDate,
         int companyId,
         String ticker,
@@ -23,16 +23,22 @@ public record ScreenerMasterDto(
         Integer piotroskiFScore,
         Float qualityScore,
         String compositeSignal,
-        Long qualityRank,
-        Long valueRank,
-        Long fscoreRank,
-        Float newsSentimentScore,
-        String newsSentimentLabel,
-        Integer newsCount30d
+        Integer newsCount7d,
+        Float newsSentiment7d,
+        Float avgRelevance7d,
+        String newsSentimentLabel7d,
+        Integer newsCount14d,
+        Float newsSentiment14d,
+        Float avgRelevance14d,
+        String newsSentimentLabel14d,
+        Integer newsCount30d,
+        Float newsSentiment30d,
+        Float avgRelevance30d,
+        String newsSentimentLabel30d
 ) {
-    public static ScreenerMasterDto fromEntity(ScreenerMasterEntity entity) {
+    public static ScreenerNewsSentimentDto fromEntity(ScreenerNewsSentimentEntity entity) {
         if (entity == null) return null;
-        return new ScreenerMasterDto(
+        return new ScreenerNewsSentimentDto(
                 entity.getTradeDate(),
                 entity.getCompanyId(),
                 entity.getTicker(),
@@ -51,12 +57,18 @@ public record ScreenerMasterDto(
                 entity.getPiotroskiFScore(),
                 entity.getQualityScore(),
                 entity.getCompositeSignal(),
-                entity.getQualityRank(),
-                entity.getValueRank(),
-                entity.getFscoreRank(),
-                entity.getNewsSentimentScore(),
-                entity.getNewsSentimentLabel(),
-                entity.getNewsCount30d()
+                entity.getNewsCount7d(),
+                entity.getNewsSentiment7d(),
+                entity.getAvgRelevance7d(),
+                entity.getNewsSentimentLabel7d(),
+                entity.getNewsCount14d(),
+                entity.getNewsSentiment14d(),
+                entity.getAvgRelevance14d(),
+                entity.getNewsSentimentLabel14d(),
+                entity.getNewsCount30d(),
+                entity.getNewsSentiment30d(),
+                entity.getAvgRelevance30d(),
+                entity.getNewsSentimentLabel30d()
         );
     }
 }
