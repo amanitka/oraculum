@@ -1,5 +1,6 @@
 package com.oraculum.ui.views;
 
+import com.oraculum.database.api.event.RefreshMaterializedViewsEvent;
 import com.oraculum.harvester.api.HarvesterRequestApi;
 import com.oraculum.ui.MainLayout;
 import com.vaadin.flow.component.Component;
@@ -18,6 +19,8 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteAlias;
 import com.vaadin.flow.theme.lumo.LumoUtility;
+import org.springframework.context.ApplicationEventPublisher;
+
 
 @Route(value = "refresh", layout = MainLayout.class)
 @RouteAlias(value = "", layout = MainLayout.class)
@@ -25,9 +28,11 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 public class RefreshView extends VerticalLayout {
 
     private final HarvesterRequestApi harvesterRequestApi;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public RefreshView(HarvesterRequestApi harvesterRequestApi) {
+    public RefreshView(HarvesterRequestApi harvesterRequestApi, ApplicationEventPublisher eventPublisher) {
         this.harvesterRequestApi = harvesterRequestApi;
+        this.eventPublisher = eventPublisher;
 
         // 1. Configure the main view to take full space and center its contents
         setSizeFull();
@@ -99,6 +104,10 @@ public class RefreshView extends VerticalLayout {
                 harvesterRequestApi::refreshFundamentals));
 
         grid.add(createSharePriceRefreshTile());
+
+        grid.add(createSimpleActionTile("Materialized Views",
+                "Rebuilds all materialized views and refreshes screener cache. Runs asynchronously.",
+                () -> eventPublisher.publishEvent(new RefreshMaterializedViewsEvent())));
 
         grid.add(createSimpleActionTile("News & Sentiment",
                 "Refreshes recent news articles and sentiment data.",

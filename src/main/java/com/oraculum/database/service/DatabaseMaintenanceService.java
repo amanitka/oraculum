@@ -1,6 +1,5 @@
 package com.oraculum.database.service;
 
-import com.oraculum.database.api.DatabaseApi;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -10,7 +9,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class DatabaseMaintenanceService implements DatabaseApi {
+public class DatabaseMaintenanceService {
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -47,16 +46,17 @@ public class DatabaseMaintenanceService implements DatabaseApi {
         }
     }
 
-    @Override
     public void refreshMaterializedViews() {
-        log.info("Starting refresh of materialized views...");
+        log.info("Starting refresh of materialized views from event...");
         try {
+            log.info("Refreshing materialized view mv_company_financial_ratios");
             jdbcTemplate.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY mv_company_financial_ratios");
+            log.info("Updating statistics for materialized view mv_company_financial_ratios");
             jdbcTemplate.execute("ANALYZE mv_company_financial_ratios");
-
+            log.info("Refreshing materialized view mv_share_price_signals_recent");
             jdbcTemplate.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY mv_share_price_signals_recent");
+            log.info("Updating statistics for materialized view mv_share_price_signals_recent");
             jdbcTemplate.execute("ANALYZE mv_share_price_signals_recent");
-
             log.info("Materialized views refresh & statistics update completed successfully.");
         } catch (Exception e) {
             log.error("Materialized views refresh failed", e);
