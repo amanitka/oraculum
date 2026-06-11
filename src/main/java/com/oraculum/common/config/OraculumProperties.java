@@ -53,6 +53,21 @@ public record OraculumProperties(Data data,
         }
     }
 
-    public record Harvester(String exportPath) {
+    public record Harvester(String exportPath,
+                            ExportCleanup exportCleanup) {
+        public Harvester {
+            exportPath = exportPath != null ? exportPath : "./data/harvester";
+            exportCleanup = exportCleanup != null ? exportCleanup : new ExportCleanup(true, 1, "0 0 2 * * *");
+        }
+
+        public record ExportCleanup(Boolean enabled,
+                                    Integer retentionDays,
+                                    String cron) {
+            public ExportCleanup {
+                enabled = enabled != null ? enabled : true;
+                retentionDays = retentionDays != null && retentionDays > 0 ? retentionDays : 1;
+                cron = cron != null ? cron : "0 0 2 * * *";
+            }
+        }
     }
 }
