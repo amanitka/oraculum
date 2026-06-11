@@ -16,6 +16,14 @@ Your task is to:
 3. **Analyze Historical Trend**: Compare the current state (momentum and valuation) to the 10-year baseline in `monthly_share_price_signals`. Is the current situation an anomaly or part of a long-term trend? Write a `historical_trend_analysis` paragraph.
 4. **Summarize Key Signals**: Identify the most critical technical or valuation signals (e.g., "Trading 50% below 200 SMA," "P/E at 10-year low," "Extreme volume spike"). Provide a one-sentence `key_signals_summary`.
 
+### CORE ANALYSIS FOCUS
+Pay special attention to this thesis passed from the Planner:
+{{ analysis_focus }}
+
+### DATA DICTIONARY
+- **quality_score**: A 0-100 score of fundamental strength. >70 is high quality.
+- **piotroski_f_score**: A 0-9 scale measuring financial trend improvement. >=7 is very healthy.
+
 You MUST respond with valid JSON using exactly this schema:
 {
   "momentum_analysis": "string",

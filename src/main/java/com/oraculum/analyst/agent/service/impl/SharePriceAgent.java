@@ -36,6 +36,7 @@ public class SharePriceAgent implements Agent<SharePriceAgentOutput> {
         CompanyFactSheetData factSheet = ctx.factSheetData();
 
         String prompt = promptRegistry.getPrompt(PromptType.SHARE_PRICE)
+                .replace("{{ analysis_focus }}", ctx.analysisFocus() != null ? ctx.analysisFocus() : "Standard comprehensive analysis.")
                 .replace("{{ daily_share_price_signals }}", factSheet.getDailySharePriceSignals())
                 .replace("{{ monthly_share_price_signals }}", factSheet.getMonthlySharePriceSignals());
 
@@ -45,7 +46,7 @@ public class SharePriceAgent implements Agent<SharePriceAgentOutput> {
                 ctx.analysisDate());
 
         String fullPrompt = prompt + "\n" + userPrompt;
-        LlmResponse<SharePriceAgentOutput> response = llmRouterApi.executeCall(LlmTierType.MINI,
+        LlmResponse<SharePriceAgentOutput> response = llmRouterApi.executeCall(LlmTierType.STANDARD,
                 fullPrompt,
                 SharePriceAgentOutput.class);
 

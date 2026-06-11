@@ -35,7 +35,7 @@ public class PlannerAgent implements Agent<PlannerPlan> {
     @Override
     public AgentOutput<PlannerPlan> run(AgentContext ctx) {
         String prompt = systemPrompt.replace("{{ daily_share_price_signals }}",
-                        ctx.factSheetData().getDailySharePriceSignals())
+                        ctx.factSheetData().getDailySharePriceSignalsForPlanner())
                 .replace("{{ company_profile }}", ctx.factSheetData().getCompanyProfile());
 
         String userMessage = String.format("Analyze %s and determine the plan.", ctx.ticker());

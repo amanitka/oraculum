@@ -40,7 +40,10 @@ public class CriticAgent implements Agent<CriticAgentOutput> {
         Map<AgentType, Object> specialistOutputs = ctx.getSpecialistAgentOutputs();
         String priorOutputsJson = JsonUtils.toJson(objectMapper, specialistOutputs, "{}");
 
-        String prompt = promptRegistry.getPrompt(PromptType.CRITIC).replace("{{ prior_outputs }}", priorOutputsJson);
+        String prompt = promptRegistry.getPrompt(PromptType.CRITIC)
+                .replace("{{ analysis_focus }}", ctx.analysisFocus() != null ? ctx.analysisFocus() : "Standard comprehensive analysis.")
+                .replace("{{ algorithmic_baseline }}", ctx.factSheetData().getAlgorithmicBaselineJson())
+                .replace("{{ prior_outputs }}", priorOutputsJson);
 
         String userPrompt = String.format(
                 "Critique the analysis for %s. Identify any contradictions between the provided agent summaries.",

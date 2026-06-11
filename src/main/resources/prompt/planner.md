@@ -18,6 +18,13 @@ You MUST respond with a valid JSON object matching this schema exactly:
   "analysis_focus": "string (one sentence highlighting the most important current market signal)"
 }
 
+### DATA DICTIONARY
+- **quality_score**: A 0-100 score of fundamental strength (profitability, growth, safety). >70 is high quality.
+- **piotroski_f_score**: A 0-9 scale measuring financial trend improvement. >=7 is very healthy.
+
+### IMPORTANT NOTE ON `analysis_focus`
+The `analysis_focus` you output will be passed directly into the prompts of downstream specialist agents (Fundamentals, Valuation, Risk, etc.) as the core thesis to investigate. Make it sharp, directional, and specific to the current data (e.g., "The stock is trading at a 10-year low P/E with improving Piotroski scores; investigate if this is a value trap or a deep value opportunity.").
+
 ### RULES
 - Do not include markdown, code fences, or any explanatory text.
 - Respond with nothing but the JSON object.

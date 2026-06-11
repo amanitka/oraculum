@@ -53,6 +53,8 @@ public class SynthesizerAgent implements Agent<SynthesizerAgentOutput> {
         String criticOutputJson = JsonUtils.toJson(objectMapper, criticOutput, "{}");
 
         String prompt = promptRegistry.getPrompt(PromptType.SYNTHESIZER)
+                .replace("{{ analysis_focus }}", ctx.analysisFocus() != null ? ctx.analysisFocus() : "Standard comprehensive analysis.")
+                .replace("{{ algorithmic_baseline }}", ctx.factSheetData().getAlgorithmicBaselineJson())
                 .replace("{{ specialist_output }}", specialistOutputJson)
                 .replace("{{ critic_output }}", criticOutputJson);
 

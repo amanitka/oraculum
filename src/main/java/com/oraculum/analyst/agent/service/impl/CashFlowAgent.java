@@ -38,6 +38,7 @@ public class CashFlowAgent implements Agent<CashFlowAgentOutput> {
         StatementVariant variant = ctx.getVariantFor(getName());
 
         String prompt = promptRegistry.getPrompt(PromptType.CASH_FLOW)
+                .replace("{{ analysis_focus }}", ctx.analysisFocus() != null ? ctx.analysisFocus() : "Standard comprehensive analysis.")
                 .replace("{{ cash_flow_history }}", factSheet.getCashFlowHistory(variant))
                 .replace("{{ company_financial_ratios }}", factSheet.getCompanyFinancialRatios(variant));
 
@@ -48,7 +49,7 @@ public class CashFlowAgent implements Agent<CashFlowAgentOutput> {
 
         String fullPrompt = prompt + "\n" + userPrompt;
 
-        LlmResponse<CashFlowAgentOutput> response = llmRouterApi.executeCall(LlmTierType.MINI,
+        LlmResponse<CashFlowAgentOutput> response = llmRouterApi.executeCall(LlmTierType.STANDARD,
                 fullPrompt,
                 CashFlowAgentOutput.class);
 

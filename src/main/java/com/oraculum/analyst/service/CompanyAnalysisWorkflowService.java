@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -78,6 +79,7 @@ public class CompanyAnalysisWorkflowService {
                 request.statementVariant(),
                 null,
                 analystProperties.tokenBudget(),
+                null,
                 new EnumMap<>(AgentType.class));
         try {
             log.info("Starting Planner phase");
@@ -94,9 +96,10 @@ public class CompanyAnalysisWorkflowService {
                     request.statementVariant(),
                     getAgentStatementVariants(request, plan),
                     analystProperties.tokenBudget(),
+                    plan.getAnalysisFocus(),
                     new EnumMap<>(AgentType.class));
 
-            List<Agent<?>> specialists = java.util.Arrays.stream(AgentType.values())
+            List<Agent<?>> specialists = Arrays.stream(AgentType.values())
                     .filter(AgentType::isSpecialist)
                     .sorted(java.util.Comparator.comparingInt(AgentType::getExecutionOrder))
                     .map(agents::get)

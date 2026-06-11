@@ -13,7 +13,17 @@ Your task is to:
 3.  **Formulate Summaries**:
     *   Write a `growth_analysis` paragraph detailing the company's top-line and bottom-line growth trends.
     *   Write a `profitability_analysis` paragraph assessing the company's profitability and efficiency.
+    *   Write a `quality_signals` paragraph interpreting specific quality markers like `piotroski_f_score`, `margin_expansion_signal`, and `positive_earnings_streak`.
     *   Provide a final one-sentence `summary` of the company's overall fundamental health.
+
+### CORE ANALYSIS FOCUS
+Pay special attention to this thesis passed from the Planner:
+{{ analysis_focus }}
+
+### DATA DICTIONARY
+- **piotroski_f_score**: A 0-9 scale measuring financial trend improvement. >=7 is very healthy.
+- **margin_expansion_signal**: 1 if gross, operating, and net margins are all simultaneously expanding year-over-year.
+- **streaks**: Consecutive periods of positive cash flows (`positive_fcf_streak`) or earnings (`positive_earnings_streak`).
 
 Do not hallucinate data. Your analysis must be based strictly on the provided JSON data.
 
@@ -21,6 +31,7 @@ You MUST respond with valid JSON using exactly this schema:
 {
   "growth_analysis": "string",
   "profitability_analysis": "string",
+  "quality_signals": "string",
   "summary": "string"
 }
 

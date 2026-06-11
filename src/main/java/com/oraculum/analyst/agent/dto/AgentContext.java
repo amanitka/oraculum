@@ -18,6 +18,7 @@ public record AgentContext(CompanyDto company,
                            StatementVariant defaultStatementVariant,
                            Map<AgentType, StatementVariant> statementVariants,
                            int tokenBudget,
+                           String analysisFocus,
                            Map<AgentType, Object> agentOutputs) {
 
     public String ticker() {

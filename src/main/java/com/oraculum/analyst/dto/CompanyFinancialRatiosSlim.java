@@ -1,0 +1,65 @@
+package com.oraculum.analyst.dto;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.oraculum.company.api.dto.CompanyFinancialRatiosDto;
+
+import java.time.LocalDate;
+
+public record CompanyFinancialRatiosSlim(
+        @JsonProperty("fiscal_year") int fiscalYear,
+        @JsonProperty("fiscal_period") String fiscalPeriod,
+        @JsonProperty("report_date") LocalDate reportDate,
+        @JsonProperty("revenue") Float revenue,
+        @JsonProperty("net_income") Float netIncome,
+        @JsonProperty("ebitda") Float ebitda,
+        @JsonProperty("free_cash_flow") Float freeCashFlow,
+        @JsonProperty("return_on_equity") Float returnOnEquity,
+        @JsonProperty("net_margin") Float netMargin,
+        @JsonProperty("gross_margin") Float grossMargin,
+        @JsonProperty("operating_margin") Float operatingMargin,
+        @JsonProperty("fcf_margin") Float fcfMargin,
+        @JsonProperty("revenue_yoy_growth") Float revenueYoyGrowth,
+        @JsonProperty("net_income_yoy_growth") Float netIncomeYoyGrowth,
+        @JsonProperty("eps_yoy_growth") Float epsYoyGrowth,
+        @JsonProperty("ebitda_yoy_growth") Float ebitdaYoyGrowth,
+        @JsonProperty("fcf_yoy_growth") Float fcfYoyGrowth,
+        @JsonProperty("piotroski_f_score") Integer piotroskiFScore,
+        @JsonProperty("margin_expansion_signal") Integer marginExpansionSignal,
+        @JsonProperty("earnings_quality_ratio") Float earningsQualityRatio,
+        @JsonProperty("is_cash_earnings") Integer isCashEarnings,
+        @JsonProperty("is_negative_equity") Integer isNegativeEquity,
+        @JsonProperty("revenue_growth_streak") Integer revenueGrowthStreak,
+        @JsonProperty("positive_fcf_streak") Integer positiveFcfStreak,
+        @JsonProperty("positive_earnings_streak") Integer positiveEarningsStreak
+) {
+    public static CompanyFinancialRatiosSlim from(CompanyFinancialRatiosDto dto) {
+        if (dto == null) return null;
+        return new CompanyFinancialRatiosSlim(
+                dto.fiscalYear(),
+                dto.fiscalPeriod(),
+                dto.reportDate(),
+                dto.revenue(),
+                dto.netIncome(),
+                dto.ebitda(),
+                dto.freeCashFlow(),
+                dto.returnOnEquity(),
+                dto.netMargin(),
+                dto.grossMargin(),
+                dto.operatingMargin(),
+                dto.fcfMargin(),
+                dto.revenueYoyGrowth(),
+                dto.netIncomeYoyGrowth(),
+                dto.epsYoyGrowth(),
+                dto.ebitdaYoyGrowth(),
+                dto.fcfYoyGrowth(),
+                dto.piotroskiFScore(),
+                dto.marginExpansionSignal(),
+                dto.earningsQualityRatio(),
+                dto.isCashEarnings(),
+                dto.isNegativeEquity(),
+                dto.revenueGrowthStreak(),
+                dto.positiveFcfStreak(),
+                dto.positiveEarningsStreak()
+        );
+    }
+}

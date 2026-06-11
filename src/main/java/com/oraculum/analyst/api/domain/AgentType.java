@@ -14,8 +14,7 @@ public enum AgentType {
     CASH_FLOW("CashFlow", true, 2),
     VALUATION("Valuation", true, 3),
     SHARE_PRICE("SharePrice", true, 4),
-    SYNTHESIZER("Synthesizer", false, -1),
-    NEWS_SUMMARY("NewsSummary", false, -1);
+    SYNTHESIZER("Synthesizer", false, -1);
 
     private final String agentName;
     private final boolean specialist;

@@ -42,6 +42,7 @@ public class CompanyServiceImpl implements CompanyService {
     private final ScreenerQualityCompoundersRepository screenerQualityCompoundersRepository;
     private final ScreenerGrahamDeepValueRepository screenerGrahamDeepValueRepository;
     private final ScreenerPiotroskiRepository screenerPiotroskiRepository;
+    private final TickerNewsSentimentRepository tickerNewsSentimentRepository;
 
     @Override
     public CompanyDto getCompanyById(int companyId) {
@@ -90,6 +91,11 @@ public class CompanyServiceImpl implements CompanyService {
                 .map(t -> NewsTickerDto.from(newsById.get(t.getNewsId()), t))
                 .sorted(Comparator.comparing(NewsTickerDto::timePublished).reversed()) // Sort by timePublished descending
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public Optional<TickerNewsSentimentDto> getNewsSentimentByTicker(String ticker) {
+        return tickerNewsSentimentRepository.findByTicker(ticker).map(TickerNewsSentimentDto::fromEntity);
     }
 
     @Override

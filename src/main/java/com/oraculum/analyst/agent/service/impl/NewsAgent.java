@@ -54,8 +54,10 @@ public class NewsAgent implements Agent<NewsAgentOutput> {
                                                                                                                     "provided";
 
         String systemPrompt = promptRegistry.getPrompt(PromptType.NEWS)
+                .replace("{{ analysis_focus }}", ctx.analysisFocus() != null ? ctx.analysisFocus() : "Standard comprehensive analysis.")
                 .replace("{{ relevance_score_definition }}", relevanceDef)
                 .replace("{{ sentiment_score_definition }}", sentimentDef)
+                .replace("{{ news_sentiment_aggregate }}", ctx.factSheetData().getNewsSentimentAggregate())
                 .replace("{{ recent_news }}", newsMarkdown);
 
         String userPrompt = String.format("Analyze the recent news and sentiment for %s as of %s based on the provided data.",
@@ -63,7 +65,7 @@ public class NewsAgent implements Agent<NewsAgentOutput> {
                 ctx.analysisDate());
         String fullPrompt = systemPrompt + "\n" + userPrompt;
 
-        LlmResponse<NewsAgentOutput> response = llmRouterApi.executeCall(LlmTierType.MINI, fullPrompt, NewsAgentOutput.class);
+        LlmResponse<NewsAgentOutput> response = llmRouterApi.executeCall(LlmTierType.STANDARD, fullPrompt, NewsAgentOutput.class);
 
         log.info("NewsAgent successfully generated summary for ticker: {}", ctx.ticker());
         return new AgentOutput<>(response.result(), response.metrics().totalTokens());

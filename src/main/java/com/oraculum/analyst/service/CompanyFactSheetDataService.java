@@ -60,6 +60,10 @@ public class CompanyFactSheetDataService {
         return companyApi.getNewsByTicker(company.ticker(), after);
     }
 
+    private TickerNewsSentimentDto getNewsSentiment(CompanyDto company) {
+        return companyApi.getNewsSentimentByTicker(company.ticker()).orElse(null);
+    }
+
     public CompanyFactSheetData create(CompanyDto company) {
         LocalDate factSheetAfter = analystProperties.factSheet().getFactSheetHistoryDate();
 
@@ -75,6 +79,7 @@ public class CompanyFactSheetDataService {
                 .monthlySharePriceSignals(getMonthlySharePriceSignals(company,
                         analystProperties.sharePrice().getMonthlySharePriceHistoryDate()))
                 .recentNews(getNews(company, analystProperties.news().getNewsHistoryDate()))
+                .newsSentimentAggregate(getNewsSentiment(company))
                 .build();
     }
 }

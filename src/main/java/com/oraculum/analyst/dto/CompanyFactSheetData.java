@@ -26,6 +26,7 @@ public class CompanyFactSheetData {
     private final List<SharePriceSignalDto> dailySharePriceSignals;
     private final List<SharePriceSignalDto> monthlySharePriceSignals;
     private final List<NewsTickerDto> recentNews;
+    private final TickerNewsSentimentDto newsSentimentAggregate;
     // Lazy loaded stuff
     private String companyProfileCache;
     @Builder.Default
@@ -33,6 +34,7 @@ public class CompanyFactSheetData {
     private String dailySharePriceSignalsCache;
     private String monthlySharePriceSignalsCache;
     private String recentNewsCache;
+    private String newsSentimentAggregateCache;
 
     public String getCompanyProfile() {
         if (companyProfileCache == null) {
@@ -64,7 +66,14 @@ public class CompanyFactSheetData {
 
     public String getCompanyFinancialRatios(StatementVariant variant) {
         return companyFinancialRatiosCache.computeIfAbsent(variant,
-                _ -> JsonUtils.toJson(objectMapper, companyFinancialRatios.get(variant), "[]"));
+                _ -> {
+                    List<CompanyFinancialRatiosDto> dtos = companyFinancialRatios.get(variant);
+                    if (dtos == null) return "[]";
+                    List<CompanyFinancialRatiosSlim> slimDtos = dtos.stream()
+                            .map(CompanyFinancialRatiosSlim::from)
+                            .collect(Collectors.toList());
+                    return JsonUtils.toJson(objectMapper, slimDtos, "[]");
+                });
     }
 
     public String getDailySharePriceSignals() {
@@ -74,9 +83,24 @@ public class CompanyFactSheetData {
         return dailySharePriceSignalsCache;
     }
 
+    public String getDailySharePriceSignalsForPlanner() {
+        if (dailySharePriceSignals == null) return "[]";
+        List<PlannerSharePriceInput> slim = dailySharePriceSignals.stream()
+                .map(PlannerSharePriceInput::from)
+                .collect(Collectors.toList());
+        return JsonUtils.toJson(objectMapper, slim, "[]");
+    }
+
     public String getMonthlySharePriceSignals() {
         if (monthlySharePriceSignalsCache == null) {
-            monthlySharePriceSignalsCache = JsonUtils.toJson(objectMapper, monthlySharePriceSignals, "[]");
+            if (monthlySharePriceSignals == null) {
+                monthlySharePriceSignalsCache = "[]";
+            } else {
+                List<SharePriceAgentMonthlyEntry> slim = monthlySharePriceSignals.stream()
+                        .map(SharePriceAgentMonthlyEntry::from)
+                        .collect(Collectors.toList());
+                monthlySharePriceSignalsCache = JsonUtils.toJson(objectMapper, slim, "[]");
+            }
         }
         return monthlySharePriceSignalsCache;
     }
@@ -90,5 +114,24 @@ public class CompanyFactSheetData {
 
     public List<NewsTickerDto> getRecentNewsList() {
         return recentNews;
+    }
+
+    public List<SharePriceSignalDto> getDailySharePriceSignalsList() {
+        return dailySharePriceSignals;
+    }
+
+    public String getNewsSentimentAggregate() {
+        if (newsSentimentAggregateCache == null) {
+            newsSentimentAggregateCache = JsonUtils.toJson(objectMapper, newsSentimentAggregate, "{}");
+        }
+        return newsSentimentAggregateCache;
+    }
+
+    public String getAlgorithmicBaselineJson() {
+        if (dailySharePriceSignals == null || dailySharePriceSignals.isEmpty()) {
+            return "{}";
+        }
+        AlgorithmicBaselineDto baseline = AlgorithmicBaselineDto.from(dailySharePriceSignals.getFirst());
+        return JsonUtils.toJson(objectMapper, baseline, "{}");
     }
 }

@@ -26,6 +26,8 @@ public interface CompanyApi {
 
     List<NewsTickerDto> getNewsByTicker(String ticker, LocalDate after);
 
+    Optional<TickerNewsSentimentDto> getNewsSentimentByTicker(String ticker);
+
     List<BalanceSheetDto> getBalanceSheetsByCompanyId(int companyId, LocalDate after);
 
     List<CashFlowStatementDto> getCashFlowStatementsByCompanyId(int companyId, LocalDate after);

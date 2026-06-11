@@ -5,7 +5,6 @@ import lombok.Getter;
 @Getter
 public enum PromptType {
     PLANNER("/prompt/planner.md"),
-    FACTSHEET("/prompt/factsheet.md"),
     NEWS("/prompt/news.md"),
     RISK("/prompt/risk.md"),
     CRITIC("/prompt/critic.md"),
@@ -13,8 +12,7 @@ public enum PromptType {
     VALUATION("/prompt/valuation.md"),
     SHARE_PRICE("/prompt/share_price.md"),
     SYNTHESIZER("/prompt/synthesizer.md"),
-    FUNDAMENTALS("/prompt/fundamentals.md"),
-    NEWS_SUMMARY("/prompt/news_summary.md");
+    FUNDAMENTALS("/prompt/fundamentals.md");
 
     private final String path;
 

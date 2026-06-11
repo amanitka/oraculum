@@ -38,6 +38,7 @@ public class FundamentalsAgent implements Agent<FundamentalsAgentOutput> {
         StatementVariant variant = ctx.getVariantFor(getName());
 
         String prompt = promptRegistry.getPrompt(PromptType.FUNDAMENTALS)
+                .replace("{{ analysis_focus }}", ctx.analysisFocus() != null ? ctx.analysisFocus() : "Standard comprehensive analysis.")
                 .replace("{{ income_statement_history }}", factSheet.getIncomeStatementHistory(variant))
                 .replace("{{ balance_sheet_history }}", factSheet.getBalanceSheetHistory(variant))
                 .replace("{{ company_financial_ratios }}", factSheet.getCompanyFinancialRatios(variant));
@@ -49,7 +50,7 @@ public class FundamentalsAgent implements Agent<FundamentalsAgentOutput> {
 
         String fullPrompt = prompt + "\n" + userPrompt;
 
-        LlmResponse<FundamentalsAgentOutput> response = llmRouterApi.executeCall(LlmTierType.MINI,
+        LlmResponse<FundamentalsAgentOutput> response = llmRouterApi.executeCall(LlmTierType.STANDARD,
                 fullPrompt,
                 FundamentalsAgentOutput.class);
 

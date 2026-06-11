@@ -37,9 +37,14 @@ public class ValuationAgent implements Agent<ValuationAgentOutput> {
         CompanyFactSheetData factSheet = ctx.factSheetData();
         StatementVariant variant = ctx.getVariantFor(getName());
 
+        String recentDailyJson = ctx.factSheetData().getDailySharePriceSignalsList() == null ? "[]" :
+                com.oraculum.analyst.util.JsonUtils.toJson(new tools.jackson.databind.ObjectMapper(),
+                        ctx.factSheetData().getDailySharePriceSignalsList().stream().limit(5).collect(java.util.stream.Collectors.toList()), "[]");
+
         String prompt = promptRegistry.getPrompt(PromptType.VALUATION)
+                .replace("{{ analysis_focus }}", ctx.analysisFocus() != null ? ctx.analysisFocus() : "Standard comprehensive analysis.")
                 .replace("{{ company_financial_ratios }}", factSheet.getCompanyFinancialRatios(variant))
-                .replace("{{ daily_share_price_signals }}", factSheet.getDailySharePriceSignals());
+                .replace("{{ daily_share_price_signals }}", recentDailyJson);
 
         String userPrompt = String.format(
                 "Analyze the valuation for %s as of %s based on the provided financial fact sheet.",
@@ -48,7 +53,7 @@ public class ValuationAgent implements Agent<ValuationAgentOutput> {
 
         String fullPrompt = prompt + "\n" + userPrompt;
 
-        LlmResponse<ValuationAgentOutput> response = llmRouterApi.executeCall(LlmTierType.MINI,
+        LlmResponse<ValuationAgentOutput> response = llmRouterApi.executeCall(LlmTierType.STANDARD,
                 fullPrompt,
                 ValuationAgentOutput.class);
 
