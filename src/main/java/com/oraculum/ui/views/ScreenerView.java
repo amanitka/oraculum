@@ -2,6 +2,8 @@ package com.oraculum.ui.views;
 
 import com.oraculum.analyst.api.dto.CompanyAnalysisRequest;
 import com.oraculum.company.api.CompanyApi;
+import com.oraculum.company.api.domain.CompanySize;
+import com.oraculum.company.api.dto.NewsTickerDto;
 import com.oraculum.company.api.dto.ScreenerDto;
 import com.oraculum.company.api.dto.ScreenerMasterDto;
 import com.oraculum.company.api.dto.ScreenerNewsSentimentDto;
@@ -15,10 +17,7 @@ import com.vaadin.flow.component.grid.GridMultiSelectionModel;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.grid.HeaderRow;
 import com.vaadin.flow.component.grid.dataview.GridListDataView;
-import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.H3;
-import com.vaadin.flow.component.html.Paragraph;
-import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -193,7 +192,9 @@ public class ScreenerView extends VerticalLayout {
         nameCol.setTooltipGenerator(ScreenerMasterDto::description);
 
         grid.addColumn(ScreenerMasterDto::sectorName).setHeader("Sector").setAutoWidth(true).setKey("sector").setSortable(true);
-        grid.addColumn(ScreenerMasterDto::companySize).setHeader("Size").setAutoWidth(true).setKey("size").setSortable(true);
+        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.sizeBadge(item.companySize())))
+                .setHeader("Size").setAutoWidth(true).setKey("size")
+                .setComparator(java.util.Comparator.comparing(ScreenerMasterDto::companySize, java.util.Comparator.nullsLast(CompanySize::compareTo)));
 
         grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.signalBadge(item.compositeSignal()))).setHeader("Signal").setAutoWidth(true).setKey("signal")
                 .setComparator(java.util.Comparator.comparing(ScreenerMasterDto::compositeSignal, java.util.Comparator.nullsLast(String::compareTo)));
@@ -247,10 +248,10 @@ public class ScreenerView extends VerticalLayout {
                 .setComparator(java.util.Comparator.comparing(ScreenerNewsSentimentDto::newsSentiment30d, java.util.Comparator.nullsLast(Float::compareTo)));
 
         grid.addColumn(item -> String.format("%d / %d / %d",
-                item.newsCount7d() != null ? item.newsCount7d() : 0,
-                item.newsCount14d() != null ? item.newsCount14d() : 0,
-                item.newsCount30d() != null ? item.newsCount30d() : 0))
-                .setHeader("News Coverage (7D/14D/30D)").setAutoWidth(true);
+                        item.newsCount7d() != null ? item.newsCount7d() : 0,
+                        item.newsCount14d() != null ? item.newsCount14d() : 0,
+                        item.newsCount30d() != null ? item.newsCount30d() : 0))
+                .setHeader("News Coverage (7D/14D/30D)").setAutoWidth(true).setSortable(true);
 
         grid.addColumn(item -> item.avgRelevance14d() != null ? String.format(Locale.US, "%.0f%%", item.avgRelevance14d() * 100) : "-")
                 .setHeader("Avg Relevance (14D)").setAutoWidth(true).setSortable(true);
@@ -270,20 +271,20 @@ public class ScreenerView extends VerticalLayout {
             layout.getStyle().set("border-radius", "8px");
             layout.getStyle().set("margin", "0.5rem");
 
-            com.vaadin.flow.component.html.H4 header = new com.vaadin.flow.component.html.H4("Recent News Coverage for " + item.companyName());
+            H4 header = new H4("Recent News Coverage for " + item.companyName());
             header.addClassNames(LumoUtility.Margin.Top.NONE, LumoUtility.Margin.Bottom.SMALL);
             layout.add(header);
 
-            List<com.oraculum.company.api.dto.NewsTickerDto> newsList = companyApi.getNewsByTicker(item.ticker(), LocalDate.now().minusDays(14));
+            List<NewsTickerDto> newsList = companyApi.getNewsByTicker(item.ticker(), LocalDate.now().minusDays(14));
             if (newsList.isEmpty()) {
                 layout.add(new Paragraph("No individual news articles found in the last 14 days."));
             } else {
-                for (com.oraculum.company.api.dto.NewsTickerDto news : newsList) {
+                for (NewsTickerDto news : newsList) {
                     VerticalLayout articleBox = new VerticalLayout();
                     articleBox.setPadding(false);
                     articleBox.setSpacing(false);
                     articleBox.addClassNames(LumoUtility.Padding.Vertical.XSMALL);
-                    
+
                     HorizontalLayout titleRow = new HorizontalLayout();
                     titleRow.setWidthFull();
                     titleRow.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
@@ -291,9 +292,9 @@ public class ScreenerView extends VerticalLayout {
 
                     Span headline = new Span(news.title());
                     headline.addClassNames(LumoUtility.FontWeight.BOLD, LumoUtility.TextColor.PRIMARY);
-                    
+
                     Span scoreBadge = ViewHelper.newsSentimentBadge(news.tickerSentimentLabel(), news.tickerSentimentScore());
-                    
+
                     titleRow.add(headline, scoreBadge);
 
                     Paragraph meta = new Paragraph(String.format("Source: %s | Published: %s | Relevance: %.0f%%",
@@ -306,12 +307,12 @@ public class ScreenerView extends VerticalLayout {
                     summary.addClassNames(LumoUtility.TextColor.BODY, LumoUtility.FontSize.SMALL, LumoUtility.Margin.Top.NONE);
 
                     articleBox.add(titleRow, meta, summary);
-                    
+
                     Div divider = new Div();
                     divider.setHeight("1px");
                     divider.setWidthFull();
                     divider.addClassName(LumoUtility.Background.CONTRAST_10);
-                    
+
                     layout.add(articleBox, divider);
                 }
             }
@@ -337,7 +338,9 @@ public class ScreenerView extends VerticalLayout {
         nameCol.setTooltipGenerator(ScreenerDto::description);
 
         grid.addColumn(ScreenerDto::sectorName).setHeader("Sector").setAutoWidth(true).setKey("sector").setSortable(true);
-        grid.addColumn(ScreenerDto::companySize).setHeader("Size").setAutoWidth(true).setKey("size").setSortable(true);
+        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.sizeBadge(item.companySize())))
+                .setHeader("Size").setAutoWidth(true).setKey("size")
+                .setComparator(java.util.Comparator.comparing(ScreenerDto::companySize, java.util.Comparator.nullsLast(CompanySize::compareTo)));
 
         grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.signalBadge(item.compositeSignal()))).setHeader("Signal").setAutoWidth(true).setKey("signal")
                 .setComparator(java.util.Comparator.comparing(ScreenerDto::compositeSignal, java.util.Comparator.nullsLast(String::compareTo)));
@@ -399,17 +402,26 @@ public class ScreenerView extends VerticalLayout {
                 tickerFn = t -> ((ScreenerMasterDto) t).ticker();
                 nameFn = t -> ((ScreenerMasterDto) t).companyName();
                 sectorFn = t -> ((ScreenerMasterDto) t).sectorName();
-                sizeFn = t -> ((ScreenerMasterDto) t).companySize();
+                sizeFn = t -> {
+                    CompanySize size = ((ScreenerMasterDto) t).companySize();
+                    return size != null ? size.getDisplayName() : "";
+                };
             } else if (type == ScreenerNewsSentimentDto.class) {
                 tickerFn = t -> ((ScreenerNewsSentimentDto) t).ticker();
                 nameFn = t -> ((ScreenerNewsSentimentDto) t).companyName();
                 sectorFn = t -> ((ScreenerNewsSentimentDto) t).sectorName();
-                sizeFn = t -> ((ScreenerNewsSentimentDto) t).companySize();
+                sizeFn = t -> {
+                    CompanySize size = ((ScreenerNewsSentimentDto) t).companySize();
+                    return size != null ? size.getDisplayName() : "";
+                };
             } else {
                 tickerFn = t -> ((ScreenerDto) t).ticker();
                 nameFn = t -> ((ScreenerDto) t).companyName();
                 sectorFn = t -> ((ScreenerDto) t).sectorName();
-                sizeFn = t -> ((ScreenerDto) t).companySize();
+                sizeFn = t -> {
+                    CompanySize size = ((ScreenerDto) t).companySize();
+                    return size != null ? size.getDisplayName() : "";
+                };
             }
         }
 

@@ -26,9 +26,6 @@ spring:
     hibernate:
       ddl-auto: none
     show-sql: false
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
 
 vaadin:
   launch-browser: true
@@ -83,7 +80,7 @@ oraculum:
   analyst:
     token-budget: 100000
     cleanup:
-      data-cleanup-cron: "${ORACULUM_DATA_CLEANUP_CRON:0 3 * * *}"
+      data-cleanup-cron: ${ORACULUM_DATA_CLEANUP_CRON:0 3 * * *}
       data-retention-days: ${ORACULUM_DATA_RETENTION_DAYS:3}
     fact-sheet:
       history-limit: 3660
@@ -95,6 +92,10 @@ oraculum:
 
   harvester:
     export-path: ${ORACULUM_HARVESTER_EXPORT_PATH:./data/harvester}
+    export-cleanup:
+      enabled: ${ORACULUM_HARVESTER_EXPORT_CLEANUP_ENABLED:true}
+      retention-days: ${ORACULUM_HARVESTER_EXPORT_RETENTION_DAYS:1}
+      cron: ${ORACULUM_HARVESTER_EXPORT_CLEANUP_CRON:0 0 2 * * *}
 
   llm:
     common:

@@ -1,5 +1,6 @@
 package com.oraculum.company.api.dto;
 
+import com.oraculum.company.api.domain.CompanySize;
 import com.oraculum.company.domain.ScreenerMasterEntity;
 
 import java.time.LocalDate;
@@ -14,7 +15,7 @@ public record ScreenerMasterDto(
         String description,
         String sectorName,
         String industryName,
-        String companySize,
+        CompanySize companySize,
         Float marketCapitalization,
         Float sharePrice,
         Float volumeVelocity,

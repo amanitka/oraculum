@@ -1,5 +1,9 @@
 package com.oraculum.ui;
 
+import com.oraculum.analyst.api.domain.AnalysisOutlook;
+import com.oraculum.analyst.api.domain.AnalysisRecommendation;
+import com.oraculum.analyst.api.domain.AnalysisStatus;
+import com.oraculum.company.api.domain.CompanySize;
 import com.oraculum.company.api.domain.NewsSentimentLabel;
 import com.oraculum.company.api.domain.ScreenerSignal;
 import com.vaadin.flow.component.Component;
@@ -68,13 +72,17 @@ public final class ViewHelper {
     /**
      * Creates a themed badge Span for status values (COMPLETED, FAILED, etc.).
      */
-    public static Span statusBadge(String statusName) {
-        Span badge = new Span(statusName != null ? statusName : "PENDING");
+    public static Span statusBadge(AnalysisStatus status) {
+        String text = status != null ? status.getDisplayName() : "Pending";
+        Span badge = new Span(text);
         String theme = "badge";
-        if (statusName != null) {
-            if (statusName.contains("COMPLETED")) theme += " success";
-            else if (statusName.contains("FAILED")) theme += " error";
-            else theme += " warning";
+        if (status != null) {
+            if (status == AnalysisStatus.COMPLETED) theme += " success";
+            else if (status == AnalysisStatus.FAILED) theme += " error";
+            else if (status == AnalysisStatus.RUNNING) theme += " warning";
+            else theme += " contrast";
+        } else {
+            theme += " contrast";
         }
         badge.getElement().getThemeList().add(theme);
         return badge;
@@ -83,35 +91,35 @@ public final class ViewHelper {
     /**
      * Creates a themed badge Span for outlook values (BULLISH, BEARISH, NEUTRAL).
      */
-    public static Span outlookBadge(String outlookName) {
-        if (outlookName == null) {
-            Span empty = new Span("PENDING");
-            empty.getElement().getThemeList().add("badge contrast");
-            return empty;
-        }
-        Span badge = new Span(outlookName);
+    public static Span outlookBadge(AnalysisOutlook outlook) {
+        String text = outlook != null ? outlook.getDisplayName() : "Pending";
+        Span badge = new Span(text);
         String theme = "badge";
-        if (outlookName.contains("BULLISH")) theme += " success";
-        else if (outlookName.contains("BEARISH")) theme += " error";
-        else theme += " contrast";
+        if (outlook != null) {
+            if (outlook == AnalysisOutlook.BULLISH) theme += " success";
+            else if (outlook == AnalysisOutlook.BEARISH) theme += " error";
+            else theme += " contrast";
+        } else {
+            theme += " contrast";
+        }
         badge.getElement().getThemeList().add(theme);
         return badge;
     }
 
     /**
-     * Creates a themed badge Span for recommendation values (BUY, SELL, HOLD).
+     * Creates a themed badge Span for recommendation values (BUY, SELL, HOLD, NEUTRAL).
      */
-    public static Span recommendationBadge(String recName) {
-        if (recName == null) {
-            Span empty = new Span("PENDING");
-            empty.getElement().getThemeList().add("badge contrast");
-            return empty;
-        }
-        Span badge = new Span(recName);
+    public static Span recommendationBadge(AnalysisRecommendation rec) {
+        String text = rec != null ? rec.getDisplayName() : "Pending";
+        Span badge = new Span(text);
         String theme = "badge";
-        if (recName.contains("BUY")) theme += " success primary";
-        else if (recName.contains("SELL")) theme += " error";
-        else theme += " contrast";
+        if (rec != null) {
+            if (rec == AnalysisRecommendation.BUY) theme += " success primary";
+            else if (rec == AnalysisRecommendation.SELL) theme += " error";
+            else theme += " contrast";
+        } else {
+            theme += " contrast";
+        }
         badge.getElement().getThemeList().add(theme);
         return badge;
     }
@@ -128,6 +136,25 @@ public final class ViewHelper {
             badge.getElement().getThemeList().add("success");
         } else if (signal == ScreenerSignal.AVOID) {
             badge.getElement().getThemeList().add("error");
+        } else {
+            badge.getElement().getThemeList().add("contrast");
+        }
+        return badge;
+    }
+
+    /**
+     * Creates a themed badge for company size values (LARGE, MID, SMALL, MICRO).
+     */
+    public static Span sizeBadge(CompanySize size) {
+        String text = size != null ? size.getDisplayName() : "N/A";
+        Span badge = new Span(text);
+        badge.getElement().getThemeList().add("badge");
+        if (size == CompanySize.LARGE) {
+            badge.getElement().getThemeList().add("primary");
+        } else if (size == CompanySize.MID) {
+            badge.getElement().getThemeList().add("success");
+        } else if (size == CompanySize.SMALL) {
+            badge.getElement().getThemeList().add("warning");
         } else {
             badge.getElement().getThemeList().add("contrast");
         }

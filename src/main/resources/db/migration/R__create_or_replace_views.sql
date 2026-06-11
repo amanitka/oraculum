@@ -453,7 +453,8 @@ SELECT
     news_count_7d,
     ROUND(news_sentiment_7d::numeric, 4) as news_sentiment_7d,
     ROUND(avg_relevance_7d::numeric, 4) as avg_relevance_7d,
-    CASE 
+    CASE
+        WHEN news_sentiment_7d IS NULL THEN 'NO_DATA'
         WHEN news_sentiment_7d <= -0.35 THEN 'BEARISH'
         WHEN news_sentiment_7d <= -0.15 THEN 'SOMEWHAT_BEARISH'
         WHEN news_sentiment_7d < 0.15 THEN 'NEUTRAL'
@@ -465,7 +466,8 @@ SELECT
     news_count_14d,
     ROUND(news_sentiment_14d::numeric, 4) as news_sentiment_14d,
     ROUND(avg_relevance_14d::numeric, 4) as avg_relevance_14d,
-    CASE 
+    CASE
+        WHEN news_sentiment_14d IS NULL THEN 'NO_DATA'
         WHEN news_sentiment_14d <= -0.35 THEN 'BEARISH'
         WHEN news_sentiment_14d <= -0.15 THEN 'SOMEWHAT_BEARISH'
         WHEN news_sentiment_14d < 0.15 THEN 'NEUTRAL'
@@ -477,7 +479,8 @@ SELECT
     news_count_30d,
     ROUND(news_sentiment_30d::numeric, 4) as news_sentiment_30d,
     ROUND(avg_relevance_30d::numeric, 4) as avg_relevance_30d,
-    CASE 
+    CASE
+        WHEN news_sentiment_30d IS NULL THEN 'NO_DATA'
         WHEN news_sentiment_30d <= -0.35 THEN 'BEARISH'
         WHEN news_sentiment_30d <= -0.15 THEN 'SOMEWHAT_BEARISH'
         WHEN news_sentiment_30d < 0.15 THEN 'NEUTRAL'

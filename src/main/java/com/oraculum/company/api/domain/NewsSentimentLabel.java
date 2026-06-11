@@ -4,6 +4,7 @@ import lombok.Getter;
 
 @Getter
 public enum NewsSentimentLabel {
+    NO_DATA("N/A"),
     BEARISH("Bearish"),
     SOMEWHAT_BEARISH("Somewhat-Bearish"),
     NEUTRAL("Neutral"),

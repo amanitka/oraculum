@@ -2,7 +2,7 @@ package com.oraculum.ui.views;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.oraculum.analyst.api.CompanyAnalysisApi;
-import com.oraculum.analyst.api.dto.AnalysisStatus;
+import com.oraculum.analyst.api.domain.AnalysisStatus;
 import com.oraculum.analyst.api.dto.CompanyAnalysisDto;
 import com.oraculum.analyst.api.dto.CompanyAnalysisRequest;
 import com.oraculum.company.api.CompanyApi;
@@ -274,21 +274,21 @@ public class AnalysisView extends VerticalLayout {
         g.addColumn(CompanyAnalysisDto::getTicker).setHeader("Ticker").setKey("ticker").setSortable(true);
         g.addColumn(CompanyAnalysisDto::getMarket).setHeader("Market").setKey("market").setSortable(true);
 
-        g.addColumn(new ComponentRenderer<>(a -> ViewHelper.statusBadge(a.getStatus() != null ? a.getStatus().name() : null)))
+        g.addColumn(new ComponentRenderer<>(a -> ViewHelper.statusBadge(a.getStatus())))
                 .setHeader("Status").setKey("status")
-                .setComparator(Comparator.comparing(a -> a.getStatus() != null ? a.getStatus().name() : "PENDING"))
+                .setComparator(Comparator.comparing(CompanyAnalysisDto::getStatus, Comparator.nullsLast(Comparator.naturalOrder())))
                 .setSortable(true);
 
         g.addColumn(CompanyAnalysisDto::getConviction).setHeader("Conviction").setSortable(true);
 
-        g.addColumn(new ComponentRenderer<>(a -> ViewHelper.outlookBadge(a.getOutlook() != null ? a.getOutlook().name() : null)))
+        g.addColumn(new ComponentRenderer<>(a -> ViewHelper.outlookBadge(a.getOutlook())))
                 .setHeader("Outlook").setKey("outlook")
-                .setComparator(Comparator.comparing(a -> a.getOutlook() != null ? a.getOutlook().name() : "PENDING"))
+                .setComparator(Comparator.comparing(CompanyAnalysisDto::getOutlook, Comparator.nullsLast(Comparator.naturalOrder())))
                 .setSortable(true);
 
-        g.addColumn(new ComponentRenderer<>(a -> ViewHelper.recommendationBadge(a.getRecommendation() != null ? a.getRecommendation().name() : null)))
+        g.addColumn(new ComponentRenderer<>(a -> ViewHelper.recommendationBadge(a.getRecommendation())))
                 .setHeader("Recommendation").setKey("recommendation")
-                .setComparator(Comparator.comparing(a -> a.getRecommendation() != null ? a.getRecommendation().name() : "PENDING"))
+                .setComparator(Comparator.comparing(CompanyAnalysisDto::getRecommendation, Comparator.nullsLast(Comparator.naturalOrder())))
                 .setSortable(true);
 
         g.addColumn(CompanyAnalysisDto::getAnalysisDate).setHeader("Analysis Date").setSortable(true);
@@ -369,13 +369,13 @@ public class AnalysisView extends VerticalLayout {
 
         H3 title = new H3(String.format("%s - %s Analysis", analysis.getTicker(), analysis.getMarket().toUpperCase()));
         title.addClassNames(LumoUtility.Margin.NONE);
-        header.add(title, ViewHelper.statusBadge(analysis.getStatus().name()));
+        header.add(title, ViewHelper.statusBadge(analysis.getStatus()));
 
         if (analysis.getRecommendation() != null) {
-            header.add(new Span("Rec:"), ViewHelper.recommendationBadge(analysis.getRecommendation().name()));
+            header.add(new Span("Rec:"), ViewHelper.recommendationBadge(analysis.getRecommendation()));
         }
         if (analysis.getOutlook() != null) {
-            header.add(new Span("Outlook:"), ViewHelper.outlookBadge(analysis.getOutlook().name()));
+            header.add(new Span("Outlook:"), ViewHelper.outlookBadge(analysis.getOutlook()));
         }
         if (analysis.getConviction() != null) {
             Span conv = new Span("Conviction: " + analysis.getConviction() + "/5");
@@ -491,9 +491,9 @@ public class AnalysisView extends VerticalLayout {
         boolean test(CompanyAnalysisDto a) {
             return ViewHelper.matches(a.getTicker(), ticker)
                     && ViewHelper.matches(a.getMarket(), market)
-                    && ViewHelper.matches(a.getStatus() != null ? a.getStatus().name() : "PENDING", status)
-                    && ViewHelper.matches(a.getOutlook() != null ? a.getOutlook().name() : "PENDING", outlook)
-                    && ViewHelper.matches(a.getRecommendation() != null ? a.getRecommendation().name() : "PENDING", recommendation);
+                    && ViewHelper.matches(a.getStatus() != null ? a.getStatus().getDisplayName() : "Pending", status)
+                    && ViewHelper.matches(a.getOutlook() != null ? a.getOutlook().getDisplayName() : "Pending", outlook)
+                    && ViewHelper.matches(a.getRecommendation() != null ? a.getRecommendation().getDisplayName() : "Pending", recommendation);
         }
     }
 }

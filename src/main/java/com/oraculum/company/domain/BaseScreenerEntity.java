@@ -1,6 +1,9 @@
 package com.oraculum.company.domain;
 
+import com.oraculum.company.api.domain.CompanySize;
 import jakarta.persistence.Column;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
 import jakarta.persistence.MappedSuperclass;
@@ -50,8 +53,9 @@ public abstract class BaseScreenerEntity {
     @Column(name = "industry_name")
     private String industryName;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "company_size")
-    private String companySize;
+    private CompanySize companySize;
 
     @Column(name = "market_capitalization")
     private Float marketCapitalization;

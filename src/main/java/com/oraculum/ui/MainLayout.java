@@ -10,11 +10,17 @@ import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.tabs.Tab;
+import com.vaadin.flow.component.tabs.Tabs;
+import com.vaadin.flow.router.AfterNavigationEvent;
+import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.RouterLayout;
 import com.vaadin.flow.router.RouterLink;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 
-public class MainLayout extends AppLayout implements RouterLayout {
+public class MainLayout extends AppLayout implements RouterLayout, AfterNavigationObserver {
+
+    private Tabs tabs;
 
     public MainLayout() {
         addHeaderContent();
@@ -65,12 +71,12 @@ public class MainLayout extends AppLayout implements RouterLayout {
         analysisLink.getStyle().set("text-decoration", "none");
         refreshLink.getStyle().set("text-decoration", "none");
 
-        com.vaadin.flow.component.tabs.Tab tabCompany = new com.vaadin.flow.component.tabs.Tab(companyLink);
-        com.vaadin.flow.component.tabs.Tab tabScreener = new com.vaadin.flow.component.tabs.Tab(screenerLink);
-        com.vaadin.flow.component.tabs.Tab tabAnalysis = new com.vaadin.flow.component.tabs.Tab(analysisLink);
-        com.vaadin.flow.component.tabs.Tab tabRefresh = new com.vaadin.flow.component.tabs.Tab(refreshLink);
+        Tab tabCompany = new Tab(companyLink);
+        Tab tabScreener = new Tab(screenerLink);
+        Tab tabAnalysis = new Tab(analysisLink);
+        Tab tabRefresh = new Tab(refreshLink);
 
-        com.vaadin.flow.component.tabs.Tabs tabs = new com.vaadin.flow.component.tabs.Tabs(tabCompany, tabScreener, tabAnalysis, tabRefresh);
+        tabs = new Tabs(tabCompany, tabScreener, tabAnalysis, tabRefresh);
 
         // Override the internal Lumo CSS variables that vaadin-tabs use inside their shadow DOM
         tabs.getStyle().set("--lumo-font-size-m", "var(--lumo-font-size-xl)"); // Make text large (H2/H3 scale)
@@ -105,5 +111,17 @@ public class MainLayout extends AppLayout implements RouterLayout {
 
         outer.add(wrapper);
         super.setContent(outer);
+    }
+
+    @Override
+    public void afterNavigation(AfterNavigationEvent event) {
+        String path = event.getLocation().getPath();
+        tabs.getChildren()
+                .filter(Tab.class::isInstance)
+                .map(Tab.class::cast)
+                .filter(tab -> tab.getChildren().findFirst().orElse(null) instanceof RouterLink link
+                        && link.getHref().equals(path))
+                .findFirst()
+                .ifPresent(tabs::setSelectedTab);
     }
 }
