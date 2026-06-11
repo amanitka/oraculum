@@ -1,4 +1,4 @@
-package com.oraculum.analyst.api.dto;
+package com.oraculum.analyst.api.domain;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +11,7 @@ public enum AnalysisStatus {
     COMPLETED("Completed"),
     FAILED("Failed");
 
-    private final String name;
+    private final String displayName;
 
     public boolean isCompleted() {
         return COMPLETED.equals(this);

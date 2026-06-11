@@ -1,8 +1,8 @@
 package com.oraculum.analyst.agent.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.oraculum.analyst.domain.AnalysisOutlook;
-import com.oraculum.analyst.domain.AnalysisRecommendation;
+import com.oraculum.analyst.api.domain.AnalysisOutlook;
+import com.oraculum.analyst.api.domain.AnalysisRecommendation;
 
 import java.util.List;
 

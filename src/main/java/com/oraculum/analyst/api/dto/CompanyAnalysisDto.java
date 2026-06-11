@@ -1,7 +1,8 @@
 package com.oraculum.analyst.api.dto;
 
-import com.oraculum.analyst.domain.AnalysisOutlook;
-import com.oraculum.analyst.domain.AnalysisRecommendation;
+import com.oraculum.analyst.api.domain.AnalysisOutlook;
+import com.oraculum.analyst.api.domain.AnalysisRecommendation;
+import com.oraculum.analyst.api.domain.AnalysisStatus;
 import com.oraculum.analyst.domain.CompanyAnalysisEntity;
 import lombok.AllArgsConstructor;
 import lombok.Data;

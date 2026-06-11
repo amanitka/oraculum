@@ -4,7 +4,7 @@ import com.oraculum.analyst.agent.dto.AgentContext;
 import com.oraculum.analyst.agent.dto.PlannerPlan;
 import com.oraculum.analyst.agent.dto.SynthesizerAgentOutput;
 import com.oraculum.analyst.agent.service.Agent;
-import com.oraculum.analyst.api.dto.AnalysisStatus;
+import com.oraculum.analyst.api.domain.AnalysisStatus;
 import com.oraculum.analyst.api.dto.CompanyAnalysisRequest;
 import com.oraculum.analyst.config.AnalystProperties;
 import com.oraculum.analyst.domain.AgentType;
