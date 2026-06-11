@@ -1,7 +1,9 @@
 package com.oraculum.ui.views;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.oraculum.analyst.api.CompanyAnalysisApi;
+import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.api.domain.AnalysisStatus;
 import com.oraculum.analyst.api.dto.CompanyAnalysisDto;
 import com.oraculum.analyst.api.dto.CompanyAnalysisRequest;
@@ -23,10 +25,7 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.grid.HeaderRow;
 import com.vaadin.flow.component.grid.dataview.GridListDataView;
-import com.vaadin.flow.component.html.Anchor;
-import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.H3;
-import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
@@ -49,93 +48,15 @@ import org.springframework.data.domain.PageRequest;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
-
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Route(value = "analysis", layout = MainLayout.class)
 @PageTitle("Analysis | Oraculum")
 public class AnalysisView extends VerticalLayout {
 
-    private static final String MARKDOWN_CSS = """
-                <style>
-                .rendered-markdown {
-                    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-                    color: var(--lumo-body-text-color);
-                    line-height: 1.6;
-                    font-size: 1rem;
-                }
-                .rendered-markdown h1, .rendered-markdown h2, .rendered-markdown h3, .rendered-markdown h4 {
-                    color: var(--lumo-header-text-color);
-                    font-weight: 600;
-                    margin-top: 1.5em;
-                    margin-bottom: 0.5em;
-                }
-                .rendered-markdown h1 { font-size: 1.75rem; border-bottom: 1px solid var(--lumo-contrast-10pct); padding-bottom: 0.3em; }
-                .rendered-markdown h2 { font-size: 1.4rem; border-bottom: 1px solid var(--lumo-contrast-10pct); padding-bottom: 0.3em; }
-                .rendered-markdown h3 { font-size: 1.2rem; }
-                .rendered-markdown p { margin-top: 0; margin-bottom: 1em; }
-                .rendered-markdown ul, .rendered-markdown ol { padding-left: 2em; margin-bottom: 1em; }
-                .rendered-markdown li { margin-bottom: 0.5em; }
-                .rendered-markdown code {
-                    font-family: monospace;
-                    font-size: 0.9em;
-                    background-color: var(--lumo-contrast-5pct);
-                    padding: 0.25em 0.45em;
-                    border-radius: 4px;
-                    color: var(--lumo-primary-text-color);
-                }
-                .rendered-markdown pre {
-                    background-color: var(--lumo-contrast-5pct);
-                    padding: 1.2em;
-                    border-radius: 8px;
-                    overflow-x: auto;
-                    margin-bottom: 1.5em;
-                    border: 1px solid var(--lumo-contrast-10pct);
-                }
-                .rendered-markdown pre code {
-                    background-color: transparent;
-                    padding: 0;
-                    font-size: 0.85em;
-                    color: inherit;
-                }
-                .rendered-markdown table {
-                    border-collapse: collapse;
-                    width: 100%;
-                    margin-bottom: 1.5em;
-                    border-radius: 8px;
-                    overflow: hidden;
-                    box-shadow: 0 0 0 1px var(--lumo-contrast-10pct);
-                }
-                .rendered-markdown th, .rendered-markdown td {
-                    padding: 12px 15px;
-                    text-align: left;
-                }
-                .rendered-markdown th {
-                    background-color: var(--lumo-contrast-10pct);
-                    font-weight: 600;
-                    color: var(--lumo-header-text-color);
-                }
-                .rendered-markdown tr:nth-child(even) {
-                    background-color: var(--lumo-contrast-5pct);
-                }
-                .rendered-markdown tr {
-                    border-bottom: 1px solid var(--lumo-contrast-10pct);
-                }
-                .rendered-markdown tr:last-child {
-                    border-bottom: none;
-                }
-                .rendered-markdown blockquote {
-                    border-left: 4px solid var(--lumo-primary-color);
-                    padding: 0.5em 1.2em;
-                    color: var(--lumo-secondary-text-color);
-                    background-color: var(--lumo-primary-color-10pct);
-                    margin: 1.5em 0;
-                    border-radius: 0 8px 8px 0;
-                }
-                </style>
-            """;
     private final CompanyApi companyApi;
     private final CompanyAnalysisApi companyAnalysisApi;
     private final AnalysisRequestService analysisRequestService;
@@ -347,6 +268,9 @@ public class AnalysisView extends VerticalLayout {
         TabSheet tabSheet = new TabSheet();
         tabSheet.setSizeFull();
         tabSheet.add("Markdown Report", createReportTab(analysis));
+
+        addAgentTabs(tabSheet, analysis.getAnalysisData());
+
         tabSheet.add("JSON Data", createJsonTab(analysis));
         if (analysis.getStatus() == AnalysisStatus.FAILED && analysis.getError() != null) {
             tabSheet.add("Error Details", createErrorTab(analysis));
@@ -398,7 +322,7 @@ public class AnalysisView extends VerticalLayout {
 
             Div container = new Div();
             container.getStyle().set("padding", "24px").set("line-height", "1.6").set("color", "var(--lumo-body-text-color)");
-            container.add(new Html("<div>" + MARKDOWN_CSS + "<div class='rendered-markdown'>" + htmlContent + "</div></div>"));
+            container.add(new Html("<div><div class='rendered-markdown'>" + htmlContent + "</div></div>"));
 
             Scroller scroller = new Scroller(container);
             scroller.setSizeFull();
@@ -484,6 +408,90 @@ public class AnalysisView extends VerticalLayout {
     }
 
     // ── Markdown CSS ───────────────────────────────────────────────────────
+
+    private void addAgentTabs(TabSheet tabSheet, String jsonData) {
+        if (jsonData == null || jsonData.isBlank()) {
+            return;
+        }
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode rootNode = mapper.readTree(jsonData);
+
+            for (AgentType type : AgentType.values()) {
+                if (type == AgentType.SYNTHESIZER) {
+                    continue;
+                }
+                String key = type.name();
+                if (rootNode.has(key)) {
+                    JsonNode agentData = rootNode.get(key);
+                    Component tabContent = createAgentTabContent(agentData);
+                    if (tabContent != null) {
+                        tabSheet.add(type.getAgentName(), tabContent);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // Silently fallback without adding tabs
+        }
+    }
+
+    private Component createAgentTabContent(JsonNode agentData) {
+        if (agentData == null || agentData.properties().isEmpty()) {
+            return null;
+        }
+
+        VerticalLayout layout = new VerticalLayout();
+        layout.setPadding(true);
+        layout.setSpacing(true);
+        layout.setSizeFull();
+        layout.getStyle().set("overflow-y", "auto");
+
+        for (Map.Entry<String, JsonNode> field : agentData.properties()) {
+            String key = field.getKey();
+            JsonNode value = field.getValue();
+
+            H4 fieldHeader = new H4(formatKeyTitle(key));
+            fieldHeader.addClassNames(LumoUtility.Margin.Top.MEDIUM, LumoUtility.Margin.Bottom.XSMALL);
+            layout.add(fieldHeader);
+
+            if (value.isArray()) {
+                UnorderedList list = new UnorderedList();
+                list.addClassNames(LumoUtility.Margin.Top.NONE, LumoUtility.FontSize.SMALL);
+                for (JsonNode item : value) {
+                    list.add(new ListItem(item.asText()));
+                }
+                layout.add(list);
+            } else if (value.isObject()) {
+                Pre pre = new Pre();
+                pre.setText(value.toPrettyString());
+                pre.addClassNames(LumoUtility.Background.CONTRAST_5, LumoUtility.Padding.SMALL, LumoUtility.FontSize.SMALL);
+                pre.getStyle().set("border-radius", "4px").set("font-family", "monospace");
+                layout.add(pre);
+            } else {
+                Paragraph p = new Paragraph(value.asText());
+                p.addClassNames(LumoUtility.Margin.Top.NONE, LumoUtility.FontSize.SMALL, LumoUtility.TextColor.BODY);
+                layout.add(p);
+            }
+        }
+
+        return layout;
+    }
+
+    private String formatKeyTitle(String key) {
+        if (key == null || key.isEmpty()) {
+            return "";
+        }
+        String[] parts = key.split("_");
+        StringBuilder sb = new StringBuilder();
+        for (String part : parts) {
+            if (!part.isEmpty()) {
+                sb.append(Character.toUpperCase(part.charAt(0)))
+                        .append(part.substring(1).toLowerCase())
+                        .append(" ");
+            }
+        }
+        return sb.toString().trim();
+    }
 
     private static class AnalysisFilter {
         String ticker, market, status, outlook, recommendation;

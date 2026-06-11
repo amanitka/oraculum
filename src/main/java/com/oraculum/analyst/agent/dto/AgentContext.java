@@ -1,6 +1,6 @@
 package com.oraculum.analyst.agent.dto;
 
-import com.oraculum.analyst.domain.AgentType;
+import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
 import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.dto.CompanyDto;

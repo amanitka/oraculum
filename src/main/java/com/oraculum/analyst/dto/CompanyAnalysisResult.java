@@ -1,9 +1,9 @@
 package com.oraculum.analyst.dto;
 
+import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.api.domain.AnalysisOutlook;
 import com.oraculum.analyst.api.domain.AnalysisRecommendation;
 import com.oraculum.analyst.api.domain.AnalysisStatus;
-import com.oraculum.analyst.domain.AgentType;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;

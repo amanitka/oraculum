@@ -1,4 +1,4 @@
-package com.oraculum.analyst.domain;
+package com.oraculum.analyst.api.domain;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

@@ -4,8 +4,8 @@ import com.oraculum.analyst.agent.dto.AgentContext;
 import com.oraculum.analyst.agent.dto.AgentOutput;
 import com.oraculum.analyst.agent.dto.NewsAgentOutput;
 import com.oraculum.analyst.agent.service.Agent;
+import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.config.PromptRegistry;
-import com.oraculum.analyst.domain.AgentType;
 import com.oraculum.analyst.domain.PromptType;
 import com.oraculum.company.api.dto.NewsTickerDto;
 import com.oraculum.llm.api.LlmRouterApi;
@@ -47,7 +47,7 @@ public class NewsAgent implements Agent<NewsAgentOutput> {
         }
 
         // Extract definitions from the first news item dynamically to prevent hardcoding
-        NewsTickerDto firstNews = newsList.get(0);
+        NewsTickerDto firstNews = newsList.getFirst();
         String relevanceDef = firstNews.relevanceScoreDefinition() != null ? firstNews.relevanceScoreDefinition() : "No definition " +
                                                                                                                     "provided";
         String sentimentDef = firstNews.sentimentScoreDefinition() != null ? firstNews.sentimentScoreDefinition() : "No definition " +
