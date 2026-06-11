@@ -15,7 +15,7 @@ public class HarvesterRefreshScheduler {
 
     private final HarvesterRequestService refreshService;
 
-    @Scheduled(cron = "${oraculum.jobs.data-refresh.metadata-cron:0 0 1 1 * *}")
+    @Scheduled(cron = "${oraculum.data.metadata.cron}")
     public void refreshMetadata() {
         log.info("Starting scheduled monthly metadata refresh...");
         try {

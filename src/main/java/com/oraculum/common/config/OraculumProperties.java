@@ -7,7 +7,8 @@ public record OraculumProperties(Data data,
                                  Database database,
                                  Simfin simfin,
                                  AlphaVantage alphaVantage,
-                                 Kafka kafka) {
+                                 Kafka kafka,
+                                 Harvester harvester) {
 
     public record Data(SharePrice sharePrice,
                        News news) {
@@ -50,5 +51,8 @@ public record OraculumProperties(Data data,
                              String harvesterRequest,
                              String analystRequest) {
         }
+    }
+
+    public record Harvester(String exportPath) {
     }
 }
