@@ -103,7 +103,7 @@ public class CompanyServiceImpl implements CompanyService {
         return balanceSheetRepository.findByCompanyIdAndReportDateAfter(companyId, after)
                 .stream()
                 .map(BalanceSheetDto::fromEntity)
-                .sorted(Comparator.comparing(BalanceSheetDto::reportDate).reversed())
+                .sorted(Comparator.comparing(BalanceSheetDto::fiscalYear, Comparator.reverseOrder()).thenComparing(BalanceSheetDto::fiscalPeriod, Comparator.reverseOrder()))
                 .collect(Collectors.toList());
     }
 
@@ -112,7 +112,7 @@ public class CompanyServiceImpl implements CompanyService {
         return cashFlowStatementRepository.findByCompanyIdAndReportDateAfter(companyId, after)
                 .stream()
                 .map(CashFlowStatementDto::fromEntity)
-                .sorted(Comparator.comparing(CashFlowStatementDto::reportDate).reversed())
+                .sorted(Comparator.comparing(CashFlowStatementDto::fiscalYear, Comparator.reverseOrder()).thenComparing(CashFlowStatementDto::fiscalPeriod, Comparator.reverseOrder()))
                 .collect(Collectors.toList());
     }
 
@@ -121,7 +121,7 @@ public class CompanyServiceImpl implements CompanyService {
         return incomeStatementRepository.findByCompanyIdAndReportDateAfter(companyId, after)
                 .stream()
                 .map(IncomeStatementDto::fromEntity)
-                .sorted(Comparator.comparing(IncomeStatementDto::reportDate).reversed())
+                .sorted(Comparator.comparing(IncomeStatementDto::fiscalYear, Comparator.reverseOrder()).thenComparing(IncomeStatementDto::fiscalPeriod, Comparator.reverseOrder()))
                 .collect(Collectors.toList());
     }
 

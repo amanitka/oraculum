@@ -1,7 +1,5 @@
 package com.oraculum.ui.views;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.oraculum.analyst.api.CompanyAnalysisApi;
 import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.api.domain.AnalysisStatus;
@@ -44,6 +42,8 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 import org.commonmark.parser.Parser;
 import org.commonmark.renderer.html.HtmlRenderer;
 import org.springframework.data.domain.PageRequest;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
@@ -60,16 +60,18 @@ public class AnalysisView extends VerticalLayout {
     private final CompanyApi companyApi;
     private final CompanyAnalysisApi companyAnalysisApi;
     private final AnalysisRequestService analysisRequestService;
+    private final ObjectMapper objectMapper;
     private ComboBox<CompanyDto> companyComboBox;
     private ComboBox<StatementVariant> variantComboBox;
     private Grid<CompanyAnalysisDto> grid;
 
     // ── Trigger Toolbar ────────────────────────────────────────────────────
 
-    public AnalysisView(CompanyApi companyApi, CompanyAnalysisApi companyAnalysisApi, AnalysisRequestService analysisRequestService) {
+    public AnalysisView(CompanyApi companyApi, CompanyAnalysisApi companyAnalysisApi, AnalysisRequestService analysisRequestService, ObjectMapper objectMapper) {
         this.companyApi = companyApi;
         this.companyAnalysisApi = companyAnalysisApi;
         this.analysisRequestService = analysisRequestService;
+        this.objectMapper = objectMapper;
 
         setSizeFull();
         setPadding(true);
@@ -215,12 +217,17 @@ public class AnalysisView extends VerticalLayout {
         g.addColumn(CompanyAnalysisDto::getAnalysisDate).setHeader("Analysis Date").setSortable(true);
 
         g.addColumn(new ComponentRenderer<>(a -> {
-            Button btn = new Button(VaadinIcon.EYE.create());
-            btn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ICON);
-            btn.setAriaLabel("View details");
-            btn.setTooltipText("View details");
-            btn.addClickListener(_ -> showAnalysisDetails(a));
-            return btn;
+            Button reportBtn = new Button(VaadinIcon.EYE.create());
+            reportBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ICON);
+            reportBtn.setAriaLabel("View report");
+            reportBtn.setTooltipText("View report");
+            reportBtn.addClickListener(_ -> showAnalysisDetails(a));
+
+            Button companyBtn = ViewHelper.createCompanyDetailsButton(companyApi, objectMapper, a.getCompanyId(), false);
+
+            HorizontalLayout actions = new HorizontalLayout(reportBtn, companyBtn);
+            actions.setSpacing(true);
+            return actions;
         })).setHeader("Actions");
 
         g.addItemDoubleClickListener(event -> showAnalysisDetails(event.getItem()));
@@ -458,7 +465,7 @@ public class AnalysisView extends VerticalLayout {
                 UnorderedList list = new UnorderedList();
                 list.addClassNames(LumoUtility.Margin.Top.NONE, LumoUtility.FontSize.SMALL);
                 for (JsonNode item : value) {
-                    list.add(new ListItem(item.asText()));
+                    list.add(new ListItem(item.asString()));
                 }
                 layout.add(list);
             } else if (value.isObject()) {
@@ -468,7 +475,7 @@ public class AnalysisView extends VerticalLayout {
                 pre.getStyle().set("border-radius", "4px").set("font-family", "monospace");
                 layout.add(pre);
             } else {
-                Paragraph p = new Paragraph(value.asText());
+                Paragraph p = new Paragraph(value.asString());
                 p.addClassNames(LumoUtility.Margin.Top.NONE, LumoUtility.FontSize.SMALL, LumoUtility.TextColor.BODY);
                 layout.add(p);
             }

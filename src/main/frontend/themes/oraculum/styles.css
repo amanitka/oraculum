@@ -4,18 +4,44 @@
     line-height: 1.6;
     font-size: 1rem;
 }
+
 .rendered-markdown h1, .rendered-markdown h2, .rendered-markdown h3, .rendered-markdown h4 {
     color: var(--lumo-header-text-color);
     font-weight: 600;
     margin-top: 1.5em;
     margin-bottom: 0.5em;
 }
-.rendered-markdown h1 { font-size: 1.75rem; border-bottom: 1px solid var(--lumo-contrast-10pct); padding-bottom: 0.3em; }
-.rendered-markdown h2 { font-size: 1.4rem; border-bottom: 1px solid var(--lumo-contrast-10pct); padding-bottom: 0.3em; }
-.rendered-markdown h3 { font-size: 1.2rem; }
-.rendered-markdown p { margin-top: 0; margin-bottom: 1em; }
-.rendered-markdown ul, .rendered-markdown ol { padding-left: 2em; margin-bottom: 1em; }
-.rendered-markdown li { margin-bottom: 0.5em; }
+
+.rendered-markdown h1 {
+    font-size: 1.75rem;
+    border-bottom: 1px solid var(--lumo-contrast-10pct);
+    padding-bottom: 0.3em;
+}
+
+.rendered-markdown h2 {
+    font-size: 1.4rem;
+    border-bottom: 1px solid var(--lumo-contrast-10pct);
+    padding-bottom: 0.3em;
+}
+
+.rendered-markdown h3 {
+    font-size: 1.2rem;
+}
+
+.rendered-markdown p {
+    margin-top: 0;
+    margin-bottom: 1em;
+}
+
+.rendered-markdown ul, .rendered-markdown ol {
+    padding-left: 2em;
+    margin-bottom: 1em;
+}
+
+.rendered-markdown li {
+    margin-bottom: 0.5em;
+}
+
 .rendered-markdown code {
     font-family: monospace;
     font-size: 0.9em;
@@ -24,6 +50,7 @@
     border-radius: 4px;
     color: var(--lumo-primary-text-color);
 }
+
 .rendered-markdown pre {
     background-color: var(--lumo-contrast-5pct);
     padding: 1.2em;
@@ -32,12 +59,14 @@
     margin-bottom: 1.5em;
     border: 1px solid var(--lumo-contrast-10pct);
 }
+
 .rendered-markdown pre code {
     background-color: transparent;
     padding: 0;
     font-size: 0.85em;
     color: inherit;
 }
+
 .rendered-markdown table {
     border-collapse: collapse;
     width: 100%;
@@ -46,24 +75,30 @@
     overflow: hidden;
     box-shadow: 0 0 0 1px var(--lumo-contrast-10pct);
 }
+
 .rendered-markdown th, .rendered-markdown td {
     padding: 12px 15px;
     text-align: left;
 }
+
 .rendered-markdown th {
     background-color: var(--lumo-contrast-10pct);
     font-weight: 600;
     color: var(--lumo-header-text-color);
 }
+
 .rendered-markdown tr:nth-child(even) {
     background-color: var(--lumo-contrast-5pct);
 }
+
 .rendered-markdown tr {
     border-bottom: 1px solid var(--lumo-contrast-10pct);
 }
+
 .rendered-markdown tr:last-child {
     border-bottom: none;
 }
+
 .rendered-markdown blockquote {
     border-left: 4px solid var(--lumo-primary-color);
     padding: 0.5em 1.2em;
@@ -71,4 +106,23 @@
     background-color: var(--lumo-primary-color-10pct);
     margin: 1.5em 0;
     border-radius: 0 8px 8px 0;
+}
+
+/* ApexCharts Tooltip Styles */
+.apexcharts-tooltip {
+    background: var(--lumo-base-color) !important;
+    border: 1px solid var(--lumo-contrast-10pct) !important;
+    box-shadow: var(--lumo-box-shadow-s) !important;
+    color: var(--lumo-body-text-color) !important;
+}
+
+.apexcharts-tooltip-title {
+    background: var(--lumo-contrast-5pct) !important;
+    border-bottom: 1px solid var(--lumo-contrast-10pct) !important;
+    font-family: var(--lumo-font-family) !important;
+    font-weight: 600 !important;
+}
+
+.apexcharts-tooltip-text {
+    color: var(--lumo-body-text-color) !important;
 }

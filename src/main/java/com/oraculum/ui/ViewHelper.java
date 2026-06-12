@@ -3,20 +3,27 @@ package com.oraculum.ui;
 import com.oraculum.analyst.api.domain.AnalysisOutlook;
 import com.oraculum.analyst.api.domain.AnalysisRecommendation;
 import com.oraculum.analyst.api.domain.AnalysisStatus;
+import com.oraculum.company.api.CompanyApi;
 import com.oraculum.company.api.domain.CompanySize;
 import com.oraculum.company.api.domain.NewsSentimentLabel;
 import com.oraculum.company.api.domain.ScreenerSignal;
+import com.oraculum.company.api.dto.CompanyDto;
+import com.oraculum.ui.components.CompanyOverviewComponent;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.HeaderRow;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.textfield.TextFieldVariant;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.theme.lumo.LumoUtility;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.Locale;
 import java.util.function.Consumer;
@@ -226,5 +233,43 @@ public final class ViewHelper {
     public static boolean matches(String value, String searchTerm) {
         return searchTerm == null || searchTerm.isEmpty()
                 || (value != null && value.toLowerCase().contains(searchTerm.toLowerCase()));
+    }
+
+    // ── Components ─────────────────────────────────────────────────────────
+
+    /**
+     * Creates a standard button that opens the Company Overview Tearsheet dialog.
+     *
+     * @param showText if true, shows "View" text; if false, shows icon-only button with tooltip
+     */
+    public static Button createCompanyDetailsButton(CompanyApi companyApi, ObjectMapper objectMapper, int companyId, boolean showText) {
+        Button btn;
+        if (showText) {
+            btn = new Button("View", VaadinIcon.CHART_LINE.create());
+            btn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
+        } else {
+            btn = new Button(VaadinIcon.CHART_LINE.create());
+            btn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ICON);
+            btn.setAriaLabel("View company tearsheet");
+            btn.setTooltipText("View company tearsheet");
+        }
+        btn.addClickListener(_ -> {
+            CompanyDto company = companyApi.getCompanyById(companyId);
+            if (company != null) {
+                com.vaadin.flow.component.dialog.Dialog dialog = new com.vaadin.flow.component.dialog.Dialog();
+                dialog.setWidth("90vw");
+                dialog.setHeight("90vh");
+                dialog.add(new CompanyOverviewComponent(companyApi, company, objectMapper));
+
+                Button closeBtn = new Button("Close", _ -> dialog.close());
+                closeBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+                dialog.getFooter().add(closeBtn);
+
+                dialog.open();
+            } else {
+                showError("Company details not found.");
+            }
+        });
+        return btn;
     }
 }

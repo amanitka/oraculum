@@ -29,6 +29,7 @@ import com.vaadin.flow.data.renderer.NumberRenderer;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
+import tools.jackson.databind.ObjectMapper;
 
 import java.text.NumberFormat;
 import java.time.LocalDate;
@@ -44,11 +45,13 @@ public class ScreenerView extends VerticalLayout {
 
     private final CompanyApi companyApi;
     private final AnalysisRequestService analysisRequestService;
+    private final ObjectMapper objectMapper;
     private final VerticalLayout gridContainer;
 
-    public ScreenerView(CompanyApi companyApi, AnalysisRequestService analysisRequestService) {
+    public ScreenerView(CompanyApi companyApi, AnalysisRequestService analysisRequestService, ObjectMapper objectMapper) {
         this.companyApi = companyApi;
         this.analysisRequestService = analysisRequestService;
+        this.objectMapper = objectMapper;
         setPadding(true);
         setSpacing(false);
         setSizeFull();
@@ -216,6 +219,8 @@ public class ScreenerView extends VerticalLayout {
         grid.addColumn(ScreenerMasterDto::valueRank).setHeader("V-Rank").setAutoWidth(true).setSortable(true);
         grid.addColumn(ScreenerMasterDto::fscoreRank).setHeader("F-Rank").setAutoWidth(true).setSortable(true);
 
+        grid.addComponentColumn(item -> createCompanyDetailsButton(item.companyId())).setHeader("Details").setAutoWidth(true);
+
         return grid;
     }
 
@@ -258,6 +263,8 @@ public class ScreenerView extends VerticalLayout {
 
         grid.setItemDetailsRenderer(createNewsDetailsRenderer());
         grid.setDetailsVisibleOnClick(true);
+
+        grid.addComponentColumn(item -> createCompanyDetailsButton(item.companyId())).setHeader("Details").setAutoWidth(true);
 
         return grid;
     }
@@ -351,6 +358,8 @@ public class ScreenerView extends VerticalLayout {
         grid.addColumn(new NumberRenderer<>(ScreenerDto::sharePrice, NumberFormat.getCurrencyInstance(Locale.US))).setHeader("Price").setAutoWidth(true).setSortable(true);
         grid.addColumn(ScreenerDto::peRatio).setHeader("P/E").setAutoWidth(true).setSortable(true);
 
+        grid.addComponentColumn(item -> createCompanyDetailsButton(item.companyId())).setHeader("Details").setAutoWidth(true);
+
         return grid;
     }
 
@@ -385,6 +394,9 @@ public class ScreenerView extends VerticalLayout {
         }
     }
 
+    private Button createCompanyDetailsButton(int companyId) {
+        return ViewHelper.createCompanyDetailsButton(companyApi, objectMapper, companyId, true);
+    }
 
     /**
      * Unified filter for both Master and Standard screener grids.

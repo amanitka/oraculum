@@ -10,7 +10,6 @@
     "@vaadin/vaadin-lumo-styles": "25.1.2",
     "@vaadin/vaadin-themable-mixin": "25.1.2",
     "@vaadin/vaadin-usage-statistics": "2.1.3",
-    "@webcomponents/shadycss": "1.11.2",
     "apexcharts": "3.54.1",
     "date-fns": "4.1.0",
     "lit": "3.3.2",
@@ -46,7 +45,6 @@
       "@vaadin/vaadin-lumo-styles": "25.1.2",
       "@vaadin/vaadin-themable-mixin": "25.1.2",
       "@vaadin/vaadin-usage-statistics": "2.1.3",
-      "@webcomponents/shadycss": "1.11.2",
       "apexcharts": "3.54.1",
       "date-fns": "4.1.0",
       "lit": "3.3.2",
@@ -73,7 +71,7 @@
       "vite": "7.3.2",
       "vite-plugin-checker": "0.12.0"
     },
-    "hash": "eb77374e05d7c53cfc6eb2ea9f12e1ac0f8272f96dcd56c7cb14978ed280f199",
+    "hash": "2f7377d373168640204f8d52a65b5831cf14bef5c259031fff2be119e7b8ece7",
     "overrides": {
       "@vaadin/a11y-base": "25.1.2",
       "@vaadin/accordion": "25.1.2",
@@ -143,7 +141,6 @@
       "@vaadin/vaadin-usage-statistics": "$@vaadin/vaadin-usage-statistics",
       "@vaadin/vertical-layout": "25.1.2",
       "@vaadin/virtual-list": "25.1.2",
-      "@webcomponents/shadycss": "$@webcomponents/shadycss",
       "apexcharts": "$apexcharts",
       "date-fns": "$date-fns",
       "lit": "$lit",
@@ -228,7 +225,6 @@
     "@vaadin/email-field": "25.1.2",
     "@vaadin/message-input": "25.1.2",
     "apexcharts": "$apexcharts",
-    "onecolor": "$onecolor",
-    "@webcomponents/shadycss": "$@webcomponents/shadycss"
+    "onecolor": "$onecolor"
   }
 }
