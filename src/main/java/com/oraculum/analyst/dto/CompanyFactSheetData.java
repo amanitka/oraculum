@@ -27,33 +27,24 @@ public class CompanyFactSheetData {
     private final List<SharePriceSignalDto> monthlySharePriceSignals;
     private final List<NewsTickerDto> recentNews;
     private final TickerNewsSentimentDto newsSentimentAggregate;
-    // Lazy loaded stuff
-    private String companyProfileCache;
-    @Builder.Default
-    private Map<StatementVariant, String> companyFinancialRatiosCache = new HashMap<>();
-    private String dailySharePriceSignalsCache;
-    private String monthlySharePriceSignalsCache;
-    private String recentNewsCache;
-    private String newsSentimentAggregateCache;
 
     public String getCompanyProfile() {
-        if (companyProfileCache == null) {
-            companyProfileCache = JsonUtils.toJson(objectMapper, company, "{}");
-        }
-        return companyProfileCache;
+        return JsonUtils.toJson(objectMapper, company, "{}");
     }
 
     public String getIncomeStatementHistory(StatementVariant variant) {
         List<IncomeStatementDto> stmts = incomeStatements.get(variant);
-        if (stmts == null || stmts.isEmpty())
+        if (stmts == null || stmts.isEmpty()) {
             return "[]";
+        }
         return "[" + stmts.stream().map(IncomeStatementDto::statementData).collect(Collectors.joining(",")) + "]";
     }
 
     public String getBalanceSheetHistory(StatementVariant variant) {
         List<BalanceSheetDto> stmts = balanceSheets.get(variant);
-        if (stmts == null || stmts.isEmpty())
+        if (stmts == null || stmts.isEmpty()) {
             return "[]";
+        }
         return "[" + stmts.stream().map(BalanceSheetDto::statementData).collect(Collectors.joining(",")) + "]";
     }
 
@@ -65,26 +56,28 @@ public class CompanyFactSheetData {
     }
 
     public String getCompanyFinancialRatios(StatementVariant variant) {
-        return companyFinancialRatiosCache.computeIfAbsent(variant,
-                _ -> {
-                    List<CompanyFinancialRatiosDto> dtos = companyFinancialRatios.get(variant);
-                    if (dtos == null) return "[]";
-                    List<CompanyFinancialRatiosSlim> slimDtos = dtos.stream()
-                            .map(CompanyFinancialRatiosSlim::from)
-                            .collect(Collectors.toList());
-                    return JsonUtils.toJson(objectMapper, slimDtos, "[]");
-                });
+        List<CompanyFinancialRatiosDto> dtos = companyFinancialRatios.get(variant);
+        if (dtos == null || dtos.isEmpty()) {
+            return "[]";
+        }
+        List<CompanyFinancialRatiosSlim> slimDtos = dtos.stream()
+                .map(CompanyFinancialRatiosSlim::from)
+                .collect(Collectors.toList());
+        return JsonUtils.toJson(objectMapper, slimDtos, "[]");
     }
 
     public String getDailySharePriceSignals() {
-        if (dailySharePriceSignalsCache == null) {
-            dailySharePriceSignalsCache = JsonUtils.toJson(objectMapper, dailySharePriceSignals, "[]");
-        }
-        return dailySharePriceSignalsCache;
+        if (dailySharePriceSignals == null) return "[]";
+        List<SharePriceSignalSlim> slim = dailySharePriceSignals.stream()
+                .map(SharePriceSignalSlim::from)
+                .collect(Collectors.toList());
+        return JsonUtils.toJson(objectMapper, slim, "[]");
     }
 
     public String getDailySharePriceSignalsForPlanner() {
-        if (dailySharePriceSignals == null) return "[]";
+        if (dailySharePriceSignals == null || dailySharePriceSignals.isEmpty()) {
+            return "[]";
+        }
         List<PlannerSharePriceInput> slim = dailySharePriceSignals.stream()
                 .map(PlannerSharePriceInput::from)
                 .collect(Collectors.toList());
@@ -92,24 +85,17 @@ public class CompanyFactSheetData {
     }
 
     public String getMonthlySharePriceSignals() {
-        if (monthlySharePriceSignalsCache == null) {
-            if (monthlySharePriceSignals == null) {
-                monthlySharePriceSignalsCache = "[]";
-            } else {
-                List<SharePriceAgentMonthlyEntry> slim = monthlySharePriceSignals.stream()
-                        .map(SharePriceAgentMonthlyEntry::from)
-                        .collect(Collectors.toList());
-                monthlySharePriceSignalsCache = JsonUtils.toJson(objectMapper, slim, "[]");
-            }
+        if (monthlySharePriceSignals == null || monthlySharePriceSignals.isEmpty()) {
+            return "[]";
         }
-        return monthlySharePriceSignalsCache;
+        List<SharePriceSignalSlim> slim = monthlySharePriceSignals.stream()
+                .map(SharePriceSignalSlim::from)
+                .collect(Collectors.toList());
+        return JsonUtils.toJson(objectMapper, slim, "[]");
     }
 
     public String getRecentNews() {
-        if (recentNewsCache == null) {
-            recentNewsCache = JsonUtils.toJson(objectMapper, recentNews, "[]");
-        }
-        return recentNewsCache;
+        return JsonUtils.toJson(objectMapper, recentNews, "[]");
     }
 
     public List<NewsTickerDto> getRecentNewsList() {
@@ -121,10 +107,7 @@ public class CompanyFactSheetData {
     }
 
     public String getNewsSentimentAggregate() {
-        if (newsSentimentAggregateCache == null) {
-            newsSentimentAggregateCache = JsonUtils.toJson(objectMapper, newsSentimentAggregate, "{}");
-        }
-        return newsSentimentAggregateCache;
+        return JsonUtils.toJson(objectMapper, newsSentimentAggregate, "{}");
     }
 
     public String getAlgorithmicBaselineJson() {

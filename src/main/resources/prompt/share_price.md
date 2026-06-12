@@ -21,7 +21,6 @@ Pay special attention to this thesis passed from the Planner:
 {{ analysis_focus }}
 
 ### DATA DICTIONARY
-- **quality_score**: A 0-100 score of fundamental strength. >70 is high quality.
 - **piotroski_f_score**: A 0-9 scale measuring financial trend improvement. >=7 is very healthy.
 
 You MUST respond with valid JSON using exactly this schema:

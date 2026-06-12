@@ -5,7 +5,7 @@ import com.oraculum.company.api.dto.SharePriceSignalDto;
 
 import java.time.LocalDate;
 
-public record SharePriceAgentMonthlyEntry(
+public record SharePriceSignalSlim(
         @JsonProperty("trade_date") LocalDate tradeDate,
         @JsonProperty("share_price") Float sharePrice,
         @JsonProperty("pct_from_50d_ma") Float pctFrom50dMa,
@@ -20,12 +20,11 @@ public record SharePriceAgentMonthlyEntry(
         @JsonProperty("enterprise_value_to_ebitda") Float enterpriseValueToEbitda,
         @JsonProperty("return_on_equity") Float returnOnEquity,
         @JsonProperty("revenue_yoy_growth") Float revenueYoyGrowth,
-        @JsonProperty("piotroski_f_score") Integer piotroskiFScore,
-        @JsonProperty("quality_score") Float qualityScore
+        @JsonProperty("piotroski_f_score") Integer piotroskiFScore
 ) {
-    public static SharePriceAgentMonthlyEntry from(SharePriceSignalDto dto) {
+    public static SharePriceSignalSlim from(SharePriceSignalDto dto) {
         if (dto == null) return null;
-        return new SharePriceAgentMonthlyEntry(
+        return new SharePriceSignalSlim(
                 dto.tradeDate(),
                 dto.sharePrice(),
                 dto.pctFrom50dMa(),
@@ -40,8 +39,7 @@ public record SharePriceAgentMonthlyEntry(
                 dto.enterpriseValueToEbitda(),
                 dto.returnOnEquity(),
                 dto.revenueYoyGrowth(),
-                dto.piotroskiFScore(),
-                dto.qualityScore()
+                dto.piotroskiFScore()
         );
     }
 }
