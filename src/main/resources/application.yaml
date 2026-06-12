@@ -22,8 +22,8 @@ spring:
 
   flyway:
     enabled: true
-    schemas: ${FLYWAY_DEFAULT_SCHEMA}
-    default-schema: ${FLYWAY_DEFAULT_SCHEMA}
+    schemas: ${ORACULUM_FLYWAY_DEFAULT_SCHEMA}
+    default-schema: ${ORACULUM_FLYWAY_DEFAULT_SCHEMA}
 
   jpa:
     hibernate:
@@ -117,15 +117,15 @@ oraculum:
     providers:
       gemini:
         base-url: "https://generativelanguage.googleapis.com/v1beta/openai/"
-        api-key: ${GEMINI_API_KEY}
+        api-key: ${ORACULUM_GEMINI_API_KEY}
 
       groq:
         base-url: "https://api.groq.com/openai/v1"
-        api-key: ${GROQ_API_KEY}
+        api-key: ${ORACULUM_GROQ_API_KEY}
 
       openai:
         base-url: "https://api.openai.com/v1"
-        api-key: ${OPENAI_API_KEY}
+        api-key: ${ORACULUM_OPENAI_API_KEY}
 
     models:
       mini:
