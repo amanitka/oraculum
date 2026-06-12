@@ -14,6 +14,10 @@ WORKDIR /app
 # Copy maven wrapper and pom.xml to cache dependencies
 COPY mvnw pom.xml ./
 COPY .mvn .mvn/
+
+# Ensure the maven wrapper script is executable (fixes Windows git clone permission issues)
+RUN chmod +x mvnw
+
 # Optional: go-offline to cache maven dependencies
 RUN ./mvnw dependency:go-offline -B || true
 
