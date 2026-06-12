@@ -1,17 +1,15 @@
 package com.oraculum.analyst.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.oraculum.company.api.dto.SharePriceSignalDto;
+
+import java.util.Map;
 
 public record AlgorithmicBaselineDto(
-        @JsonProperty("composite_signal") String compositeSignal,
-        @JsonProperty("quality_score") Float qualityScore
+        @JsonProperty("timeframes") Map<String, TimeframeScores> timeframes
 ) {
-    public static AlgorithmicBaselineDto from(SharePriceSignalDto latestSignal) {
-        if (latestSignal == null) return null;
-        return new AlgorithmicBaselineDto(
-                latestSignal.compositeSignal(),
-                latestSignal.qualityScore()
-        );
+    public record TimeframeScores(
+            @JsonProperty("quality_score") Float qualityScore,
+            @JsonProperty("piotroski_f_score") Integer piotroskiFScore
+    ) {
     }
 }

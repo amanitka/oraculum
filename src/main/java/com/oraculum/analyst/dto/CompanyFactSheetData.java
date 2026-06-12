@@ -128,10 +128,20 @@ public class CompanyFactSheetData {
     }
 
     public String getAlgorithmicBaselineJson() {
-        if (dailySharePriceSignals == null || dailySharePriceSignals.isEmpty()) {
+        if (companyFinancialRatios == null || companyFinancialRatios.isEmpty()) {
             return "{}";
         }
-        AlgorithmicBaselineDto baseline = AlgorithmicBaselineDto.from(dailySharePriceSignals.getFirst());
+        Map<String, AlgorithmicBaselineDto.TimeframeScores> timeframeMap = new HashMap<>();
+        for (var entry : companyFinancialRatios.entrySet()) {
+            entry.getValue().stream().max(CompanyFinancialRatiosDto.getComparator())
+                    .ifPresent(companyFinancialRatios ->
+                            timeframeMap.put(entry.getKey().name(), new AlgorithmicBaselineDto.TimeframeScores(
+                                    companyFinancialRatios.qualityScore(),
+                                    companyFinancialRatios.piotroskiFScore()
+                            )));
+        }
+
+        AlgorithmicBaselineDto baseline = new AlgorithmicBaselineDto(timeframeMap);
         return JsonUtils.toJson(objectMapper, baseline, "{}");
     }
-}
+}

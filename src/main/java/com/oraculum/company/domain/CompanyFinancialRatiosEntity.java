@@ -136,4 +136,7 @@ public class CompanyFinancialRatiosEntity {
 
     @Column(name = "positive_earnings_streak")
     private Integer positiveEarningsStreak;
+
+    @Column(name = "quality_score")
+    private Float qualityScore;
 }

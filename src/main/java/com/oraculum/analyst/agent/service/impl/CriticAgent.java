@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -38,11 +39,15 @@ public class CriticAgent implements Agent<CriticAgentOutput> {
     @Override
     public AgentOutput<CriticAgentOutput> run(AgentContext ctx) {
         Map<AgentType, Object> specialistOutputs = ctx.getSpecialistAgentOutputs();
+        Map<String, String> agentTimeframes = ctx.getSpecialistAgentOutputs().keySet().stream()
+                .collect(Collectors.toMap(AgentType::name, t -> ctx.getVariantFor(t).name()));
+        String agentTimeframesJson = JsonUtils.toJson(objectMapper, agentTimeframes, "{}");
         String priorOutputsJson = JsonUtils.toJson(objectMapper, specialistOutputs, "{}");
 
         String prompt = promptRegistry.getPrompt(PromptType.CRITIC)
                 .replace("{{ analysis_focus }}", ctx.analysisFocus() != null ? ctx.analysisFocus() : "Standard comprehensive analysis.")
                 .replace("{{ algorithmic_baseline }}", ctx.factSheetData().getAlgorithmicBaselineJson())
+                .replace("{{ agent_timeframes }}", agentTimeframesJson)
                 .replace("{{ prior_outputs }}", priorOutputsJson);
 
         String userPrompt = String.format(

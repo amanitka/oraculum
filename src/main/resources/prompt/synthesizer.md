@@ -4,7 +4,7 @@ Your goal is to produce a high-quality, professional Markdown report that summar
 agents and resolves any consistency issues highlighted by the Critic Agent.
 
 You will be provided with three JSON inputs:
-1. `algorithmic_baseline`: Raw algorithmic scores (`quality_score` and `composite_signal`).
+1. `algorithmic_baseline`: Raw algorithmic scores (`quality_score` and `piotroski_f_score`) across multiple timeframes.
 2. `specialist_output`: The analysis from the specialist agents.
 3. `critic_output`: The findings from the Critic.
 

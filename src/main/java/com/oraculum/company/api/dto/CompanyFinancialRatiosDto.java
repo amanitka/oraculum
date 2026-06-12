@@ -5,6 +5,7 @@ import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.domain.CompanyFinancialRatiosEntity;
 
 import java.time.LocalDate;
+import java.util.Comparator;
 
 public record CompanyFinancialRatiosDto(String id,
                                         int companyId,
@@ -43,7 +44,9 @@ public record CompanyFinancialRatiosDto(String id,
                                         Integer marginExpansionSignal,
                                         Integer revenueGrowthStreak,
                                         Integer positiveFcfStreak,
-                                        Integer positiveEarningsStreak) {
+                                        Integer positiveEarningsStreak,
+                                        Float qualityScore) {
+
     public static CompanyFinancialRatiosDto fromEntity(CompanyFinancialRatiosEntity entity) {
         if (entity == null)
             return null;
@@ -84,6 +87,12 @@ public record CompanyFinancialRatiosDto(String id,
                 entity.getMarginExpansionSignal(),
                 entity.getRevenueGrowthStreak(),
                 entity.getPositiveFcfStreak(),
-                entity.getPositiveEarningsStreak());
+                entity.getPositiveEarningsStreak(),
+                entity.getQualityScore());
+    }
+
+    public static Comparator<CompanyFinancialRatiosDto> getComparator() {
+        return Comparator.comparing(CompanyFinancialRatiosDto::fiscalYear)
+                .thenComparing(CompanyFinancialRatiosDto::fiscalPeriod);
     }
 }
