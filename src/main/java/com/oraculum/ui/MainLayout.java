@@ -3,10 +3,12 @@ package com.oraculum.ui;
 import com.oraculum.ui.views.AnalysisView;
 import com.oraculum.ui.views.CompanyView;
 import com.oraculum.ui.views.RefreshView;
+import com.oraculum.ui.views.ScreenerView;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -20,6 +22,7 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 
 public class MainLayout extends AppLayout implements RouterLayout, AfterNavigationObserver {
 
+    private final java.util.Map<Class<?>, Tab> tabMap = new java.util.HashMap<>();
     private Tabs tabs;
 
     public MainLayout() {
@@ -54,29 +57,34 @@ public class MainLayout extends AppLayout implements RouterLayout, AfterNavigati
                 LumoUtility.TextColor.BODY,
                 LumoUtility.FontWeight.BOLD);
 
-        com.vaadin.flow.component.html.Image logo = new com.vaadin.flow.component.html.Image("images/logo.svg", "Oraculum Logo");
+        Image logo = new Image("images/logo.svg", "Oraculum Logo");
         logo.setHeight("30px"); // Even smaller to match text exactly
         logo.getStyle().set("margin-top", "6px"); // Nudge down slightly to align with the text baseline
 
         logoLayout.add(logo, viewTitle);
 
         // Navigation Links using Vaadin Tabs
-        RouterLink companyLink = new RouterLink("Company", CompanyView.class);
-        RouterLink screenerLink = new RouterLink("Screener", com.oraculum.ui.views.ScreenerView.class);
+        RouterLink screenerLink = new RouterLink("Screener", ScreenerView.class);
         RouterLink analysisLink = new RouterLink("Analysis", AnalysisView.class);
+        RouterLink companyLink = new RouterLink("Company", CompanyView.class);
         RouterLink refreshLink = new RouterLink("Refresh", RefreshView.class);
 
-        companyLink.getStyle().set("text-decoration", "none");
         screenerLink.getStyle().set("text-decoration", "none");
         analysisLink.getStyle().set("text-decoration", "none");
+        companyLink.getStyle().set("text-decoration", "none");
         refreshLink.getStyle().set("text-decoration", "none");
 
-        Tab tabCompany = new Tab(companyLink);
         Tab tabScreener = new Tab(screenerLink);
         Tab tabAnalysis = new Tab(analysisLink);
+        Tab tabCompany = new Tab(companyLink);
         Tab tabRefresh = new Tab(refreshLink);
 
-        tabs = new Tabs(tabCompany, tabScreener, tabAnalysis, tabRefresh);
+        tabMap.put(ScreenerView.class, tabScreener);
+        tabMap.put(AnalysisView.class, tabAnalysis);
+        tabMap.put(CompanyView.class, tabCompany);
+        tabMap.put(RefreshView.class, tabRefresh);
+
+        tabs = new Tabs(tabScreener, tabAnalysis, tabCompany, tabRefresh);
 
         // Override the internal Lumo CSS variables that vaadin-tabs use inside their shadow DOM
         tabs.getStyle().set("--lumo-font-size-m", "var(--lumo-font-size-xl)"); // Make text large (H2/H3 scale)
@@ -115,13 +123,12 @@ public class MainLayout extends AppLayout implements RouterLayout, AfterNavigati
 
     @Override
     public void afterNavigation(AfterNavigationEvent event) {
-        String path = event.getLocation().getPath();
-        tabs.getChildren()
-                .filter(Tab.class::isInstance)
-                .map(Tab.class::cast)
-                .filter(tab -> tab.getChildren().findFirst().orElse(null) instanceof RouterLink link
-                        && link.getHref().equals(path))
-                .findFirst()
-                .ifPresent(tabs::setSelectedTab);
+        if (!event.getActiveChain().isEmpty()) {
+            com.vaadin.flow.component.HasElement activeView = event.getActiveChain().getFirst();
+            Tab selectedTab = tabMap.get(activeView.getClass());
+            if (selectedTab != null) {
+                tabs.setSelectedTab(selectedTab);
+            }
+        }
     }
 }

@@ -10,8 +10,10 @@ import com.oraculum.company.api.domain.ScreenerSignal;
 import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.ui.components.CompanyOverviewComponent;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.HeaderRow;
 import com.vaadin.flow.component.html.Div;
@@ -256,7 +258,7 @@ public final class ViewHelper {
         btn.addClickListener(_ -> {
             CompanyDto company = companyApi.getCompanyById(companyId);
             if (company != null) {
-                com.vaadin.flow.component.dialog.Dialog dialog = new com.vaadin.flow.component.dialog.Dialog();
+                Dialog dialog = new Dialog();
                 dialog.setWidth("90vw");
                 dialog.setHeight("90vh");
                 dialog.add(new CompanyOverviewComponent(companyApi, company, objectMapper));
@@ -264,6 +266,13 @@ public final class ViewHelper {
                 Button closeBtn = new Button("Close", _ -> dialog.close());
                 closeBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
                 dialog.getFooter().add(closeBtn);
+
+                // Trigger window resize when dialog completes opening animation so external JS charts (ApexCharts) resize correctly
+                dialog.addOpenedChangeListener(e -> {
+                    if (e.isOpened()) {
+                        UI.getCurrent().getPage().executeJs("setTimeout(() => window.dispatchEvent(new Event('resize')), 250);");
+                    }
+                });
 
                 dialog.open();
             } else {

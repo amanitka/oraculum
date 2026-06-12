@@ -1,0 +1,39 @@
+# ==========================================
+# Stage 1: Build the GraalVM Native Image
+# ==========================================
+FROM ghcr.io/graalvm/jdk-community:25 AS builder
+
+# Vaadin production build requires Node.js
+RUN microdnf install -y curl gzip tar \
+    && curl -fsSL https://rpm.nodesource.com/setup_22.x | bash - \
+    && microdnf install -y nodejs
+
+WORKDIR /app
+
+# Copy maven wrapper and pom.xml
+COPY mvnw pom.xml ./
+COPY .mvn .mvn/
+RUN ./mvnw dependency:go-offline -B || true
+
+# Copy source code and frontend config
+COPY src src/
+COPY package.json vite.config.ts tsconfig.json types.d.ts ./
+COPY package-lock.json* ./
+
+# Build the native executable
+RUN ./mvnw clean native:compile -Pproduction -DskipTests
+
+# ==========================================
+# Stage 2: Create the minimal runtime image
+# ==========================================
+# Use a minimal base image compatible with GraalVM
+FROM oraclelinux:9-micro
+
+WORKDIR /app
+
+# The name of the executable depends on the artifactId, which is 'oraculum'
+COPY --from=builder /app/target/oraculum /app/oraculum
+
+EXPOSE 8080
+
+ENTRYPOINT ["/app/oraculum"]
