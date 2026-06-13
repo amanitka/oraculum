@@ -32,7 +32,9 @@ FROM oraclelinux:9-micro
 WORKDIR /app
 
 # The name of the executable depends on the artifactId, which is 'oraculum'
-COPY --from=builder /app/target/oraculum /app/oraculum
+COPY --from=builder --chown=1000:1000 /app/target/oraculum /app/oraculum
+
+USER 1000:1000
 
 EXPOSE 8080
 

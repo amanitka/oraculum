@@ -34,10 +34,17 @@ RUN ./mvnw clean package -Pproduction -DskipTests
 # ==========================================
 FROM eclipse-temurin:25-jre
 
+# Create a non-root user and group
+RUN groupadd -g 1000 oraculum && \
+    useradd -r -u 1000 -g oraculum -d /app oraculum
+
 WORKDIR /app
 
-# Copy the built jar from the builder stage
-COPY --from=builder /app/target/*.jar app.jar
+# Copy the built jar from the builder stage and set ownership
+COPY --from=builder --chown=oraculum:oraculum /app/target/*.jar app.jar
+
+# Switch to the non-root user
+USER 1000:1000
 
 # Expose the default Spring Boot port
 EXPOSE 8080
