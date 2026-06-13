@@ -40,7 +40,7 @@ public class DataFileLoadServiceImpl implements DataFileLoadService {
     }
 
     private Path resolveEventFilPath(String path) {
-        return Path.of(properties.harvester().exportPath()).resolve(path).normalize();
+        return Path.of(properties.harvester().dataPath()).resolve(path).normalize();
     }
 
     private void processEventByLoader(DataFileReadyEvent event, ParquetFileLoadService loader) {

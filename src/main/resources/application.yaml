@@ -1,4 +1,8 @@
 spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiAudioSpeechAutoConfiguration
+
   threads:
     virtual:
       enabled: true
@@ -61,15 +65,6 @@ oraculum:
       partition-cron: "0 0 5 1 * *"
       mv-refresh-cron: "0 0 4 * * TUE-SAT"
 
-  simfin:
-    api-key: ${ORACULUM_SIMFIN_API_KEY}
-    chunk-size: ${ORACULUM_SIMFIN_CHUNK_SIZE:500000}
-    refresh-days: ${ORACULUM_SIMFIN_REFRESH_DAYS:1}
-
-  alpha-vantage:
-    api-url: https://www.alphavantage.co
-    api-key: ${ORACULUM_ALPHA_VANTAGE_API_KEY}
-
   kafka:
     consumer-group: oraculum
     topics:
@@ -94,11 +89,11 @@ oraculum:
       history-limit: 30
 
   harvester:
-    export-path: ${ORACULUM_HARVESTER_EXPORT_PATH:./data/harvester}
-    export-cleanup:
-      enabled: ${ORACULUM_HARVESTER_EXPORT_CLEANUP_ENABLED:true}
-      retention-days: ${ORACULUM_HARVESTER_EXPORT_RETENTION_DAYS:1}
-      cron: ${ORACULUM_HARVESTER_EXPORT_CLEANUP_CRON:0 0 2 * * *}
+    data-path: ${ORACULUM_HARVESTER_DATA_PATH:./data/harvester}
+    data-cleanup:
+      enabled: ${ORACULUM_HARVESTER_DATA_CLEANUP_ENABLED:true}
+      retention-days: ${ORACULUM_HARVESTER_DATA_RETENTION_DAYS:1}
+      cron: ${ORACULUM_HARVESTER_DATA_CLEANUP_CRON:0 0 2 * * *}
 
   llm:
     common:

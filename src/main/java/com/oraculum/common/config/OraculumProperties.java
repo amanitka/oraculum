@@ -5,8 +5,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "oraculum")
 public record OraculumProperties(Data data,
                                  Database database,
-                                 Simfin simfin,
-                                 AlphaVantage alphaVantage,
                                  Kafka kafka,
                                  Harvester harvester) {
 
@@ -32,15 +30,6 @@ public record OraculumProperties(Data data,
         }
     }
 
-    public record Simfin(String apiKey,
-                         int chunkSize,
-                         int refreshDays) {
-    }
-
-    public record AlphaVantage(String apiUrl,
-                               String apiKey) {
-    }
-
     public record Kafka(Topics topics,
                         String brokers,
                         String consumerGroup) {
@@ -53,21 +42,11 @@ public record OraculumProperties(Data data,
         }
     }
 
-    public record Harvester(String exportPath,
-                            ExportCleanup exportCleanup) {
-        public Harvester {
-            exportPath = exportPath != null ? exportPath : "./data/harvester";
-            exportCleanup = exportCleanup != null ? exportCleanup : new ExportCleanup(true, 1, "0 0 2 * * *");
-        }
-
-        public record ExportCleanup(Boolean enabled,
-                                    Integer retentionDays,
-                                    String cron) {
-            public ExportCleanup {
-                enabled = enabled != null ? enabled : true;
-                retentionDays = retentionDays != null && retentionDays > 0 ? retentionDays : 1;
-                cron = cron != null ? cron : "0 0 2 * * *";
-            }
+    public record Harvester(String dataPath,
+                            DataCleanup dataCleanup) {
+        public record DataCleanup(Boolean enabled,
+                                  Integer retentionDays,
+                                  String cron) {
         }
     }
 }

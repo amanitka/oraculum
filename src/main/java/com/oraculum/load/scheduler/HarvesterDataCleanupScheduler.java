@@ -15,25 +15,25 @@ import java.time.temporal.ChronoUnit;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "oraculum.harvester.export-cleanup.enabled", havingValue = "true", matchIfMissing = true)
-public class HarvesterExportCleanupScheduler {
+@ConditionalOnProperty(name = "oraculum.harvester.data-cleanup.enabled", havingValue = "true", matchIfMissing = true)
+public class HarvesterDataCleanupScheduler {
 
     private final OraculumProperties properties;
 
-    @Scheduled(cron = "${oraculum.harvester.export-cleanup.cron}")
-    public void cleanupExportFolder() {
-        log.info("Starting scheduled harvester export cleanup...");
+    @Scheduled(cron = "${oraculum.harvester.data-cleanup.cron}")
+    public void cleanupHarvesterDataFolder() {
+        log.info("Starting scheduled harvester data cleanup...");
         try {
-            String exportPathStr = properties.harvester().exportPath();
-            Integer retentionDays = properties.harvester().exportCleanup().retentionDays();
+            String exportPathStr = properties.harvester().dataPath();
+            Integer retentionDays = properties.harvester().dataCleanup().retentionDays();
 
             Path exportPath = Path.of(exportPathStr);
             Instant cutoff = Instant.now().minus(retentionDays, ChronoUnit.DAYS);
 
             FileCleanupUtil.deleteFilesOlderThan(exportPath, cutoff);
-            log.info("Scheduled harvester export cleanup completed.");
+            log.info("Scheduled harvester data cleanup completed.");
         } catch (Exception e) {
-            log.error("Failed to run scheduled harvester export cleanup", e);
+            log.error("Failed to run scheduled harvester data cleanup", e);
         }
     }
 }
