@@ -35,6 +35,7 @@
         <lombok.version>1.18.38</lombok.version>
         <commonmark.version>0.28.0</commonmark.version>
         <apexcharts.version>25.0.0</apexcharts.version>
+        <resilience4j.version>2.2.0</resilience4j.version>
     </properties>
     <dependencies>
         <dependency>
@@ -126,6 +127,16 @@
             <groupId>com.github.appreciated</groupId>
             <artifactId>apexcharts</artifactId>
             <version>${apexcharts.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-retry</artifactId>
+            <version>${resilience4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-timelimiter</artifactId>
+            <version>${resilience4j.version}</version>
         </dependency>
     </dependencies>
     <dependencyManagement>

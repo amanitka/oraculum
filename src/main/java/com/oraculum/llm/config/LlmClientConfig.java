@@ -1,7 +1,9 @@
 package com.oraculum.llm.config;
 
 import com.openai.client.OpenAIClient;
+import com.openai.client.OpenAIClientAsync;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
+import com.openai.client.okhttp.OpenAIOkHttpClientAsync;
 import com.oraculum.llm.domain.LlmProviderType;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.openai.OpenAiChatModel;
@@ -30,10 +32,17 @@ public class LlmClientConfig {
                 .timeout(timeout)
                 .build();
 
+        OpenAIClientAsync openAiClientAsync = OpenAIOkHttpClientAsync.builder()
+                .apiKey(provider.apiKey())
+                .baseUrl(provider.baseUrl())
+                .timeout(timeout)
+                .build();
+
         OpenAiChatOptions options = OpenAiChatOptions.builder().temperature(properties.common().temperature()).timeout(timeout).build();
 
         return OpenAiChatModel.builder()
                 .openAiClient(openAiClient)
+                .openAiClientAsync(openAiClientAsync)
                 .options(options)
                 .build();
     }

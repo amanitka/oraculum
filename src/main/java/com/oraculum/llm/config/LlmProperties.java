@@ -9,18 +9,15 @@ import java.util.Map;
 
 @ConfigurationProperties(prefix = "oraculum.llm")
 public record LlmProperties(Common common,
-                            Retry retry,
                             Map<LlmProviderType, ProviderConfig> providers,
                             Map<LlmTierType, Map<LlmProviderType, String>> models) {
 
     public record Common(double temperature,
                          int maxCompletionTokens,
                          List<LlmProviderType> providerFallbackOrder,
-                         Integer timeout) {
-    }
-
-    public record Retry(int maxRetries,
-                        long initialBackoffMs) {
+                         Integer timeout,
+                         Integer maxRetries,
+                         Long retryDelayMs) {
     }
 
     public record ProviderConfig(String baseUrl,

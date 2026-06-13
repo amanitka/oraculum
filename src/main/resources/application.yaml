@@ -1,7 +1,7 @@
 spring:
-  autoconfigure:
-    exclude:
-      - org.springframework.ai.model.openai.autoconfigure.OpenAiAudioSpeechAutoConfiguration
+  ai:
+    openai:
+      api-key: "disabled"
 
   threads:
     virtual:
@@ -97,17 +97,15 @@ oraculum:
 
   llm:
     common:
+      timeout: 120
+      max-retries: 2
+      retry-delay-ms: 500
       temperature: 0.0
       max-completion-tokens: 8192
-      timeout: 120
       provider-fallback-order:
         - gemini
         - openai
         - groq
-
-    retry:
-      max-retries: 2
-      initial-backoff-ms: 1000
 
     providers:
       gemini:

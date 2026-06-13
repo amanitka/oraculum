@@ -8,12 +8,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.resilience.annotation.Retryable;
 import org.springframework.stereotype.Service;
+import lombok.RequiredArgsConstructor;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class LlmExecutionServiceImpl implements LlmExecutionService {
+
+    private final LlmResilienceExecutor resilience;
 
     private ChatClient.CallResponseSpec getCallResponse(LlmRequest<?> request) {
         return request.client()
@@ -45,22 +48,21 @@ public class LlmExecutionServiceImpl implements LlmExecutionService {
                 System.currentTimeMillis() - start);
     }
 
-    @Retryable(includes = {java.io.IOException.class, java.net.SocketTimeoutException.class}, maxRetriesString =
-            "$" + "{oraculum.llm.retry.max-retries}", delayString = "${oraculum.llm.retry.initial-backoff-ms}",
-            multiplier = 2.0, jitter = 200)
     @Override
     public <T> LlmResponse<T> executeCall(LlmRequest<T> request) {
-        log.info("Executing LLM call [Provider: {}, Model: {}]", request.provider(), request.model());
-        log.debug("Prompt:\n{}", request.prompt());
-        long start = System.currentTimeMillis();
-        var callResponse = getCallResponse(request);
-        var responseEntity = callResponse.responseEntity(request.responseType());
-        var entity = responseEntity.entity();
-        var metrics = getMetrics(request, responseEntity.response(), start);
-        log.info("LLM call completed in {} ms. Tokens - Prompt: {}, Completion: {}, Total: {}", 
-                metrics.latencyMs(), metrics.promptTokens(), metrics.completionTokens(), metrics.totalTokens());
-        log.debug("Response:\n{}", entity);
+        return resilience.execute(() -> {
+            log.info("Executing LLM call [Provider: {}, Model: {}]", request.provider(), request.model());
+            log.debug("Prompt:\n{}", request.prompt());
+            long start = System.currentTimeMillis();
+            var callResponse = getCallResponse(request);
+            var responseEntity = callResponse.responseEntity(request.responseType());
+            var entity = responseEntity.entity();
+            var metrics = getMetrics(request, responseEntity.response(), start);
+            log.info("LLM call completed in {} ms. Tokens - Prompt: {}, Completion: {}, Total: {}", 
+                    metrics.latencyMs(), metrics.promptTokens(), metrics.completionTokens(), metrics.totalTokens());
+            log.debug("Response:\n{}", entity);
 
-        return new LlmResponse<>(entity, metrics);
+            return new LlmResponse<>(entity, metrics);
+        });
     }
 }
