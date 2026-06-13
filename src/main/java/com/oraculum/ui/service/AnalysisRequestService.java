@@ -1,27 +1,22 @@
 package com.oraculum.ui.service;
 
-import com.oraculum.analyst.api.dto.CompanyAnalysisRequest;
-import com.oraculum.common.config.OraculumProperties;
+import com.oraculum.analyst.api.dto.CompanyAnalysisRequestEvent;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class AnalysisRequestService {
 
-    private final KafkaTemplate<String, Object> kafkaTemplate;
-    private final String topic;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public AnalysisRequestService(KafkaTemplate<String, Object> kafkaTemplate, OraculumProperties properties) {
-        this.kafkaTemplate = kafkaTemplate;
-        this.topic = properties.kafka().topics().analystRequest();
-    }
-
-    public void requestAnalysis(CompanyAnalysisRequest request) {
+    public void requestAnalysis(CompanyAnalysisRequestEvent request) {
         try {
-            kafkaTemplate.send(topic, request);
-            log.info("Published analysis request [{}] to topic {}", request, topic);
+            eventPublisher.publishEvent(request);
+            log.info("Published analysis request [{}]", request);
         } catch (Exception e) {
             log.error("Failed to publish analysis request [{}]", request, e);
             throw new RuntimeException("Failed to publish analysis request: " + e.getMessage(), e);

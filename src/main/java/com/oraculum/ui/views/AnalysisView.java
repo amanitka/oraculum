@@ -4,7 +4,7 @@ import com.oraculum.analyst.api.CompanyAnalysisApi;
 import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.api.domain.AnalysisStatus;
 import com.oraculum.analyst.api.dto.CompanyAnalysisDto;
-import com.oraculum.analyst.api.dto.CompanyAnalysisRequest;
+import com.oraculum.analyst.api.dto.CompanyAnalysisRequestEvent;
 import com.oraculum.company.api.CompanyApi;
 import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.dto.CompanyDto;
@@ -153,7 +153,7 @@ public class AnalysisView extends VerticalLayout {
             return;
         }
         try {
-            CompanyAnalysisRequest request = new CompanyAnalysisRequest(UUID.randomUUID(),
+            CompanyAnalysisRequestEvent request = new CompanyAnalysisRequestEvent(UUID.randomUUID(),
                     company.id(), company.ticker(), company.market(),
                     LocalDate.now(), variantComboBox.getValue());
             analysisRequestService.requestAnalysis(request);

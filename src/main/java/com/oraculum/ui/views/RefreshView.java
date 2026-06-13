@@ -16,12 +16,10 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.router.RouteAlias;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import org.springframework.context.ApplicationEventPublisher;
 
 @Route(value = "refresh", layout = MainLayout.class)
-@RouteAlias(value = "", layout = MainLayout.class)
 @PageTitle("Refresh | Oraculum")
 public class RefreshView extends VerticalLayout {
 

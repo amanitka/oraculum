@@ -6,7 +6,7 @@ import com.oraculum.analyst.agent.dto.SynthesizerAgentOutput;
 import com.oraculum.analyst.agent.service.Agent;
 import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.api.domain.AnalysisStatus;
-import com.oraculum.analyst.api.dto.CompanyAnalysisRequest;
+import com.oraculum.analyst.api.dto.CompanyAnalysisRequestEvent;
 import com.oraculum.analyst.config.AnalystProperties;
 import com.oraculum.analyst.dto.CompanyAnalysisResult;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
@@ -37,7 +37,7 @@ public class CompanyAnalysisWorkflowService {
     private final CompanyFactSheetDataService companyFactSheetDataService;
     private final Map<AgentType, Agent<?>> agents;
 
-    private Map<AgentType, StatementVariant> getAgentStatementVariants(CompanyAnalysisRequest request, PlannerPlan plan) {
+    private Map<AgentType, StatementVariant> getAgentStatementVariants(CompanyAnalysisRequestEvent request, PlannerPlan plan) {
         Map<AgentType, StatementVariant> variants = new EnumMap<>(AgentType.class);
         if (request.statementVariant() != null) {
             Stream.of(AgentType.values()).filter(AgentType::isSpecialist).forEach(type -> variants.put(type, request.statementVariant()));
@@ -59,7 +59,7 @@ public class CompanyAnalysisWorkflowService {
         return variants;
     }
 
-    public CompanyAnalysisResult run(CompanyAnalysisRequest request) {
+    public CompanyAnalysisResult run(CompanyAnalysisRequestEvent request) {
         long startTime = System.currentTimeMillis();
         int totalTokens = 0;
         Map<AgentType, Object> agentTrace = new EnumMap<>(AgentType.class);

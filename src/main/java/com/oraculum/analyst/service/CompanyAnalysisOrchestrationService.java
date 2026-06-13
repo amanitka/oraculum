@@ -1,7 +1,7 @@
 package com.oraculum.analyst.service;
 
 import com.oraculum.analyst.api.domain.AnalysisStatus;
-import com.oraculum.analyst.api.dto.CompanyAnalysisRequest;
+import com.oraculum.analyst.api.dto.CompanyAnalysisRequestEvent;
 import com.oraculum.analyst.domain.CompanyAnalysisEntity;
 import com.oraculum.analyst.dto.CompanyAnalysisResult;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +22,7 @@ public class CompanyAnalysisOrchestrationService {
     private final ObjectMapper objectMapper;
 
     @Transactional
-    public void executeAnalysis(CompanyAnalysisRequest request) {
+    public void executeAnalysis(CompanyAnalysisRequestEvent request) {
         log.info("Handling orchestrated company analysis request for {}", request.ticker());
         if (companyAnalysisService.isAnalysisCompleted(request.correlationId())) {
             log.info("Analysis already completed for ticker {}, correlation id {}", request.ticker(), request.correlationId());
@@ -44,7 +44,7 @@ public class CompanyAnalysisOrchestrationService {
         }
     }
 
-    private CompanyAnalysisEntity initAnalysis(CompanyAnalysisRequest request) {
+    private CompanyAnalysisEntity initAnalysis(CompanyAnalysisRequestEvent request) {
         CompanyAnalysisEntity entity = new CompanyAnalysisEntity();
         entity.setId(request.correlationId());
         entity.setCompanyId(request.companyId());

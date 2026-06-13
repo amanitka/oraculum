@@ -37,8 +37,7 @@ public record OraculumProperties(Data data,
                              String market,
                              String industry,
                              String news,
-                             String harvesterRequest,
-                             String analystRequest) {
+                             String harvesterRequest) {
         }
     }
 

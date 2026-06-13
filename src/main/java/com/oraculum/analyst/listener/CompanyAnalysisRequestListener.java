@@ -1,10 +1,11 @@
 package com.oraculum.analyst.listener;
 
-import com.oraculum.analyst.api.dto.CompanyAnalysisRequest;
+import com.oraculum.analyst.api.dto.CompanyAnalysisRequestEvent;
 import com.oraculum.analyst.service.CompanyAnalysisOrchestrationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -14,12 +15,13 @@ public class CompanyAnalysisRequestListener {
 
     private final CompanyAnalysisOrchestrationService orchestrationService;
 
-    @KafkaListener(topics = "${oraculum.kafka.topics.analyst-request}", groupId = "${oraculum.kafka.consumer-group}")
-    public void executeCompanyAnalysisRequest(CompanyAnalysisRequest request) {
+    @Async("analysisExecutor")
+    @EventListener
+    public void handleCompanyAnalysisRequestedEvent(CompanyAnalysisRequestEvent event) {
         try {
-            orchestrationService.executeAnalysis(request);
+            orchestrationService.executeAnalysis(event);
         } catch (Exception e) {
-            log.error("Failed to execute analysis request: {}", e.getMessage(), e);
+            log.error("Failed to execute analysis request asynchronously: {}", e.getMessage(), e);
         }
     }
 }

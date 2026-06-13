@@ -96,7 +96,6 @@ oraculum:
       industry: oraculum.industry
       news: oraculum.news
       harvester-request: oraculum.harvester.request
-      analyst-request: oraculum.analyst.request
 
   analyst:
     token-budget: 100000

@@ -1,6 +1,6 @@
 package com.oraculum.ui.views;
 
-import com.oraculum.analyst.api.dto.CompanyAnalysisRequest;
+import com.oraculum.analyst.api.dto.CompanyAnalysisRequestEvent;
 import com.oraculum.company.api.CompanyApi;
 import com.oraculum.company.api.domain.CompanySize;
 import com.oraculum.company.api.dto.NewsTickerDto;
@@ -28,6 +28,7 @@ import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.data.renderer.NumberRenderer;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.RouteAlias;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import tools.jackson.databind.ObjectMapper;
 
@@ -40,6 +41,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Route(value = "screener", layout = MainLayout.class)
+@RouteAlias(value = "", layout = MainLayout.class)
 @PageTitle("Screener")
 public class ScreenerView extends VerticalLayout {
 
@@ -138,7 +140,7 @@ public class ScreenerView extends VerticalLayout {
     private void triggerAnalysisMaster(Set<ScreenerMasterDto> selectedItems, Grid<ScreenerMasterDto> grid) {
         if (!validateBatchSelection(selectedItems.size())) return;
         for (ScreenerMasterDto item : selectedItems) {
-            analysisRequestService.requestAnalysis(new CompanyAnalysisRequest(UUID.randomUUID(),
+            analysisRequestService.requestAnalysis(new CompanyAnalysisRequestEvent(UUID.randomUUID(),
                     item.companyId(), item.ticker(), item.market(), LocalDate.now(), null));
         }
         ViewHelper.showSuccess("Triggered analysis for " + selectedItems.size() + " companies.");
@@ -148,7 +150,7 @@ public class ScreenerView extends VerticalLayout {
     private void triggerAnalysisNewsSentiment(Set<ScreenerNewsSentimentDto> selectedItems, Grid<ScreenerNewsSentimentDto> grid) {
         if (!validateBatchSelection(selectedItems.size())) return;
         for (ScreenerNewsSentimentDto item : selectedItems) {
-            analysisRequestService.requestAnalysis(new CompanyAnalysisRequest(UUID.randomUUID(),
+            analysisRequestService.requestAnalysis(new CompanyAnalysisRequestEvent(UUID.randomUUID(),
                     item.companyId(), item.ticker(), item.market(), LocalDate.now(), null));
         }
         ViewHelper.showSuccess("Triggered analysis for " + selectedItems.size() + " companies.");
@@ -158,7 +160,7 @@ public class ScreenerView extends VerticalLayout {
     private void triggerAnalysisStandard(Set<ScreenerDto> selectedItems, Grid<ScreenerDto> grid) {
         if (!validateBatchSelection(selectedItems.size())) return;
         for (ScreenerDto item : selectedItems) {
-            analysisRequestService.requestAnalysis(new CompanyAnalysisRequest(UUID.randomUUID(),
+            analysisRequestService.requestAnalysis(new CompanyAnalysisRequestEvent(UUID.randomUUID(),
                     item.companyId(), item.ticker(), item.market(), LocalDate.now(), null));
         }
         ViewHelper.showSuccess("Triggered analysis for " + selectedItems.size() + " companies.");
