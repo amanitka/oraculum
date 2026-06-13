@@ -284,6 +284,7 @@
                         <version>${vaadin.version}</version>
                         <configuration>
                             <productionMode>true</productionMode>
+                            <forceProductionBuild>true</forceProductionBuild>
                         </configuration>
                         <executions>
                             <execution>
