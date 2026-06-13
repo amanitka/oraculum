@@ -11,7 +11,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @Service
@@ -48,10 +51,11 @@ public class LlmExecutionServiceImpl implements LlmExecutionService {
                 System.currentTimeMillis() - start);
     }
 
+    @Async
     @Override
     @TimeLimiter(name = "llm")
     @Retry(name = "llm")
-    public <T> LlmResponse<T> executeCall(LlmRequest<T> request) {
+    public <T> CompletableFuture<LlmResponse<T>> executeCall(LlmRequest<T> request) {
         log.info("Executing LLM call [Provider: {}, Model: {}]", request.provider(), request.model());
         log.debug("Prompt:\n{}", request.prompt());
         long start = System.currentTimeMillis();
@@ -63,6 +67,6 @@ public class LlmExecutionServiceImpl implements LlmExecutionService {
                 metrics.latencyMs(), metrics.promptTokens(), metrics.completionTokens(), metrics.totalTokens());
         log.debug("Response:\n{}", entity);
 
-        return new LlmResponse<>(entity, metrics);
+        return CompletableFuture.completedFuture(new LlmResponse<>(entity, metrics));
     }
 }

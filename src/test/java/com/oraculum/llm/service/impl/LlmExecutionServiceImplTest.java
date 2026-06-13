@@ -60,7 +60,8 @@ class LlmExecutionServiceImplTest {
         when(responseSpec.responseEntity(String.class)).thenReturn(new ResponseEntity<>(null, expectedResponse));
 
         // Act
-        LlmResponse<String> result = executionService.executeCall(request);
+        var resultFuture = executionService.executeCall(request);
+        LlmResponse<String> result = resultFuture.join();
 
         // Assert
         assertEquals(expectedResponse, result.result());

@@ -43,7 +43,7 @@ public class LlmRouterServiceImpl implements LlmRouterService {
                         model,
                         properties.common().temperature(),
                         properties.common().maxCompletionTokens(),
-                        type));
+                        type)).join();
                 health.markSuccess(provider);
                 return result;
             } catch (Exception e) {
