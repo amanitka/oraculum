@@ -27,7 +27,7 @@ COPY package.json vite.config.ts tsconfig.json types.d.ts ./
 COPY package-lock.json* ./
 
 # Build the application with production profile
-RUN ./mvnw clean package -Pproduction -DskipTests
+RUN ./mvnw clean package -Pproduction -Dvaadin.productionMode=true -DskipTests
 
 # ==========================================
 # Stage 2: Create the final minimal image
