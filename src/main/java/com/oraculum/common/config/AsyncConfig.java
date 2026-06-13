@@ -1,5 +1,6 @@
 package com.oraculum.common.config;
 
+import com.vaadin.flow.spring.annotation.VaadinTaskExecutor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -12,6 +13,7 @@ import java.util.concurrent.Executor;
 public class AsyncConfig {
 
     @Primary
+    @VaadinTaskExecutor
     @Bean(name = "taskExecutor")
     public Executor taskExecutor() {
         SimpleAsyncTaskExecutor executor = new SimpleAsyncTaskExecutor("taskExecutor-");
