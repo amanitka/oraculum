@@ -44,8 +44,7 @@ class LlmRouterServiceImplTest {
         LlmProperties properties = new LlmProperties(new LlmProperties.Common(0.7,
                 1000,
                 List.of(LlmProviderType.OPENAI, LlmProviderType.GEMINI),
-                60),
-                new LlmProperties.Retry(3, 1000),
+                60, 3, 1000L),
                 Map.of(),
                 models);
 
@@ -146,7 +145,7 @@ class LlmRouterServiceImplTest {
         LlmProperties propertiesWithMissingTier = new LlmProperties(new LlmProperties.Common(0.7,
                 1000,
                 List.of(LlmProviderType.OPENAI),
-                60), new LlmProperties.Retry(3, 1000), Map.of(), Map.of());
+                60, 3, 1000L), Map.of(), Map.of());
         routerService = new LlmRouterServiceImpl(Map.of(LlmProviderType.OPENAI, openaiClient),
                 executionService,
                 health,
