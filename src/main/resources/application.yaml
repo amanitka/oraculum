@@ -39,6 +39,24 @@ spring:
       ddl-auto: none
     show-sql: false
 
+resilience4j:
+  retry:
+    retry-aspect-order: 399
+    instances:
+      llm:
+        max-attempts: 2
+        wait-duration: 1s
+        retry-exceptions:
+          - java.io.IOException
+          - java.net.SocketTimeoutException
+          - java.util.concurrent.TimeoutException
+  timelimiter:
+    time-limiter-aspect-order: 400
+    instances:
+      llm:
+        timeout-duration: 120s
+        cancel-running-future: true
+
 vaadin:
   launch-browser: true
 
@@ -102,9 +120,6 @@ oraculum:
 
   llm:
     common:
-      timeout: 120
-      max-retries: 2
-      retry-delay-ms: 500
       temperature: 0.0
       max-completion-tokens: 8192
       provider-fallback-order:

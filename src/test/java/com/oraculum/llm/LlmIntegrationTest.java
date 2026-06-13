@@ -23,8 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @SpringBootTest
 @ActiveProfiles("test")
-@EnabledIfEnvironmentVariables({@EnabledIfEnvironmentVariable(named = "GROQ_API_KEY", matches = ".*"),
-        @EnabledIfEnvironmentVariable(named = "GEMINI_API_KEY", matches = ".*")})
+@EnabledIfEnvironmentVariables({@EnabledIfEnvironmentVariable(named = "ORACULUM_GROQ_API_KEY", matches = ".*"),
+        @EnabledIfEnvironmentVariable(named = "ORACULUM_GEMINI_API_KEY", matches = ".*")})
 public class LlmIntegrationTest {
 
     @Autowired

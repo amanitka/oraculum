@@ -30,12 +30,10 @@ class LlmExecutionServiceImplTest {
     @Mock
     private ChatClient.CallResponseSpec responseSpec;
 
-    @Mock
-    private LlmResilienceExecutor resilienceExecutor;
 
     @BeforeEach
     void setUp() {
-        executionService = new LlmExecutionServiceImpl(resilienceExecutor);
+        executionService = new LlmExecutionServiceImpl();
     }
 
     @Test
@@ -54,12 +52,7 @@ class LlmExecutionServiceImplTest {
                 temperature,
                 maxCompletionTokens,
                 String.class);
-
-        when(resilienceExecutor.execute(any())).thenAnswer(invocation -> {
-            java.util.concurrent.Callable<?> callable = invocation.getArgument(0);
-            return callable.call();
-        });
-
+        
         when(chatClient.prompt()).thenReturn(requestSpec);
         when(requestSpec.user(prompt)).thenReturn(requestSpec);
         when(requestSpec.options(any())).thenReturn(requestSpec);
