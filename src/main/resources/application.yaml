@@ -31,8 +31,8 @@ spring:
 
   flyway:
     enabled: true
-    schemas: ${ORACULUM_FLYWAY_DEFAULT_SCHEMA}
-    default-schema: ${ORACULUM_FLYWAY_DEFAULT_SCHEMA}
+    schemas: ${ORACULUM_FLYWAY_DEFAULT_SCHEMA:public}
+    default-schema: ${ORACULUM_FLYWAY_DEFAULT_SCHEMA:public}
 
   jpa:
     hibernate:
