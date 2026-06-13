@@ -35,8 +35,8 @@ RUN ./mvnw clean package -Pproduction -DskipTests
 FROM eclipse-temurin:25-jre
 
 # Create a non-root user and group
-RUN groupadd -g 1000 oraculum && \
-    useradd -r -u 1000 -g oraculum -d /app oraculum
+RUN groupadd -g 10000 oraculum && \
+    useradd -r -u 10000 -g oraculum -d /app oraculum
 
 WORKDIR /app
 
@@ -44,7 +44,7 @@ WORKDIR /app
 COPY --from=builder --chown=oraculum:oraculum /app/target/*.jar app.jar
 
 # Switch to the non-root user
-USER 1000:1000
+USER 10000:10000
 
 # Expose the default Spring Boot port
 EXPOSE 8080
