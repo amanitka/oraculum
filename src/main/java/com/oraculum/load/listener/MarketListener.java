@@ -18,6 +18,7 @@ public class MarketListener {
             containerFactory = "kafkaListenerContainerFactory")
     public void onMarket(MarketDto market) {
         try {
+            log.debug("Received market: {}", market.marketId());
             companyLoadApi.createOrUpdateMarket(market);
         } catch (Exception e) {
             log.error("Failed to process market {}, discarding message", market.marketId(), e);

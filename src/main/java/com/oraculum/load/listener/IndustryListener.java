@@ -18,7 +18,7 @@ public class IndustryListener {
             containerFactory = "kafkaListenerContainerFactory")
     public void onIndustry(IndustryDto industry) {
         try {
-            log.info("Received industry: {}", industry.industryId());
+            log.debug("Received industry: {}", industry.industryName());
             companyLoadApi.createOrUpdateIndustry(industry);
         } catch (Exception e) {
             log.error("Failed to process industry {}, discarding message", industry.industryId(), e);

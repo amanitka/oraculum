@@ -14,10 +14,16 @@ spring:
   application:
     name: oraculum
 
+  logging:
+    level:
+      org.apache.kafka: WARN
+
   datasource:
     url: jdbc:postgresql://${ORACULUM_DATABASE_HOST}:${ORACULUM_DATABASE_PORT}/${ORACULUM_DATABASE_NAME}
     username: ${ORACULUM_DATABASE_USERNAME}
     password: ${ORACULUM_DATABASE_PASSWORD}
+    hikari:
+      max-lifetime: 540000 # 9 minutes (shorter than the default 30 mins)
 
   kafka:
     bootstrap-servers: ${ORACULUM_KAFKA_BROKERS}
@@ -111,11 +117,11 @@ oraculum:
       history-limit: 30
 
   harvester:
-    data-path: ${ORACULUM_HARVESTER_DATA_PATH:./data/harvester}
-    data-cleanup:
-      enabled: ${ORACULUM_HARVESTER_DATA_CLEANUP_ENABLED:true}
-      retention-days: ${ORACULUM_HARVESTER_DATA_RETENTION_DAYS:1}
-      cron: ${ORACULUM_HARVESTER_DATA_CLEANUP_CRON:0 0 2 * * *}
+    exchange-directory: ${ORACULUM_HARVESTER_EXCHANGE_DIR:./data/exchange}
+    exchange-cleanup:
+      enabled: ${ORACULUM_HARVESTER_EXCHANGE_CLEANUP_ENABLED:true}
+      retention-days: ${ORACULUM_HARVESTER_EXCHANGE_RETENTION_DAYS:1}
+      cron: ${ORACULUM_HARVESTER_EXCHANGE_CLEANUP_CRON:0 0 2 * * *}
 
   llm:
     common:

@@ -41,11 +41,11 @@ public record OraculumProperties(Data data,
         }
     }
 
-    public record Harvester(String dataPath,
-                            DataCleanup dataCleanup) {
-        public record DataCleanup(Boolean enabled,
-                                  Integer retentionDays,
-                                  String cron) {
+    public record Harvester(String exchangeDirectory,
+                            ExchangeCleanup exchangeCleanup) {
+        public record ExchangeCleanup(Boolean enabled,
+                                      Integer retentionDays,
+                                      String cron) {
         }
     }
 }
