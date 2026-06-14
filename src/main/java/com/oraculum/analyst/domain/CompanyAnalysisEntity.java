@@ -8,10 +8,9 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnTransformer;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
-import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -59,8 +58,8 @@ public class CompanyAnalysisEntity {
 
     private Integer conviction;
 
-    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "analysis_data", columnDefinition = "json")
+    @ColumnTransformer(write = "?::json")
     private String analysisData;
 
     @Column(columnDefinition = "TEXT")

@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
+import com.oraculum.ui.api.AnalysisProgressBroadcasterService;
 
 import java.time.LocalDate;
 
@@ -20,6 +21,7 @@ public class CompanyAnalysisOrchestrationService {
     private final CompanyAnalysisService companyAnalysisService;
     private final CompanyAnalysisWorkflowService workflow;
     private final ObjectMapper objectMapper;
+    private final AnalysisProgressBroadcasterService broadcaster;
 
     @Transactional
     public void executeAnalysis(CompanyAnalysisRequestEvent request) {
@@ -64,6 +66,7 @@ public class CompanyAnalysisOrchestrationService {
         entity.setStatus(AnalysisStatus.FAILED);
         entity.setError(error);
         companyAnalysisService.createOrUpdateAnalysis(entity);
+        broadcaster.broadcast(entity.getId(), null, true);
     }
 
     private void completeAnalysis(CompanyAnalysisEntity entity, CompanyAnalysisResult result) {
@@ -76,6 +79,7 @@ public class CompanyAnalysisOrchestrationService {
             entity.setAnalysisData(objectMapper.writeValueAsString(result.agentTrace()));
             entity.setError(result.error());
             companyAnalysisService.createOrUpdateAnalysis(entity);
+            broadcaster.broadcast(entity.getId(), null, true);
         } catch (Exception e) {
             log.error("Failed to serialize analysis trace for {}: {}", entity.getTicker(), e.getMessage());
             markAsFailed(entity, "Failed to serialize agent trace: " + e.getMessage());

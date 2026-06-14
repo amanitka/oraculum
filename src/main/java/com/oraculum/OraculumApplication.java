@@ -1,9 +1,10 @@
 package com.oraculum;
 
+import com.vaadin.flow.component.dependency.StyleSheet;
 import com.vaadin.flow.component.page.AppShellConfigurator;
 import com.vaadin.flow.component.page.ColorScheme;
+import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.theme.lumo.Lumo;
-import com.vaadin.flow.component.dependency.StyleSheet;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
@@ -14,6 +15,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @ConfigurationPropertiesScan
 @EnableScheduling
 @EnableAsync
+@Push
 @ColorScheme(ColorScheme.Value.LIGHT_DARK)
 @StyleSheet(Lumo.STYLESHEET)
 @StyleSheet("./themes/oraculum/styles.css")

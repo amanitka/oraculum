@@ -11,6 +11,7 @@ import com.oraculum.analyst.dto.CompanyFactSheetData;
 import com.oraculum.company.api.CompanyApi;
 import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.dto.CompanyDto;
+import com.oraculum.ui.api.AnalysisProgressBroadcasterService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,6 +32,7 @@ public class CompanyAnalysisWorkflowService {
     private final AnalystProperties analystProperties;
     private final CompanyFactSheetDataService companyFactSheetDataService;
     private final Map<AgentType, Agent<?>> agents;
+    private final AnalysisProgressBroadcasterService broadcaster;
 
     public CompanyAnalysisResult run(CompanyAnalysisRequestEvent request) {
         long startMs = System.currentTimeMillis();
@@ -41,9 +43,9 @@ public class CompanyAnalysisWorkflowService {
             AgentContext ctx = initializeContext(request);
 
             runPlannerPhase(request, ctx);
-            runSpecialistPhase(ctx);
-            runCriticCorrectionLoop(ctx);
-            SynthesizerAgentOutput finalOutput = runSynthesizerPhase(ctx);
+            runSpecialistPhase(request, ctx);
+            runCriticCorrectionLoop(request, ctx);
+            SynthesizerAgentOutput finalOutput = runSynthesizerPhase(request, ctx);
 
             return createSuccessResult(request, ctx, finalOutput, startMs, now);
         } catch (Exception e) {
@@ -66,6 +68,7 @@ public class CompanyAnalysisWorkflowService {
 
     private void runPlannerPhase(CompanyAnalysisRequestEvent request, AgentContext ctx) {
         log.info("Starting Planner phase");
+        broadcaster.broadcast(request.correlationId(), AgentType.PLANNER, false);
         @SuppressWarnings("unchecked")
         Agent<PlannerPlan> planner = (Agent<PlannerPlan>) agents.get(AgentType.PLANNER);
         var output = planner.run(ctx);
@@ -78,7 +81,7 @@ public class CompanyAnalysisWorkflowService {
         ctx.state().setStatementVariants(getAgentStatementVariants(request, plan));
     }
 
-    private void runSpecialistPhase(AgentContext ctx) {
+    private void runSpecialistPhase(CompanyAnalysisRequestEvent request, AgentContext ctx) {
         List<Agent<?>> specialists = Arrays.stream(AgentType.values())
                 .filter(AgentType::isSpecialist)
                 .sorted(Comparator.comparingInt(AgentType::getExecutionOrder))
@@ -88,6 +91,7 @@ public class CompanyAnalysisWorkflowService {
 
         for (Agent<?> agent : specialists) {
             log.info("Starting {} phase", agent.getName());
+            broadcaster.broadcast(request.correlationId(), agent.getName(), false);
             var output = agent.run(ctx);
             ctx.state().putAgentOutput(agent.getName(), output.result());
             recordTraceAndTokens(ctx, agent.getName().name(), output);
@@ -95,13 +99,14 @@ public class CompanyAnalysisWorkflowService {
         }
     }
 
-    private void runCriticCorrectionLoop(AgentContext ctx) {
+    private void runCriticCorrectionLoop(CompanyAnalysisRequestEvent request, AgentContext ctx) {
         int maxReruns = analystProperties.critic().maxReruns();
         int maxSpecialistsPerRerun = analystProperties.critic().maxSpecialistsPerRerun();
         Agent<?> critic = agents.get(AgentType.CRITIC);
 
         for (int rerunCount = 0; rerunCount <= maxReruns; rerunCount++) {
             log.info("Starting Critic phase (rerunCount: {})", rerunCount);
+            broadcaster.broadcast(request.correlationId(), AgentType.CRITIC, false);
             var outputRaw = critic.run(ctx);
             CriticAgentOutput output = (CriticAgentOutput) outputRaw.result();
 
@@ -119,7 +124,7 @@ public class CompanyAnalysisWorkflowService {
                 break;
             }
 
-            executeSpecialistReruns(ctx, toRerun, rerunCount);
+            executeSpecialistReruns(request, ctx, toRerun, rerunCount);
         }
     }
 
@@ -135,7 +140,7 @@ public class CompanyAnalysisWorkflowService {
                 .toList();
     }
 
-    private void executeSpecialistReruns(AgentContext ctx, List<CriticAgentOutput.RerunInstruction> reruns, int rerunCount) {
+    private void executeSpecialistReruns(CompanyAnalysisRequestEvent request, AgentContext ctx, List<CriticAgentOutput.RerunInstruction> reruns, int rerunCount) {
         log.info("Critic triggered rerun {} for: {}", rerunCount + 1, reruns.stream().map(CriticAgentOutput.RerunInstruction::specialist).toList());
 
         Map<AgentType, String> feedbackMap = reruns.stream()
@@ -146,6 +151,7 @@ public class CompanyAnalysisWorkflowService {
             AgentType type = instruction.specialist();
             Agent<?> agent = agents.get(type);
             log.info("Re-running {} phase based on Critic feedback", type.getAgentName());
+            broadcaster.broadcast(request.correlationId(), type, false);
             var output = agent.run(ctx);
             ctx.state().putAgentOutput(type, output.result());
             recordTraceAndTokens(ctx, type.name() + "_RERUN_" + rerunCount, output);
@@ -153,8 +159,9 @@ public class CompanyAnalysisWorkflowService {
         ctx.state().clearCriticFeedback();
     }
 
-    private SynthesizerAgentOutput runSynthesizerPhase(AgentContext ctx) {
+    private SynthesizerAgentOutput runSynthesizerPhase(CompanyAnalysisRequestEvent request, AgentContext ctx) {
         log.info("Starting Synthesizer phase");
+        broadcaster.broadcast(request.correlationId(), AgentType.SYNTHESIZER, false);
         @SuppressWarnings("unchecked")
         Agent<SynthesizerAgentOutput> synthesizer = (Agent<SynthesizerAgentOutput>) agents.get(AgentType.SYNTHESIZER);
         var output = synthesizer.run(ctx);

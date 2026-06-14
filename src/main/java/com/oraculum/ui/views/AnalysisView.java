@@ -9,6 +9,7 @@ import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.ui.MainLayout;
 import com.oraculum.ui.ViewHelper;
+import com.oraculum.ui.api.AnalysisProgressBroadcasterService;
 import com.oraculum.ui.service.AnalysisRequestService;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Html;
@@ -60,17 +61,20 @@ public class AnalysisView extends VerticalLayout {
     private final CompanyAnalysisApi companyAnalysisApi;
     private final AnalysisRequestService analysisRequestService;
     private final ObjectMapper objectMapper;
+    private final AnalysisProgressBroadcasterService broadcaster;
     private ComboBox<CompanyDto> companyComboBox;
     private ComboBox<StatementVariant> variantComboBox;
     private Grid<CompanyAnalysisDto> grid;
+    private java.util.List<CompanyAnalysisDto> gridData;
 
     // ── Trigger Toolbar ────────────────────────────────────────────────────
 
-    public AnalysisView(CompanyApi companyApi, CompanyAnalysisApi companyAnalysisApi, AnalysisRequestService analysisRequestService, ObjectMapper objectMapper) {
+    public AnalysisView(CompanyApi companyApi, CompanyAnalysisApi companyAnalysisApi, AnalysisRequestService analysisRequestService, ObjectMapper objectMapper, AnalysisProgressBroadcasterService broadcaster) {
         this.companyApi = companyApi;
         this.companyAnalysisApi = companyAnalysisApi;
         this.analysisRequestService = analysisRequestService;
         this.objectMapper = objectMapper;
+        this.broadcaster = broadcaster;
 
         setSizeFull();
         setPadding(true);
@@ -152,12 +156,24 @@ public class AnalysisView extends VerticalLayout {
             return;
         }
         try {
-            CompanyAnalysisRequestEvent request = new CompanyAnalysisRequestEvent(UUID.randomUUID(),
+            UUID correlationId = UUID.randomUUID();
+            CompanyAnalysisRequestEvent request = new CompanyAnalysisRequestEvent(correlationId,
                     company.id(), company.ticker(), company.market(),
                     LocalDate.now(), variantComboBox.getValue());
+
+            CompanyAnalysisDto transientDto = new CompanyAnalysisDto();
+            transientDto.setId(correlationId);
+            transientDto.setCompanyId(company.id());
+            transientDto.setTicker(company.ticker());
+            transientDto.setMarket(company.market());
+            transientDto.setStatus(AnalysisStatus.QUEUED);
+            transientDto.setAnalysisDate(LocalDate.now());
+
+            gridData.addFirst(transientDto);
+            grid.getDataProvider().refreshAll();
+
             analysisRequestService.requestAnalysis(request);
             ViewHelper.showSuccess("Analysis triggered for " + company.ticker());
-            grid.getDataProvider().refreshAll();
         } catch (Exception e) {
             ViewHelper.showError("Failed to trigger analysis: " + e.getMessage());
         }
@@ -176,7 +192,8 @@ public class AnalysisView extends VerticalLayout {
         grid = buildGrid();
 
         List<CompanyAnalysisDto> data = companyAnalysisApi.getCompanyAnalysisList(PageRequest.of(0, 1000)).getContent();
-        GridListDataView<CompanyAnalysisDto> dataView = grid.setItems(data);
+        gridData = new java.util.ArrayList<>(data);
+        GridListDataView<CompanyAnalysisDto> dataView = grid.setItems(gridData);
         setupFilters(dataView);
 
         layout.add(title, grid);
@@ -196,10 +213,15 @@ public class AnalysisView extends VerticalLayout {
         g.addColumn(CompanyAnalysisDto::getTicker).setHeader("Ticker").setKey("ticker").setSortable(true);
         g.addColumn(CompanyAnalysisDto::getMarket).setHeader("Market").setKey("market").setSortable(true);
 
-        g.addColumn(new ComponentRenderer<>(a -> ViewHelper.statusBadge(a.getStatus())))
-                .setHeader("Status").setKey("status")
+        g.addColumn(new ComponentRenderer<>(a -> {
+                    if (a.getStatus() == AnalysisStatus.QUEUED || a.getStatus() == AnalysisStatus.RUNNING) {
+                        return new ProgressCell(a, broadcaster, this::refreshGridData);
+                    }
+                    return ViewHelper.statusBadge(a.getStatus());
+                })).setHeader("Status").setKey("status")
                 .setComparator(Comparator.comparing(CompanyAnalysisDto::getStatus, Comparator.nullsLast(Comparator.naturalOrder())))
-                .setSortable(true);
+                .setSortable(true)
+                .setAutoWidth(true);
 
         g.addColumn(CompanyAnalysisDto::getConviction).setHeader("Conviction").setSortable(true);
 
@@ -505,6 +527,15 @@ public class AnalysisView extends VerticalLayout {
         return sb.toString().trim();
     }
 
+    private void refreshGridData() {
+        getUI().ifPresent(ui -> ui.access(() -> {
+            List<CompanyAnalysisDto> latest = companyAnalysisApi.getCompanyAnalysisList(PageRequest.of(0, 1000)).getContent();
+            gridData.clear();
+            gridData.addAll(latest);
+            grid.getDataProvider().refreshAll();
+        }));
+    }
+
     private static class AnalysisFilter {
         String ticker, market, status, outlook, recommendation;
 
@@ -514,6 +545,50 @@ public class AnalysisView extends VerticalLayout {
                     && ViewHelper.matches(a.getStatus() != null ? a.getStatus().getDisplayName() : "Pending", status)
                     && ViewHelper.matches(a.getOutlook() != null ? a.getOutlook().getDisplayName() : "Pending", outlook)
                     && ViewHelper.matches(a.getRecommendation() != null ? a.getRecommendation().getDisplayName() : "Pending", recommendation);
+        }
+    }
+
+    private static class ProgressCell extends Span {
+        private final Runnable unregister;
+
+        public ProgressCell(CompanyAnalysisDto analysis, AnalysisProgressBroadcasterService broadcaster, Runnable onComplete) {
+            getElement().getThemeList().add("badge");
+            if (analysis.getStatus() == AnalysisStatus.QUEUED) {
+                getElement().getThemeList().add("contrast");
+            } else {
+                getElement().getThemeList().add("warning");
+            }
+
+            getStyle().set("display", "inline-flex");
+            getStyle().set("align-items", "center");
+            getStyle().set("gap", "8px");
+
+            com.vaadin.flow.component.progressbar.ProgressBar progressBar = new com.vaadin.flow.component.progressbar.ProgressBar();
+            progressBar.setIndeterminate(true);
+            progressBar.setWidth("40px");
+            progressBar.getStyle().set("margin", "0");
+
+            Span label = new Span(analysis.getStatus() == AnalysisStatus.QUEUED ? "Queued..." : "Running...");
+
+            add(progressBar, label);
+
+            unregister = broadcaster.register(update -> {
+                if (!update.analysisId().equals(analysis.getId())) {
+                    return;
+                }
+                getUI().ifPresent(ui -> ui.access(() -> {
+                    if (update.isDone()) {
+                        onComplete.run();
+                    } else {
+                        label.setText("Running: " + update.agentType().getAgentName());
+                        getElement().getThemeList().remove("contrast");
+                        getElement().getThemeList().add("warning");
+                        analysis.setStatus(AnalysisStatus.RUNNING);
+                    }
+                }));
+            });
+
+            addDetachListener(_ -> unregister.run());
         }
     }
 }

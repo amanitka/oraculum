@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Getter
 public enum AnalysisStatus {
+    QUEUED("Queued"),
     PENDING("Pending"),
     RUNNING("Running"),
     COMPLETED("Completed"),
