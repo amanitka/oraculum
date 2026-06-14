@@ -1,7 +1,6 @@
 package com.oraculum.ui.views;
 
 import com.oraculum.analyst.api.CompanyAnalysisApi;
-import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.api.domain.AnalysisStatus;
 import com.oraculum.analyst.api.dto.CompanyAnalysisDto;
 import com.oraculum.analyst.api.dto.CompanyAnalysisRequestEvent;
@@ -424,17 +423,16 @@ public class AnalysisView extends VerticalLayout {
             ObjectMapper mapper = new ObjectMapper();
             JsonNode rootNode = mapper.readTree(jsonData);
 
-            for (AgentType type : AgentType.values()) {
-                if (type == AgentType.SYNTHESIZER) {
+            for (Map.Entry<String, JsonNode> entry : rootNode.properties()) {
+                String key = entry.getKey();
+                if (key.startsWith("SYNTHESIZER")) {
                     continue;
                 }
-                String key = type.name();
-                if (rootNode.has(key)) {
-                    JsonNode agentData = rootNode.get(key);
-                    Component tabContent = createAgentTabContent(agentData);
-                    if (tabContent != null) {
-                        tabSheet.add(type.getAgentName(), tabContent);
-                    }
+
+                JsonNode agentData = entry.getValue();
+                Component tabContent = createAgentTabContent(agentData);
+                if (tabContent != null) {
+                    tabSheet.add(formatKeyTitle(key), tabContent);
                 }
             }
         } catch (Exception e) {
@@ -465,7 +463,14 @@ public class AnalysisView extends VerticalLayout {
                 UnorderedList list = new UnorderedList();
                 list.addClassNames(LumoUtility.Margin.Top.NONE, LumoUtility.FontSize.SMALL);
                 for (JsonNode item : value) {
-                    list.add(new ListItem(item.asString()));
+                    if (item.isObject()) {
+                        Pre pre = new Pre(item.toPrettyString());
+                        pre.addClassNames(LumoUtility.Background.CONTRAST_5, LumoUtility.Padding.SMALL, LumoUtility.FontSize.SMALL);
+                        pre.getStyle().set("border-radius", "4px").set("font-family", "monospace");
+                        list.add(new ListItem(pre));
+                    } else {
+                        list.add(new ListItem(item.asString()));
+                    }
                 }
                 layout.add(list);
             } else if (value.isObject()) {

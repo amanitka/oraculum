@@ -128,8 +128,10 @@ public class CompanyAnalysisWorkflowService {
             return List.of();
         }
         return output.recommendedReruns().stream()
+                .filter(r -> r.specialist().isSupportsRerun())
                 .sorted(Comparator.comparingInt(CriticAgentOutput.RerunInstruction::severity))
                 .limit(limit)
+                .sorted(Comparator.comparingInt(r -> r.specialist().getExecutionOrder()))
                 .toList();
     }
 
@@ -140,19 +142,13 @@ public class CompanyAnalysisWorkflowService {
                 .collect(Collectors.toMap(CriticAgentOutput.RerunInstruction::specialist, CriticAgentOutput.RerunInstruction::instruction));
         ctx.state().setCriticFeedback(feedbackMap);
 
-        List<CriticAgentOutput.RerunInstruction> orderedReruns = reruns.stream()
-                .sorted(Comparator.comparingInt(r -> r.specialist().getExecutionOrder()))
-                .toList();
-
-        for (CriticAgentOutput.RerunInstruction instruction : orderedReruns) {
+        for (CriticAgentOutput.RerunInstruction instruction : reruns) {
             AgentType type = instruction.specialist();
             Agent<?> agent = agents.get(type);
-            if (agent != null) {
-                log.info("Re-running {} phase based on Critic feedback", type);
-                var output = agent.run(ctx);
-                ctx.state().putAgentOutput(type, output.result());
-                recordTraceAndTokens(ctx, type.name() + "_RERUN_" + rerunCount, output);
-            }
+            log.info("Re-running {} phase based on Critic feedback", type.getAgentName());
+            var output = agent.run(ctx);
+            ctx.state().putAgentOutput(type, output.result());
+            recordTraceAndTokens(ctx, type.name() + "_RERUN_" + rerunCount, output);
         }
         ctx.state().clearCriticFeedback();
     }
