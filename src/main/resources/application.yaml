@@ -14,10 +14,6 @@ spring:
   application:
     name: oraculum
 
-  logging:
-    level:
-      org.apache.kafka: WARN
-
   datasource:
     url: jdbc:postgresql://${ORACULUM_DATABASE_HOST}:${ORACULUM_DATABASE_PORT}/${ORACULUM_DATABASE_NAME}
     username: ${ORACULUM_DATABASE_USERNAME}
