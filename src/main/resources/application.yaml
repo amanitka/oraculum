@@ -113,7 +113,7 @@ oraculum:
       history-limit: 30
 
   harvester:
-    exchange-directory: ${ORACULUM_HARVESTER_EXCHANGE_DIR:./data/exchange}
+    exchange-directory: ${ORACULUM_HARVESTER_EXCHANGE_DIRECTORY:/app/exchange}
     exchange-cleanup:
       enabled: ${ORACULUM_HARVESTER_EXCHANGE_CLEANUP_ENABLED:true}
       retention-days: ${ORACULUM_HARVESTER_EXCHANGE_RETENTION_DAYS:1}
