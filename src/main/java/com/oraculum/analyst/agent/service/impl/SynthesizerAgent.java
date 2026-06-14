@@ -32,24 +32,17 @@ public class SynthesizerAgent implements Agent<SynthesizerAgentOutput> {
         return AgentType.SYNTHESIZER;
     }
 
-    @Override
-    public Class<SynthesizerAgentOutput> getOutputModel() {
-        return SynthesizerAgentOutput.class;
-    }
+
 
     @Override
     public AgentOutput<SynthesizerAgentOutput> run(AgentContext ctx) {
         // Safe selection: Only include specialists and ignore null outputs to prevent NPE in Collectors.toMap
-        Map<AgentType, Object> specialistOutputs = ctx.agentOutputs()
-                .entrySet()
-                .stream()
-                .filter(entry -> entry.getKey().isSpecialist() && entry.getValue() != null)
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        Map<AgentType, Object> specialistOutputs = ctx.state().getSpecialistOutputs();
 
         String specialistOutputJson = JsonUtils.toJson(objectMapper, specialistOutputs, "{}");
 
         // Retrieve Critic Agent output from prior outputs
-        CriticAgentOutput criticOutput = (CriticAgentOutput) ctx.agentOutputs().get(AgentType.CRITIC);
+        CriticAgentOutput criticOutput = (CriticAgentOutput) ctx.state().getAgentOutput(AgentType.CRITIC);
         String criticOutputJson = JsonUtils.toJson(objectMapper, criticOutput, "{}");
 
         String prompt = promptRegistry.getPrompt(PromptType.SYNTHESIZER)

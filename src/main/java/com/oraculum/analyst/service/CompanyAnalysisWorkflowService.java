@@ -1,8 +1,6 @@
 package com.oraculum.analyst.service;
 
-import com.oraculum.analyst.agent.dto.AgentContext;
-import com.oraculum.analyst.agent.dto.PlannerPlan;
-import com.oraculum.analyst.agent.dto.SynthesizerAgentOutput;
+import com.oraculum.analyst.agent.dto.*;
 import com.oraculum.analyst.agent.service.Agent;
 import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.api.domain.AnalysisStatus;
@@ -19,10 +17,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
-import java.util.Arrays;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -37,141 +32,199 @@ public class CompanyAnalysisWorkflowService {
     private final CompanyFactSheetDataService companyFactSheetDataService;
     private final Map<AgentType, Agent<?>> agents;
 
+    public CompanyAnalysisResult run(CompanyAnalysisRequestEvent request) {
+        long startMs = System.currentTimeMillis();
+        ZonedDateTime now = ZonedDateTime.now();
+
+        log.info("Starting analysis workflow for ticker {}", request.ticker());
+        try {
+            AgentContext ctx = initializeContext(request);
+
+            runPlannerPhase(request, ctx);
+            runSpecialistPhase(ctx);
+            runCriticCorrectionLoop(ctx);
+            SynthesizerAgentOutput finalOutput = runSynthesizerPhase(ctx);
+
+            return createSuccessResult(request, ctx, finalOutput, startMs, now);
+        } catch (Exception e) {
+            log.error("Workflow failed after {}ms: {}", System.currentTimeMillis() - startMs, e.getMessage(), e);
+            LocalDate analysisDate = request.analysisDate() != null ? request.analysisDate() : LocalDate.now();
+            return createFailureResult(request, analysisDate, e, now); // Can't easily recover partial state here unless we pass it up
+        }
+    }
+
+    private AgentContext initializeContext(CompanyAnalysisRequestEvent request) {
+        CompanyDto company = companyApi.getCompanyById(request.companyId());
+        if (company == null) {
+            throw new IllegalArgumentException("Company not found for ticker: " + request.ticker());
+        }
+        CompanyFactSheetData factSheetData = companyFactSheetDataService.create(company);
+        LocalDate analysisDate = request.analysisDate() != null ? request.analysisDate() : LocalDate.now();
+
+        return new AgentContext(company, factSheetData, analysisDate, request.statementVariant(), analystProperties.tokenBudget(), new AgentWorkflowState());
+    }
+
+    private void runPlannerPhase(CompanyAnalysisRequestEvent request, AgentContext ctx) {
+        log.info("Starting Planner phase");
+        @SuppressWarnings("unchecked")
+        Agent<PlannerPlan> planner = (Agent<PlannerPlan>) agents.get(AgentType.PLANNER);
+        var output = planner.run(ctx);
+        PlannerPlan plan = output.result();
+
+        recordTraceAndTokens(ctx, AgentType.PLANNER.name(), output);
+        log.info("Planner phase complete. Plan: {}", plan);
+
+        ctx.state().setAnalysisFocus(plan.getAnalysisFocus());
+        ctx.state().setStatementVariants(getAgentStatementVariants(request, plan));
+    }
+
+    private void runSpecialistPhase(AgentContext ctx) {
+        List<Agent<?>> specialists = Arrays.stream(AgentType.values())
+                .filter(AgentType::isSpecialist)
+                .sorted(Comparator.comparingInt(AgentType::getExecutionOrder))
+                .map(agents::get)
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toList());
+
+        for (Agent<?> agent : specialists) {
+            log.info("Starting {} phase", agent.getName());
+            var output = agent.run(ctx);
+            ctx.state().putAgentOutput(agent.getName(), output.result());
+            recordTraceAndTokens(ctx, agent.getName().name(), output);
+            log.info("{} phase complete. Tokens: {}", agent.getName(), output.tokens());
+        }
+    }
+
+    private void runCriticCorrectionLoop(AgentContext ctx) {
+        int maxReruns = analystProperties.critic().maxReruns();
+        int maxSpecialistsPerRerun = analystProperties.critic().maxSpecialistsPerRerun();
+        Agent<?> critic = agents.get(AgentType.CRITIC);
+
+        for (int rerunCount = 0; rerunCount <= maxReruns; rerunCount++) {
+            log.info("Starting Critic phase (rerunCount: {})", rerunCount);
+            var outputRaw = critic.run(ctx);
+            CriticAgentOutput output = (CriticAgentOutput) outputRaw.result();
+
+            String traceKey = rerunCount == 0 ? "CRITIC" : "CRITIC_VERIFY_" + rerunCount;
+            recordTraceAndTokens(ctx, traceKey, outputRaw);
+            ctx.state().putAgentOutput(AgentType.CRITIC, output);
+            log.info("Critic phase complete. Consistent: {}", output.isConsistent());
+
+            if (output.isConsistent() || rerunCount == maxReruns) {
+                break;
+            }
+
+            List<CriticAgentOutput.RerunInstruction> toRerun = getTopReruns(output, maxSpecialistsPerRerun);
+            if (toRerun.isEmpty()) {
+                break;
+            }
+
+            executeSpecialistReruns(ctx, toRerun, rerunCount);
+        }
+    }
+
+    private List<CriticAgentOutput.RerunInstruction> getTopReruns(CriticAgentOutput output, int limit) {
+        if (output.recommendedReruns() == null) {
+            return List.of();
+        }
+        return output.recommendedReruns().stream()
+                .sorted(Comparator.comparingInt(CriticAgentOutput.RerunInstruction::severity))
+                .limit(limit)
+                .toList();
+    }
+
+    private void executeSpecialistReruns(AgentContext ctx, List<CriticAgentOutput.RerunInstruction> reruns, int rerunCount) {
+        log.info("Critic triggered rerun {} for: {}", rerunCount + 1, reruns.stream().map(CriticAgentOutput.RerunInstruction::specialist).toList());
+
+        Map<AgentType, String> feedbackMap = reruns.stream()
+                .collect(Collectors.toMap(CriticAgentOutput.RerunInstruction::specialist, CriticAgentOutput.RerunInstruction::instruction));
+        ctx.state().setCriticFeedback(feedbackMap);
+
+        List<CriticAgentOutput.RerunInstruction> orderedReruns = reruns.stream()
+                .sorted(Comparator.comparingInt(r -> r.specialist().getExecutionOrder()))
+                .toList();
+
+        for (CriticAgentOutput.RerunInstruction instruction : orderedReruns) {
+            AgentType type = instruction.specialist();
+            Agent<?> agent = agents.get(type);
+            if (agent != null) {
+                log.info("Re-running {} phase based on Critic feedback", type);
+                var output = agent.run(ctx);
+                ctx.state().putAgentOutput(type, output.result());
+                recordTraceAndTokens(ctx, type.name() + "_RERUN_" + rerunCount, output);
+            }
+        }
+        ctx.state().clearCriticFeedback();
+    }
+
+    private SynthesizerAgentOutput runSynthesizerPhase(AgentContext ctx) {
+        log.info("Starting Synthesizer phase");
+        @SuppressWarnings("unchecked")
+        Agent<SynthesizerAgentOutput> synthesizer = (Agent<SynthesizerAgentOutput>) agents.get(AgentType.SYNTHESIZER);
+        var output = synthesizer.run(ctx);
+        recordTraceAndTokens(ctx, AgentType.SYNTHESIZER.name(), output);
+        log.info("Synthesizer phase complete. Recommendation: {}", output.result().recommendation());
+        return output.result();
+    }
+
+    private void recordTraceAndTokens(AgentContext ctx, String key, AgentOutput<?> output) {
+        ctx.state().putAgentTrace(key, output.result());
+        ctx.state().addTokens(output.tokens());
+    }
+
+    private CompanyAnalysisResult createSuccessResult(CompanyAnalysisRequestEvent req, AgentContext ctx, SynthesizerAgentOutput finalOut, long startMs, ZonedDateTime now) {
+        int tokens = ctx.state().getTotalTokens();
+        log.info("Analysis workflow completed in {}ms. Tokens: {}", System.currentTimeMillis() - startMs, tokens);
+        return CompanyAnalysisResult.builder()
+                .correlationId(req.correlationId())
+                .ticker(req.ticker())
+                .market(req.market())
+                .analysisDate(ctx.analysisDate())
+                .status(AnalysisStatus.COMPLETED)
+                .reportMd(finalOut.reportMd())
+                .outlook(finalOut.outlook())
+                .recommendation(finalOut.recommendation())
+                .conviction(finalOut.conviction())
+                .keyDrivers(finalOut.keyDrivers())
+                .keyRisks(finalOut.keyRisks())
+                .agentTrace(ctx.state().getAgentTrace())
+                .tokenUsage(tokens)
+                .createdAt(now)
+                .updatedAt(ZonedDateTime.now())
+                .build();
+    }
+
+    private CompanyAnalysisResult createFailureResult(CompanyAnalysisRequestEvent req, LocalDate analysisDate, Exception e, ZonedDateTime now) {
+        return CompanyAnalysisResult.builder()
+                .correlationId(req.correlationId())
+                .ticker(req.ticker())
+                .market(req.market())
+                .analysisDate(analysisDate)
+                .status(AnalysisStatus.FAILED)
+                .error(e.getMessage())
+                .createdAt(now)
+                .updatedAt(ZonedDateTime.now())
+                .build();
+    }
+
     private Map<AgentType, StatementVariant> getAgentStatementVariants(CompanyAnalysisRequestEvent request, PlannerPlan plan) {
         Map<AgentType, StatementVariant> variants = new EnumMap<>(AgentType.class);
         if (request.statementVariant() != null) {
             Stream.of(AgentType.values()).filter(AgentType::isSpecialist).forEach(type -> variants.put(type, request.statementVariant()));
         } else if (plan != null) {
-            Map<AgentType, Supplier<StatementVariant>> getters = Map.of(AgentType.FUNDAMENTALS,
-                    plan::getFundamentalsVariant,
-                    AgentType.CASH_FLOW,
-                    plan::getCashFlowVariant,
-                    AgentType.VALUATION,
-                    plan::getValuationVariant,
-                    AgentType.RISK,
-                    plan::getRiskVariant);
+            Map<AgentType, Supplier<StatementVariant>> getters = Map.of(
+                    AgentType.FUNDAMENTALS, plan::getFundamentalsVariant,
+                    AgentType.CASH_FLOW, plan::getCashFlowVariant,
+                    AgentType.VALUATION, plan::getValuationVariant,
+                    AgentType.RISK, plan::getRiskVariant
+            );
             getters.forEach((type, getter) -> {
                 StatementVariant val = getter.get();
-                if (val != null)
+                if (val != null) {
                     variants.put(type, val);
+                }
             });
         }
         return variants;
-    }
-
-    public CompanyAnalysisResult run(CompanyAnalysisRequestEvent request) {
-        long startTime = System.currentTimeMillis();
-        int totalTokens = 0;
-        Map<AgentType, Object> agentTrace = new EnumMap<>(AgentType.class);
-        ZonedDateTime now = ZonedDateTime.now();
-
-        log.info("Starting analysis workflow for ticker {}", request.ticker());
-        CompanyDto company = companyApi.getCompanyById(request.companyId());
-        if (company == null) {
-            throw new IllegalArgumentException("Company not found for ticker: " + request.ticker());
-        }
-
-        CompanyFactSheetData factSheetData = companyFactSheetDataService.create(company);
-
-        AgentContext initialCtx = new AgentContext(company,
-                factSheetData,
-                request.analysisDate() != null ? request.analysisDate() : LocalDate.now(),
-                request.statementVariant(),
-                null,
-                analystProperties.tokenBudget(),
-                null,
-                new EnumMap<>(AgentType.class));
-        try {
-            log.info("Starting Planner phase");
-            Agent<PlannerPlan> planner = (Agent<PlannerPlan>) agents.get(AgentType.PLANNER);
-            var planOut = planner.run(initialCtx);
-            PlannerPlan plan = planOut.result();
-            totalTokens += planOut.tokens();
-            agentTrace.put(AgentType.PLANNER, plan);
-            log.info("Planner phase complete. Tokens: {}. Plan: {}", planOut.tokens(), plan);
-
-            AgentContext sharedCtx = new AgentContext(company,
-                    factSheetData,
-                    initialCtx.analysisDate(),
-                    request.statementVariant(),
-                    getAgentStatementVariants(request, plan),
-                    analystProperties.tokenBudget(),
-                    plan.getAnalysisFocus(),
-                    new EnumMap<>(AgentType.class));
-
-            List<Agent<?>> specialists = Arrays.stream(AgentType.values())
-                    .filter(AgentType::isSpecialist)
-                    .sorted(java.util.Comparator.comparingInt(AgentType::getExecutionOrder))
-                    .map(agents::get)
-                    .filter(java.util.Objects::nonNull)
-                    .collect(Collectors.toList());
-
-            for (Agent<?> agent : specialists) {
-                log.info("Starting {} phase", agent.getName());
-                var output = agent.run(sharedCtx);
-                sharedCtx.agentOutputs().put(agent.getName(), output.result());
-                totalTokens += output.tokens();
-                agentTrace.put(agent.getName(), output.result());
-                log.info("{} phase complete. Tokens: {}", agent.getName(), output.tokens());
-            }
-
-            log.info("Starting Critic phase");
-            Agent<?> critic = agents.get(AgentType.CRITIC);
-            var criticOutput = critic.run(sharedCtx);
-            sharedCtx.agentOutputs().put(AgentType.CRITIC, criticOutput.result());
-            totalTokens += criticOutput.tokens();
-            agentTrace.put(AgentType.CRITIC, criticOutput.result());
-            log.info("Critic phase complete. Tokens: {}. Consistent: {}",
-                    criticOutput.tokens(),
-                    ((com.oraculum.analyst.agent.dto.CriticAgentOutput) criticOutput.result()).isConsistent());
-
-            log.info("Starting Synthesizer phase");
-            Agent<SynthesizerAgentOutput> synthesizer = (Agent<SynthesizerAgentOutput>) agents.get(AgentType.SYNTHESIZER);
-            var finalOutput = synthesizer.run(sharedCtx);
-            totalTokens += finalOutput.tokens();
-            agentTrace.put(AgentType.SYNTHESIZER, finalOutput.result());
-            log.info("Synthesizer phase complete. Tokens: {}. Recommendation: {}",
-                    finalOutput.tokens(),
-                    finalOutput.result().recommendation());
-
-            long elapsedMs = System.currentTimeMillis() - startTime;
-            log.info("Analysis workflow completed successfully in {}ms. Total tokens: {}", elapsedMs, totalTokens);
-
-            return new CompanyAnalysisResult(request.correlationId(),
-                    request.ticker(),
-                    request.market(),
-                    sharedCtx.analysisDate(),
-                    AnalysisStatus.COMPLETED,
-                    finalOutput.result().reportMd(),
-                    finalOutput.result().outlook(),
-                    finalOutput.result().recommendation(),
-                    finalOutput.result().conviction(),
-                    finalOutput.result().keyDrivers(),
-                    finalOutput.result().keyRisks(),
-                    agentTrace,
-                    totalTokens,
-                    null,
-                    now,
-                    ZonedDateTime.now());
-        } catch (Exception e) {
-            long elapsedMs = System.currentTimeMillis() - startTime;
-            log.error("Workflow failed after {}ms: {}", elapsedMs, e.getMessage(), e);
-            return new CompanyAnalysisResult(request.correlationId(),
-                    request.ticker(),
-                    request.market(),
-                    initialCtx.analysisDate(),
-                    AnalysisStatus.FAILED,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    agentTrace,
-                    totalTokens,
-                    e.getMessage(),
-                    now,
-                    ZonedDateTime.now());
-        }
     }
 }

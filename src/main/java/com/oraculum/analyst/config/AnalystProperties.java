@@ -10,6 +10,7 @@ public record AnalystProperties(Refresh refresh,
                                 FactSheet factSheet,
                                 SharePrice sharePrice,
                                 News news,
+                                Critic critic,
                                 int tokenBudget) {
     public record Refresh(String priceCron,
                           String fundamentalsCron,
@@ -41,5 +42,8 @@ public record AnalystProperties(Refresh refresh,
         public LocalDate getNewsHistoryDate() {
             return LocalDate.now().minusDays(historyLimit);
         }
+    }
+
+    public record Critic(int maxReruns, int maxSpecialistsPerRerun) {
     }
 }

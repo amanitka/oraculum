@@ -28,23 +28,19 @@ public class RiskAgent implements Agent<RiskAgentOutput> {
         return AgentType.RISK;
     }
 
-    @Override
-    public Class<RiskAgentOutput> getOutputModel() {
-        return RiskAgentOutput.class;
-    }
 
     @Override
     public AgentOutput<RiskAgentOutput> run(AgentContext ctx) {
         CompanyFactSheetData factSheet = ctx.factSheetData();
         StatementVariant variant = ctx.getVariantFor(getName());
 
-        SharePriceAgentOutput sharePriceOutput = (SharePriceAgentOutput) ctx.agentOutputs().get(AgentType.SHARE_PRICE);
+        SharePriceAgentOutput sharePriceOutput = (SharePriceAgentOutput) ctx.state().getAgentOutput(AgentType.SHARE_PRICE);
         String sharePriceJson = JsonUtils.toJson(objectMapper, sharePriceOutput, "{}");
 
-        FundamentalsAgentOutput fundamentalsOutput = (FundamentalsAgentOutput) ctx.agentOutputs().get(AgentType.FUNDAMENTALS);
+        FundamentalsAgentOutput fundamentalsOutput = (FundamentalsAgentOutput) ctx.state().getAgentOutput(AgentType.FUNDAMENTALS);
         String fundamentalsJson = JsonUtils.toJson(objectMapper, fundamentalsOutput, "{}");
 
-        CashFlowAgentOutput cashFlowOutput = (CashFlowAgentOutput) ctx.agentOutputs().get(AgentType.CASH_FLOW);
+        CashFlowAgentOutput cashFlowOutput = (CashFlowAgentOutput) ctx.state().getAgentOutput(AgentType.CASH_FLOW);
         String cashFlowJson = JsonUtils.toJson(objectMapper, cashFlowOutput, "{}");
 
         String prompt = promptRegistry.getPrompt(PromptType.RISK)
@@ -59,7 +55,7 @@ public class RiskAgent implements Agent<RiskAgentOutput> {
                 ctx.ticker(),
                 ctx.analysisDate());
 
-        String fullPrompt = prompt + "\n" + userPrompt;
+        String fullPrompt = appendCriticFeedbackIfPresent(prompt + "\n" + userPrompt, ctx);
 
         LlmResponse<RiskAgentOutput> response = llmRouterApi.executeCall(LlmTierType.STANDARD,
                 fullPrompt,

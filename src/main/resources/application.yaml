@@ -91,13 +91,13 @@ oraculum:
       mv-refresh-cron: "0 0 4 * * TUE-SAT"
 
   kafka:
-    consumer-group: oraculum
+    consumer-group: ${ORACULUM_KAFKA_CONSUMER_GROUP:oraculum}
     topics:
-      data-file-ready: oraculum.data_file_ready
-      market: oraculum.market
-      industry: oraculum.industry
-      news: oraculum.news
-      harvester-request: oraculum.harvester.request
+      data-file-ready: ${ORACULUM_KAFKA_TOPIC_DATA_FILE_READY:oraculum.data_file_ready}
+      market: ${ORACULUM_KAFKA_TOPIC_MARKET:oraculum.market}
+      industry: ${ORACULUM_KAFKA_TOPIC_INDUSTRY:oraculum.industry}
+      news: ${ORACULUM_KAFKA_TOPIC_NEWS:oraculum.news}
+      harvester-request: ${ORACULUM_KAFKA_TOPIC_HARVESTER_REQUEST:oraculum.harvester.request}
 
   analyst:
     token-budget: 100000
@@ -111,6 +111,9 @@ oraculum:
       daily-history-limit: 30
     news:
       history-limit: 30
+    critic:
+      max-reruns: 1
+      max-specialists-per-rerun: 2
 
   harvester:
     exchange-directory: ${ORACULUM_HARVESTER_EXCHANGE_DIRECTORY:/app/exchange}

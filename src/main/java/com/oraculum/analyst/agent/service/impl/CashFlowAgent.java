@@ -27,10 +27,7 @@ public class CashFlowAgent implements Agent<CashFlowAgentOutput> {
         return AgentType.CASH_FLOW;
     }
 
-    @Override
-    public Class<CashFlowAgentOutput> getOutputModel() {
-        return CashFlowAgentOutput.class;
-    }
+
 
     @Override
     public AgentOutput<CashFlowAgentOutput> run(AgentContext ctx) {
@@ -47,7 +44,7 @@ public class CashFlowAgent implements Agent<CashFlowAgentOutput> {
                 ctx.ticker(),
                 ctx.analysisDate());
 
-        String fullPrompt = prompt + "\n" + userPrompt;
+        String fullPrompt = appendCriticFeedbackIfPresent(prompt + "\n" + userPrompt, ctx);
 
         LlmResponse<CashFlowAgentOutput> response = llmRouterApi.executeCall(LlmTierType.STANDARD,
                 fullPrompt,

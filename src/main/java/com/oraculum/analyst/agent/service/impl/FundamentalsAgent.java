@@ -27,10 +27,7 @@ public class FundamentalsAgent implements Agent<FundamentalsAgentOutput> {
         return AgentType.FUNDAMENTALS;
     }
 
-    @Override
-    public Class<FundamentalsAgentOutput> getOutputModel() {
-        return FundamentalsAgentOutput.class;
-    }
+
 
     @Override
     public AgentOutput<FundamentalsAgentOutput> run(AgentContext ctx) {
@@ -48,7 +45,7 @@ public class FundamentalsAgent implements Agent<FundamentalsAgentOutput> {
                 ctx.ticker(),
                 ctx.analysisDate());
 
-        String fullPrompt = prompt + "\n" + userPrompt;
+        String fullPrompt = appendCriticFeedbackIfPresent(prompt + "\n" + userPrompt, ctx);
 
         LlmResponse<FundamentalsAgentOutput> response = llmRouterApi.executeCall(LlmTierType.STANDARD,
                 fullPrompt,

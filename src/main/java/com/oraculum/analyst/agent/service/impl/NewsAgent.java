@@ -30,10 +30,7 @@ public class NewsAgent implements Agent<NewsAgentOutput> {
         return AgentType.NEWS;
     }
 
-    @Override
-    public Class<NewsAgentOutput> getOutputModel() {
-        return NewsAgentOutput.class;
-    }
+
 
     @Override
     public AgentOutput<NewsAgentOutput> run(AgentContext ctx) {
@@ -63,7 +60,7 @@ public class NewsAgent implements Agent<NewsAgentOutput> {
         String userPrompt = String.format("Analyze the recent news and sentiment for %s as of %s based on the provided data.",
                 ctx.ticker(),
                 ctx.analysisDate());
-        String fullPrompt = systemPrompt + "\n" + userPrompt;
+        String fullPrompt = appendCriticFeedbackIfPresent(systemPrompt + "\n" + userPrompt, ctx);
 
         LlmResponse<NewsAgentOutput> response = llmRouterApi.executeCall(LlmTierType.STANDARD, fullPrompt, NewsAgentOutput.class);
 

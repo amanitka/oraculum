@@ -26,10 +26,7 @@ public class SharePriceAgent implements Agent<SharePriceAgentOutput> {
         return AgentType.SHARE_PRICE;
     }
 
-    @Override
-    public Class<SharePriceAgentOutput> getOutputModel() {
-        return SharePriceAgentOutput.class;
-    }
+
 
     @Override
     public AgentOutput<SharePriceAgentOutput> run(AgentContext ctx) {
@@ -45,7 +42,8 @@ public class SharePriceAgent implements Agent<SharePriceAgentOutput> {
                 ctx.ticker(),
                 ctx.analysisDate());
 
-        String fullPrompt = prompt + "\n" + userPrompt;
+        String fullPrompt = appendCriticFeedbackIfPresent(prompt + "\n" + userPrompt, ctx);
+
         LlmResponse<SharePriceAgentOutput> response = llmRouterApi.executeCall(LlmTierType.STANDARD,
                 fullPrompt,
                 SharePriceAgentOutput.class);

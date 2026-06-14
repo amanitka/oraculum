@@ -27,10 +27,7 @@ public class ValuationAgent implements Agent<ValuationAgentOutput> {
         return AgentType.VALUATION;
     }
 
-    @Override
-    public Class<ValuationAgentOutput> getOutputModel() {
-        return ValuationAgentOutput.class;
-    }
+
 
     @Override
     public AgentOutput<ValuationAgentOutput> run(AgentContext ctx) {
@@ -51,7 +48,7 @@ public class ValuationAgent implements Agent<ValuationAgentOutput> {
                 ctx.ticker(),
                 ctx.analysisDate());
 
-        String fullPrompt = prompt + "\n" + userPrompt;
+        String fullPrompt = appendCriticFeedbackIfPresent(prompt + "\n" + userPrompt, ctx);
 
         LlmResponse<ValuationAgentOutput> response = llmRouterApi.executeCall(LlmTierType.STANDARD,
                 fullPrompt,

@@ -37,6 +37,7 @@ You MUST respond with valid JSON using exactly this schema:
 
 Rules:
 - ALWAYS explicitly cite the specific year or timeframe and the exact source of your information (e.g., 'In 2023, according to the income statement...').
+- CRITICAL: Always anchor your analysis on the MOST RECENT data period provided in the JSON arrays (the "up-to-date" data). Use older historical data points strictly to establish trends (e.g., growth trajectories, margin expansion/contraction) leading up to the current period. Do not present older data as current.
 - `key_risks` must be 3-5 concise bullets as JSON array items.
 - `summary` must be one sentence.
 - Do not include any extra keys.

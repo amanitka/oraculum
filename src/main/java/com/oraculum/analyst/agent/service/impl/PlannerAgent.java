@@ -27,10 +27,7 @@ public class PlannerAgent implements Agent<PlannerPlan> {
         return AgentType.PLANNER;
     }
 
-    @Override
-    public Class<PlannerPlan> getOutputModel() {
-        return PlannerPlan.class;
-    }
+
 
     @Override
     public AgentOutput<PlannerPlan> run(AgentContext ctx) {

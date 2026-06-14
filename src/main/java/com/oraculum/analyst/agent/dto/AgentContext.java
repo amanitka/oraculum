@@ -8,18 +8,14 @@ import lombok.Builder;
 import org.jspecify.annotations.NonNull;
 
 import java.time.LocalDate;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Builder
 public record AgentContext(CompanyDto company,
                            CompanyFactSheetData factSheetData,
                            LocalDate analysisDate,
                            StatementVariant defaultStatementVariant,
-                           Map<AgentType, StatementVariant> statementVariants,
                            int tokenBudget,
-                           String analysisFocus,
-                           Map<AgentType, Object> agentOutputs) {
+                           AgentWorkflowState state) {
 
     public String ticker() {
         return company != null ? company.ticker() : null;
@@ -34,16 +30,15 @@ public record AgentContext(CompanyDto company,
     }
 
     public StatementVariant getVariantFor(AgentType agentType) {
-        if (statementVariants != null && statementVariants.containsKey(agentType)) {
-            return statementVariants.get(agentType);
+        var variants = state.getStatementVariants();
+        if (variants != null && variants.containsKey(agentType)) {
+            return variants.get(agentType);
         }
         return defaultStatementVariant != null ? defaultStatementVariant : StatementVariant.ANNUAL;
     }
 
-    public Map<AgentType, Object> getSpecialistAgentOutputs() {
-        return agentOutputs().entrySet()
-                .stream()
-                .filter(entry -> entry.getKey().isSpecialist())
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    // Convenience delegates so agent code stays clean
+    public String analysisFocus() {
+        return state.getAnalysisFocus();
     }
 }

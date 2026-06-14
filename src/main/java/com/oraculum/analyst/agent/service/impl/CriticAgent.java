@@ -30,15 +30,12 @@ public class CriticAgent implements Agent<CriticAgentOutput> {
         return AgentType.CRITIC;
     }
 
-    @Override
-    public Class<CriticAgentOutput> getOutputModel() {
-        return CriticAgentOutput.class;
-    }
+
 
     @Override
     public AgentOutput<CriticAgentOutput> run(AgentContext ctx) {
-        Map<AgentType, Object> specialistOutputs = ctx.getSpecialistAgentOutputs();
-        String agentTimeframesJson = JsonUtils.toJson(objectMapper, ctx.statementVariants(), "{}");
+        Map<AgentType, Object> specialistOutputs = ctx.state().getSpecialistOutputs();
+        String agentTimeframesJson = JsonUtils.toJson(objectMapper, ctx.state().getStatementVariants(), "{}");
         String priorOutputsJson = JsonUtils.toJson(objectMapper, specialistOutputs, "{}");
 
         String prompt = promptRegistry.getPrompt(PromptType.CRITIC)
