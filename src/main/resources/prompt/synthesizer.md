@@ -7,6 +7,7 @@ You will be provided with three JSON inputs:
 1. `algorithmic_baseline`: Raw algorithmic scores (`quality_score` and `piotroski_f_score`) across multiple timeframes.
 2. `specialist_output`: The analysis from the specialist agents.
 3. `critic_output`: The findings from the Critic.
+{{ unaddressed_warning }}
 
 Your task is to:
 
@@ -59,3 +60,5 @@ Rules:
   "critic": {{ critic_output }}
 }
 ```
+
+Synthesize the analysis for {{ ticker }}. Generate the final report and structured verdict, explicitly resolving the contradictions flagged in the critic's report.

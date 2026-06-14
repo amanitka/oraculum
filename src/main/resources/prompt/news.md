@@ -37,3 +37,5 @@ The "summary" field should contain the generated Markdown summary starting with 
   "recent_news": {{ recent_news }}
 }
 ```
+
+Analyze the recent news and sentiment for {{ ticker }} as of {{ analysis_date }} based on the provided data.

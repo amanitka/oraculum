@@ -42,16 +42,11 @@ public class CriticAgent implements Agent<CriticAgentOutput> {
                 .replace("{{ analysis_focus }}", ctx.analysisFocus() != null ? ctx.analysisFocus() : "Standard comprehensive analysis.")
                 .replace("{{ algorithmic_baseline }}", ctx.factSheetData().getAlgorithmicBaselineJson())
                 .replace("{{ agent_timeframes }}", agentTimeframesJson)
-                .replace("{{ prior_outputs }}", priorOutputsJson);
-
-        String userPrompt = String.format(
-                "Critique the analysis for %s. Identify any contradictions between the provided agent summaries.",
-                ctx.ticker());
-
-        String fullPrompt = prompt + "\n" + userPrompt;
+                .replace("{{ prior_outputs }}", priorOutputsJson)
+                .replace("{{ ticker }}", ctx.ticker());
 
         LlmResponse<CriticAgentOutput> response = llmRouterApi.executeCall(LlmTierType.PRO,
-                fullPrompt,
+                prompt,
                 CriticAgentOutput.class);
 
         return new AgentOutput<>(response.result(), response.metrics().totalTokens());

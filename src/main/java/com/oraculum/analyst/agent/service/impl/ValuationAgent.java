@@ -41,14 +41,11 @@ public class ValuationAgent implements Agent<ValuationAgentOutput> {
         String prompt = promptRegistry.getPrompt(PromptType.VALUATION)
                 .replace("{{ analysis_focus }}", ctx.analysisFocus() != null ? ctx.analysisFocus() : "Standard comprehensive analysis.")
                 .replace("{{ company_financial_ratios }}", factSheet.getCompanyFinancialRatios(variant))
-                .replace("{{ daily_share_price_signals }}", recentDailyJson);
+                .replace("{{ daily_share_price_signals }}", recentDailyJson)
+                .replace("{{ ticker }}", ctx.ticker())
+                .replace("{{ analysis_date }}", ctx.analysisDate().toString());
 
-        String userPrompt = String.format(
-                "Analyze the valuation for %s as of %s based on the provided financial fact sheet.",
-                ctx.ticker(),
-                ctx.analysisDate());
-
-        String fullPrompt = appendCriticFeedbackIfPresent(prompt + "\n" + userPrompt, ctx);
+        String fullPrompt = appendCriticFeedbackIfPresent(prompt, ctx);
 
         LlmResponse<ValuationAgentOutput> response = llmRouterApi.executeCall(LlmTierType.STANDARD,
                 fullPrompt,

@@ -33,12 +33,11 @@ public class PlannerAgent implements Agent<PlannerPlan> {
     public AgentOutput<PlannerPlan> run(AgentContext ctx) {
         String prompt = systemPrompt.replace("{{ daily_share_price_signals }}",
                         ctx.factSheetData().getDailySharePriceSignalsForPlanner())
-                .replace("{{ company_profile }}", ctx.factSheetData().getCompanyProfile());
-
-        String userMessage = String.format("Analyze %s and determine the plan.", ctx.ticker());
+                .replace("{{ company_profile }}", ctx.factSheetData().getCompanyProfile())
+                .replace("{{ ticker }}", ctx.ticker());
 
         LlmResponse<PlannerPlan> response = llmRouterApi.executeCall(LlmTierType.STANDARD,
-                prompt + "\n" + userMessage,
+                prompt,
                 PlannerPlan.class);
 
         return new AgentOutput<>(response.result(), response.getTotalTokens());

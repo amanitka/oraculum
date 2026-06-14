@@ -71,3 +71,5 @@ Do not offer your own analysis or opinion on the stock. Your job is only to find
   "prior_outputs": {{ prior_outputs }}
 }
 ```
+
+Critique the analysis for {{ ticker }}. Identify any contradictions between the provided agent summaries.

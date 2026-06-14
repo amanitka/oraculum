@@ -43,3 +43,5 @@ The `analysis_focus` you output will be passed directly into the prompts of down
   "daily_share_price_signals": {{ daily_share_price_signals }},
   "company_profile": {{ company_profile }}
 }
+
+Analyze {{ ticker }} and determine the plan.

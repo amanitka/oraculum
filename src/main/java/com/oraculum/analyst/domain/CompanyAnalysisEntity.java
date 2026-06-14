@@ -60,7 +60,7 @@ public class CompanyAnalysisEntity {
     private Integer conviction;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "analysis_data", columnDefinition = "jsonb")
+    @Column(name = "analysis_data", columnDefinition = "json")
     private String analysisData;
 
     @Column(columnDefinition = "TEXT")

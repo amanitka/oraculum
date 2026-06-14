@@ -45,3 +45,5 @@ Rules:
   "monthly_share_price_signals": {{ monthly_share_price_signals }}
 }
 ```
+
+Analyze the market signals for {{ ticker }} as of {{ analysis_date }} based on the provided financial fact sheet.

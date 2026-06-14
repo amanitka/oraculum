@@ -39,3 +39,5 @@ Rules:
   "daily_share_price_signals": {{ daily_share_price_signals }}
 }
 ```
+
+Analyze the valuation for {{ ticker }} as of {{ analysis_date }} based on the provided financial fact sheet.

@@ -49,3 +49,5 @@ Rules:
   "company_financial_ratios": {{ company_financial_ratios }}
 }
 ```
+
+Analyze fundamentals for {{ ticker }} as of {{ analysis_date }} based on the provided financial fact sheet.

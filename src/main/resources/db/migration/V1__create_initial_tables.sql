@@ -37,7 +37,7 @@ CREATE TABLE public.t_company_analysis (
     outlook VARCHAR(15),
     recommendation VARCHAR(15),
     conviction INTEGER,
-    analysis_data JSONB,
+    analysis_data JSON,
     error TEXT,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,

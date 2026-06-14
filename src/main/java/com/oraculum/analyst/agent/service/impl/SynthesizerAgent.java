@@ -17,7 +17,6 @@ import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -32,15 +31,20 @@ public class SynthesizerAgent implements Agent<SynthesizerAgentOutput> {
         return AgentType.SYNTHESIZER;
     }
 
-
+    private String getWarningMessage(CriticAgentOutput criticOutput) {
+        if (criticOutput != null && !criticOutput.isConsistent()) {
+            return "\nWARNING: The Critic identified inconsistencies that could not be automatically resolved (specialist rerun limits reached). " +
+                    "You MUST carefully evaluate these contradictions yourself and provide the final reconciliation in your report.";
+        } else {
+            return "";
+        }
+    }
 
     @Override
     public AgentOutput<SynthesizerAgentOutput> run(AgentContext ctx) {
         // Safe selection: Only include specialists and ignore null outputs to prevent NPE in Collectors.toMap
         Map<AgentType, Object> specialistOutputs = ctx.state().getSpecialistOutputs();
-
         String specialistOutputJson = JsonUtils.toJson(objectMapper, specialistOutputs, "{}");
-
         // Retrieve Critic Agent output from prior outputs
         CriticAgentOutput criticOutput = (CriticAgentOutput) ctx.state().getAgentOutput(AgentType.CRITIC);
         String criticOutputJson = JsonUtils.toJson(objectMapper, criticOutput, "{}");
@@ -49,16 +53,12 @@ public class SynthesizerAgent implements Agent<SynthesizerAgentOutput> {
                 .replace("{{ analysis_focus }}", ctx.analysisFocus() != null ? ctx.analysisFocus() : "Standard comprehensive analysis.")
                 .replace("{{ algorithmic_baseline }}", ctx.factSheetData().getAlgorithmicBaselineJson())
                 .replace("{{ specialist_output }}", specialistOutputJson)
-                .replace("{{ critic_output }}", criticOutputJson);
-
-        String userPrompt = String.format("Synthesize the analysis for %s. Generate the final report and " +
-                        "structured verdict, explicitly resolving the contradictions flagged in the critic's report.",
-                ctx.ticker());
-
-        String fullPrompt = prompt + "\n" + userPrompt;
+                .replace("{{ critic_output }}", criticOutputJson)
+                .replace("{{ unaddressed_warning }}", getWarningMessage(criticOutput))
+                .replace("{{ ticker }}", ctx.ticker());
 
         LlmResponse<SynthesizerAgentOutput> response = llmRouterApi.executeCall(LlmTierType.PRO,
-                fullPrompt,
+                prompt,
                 SynthesizerAgentOutput.class);
 
         return new AgentOutput<>(response.result(), response.metrics().totalTokens());

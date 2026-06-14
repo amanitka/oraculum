@@ -37,14 +37,11 @@ public class CashFlowAgent implements Agent<CashFlowAgentOutput> {
         String prompt = promptRegistry.getPrompt(PromptType.CASH_FLOW)
                 .replace("{{ analysis_focus }}", ctx.analysisFocus() != null ? ctx.analysisFocus() : "Standard comprehensive analysis.")
                 .replace("{{ cash_flow_history }}", factSheet.getCashFlowHistory(variant))
-                .replace("{{ company_financial_ratios }}", factSheet.getCompanyFinancialRatios(variant));
+                .replace("{{ company_financial_ratios }}", factSheet.getCompanyFinancialRatios(variant))
+                .replace("{{ ticker }}", ctx.ticker())
+                .replace("{{ analysis_date }}", ctx.analysisDate().toString());
 
-        String userPrompt = String.format(
-                "Analyze cash flow for %s as of %s based on the provided financial fact sheet.",
-                ctx.ticker(),
-                ctx.analysisDate());
-
-        String fullPrompt = appendCriticFeedbackIfPresent(prompt + "\n" + userPrompt, ctx);
+        String fullPrompt = appendCriticFeedbackIfPresent(prompt, ctx);
 
         LlmResponse<CashFlowAgentOutput> response = llmRouterApi.executeCall(LlmTierType.STANDARD,
                 fullPrompt,

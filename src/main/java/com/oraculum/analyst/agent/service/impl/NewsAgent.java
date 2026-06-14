@@ -55,12 +55,11 @@ public class NewsAgent implements Agent<NewsAgentOutput> {
                 .replace("{{ relevance_score_definition }}", relevanceDef)
                 .replace("{{ sentiment_score_definition }}", sentimentDef)
                 .replace("{{ news_sentiment_aggregate }}", ctx.factSheetData().getNewsSentimentAggregate())
-                .replace("{{ recent_news }}", newsMarkdown);
+                .replace("{{ recent_news }}", newsMarkdown)
+                .replace("{{ ticker }}", ctx.ticker())
+                .replace("{{ analysis_date }}", ctx.analysisDate().toString());
 
-        String userPrompt = String.format("Analyze the recent news and sentiment for %s as of %s based on the provided data.",
-                ctx.ticker(),
-                ctx.analysisDate());
-        String fullPrompt = appendCriticFeedbackIfPresent(systemPrompt + "\n" + userPrompt, ctx);
+        String fullPrompt = appendCriticFeedbackIfPresent(systemPrompt, ctx);
 
         LlmResponse<NewsAgentOutput> response = llmRouterApi.executeCall(LlmTierType.STANDARD, fullPrompt, NewsAgentOutput.class);
 

@@ -54,3 +54,5 @@ Rules:
   "cash_flow_analysis": {{ cash_flow_analysis }}
 }
 ```
+
+Analyze risk for {{ ticker }} as of {{ analysis_date }} based on the provided financial fact sheet.

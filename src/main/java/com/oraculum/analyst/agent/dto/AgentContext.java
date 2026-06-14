@@ -18,11 +18,11 @@ public record AgentContext(CompanyDto company,
                            AgentWorkflowState state) {
 
     public String ticker() {
-        return company != null ? company.ticker() : null;
+        return company.ticker();
     }
 
     public String market() {
-        return company != null ? company.market() : null;
+        return company.market();
     }
 
     public @NonNull Integer companyId() {
