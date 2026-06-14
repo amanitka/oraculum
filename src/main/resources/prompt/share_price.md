@@ -32,6 +32,7 @@ You MUST respond with valid JSON using exactly this schema:
 }
 
 Rules:
+- ALWAYS explicitly cite the specific year or timeframe and the exact source of your information (e.g., 'In 2023, according to the income statement...').
 - Use all four keys exactly as shown.
 - Do not include any extra keys.
 - Do not include markdown, code fences, or explanatory text.

@@ -35,6 +35,7 @@ You MUST respond with valid JSON using exactly this schema:
 }
 
 Rules:
+- ALWAYS explicitly cite the specific year or timeframe and the exact source of your information (e.g., 'In 2023, according to the income statement...').
 
 - Keep each `contradictions_found` item to one concise sentence.
 - Return at most 5 contradiction items.

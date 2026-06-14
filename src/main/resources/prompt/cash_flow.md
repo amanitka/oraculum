@@ -25,6 +25,7 @@ You MUST respond with valid JSON using exactly this schema:
 }
 
 Rules:
+- ALWAYS explicitly cite the specific year or timeframe and the exact source of your information (e.g., 'In 2023, according to the income statement...').
 - Treat raw cash-flow values as millions of reporting currency unless explicitly labeled otherwise.
 - If you convert millions to billions in prose, divide by 1,000 and keep the scale consistent.
 - Do not include markdown code fences or explanatory text outside the JSON fields.

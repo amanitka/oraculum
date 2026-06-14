@@ -26,6 +26,7 @@ You MUST respond with a valid JSON object matching this schema exactly:
 The `analysis_focus` you output will be passed directly into the prompts of downstream specialist agents (Fundamentals, Valuation, Risk, etc.) as the core thesis to investigate. Make it sharp, directional, and specific to the current data (e.g., "The stock is trading at a 10-year low P/E with improving Piotroski scores; investigate if this is a value trap or a deep value opportunity.").
 
 ### RULES
+- ALWAYS explicitly cite the specific year or timeframe and the exact source of your information (e.g., 'In 2023, according to the income statement...' or 'Based on the company profile...').
 - Do not include markdown, code fences, or any explanatory text.
 - Respond with nothing but the JSON object.
 - Logic Hierarchy:

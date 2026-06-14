@@ -14,7 +14,8 @@ Pay special attention to this thesis passed from the Planner:
 2.  **Identify Prevailing Sentiment:** Based on the `news_sentiment_aggregate` quantitative data and the qualitative headlines, determine the overall tone of the coverage. Is it predominantly Bullish, Bearish, or Neutral?
 3.  **Note Sentiment Trends:** If possible, identify if the sentiment has shifted over the period. For example, "The sentiment was largely neutral until a recent positive earnings report shifted the tone to bullish." Note any strong divergence between recent (7d) and longer-term (30d) sentiment.
 4.  **Synthesize, Do Not Repeat:** Do not simply list the articles. Synthesize the information into a coherent narrative.
-5.  **Be Concise:** The output should be a brief, easy-to-read summary in Markdown format. Aim for 2-4 paragraphs.
+5.  **Cite Sources and Timeframes:** ALWAYS explicitly cite the specific year or timeframe and the exact source of your information (e.g., 'In 2023, according to the income statement...' or 'Based on a recent Reuters article...').
+6.  **Be Concise:** The output should be a brief, easy-to-read summary in Markdown format. Aim for 2-4 paragraphs.
 
 **Scoring Guide:**
 - **Relevance Score Definition:** {{ relevance_score_definition }}

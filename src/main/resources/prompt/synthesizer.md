@@ -38,6 +38,7 @@ You MUST respond with valid JSON using exactly this schema:
 }
 
 Rules:
+- ALWAYS explicitly cite the specific year or timeframe and the exact source of your information (e.g., 'In 2023, according to the income statement...').
 
 - `report_md` must be valid Markdown and include the requested sections.
 - `outlook` must be one of: `BULLISH`, `BEARISH`, `NEUTRAL`.
