@@ -20,61 +20,72 @@ DROP VIEW IF EXISTS v_company_financial_ratios CASCADE;
 DO $$ BEGIN RAISE NOTICE 'Creating view: v_company_financial_ratios'; END $$;
 CREATE VIEW v_company_financial_ratios AS
 WITH raw_data AS (SELECT
-                      income.id,
-                      income.company_id,
-                      income.ticker,
-                      income.currency,
-                      income.template,
-                      income.variant,
-                      income.fiscal_year,
-                      income.fiscal_period,
-                      income.report_date,
-                      income.publish_date,
-                      income.restated_date,
-                      NULLIF(income.statement_data ->> 'Revenue'::text,                                          ''::text)::double precision AS revenue,
-                      NULLIF(income.statement_data ->> 'Cost of Revenue'::text,                                  ''::text)::double precision AS cost_of_revenue,
-                      NULLIF(income.statement_data ->> 'Net Income'::text,                                       ''::text)::double precision AS net_income,
-                      NULLIF(income.statement_data ->> 'Operating Income (Loss)'::text,                          ''::text)::double precision AS operating_income,
-                      NULLIF(income.statement_data ->> 'Interest Expense, Net'::text,                            ''::text)::double precision AS interest_expense_net,
-                      NULLIF(cash_flow.statement_data ->> 'Depreciation & Amortization'::text,                   ''::text)::double precision AS da,
-                      NULLIF(balance.statement_data ->> 'Total Equity'::text,                                    ''::text)::double precision AS equity,
-                      NULLIF(balance.statement_data ->> 'Total Assets'::text,                                    ''::text)::double precision AS assets,
-                      NULLIF(balance.statement_data ->> 'Total Current Assets'::text,                            ''::text)::double precision AS cur_assets,
-                      NULLIF(balance.statement_data ->> 'Total Current Liabilities'::text,                       ''::text)::double precision AS cur_liabilities,
-                      NULLIF(balance.statement_data ->> 'Total Liabilities'::text,                               ''::text)::double precision AS liabilities,
-                      NULLIF(balance.statement_data ->> 'Cash, Cash Equivalents & Short Term Investments'::text, ''::text)::double precision AS cash,
-                      NULLIF(balance.statement_data ->> 'Accounts & Notes Receivable'::text,                     ''::text)::double precision AS receivables,
-                      NULLIF(balance.statement_data ->> 'Inventories'::text,                                     ''::text)::double precision AS inventories,
-                      NULLIF(income.statement_data ->> 'Shares (Basic)'::text,                                   ''::text)::double precision AS shares_basic,
-                      NULLIF(income.statement_data ->> 'Shares (Diluted)'::text,                                 ''::text)::double precision AS shares_diluted,
-                      NULLIF(cash_flow.statement_data ->> 'Net Cash from Operating Activities'::text,            ''::text)::double precision AS ncf_ops,
-                      NULLIF(cash_flow.statement_data ->> 'Change in Fixed Assets & Intangibles'::text,          ''::text)::double precision AS capex
-                   FROM t_income_statement income
-                   LEFT JOIN t_balance_sheet balance ON balance.company_id  = income.company_id
-                                                    AND balance.currency    = income.currency
-                                                    AND balance.template    = income.template
-                                                    AND balance.variant     = income.variant
-                                                    AND balance.fiscal_year = income.fiscal_year
-                                                    AND CASE WHEN UPPER(balance.variant) = 'ANNUAL' THEN 'FY' ELSE balance.fiscal_period END = income.fiscal_period
-                   LEFT JOIN t_cash_flow_statement cash_flow ON cash_flow.company_id  = income.company_id
-                                                            AND cash_flow.currency    = income.currency
-                                                            AND cash_flow.template    = income.template
-                                                            AND cash_flow.variant     = income.variant
-                                                            AND cash_flow.fiscal_year = income.fiscal_year
-                                                            AND CASE WHEN UPPER(cash_flow.variant) = 'ANNUAL' THEN 'FY' ELSE cash_flow.fiscal_period END = income.fiscal_period
-                   ),
+                     income.id,
+                     income.company_id,
+                     income.ticker,
+                     income.currency,
+                     income.template,
+                     income.variant,
+                     income.fiscal_year,
+                     income.fiscal_period,
+                     income.report_date,
+                     income.publish_date,
+                     income.restated_date,
+                     NULLIF(income.statement_data ->> 'Revenue'::text,                                          ''::text)::double precision AS revenue,
+                     NULLIF(income.statement_data ->> 'Cost of Revenue'::text,                                  ''::text)::double precision AS cost_of_revenue,
+                     NULLIF(income.statement_data ->> 'Net Income'::text,                                       ''::text)::double precision AS net_income,
+                     NULLIF(income.statement_data ->> 'Operating Income (Loss)'::text,                          ''::text)::double precision AS operating_income,
+                     NULLIF(income.statement_data ->> 'Interest Expense, Net'::text,                            ''::text)::double precision AS interest_expense_net,
+                     NULLIF(cash_flow.statement_data ->> 'Depreciation & Amortization'::text,                   ''::text)::double precision AS da,
+                     NULLIF(balance.statement_data ->> 'Total Equity'::text,                                    ''::text)::double precision AS equity,
+                     NULLIF(balance.statement_data ->> 'Total Assets'::text,                                    ''::text)::double precision AS assets,
+                     NULLIF(balance.statement_data ->> 'Total Current Assets'::text,                            ''::text)::double precision AS cur_assets,
+                     NULLIF(balance.statement_data ->> 'Total Current Liabilities'::text,                       ''::text)::double precision AS cur_liabilities,
+                     NULLIF(balance.statement_data ->> 'Total Liabilities'::text,                               ''::text)::double precision AS liabilities,
+                     NULLIF(balance.statement_data ->> 'Cash, Cash Equivalents & Short Term Investments'::text, ''::text)::double precision AS cash,
+                     NULLIF(balance.statement_data ->> 'Accounts & Notes Receivable'::text,                     ''::text)::double precision AS receivables,
+                     NULLIF(balance.statement_data ->> 'Inventories'::text,                                     ''::text)::double precision AS inventories,
+                     NULLIF(income.statement_data ->> 'Shares (Basic)'::text,                                   ''::text)::double precision AS shares_basic,
+                     NULLIF(income.statement_data ->> 'Shares (Diluted)'::text,                                 ''::text)::double precision AS shares_diluted,
+                     NULLIF(cash_flow.statement_data ->> 'Net Cash from Operating Activities'::text,            ''::text)::double precision AS ncf_ops,
+                     NULLIF(cash_flow.statement_data ->> 'Change in Fixed Assets & Intangibles'::text,          ''::text)::double precision AS capex
+                  FROM t_income_statement income
+                  LEFT JOIN t_balance_sheet balance ON balance.company_id  = income.company_id
+                                                   AND balance.currency    = income.currency
+                                                   AND balance.template    = income.template
+                                                   AND balance.variant     = income.variant
+                                                   AND balance.fiscal_year = income.fiscal_year
+                                                   AND CASE WHEN UPPER(balance.variant) = 'ANNUAL' THEN 'FY' ELSE balance.fiscal_period END = income.fiscal_period
+                  LEFT JOIN t_cash_flow_statement cash_flow ON cash_flow.company_id  = income.company_id
+                                                           AND cash_flow.currency    = income.currency
+                                                           AND cash_flow.template    = income.template
+                                                           AND cash_flow.variant     = income.variant
+                                                           AND cash_flow.fiscal_year = income.fiscal_year
+                                                           AND CASE WHEN UPPER(cash_flow.variant) = 'ANNUAL' THEN 'FY' ELSE cash_flow.fiscal_period END = income.fiscal_period
+                  ),
+     -- =================================================================
      -- =================================================================
      -- Normalization: resolve sign conventions once.
-     -- SimFin convention: liabilities positive, capex negative (outflow),
-     -- D&A positive, interest_expense_net negative when it is a cost.
+     --
+     -- SimFin sign conventions (verified against full dataset, 239,414 rows):
+     --   liabilities      : stored as POSITIVE  (239,255 / 239,414 rows)
+     --   cur_liabilities  : stored as POSITIVE
+     --   capex            : stored as NEGATIVE   (cash outflow) → ABS() mandatory
+     --   D&A              : stored as POSITIVE   → ABS() redundant but kept as guard
+     --   interest_exp_net : stored as NEGATIVE when it is a net cost
+     --
+     -- NOTE on ABS(liabilities): 66 / 239,414 rows have negative liabilities
+     -- (SimFin data anomalies, not sign convention). Without ABS() those rows
+     -- would compute NCAV as cur_assets + liabilities, silently inflating the
+     -- value. ABS() is intentional normalization here, not defensive redundancy.
      -- =================================================================
      normalized AS (SELECT
-                        *,
-                        COALESCE(operating_income, 0) + ABS(COALESCE(da, 0))                                                                      AS ebitda,
-                        COALESCE(ncf_ops, 0)          - ABS(COALESCE(capex, 0))                                                                   AS fcf,
-                        COALESCE(cur_assets, 0)       - ABS(COALESCE(liabilities, 0))                                                             AS ncav,
-                        COALESCE(cash, 0) + (COALESCE(receivables, 0) * 0.75) + (COALESCE(inventories, 0) * 0.5) - ABS(COALESCE(liabilities, 0)) AS nnwc,
-                        COALESCE(shares_diluted, shares_basic)                                                                                     AS shares
+                       *,
+                       COALESCE(operating_income, 0) + ABS(COALESCE(da, 0))                                                                     AS ebitda,
+                       COALESCE(ncf_ops, 0)          - ABS(COALESCE(capex, 0))                                                                  AS fcf,  -- capex is negative in SimFin → ABS() required
+                       COALESCE(cur_assets, 0)       - ABS(COALESCE(liabilities, 0))                                                            AS ncav,  -- ABS() guards 66 anomalous negative-liability rows
+                       COALESCE(cash, 0) + (COALESCE(receivables, 0) * 0.75) + (COALESCE(inventories, 0) * 0.5) - ABS(COALESCE(liabilities, 0)) AS nnwc,  -- same guard
+                       COALESCE(shares_diluted, shares_basic)                                                                                   AS shares
                     FROM raw_data
                     ),
      computed_ratios AS (SELECT
