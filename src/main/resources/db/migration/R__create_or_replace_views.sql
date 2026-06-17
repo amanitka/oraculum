@@ -19,190 +19,237 @@ DROP VIEW IF EXISTS v_company_financial_ratios CASCADE;
 -- =================================================================
 DO $$ BEGIN RAISE NOTICE 'Creating view: v_company_financial_ratios'; END $$;
 CREATE VIEW v_company_financial_ratios AS
-WITH statement_values AS (SELECT
-                             income.id,
-                             income.company_id,
-                             income.ticker,
-                             income.currency,
-                             income.template,
-                             income.variant,
-                             income.fiscal_year,
-                             income.fiscal_period,
-                             income.report_date,
-                             income.publish_date,
-                             income.restated_date,
-                             NULLIF(income.statement_data ->> 'Revenue'::text, ''::text)::double precision AS revenue,
-                             NULLIF(income.statement_data ->> 'Cost of Revenue'::text, ''::text)::double precision AS cost_of_revenue,
-                             NULLIF(income.statement_data ->> 'Net Income'::text, ''::text)::double precision AS net_income,
-                             NULLIF(income.statement_data ->> 'Operating Income (Loss)'::text, ''::text)::double precision AS operating_income,
-                             NULLIF(income.statement_data ->> 'Interest Expense, Net'::text, ''::text)::double precision AS interest_expense_net,
-                             NULLIF(income.statement_data ->> 'Income Tax (Expense) Benefit, Net'::text, ''::text)::double precision AS income_tax,
-                             NULLIF(cash_flow.statement_data ->> 'Depreciation & Amortization'::text, ''::text)::double precision AS depreciation_amortization,
-                             NULLIF(balance.statement_data ->> 'Total Equity'::text, ''::text)::double precision AS total_equity,
-                             NULLIF(balance.statement_data ->> 'Total Assets'::text, ''::text)::double precision AS total_assets,
-                             NULLIF(balance.statement_data ->> 'Total Current Assets'::text, ''::text)::double precision AS total_current_assets,
-                             NULLIF(balance.statement_data ->> 'Total Current Liabilities'::text, ''::text)::double precision AS total_current_liabilities,
-                             NULLIF(balance.statement_data ->> 'Total Liabilities'::text, ''::text)::double precision AS total_liabilities,
-                             NULLIF(balance.statement_data ->> 'Cash, Cash Equivalents & Short Term Investments'::text, ''::text)::double precision AS cash_equivalents_short_term_investments,
-                             NULLIF(balance.statement_data ->> 'Accounts & Notes Receivable'::text, ''::text)::double precision AS accounts_notes_receivable,
-                             NULLIF(balance.statement_data ->> 'Inventories'::text, ''::text)::double precision AS inventories,
-                             NULLIF(income.statement_data ->> 'Shares (Basic)'::text, ''::text)::double precision AS shares_basic,
-                             NULLIF(income.statement_data ->> 'Shares (Diluted)'::text, ''::text)::double precision AS shares_diluted,
-                             NULLIF(cash_flow.statement_data ->> 'Net Cash from Operating Activities'::text, ''::text)::double precision AS net_cash_from_operating_activities,
-                             NULLIF(cash_flow.statement_data ->> 'Change in Fixed Assets & Intangibles'::text, ''::text)::double precision AS capital_expenditures
-                          FROM t_income_statement income
-                          LEFT JOIN t_balance_sheet balance ON balance.company_id = income.company_id
-                                                            AND balance.currency = income.currency
-                                                            AND balance.template = income.template
-                                                            AND balance.variant = income.variant
-                                                            AND balance.fiscal_year = income.fiscal_year
-                                                            AND CASE WHEN UPPER(balance.variant) = 'ANNUAL' THEN 'FY' ELSE balance.fiscal_period END = income.fiscal_period
-                          LEFT JOIN t_cash_flow_statement cash_flow ON cash_flow.company_id = income.company_id
-                                                                   AND cash_flow.currency = income.currency
-                                                                   AND cash_flow.template = income.template
-                                                                   AND cash_flow.variant = income.variant
-                                                                   AND cash_flow.fiscal_year = income.fiscal_year
-                                                                   AND CASE WHEN UPPER(cash_flow.variant) = 'ANNUAL' THEN 'FY' ELSE cash_flow.fiscal_period END = income.fiscal_period
-                          ),
+WITH raw_data AS (SELECT
+                      income.id,
+                      income.company_id,
+                      income.ticker,
+                      income.currency,
+                      income.template,
+                      income.variant,
+                      income.fiscal_year,
+                      income.fiscal_period,
+                      income.report_date,
+                      income.publish_date,
+                      income.restated_date,
+                      NULLIF(income.statement_data ->> 'Revenue'::text,                                          ''::text)::double precision AS revenue,
+                      NULLIF(income.statement_data ->> 'Cost of Revenue'::text,                                  ''::text)::double precision AS cost_of_revenue,
+                      NULLIF(income.statement_data ->> 'Net Income'::text,                                       ''::text)::double precision AS net_income,
+                      NULLIF(income.statement_data ->> 'Operating Income (Loss)'::text,                          ''::text)::double precision AS operating_income,
+                      NULLIF(income.statement_data ->> 'Interest Expense, Net'::text,                            ''::text)::double precision AS interest_expense_net,
+                      NULLIF(cash_flow.statement_data ->> 'Depreciation & Amortization'::text,                   ''::text)::double precision AS da,
+                      NULLIF(balance.statement_data ->> 'Total Equity'::text,                                    ''::text)::double precision AS equity,
+                      NULLIF(balance.statement_data ->> 'Total Assets'::text,                                    ''::text)::double precision AS assets,
+                      NULLIF(balance.statement_data ->> 'Total Current Assets'::text,                            ''::text)::double precision AS cur_assets,
+                      NULLIF(balance.statement_data ->> 'Total Current Liabilities'::text,                       ''::text)::double precision AS cur_liabilities,
+                      NULLIF(balance.statement_data ->> 'Total Liabilities'::text,                               ''::text)::double precision AS liabilities,
+                      NULLIF(balance.statement_data ->> 'Cash, Cash Equivalents & Short Term Investments'::text, ''::text)::double precision AS cash,
+                      NULLIF(balance.statement_data ->> 'Accounts & Notes Receivable'::text,                     ''::text)::double precision AS receivables,
+                      NULLIF(balance.statement_data ->> 'Inventories'::text,                                     ''::text)::double precision AS inventories,
+                      NULLIF(income.statement_data ->> 'Shares (Basic)'::text,                                   ''::text)::double precision AS shares_basic,
+                      NULLIF(income.statement_data ->> 'Shares (Diluted)'::text,                                 ''::text)::double precision AS shares_diluted,
+                      NULLIF(cash_flow.statement_data ->> 'Net Cash from Operating Activities'::text,            ''::text)::double precision AS ncf_ops,
+                      NULLIF(cash_flow.statement_data ->> 'Change in Fixed Assets & Intangibles'::text,          ''::text)::double precision AS capex
+                   FROM t_income_statement income
+                   LEFT JOIN t_balance_sheet balance ON balance.company_id  = income.company_id
+                                                    AND balance.currency    = income.currency
+                                                    AND balance.template    = income.template
+                                                    AND balance.variant     = income.variant
+                                                    AND balance.fiscal_year = income.fiscal_year
+                                                    AND CASE WHEN UPPER(balance.variant) = 'ANNUAL' THEN 'FY' ELSE balance.fiscal_period END = income.fiscal_period
+                   LEFT JOIN t_cash_flow_statement cash_flow ON cash_flow.company_id  = income.company_id
+                                                            AND cash_flow.currency    = income.currency
+                                                            AND cash_flow.template    = income.template
+                                                            AND cash_flow.variant     = income.variant
+                                                            AND cash_flow.fiscal_year = income.fiscal_year
+                                                            AND CASE WHEN UPPER(cash_flow.variant) = 'ANNUAL' THEN 'FY' ELSE cash_flow.fiscal_period END = income.fiscal_period
+                   ),
+     -- =================================================================
+     -- Normalization: resolve sign conventions once.
+     -- SimFin convention: liabilities positive, capex negative (outflow),
+     -- D&A positive, interest_expense_net negative when it is a cost.
+     -- =================================================================
+     normalized AS (SELECT
+                        *,
+                        COALESCE(operating_income, 0) + ABS(COALESCE(da, 0))                                                                      AS ebitda,
+                        COALESCE(ncf_ops, 0)          - ABS(COALESCE(capex, 0))                                                                   AS fcf,
+                        COALESCE(cur_assets, 0)       - ABS(COALESCE(liabilities, 0))                                                             AS ncav,
+                        COALESCE(cash, 0) + (COALESCE(receivables, 0) * 0.75) + (COALESCE(inventories, 0) * 0.5) - ABS(COALESCE(liabilities, 0)) AS nnwc,
+                        COALESCE(shares_diluted, shares_basic)                                                                                     AS shares
+                    FROM raw_data
+                    ),
      computed_ratios AS (SELECT
-                            id,
-                            company_id,
-                            ticker,
-                            currency,
-                            template,
-                            variant,
-                            fiscal_year,
-                            fiscal_period,
-                            report_date,
-                            publish_date,
-                            restated_date,
-                            total_equity,
-                            total_liabilities,
-                            total_assets,
-                            cash_equivalents_short_term_investments,
-                            net_cash_from_operating_activities,
-                            COALESCE(operating_income, 0::double precision) + ABS(COALESCE(depreciation_amortization, 0::double precision)) AS ebitda,
-                            COALESCE(net_cash_from_operating_activities, 0::double precision) - ABS(COALESCE(capital_expenditures, 0::double precision)) AS free_cash_flow,
-                            COALESCE(total_current_assets, 0::double precision) - ABS(COALESCE(total_liabilities, 0::double precision)) AS ncav,
-                            COALESCE(cash_equivalents_short_term_investments, 0::double precision)
-                                + (COALESCE(accounts_notes_receivable, 0::double precision) * 0.75::double precision)
-                                + (COALESCE(inventories, 0::double precision) * 0.5::double precision)
-                                - ABS(COALESCE(total_liabilities, 0::double precision)) AS net_net_working_capital,
-                            operating_income / NULLIF(COALESCE(total_assets, total_equity + ABS(COALESCE(total_liabilities, 0::double precision))), 0::double precision) AS return_on_capital_employed,
-                            net_income / NULLIF(total_equity, 0::double precision) AS return_on_equity,
-                            net_income / NULLIF(COALESCE(total_assets, total_equity + ABS(COALESCE(total_liabilities, 0::double precision))), 0::double precision) AS return_on_assets,
-                            net_income / NULLIF(revenue, 0::double precision) AS net_margin,
-                            (revenue - ABS(COALESCE(cost_of_revenue, 0::double precision))) / NULLIF(revenue, 0::double precision) AS gross_margin,
-                            operating_income / NULLIF(revenue, 0::double precision) AS operating_margin,
-                            (COALESCE(net_cash_from_operating_activities, 0::double precision) - ABS(COALESCE(capital_expenditures, 0::double precision))) / NULLIF(revenue, 0::double precision) AS fcf_margin,
-                            total_current_assets / NULLIF(ABS(COALESCE(total_current_liabilities, 0::double precision)), 0::double precision) AS current_ratio,
-                            (COALESCE(cash_equivalents_short_term_investments, 0::double precision) + COALESCE(accounts_notes_receivable, 0::double precision)) / NULLIF(ABS(COALESCE(total_current_liabilities, 0::double precision)), 0::double precision) AS quick_ratio,
-                            ABS(COALESCE(total_liabilities, 0::double precision)) / NULLIF(total_equity, 0::double precision) AS debt_to_equity,
-                            operating_income / NULLIF(ABS(COALESCE(interest_expense_net, 0::double precision)), 0::double precision) AS interest_coverage_ratio,
-                            ABS(COALESCE(cost_of_revenue, 0::double precision)) / NULLIF(inventories, 0::double precision) AS inventory_turnover,
-                            revenue / NULLIF(COALESCE(total_assets, total_equity + ABS(COALESCE(total_liabilities, 0::double precision))), 0::double precision) AS asset_turnover,
-                            COALESCE(shares_diluted, shares_basic) AS shares_stabilized,
-                            net_income / NULLIF(COALESCE(shares_diluted, shares_basic), 0::double precision) AS earnings_per_share,
-                            (COALESCE(net_cash_from_operating_activities, 0::double precision) - ABS(COALESCE(capital_expenditures, 0::double precision)))
-                                / NULLIF(COALESCE(shares_diluted, shares_basic), 0::double precision) AS fcf_per_share,
-                            revenue,
-                            net_income
-                         FROM statement_values
+                            *,
+                            operating_income / NULLIF(COALESCE(assets, equity + ABS(COALESCE(liabilities, 0))), 0)  AS roce,
+                            net_income       / NULLIF(equity, 0)                                                     AS roe,
+                            net_income       / NULLIF(assets, 0)                                                     AS roa,
+                            net_income       / NULLIF(revenue, 0)                                                    AS net_margin,
+                            (revenue - ABS(COALESCE(cost_of_revenue, 0))) / NULLIF(revenue, 0)                       AS gross_margin,
+                            operating_income / NULLIF(revenue, 0)                                                    AS op_margin,
+                            fcf              / NULLIF(revenue, 0)                                                    AS fcf_margin,
+                            cur_assets       / NULLIF(ABS(COALESCE(cur_liabilities, 0)), 0)                          AS current_ratio,
+                            (COALESCE(cash, 0) + COALESCE(receivables, 0)) / NULLIF(ABS(COALESCE(cur_liabilities, 0)), 0) AS quick_ratio,
+                            ABS(COALESCE(liabilities, 0)) / NULLIF(equity, 0)                                        AS debt_to_equity,
+                            CASE WHEN ABS(COALESCE(interest_expense_net, 0)) > 0
+                                 THEN operating_income / ABS(interest_expense_net)
+                                 ELSE NULL
+                            END                                                                                       AS int_coverage,
+                            ABS(COALESCE(cost_of_revenue, 0)) / NULLIF(inventories, 0)                               AS inv_turnover,
+                            revenue          / NULLIF(assets, 0)                                                     AS asset_turnover,
+                            net_income       / NULLIF(shares, 0)                                                     AS eps,
+                            fcf              / NULLIF(shares, 0)                                                     AS fcf_per_share
+                         FROM normalized
                          ),
-     lagged_values AS (SELECT
-                          *,
-                          LAG(revenue) OVER w AS prev_revenue,
-                          LAG(net_income) OVER w AS prev_net_income,
-                          LAG(ebitda) OVER w AS prev_ebitda,
-                          LAG(free_cash_flow) OVER w AS prev_fcf,
-                          LAG(earnings_per_share) OVER w AS prev_eps,
-                          LAG(return_on_assets) OVER w AS prev_roa,
-                          LAG(debt_to_equity) OVER w AS prev_debt_to_equity,
-                          LAG(current_ratio) OVER w AS prev_current_ratio,
-                          LAG(shares_stabilized) OVER w AS prev_shares_stabilized,
-                          LAG(gross_margin) OVER w AS prev_gross_margin,
-                          LAG(asset_turnover) OVER w AS prev_asset_turnover,
-                          LAG(operating_margin) OVER w AS prev_operating_margin,
-                          LAG(net_margin) OVER w AS prev_net_margin
-                       FROM computed_ratios
-                       WINDOW w AS (PARTITION BY company_id, UPPER(variant) ORDER BY fiscal_year, fiscal_period)
-                       ),
-     enriched_windows AS (SELECT
-                             *,
-                             SUM(CASE WHEN free_cash_flow > 0 THEN 1 ELSE 0 END) OVER w4 AS positive_fcf_streak,
-                             SUM(CASE WHEN net_income > 0 THEN 1 ELSE 0 END) OVER w4 AS positive_earnings_streak,
-                             SUM(CASE WHEN revenue > prev_revenue THEN 1 ELSE 0 END) OVER w4 AS revenue_growth_streak
-                          FROM lagged_values
-                          WINDOW w4 AS (PARTITION BY company_id, UPPER(variant) ORDER BY fiscal_year, fiscal_period ROWS BETWEEN 3 PRECEDING AND CURRENT ROW)
-                          ),
-     final_ratios AS (SELECT
-                         id,
-                         company_id,
-                         ticker,
-                         currency,
-                         template,
-                         variant,
-                         fiscal_year,
-                         fiscal_period,
-                         report_date,
-                         publish_date,
-                         restated_date,
-                         total_equity,
-                         total_liabilities,
-                         total_assets,
-                         cash_equivalents_short_term_investments,
-                         net_cash_from_operating_activities,
-                         ebitda,
-                         free_cash_flow,
-                         ncav,
-                         net_net_working_capital,
-                         return_on_capital_employed,
-                         return_on_equity,
-                         return_on_assets,
-                         net_margin,
-                         gross_margin,
-                         operating_margin,
-                         fcf_margin,
-                         current_ratio,
-                         quick_ratio,
-                         debt_to_equity,
-                         interest_coverage_ratio,
-                         inventory_turnover,
-                         asset_turnover,
-                         shares_stabilized,
-                         earnings_per_share,
-                         fcf_per_share,
-                         revenue,
-                         net_income,
-                         (revenue - prev_revenue) / NULLIF(ABS(prev_revenue), 0) AS revenue_yoy_growth,
-                         (net_income - prev_net_income) / NULLIF(ABS(prev_net_income), 0) AS net_income_yoy_growth,
-                         (ebitda - prev_ebitda) / NULLIF(ABS(prev_ebitda), 0) AS ebitda_yoy_growth,
-                         (free_cash_flow - prev_fcf) / NULLIF(ABS(prev_fcf), 0) AS fcf_yoy_growth,
-                         (earnings_per_share - prev_eps) / NULLIF(ABS(prev_eps), 0) AS eps_yoy_growth,
-                         (CASE WHEN return_on_assets > 0 THEN 1 ELSE 0 END) +
-                         (CASE WHEN net_cash_from_operating_activities > 0 THEN 1 ELSE 0 END) +
-                         (CASE WHEN return_on_assets > prev_roa THEN 1 ELSE 0 END) +
-                         (CASE WHEN net_cash_from_operating_activities > net_income THEN 1 ELSE 0 END) +
-                         (CASE WHEN debt_to_equity < prev_debt_to_equity THEN 1 ELSE 0 END) +
-                         (CASE WHEN current_ratio > prev_current_ratio THEN 1 ELSE 0 END) +
-                         (CASE WHEN shares_stabilized <= prev_shares_stabilized THEN 1 ELSE 0 END) +
-                         (CASE WHEN gross_margin > prev_gross_margin THEN 1 ELSE 0 END) +
-                         (CASE WHEN asset_turnover > prev_asset_turnover THEN 1 ELSE 0 END) AS piotroski_f_score,
-                         net_cash_from_operating_activities / NULLIF(net_income, 0) AS earnings_quality_ratio,
-                         (CASE WHEN net_cash_from_operating_activities > net_income THEN 1 ELSE 0 END) AS is_cash_earnings,
-                         (CASE WHEN total_equity < 0 THEN 1 ELSE 0 END) AS is_negative_equity,
-                         (CASE WHEN gross_margin > prev_gross_margin
-                               AND operating_margin > prev_operating_margin
-                               AND net_margin > prev_net_margin THEN 1 ELSE 0 END) AS margin_expansion_signal,
-                         revenue_growth_streak,
-                         positive_fcf_streak,
-                         positive_earnings_streak
-                      FROM enriched_windows
-                      )
-SELECT 
-    *,
+     -- =================================================================
+     -- Two windows are intentionally used:
+     --   w_yoy: same fiscal_period, prior year  → true YoY growth
+     --   w_seq: consecutive periods             → Piotroski trend signals
+     -- =================================================================
+     lagged AS (SELECT
+                   *,
+                   LAG(revenue)        OVER w_yoy AS prev_rev,
+                   LAG(net_income)     OVER w_yoy AS prev_ni,
+                   LAG(ebitda)         OVER w_yoy AS prev_ebitda,
+                   LAG(fcf)            OVER w_yoy AS prev_fcf,
+                   LAG(eps)            OVER w_yoy AS prev_eps,
+                   LAG(roa)            OVER w_seq AS prev_roa,
+                   LAG(debt_to_equity) OVER w_seq AS prev_d2e,
+                   LAG(current_ratio)  OVER w_seq AS prev_cr,
+                   LAG(shares)         OVER w_seq AS prev_shares,
+                   LAG(gross_margin)   OVER w_seq AS prev_gm,
+                   LAG(asset_turnover) OVER w_seq AS prev_at,
+                   LAG(op_margin)      OVER w_seq AS prev_om,
+                   LAG(net_margin)     OVER w_seq AS prev_nm
+                FROM computed_ratios
+                WINDOW w_yoy AS (PARTITION BY company_id, fiscal_period, UPPER(variant) ORDER BY fiscal_year),
+                       w_seq AS (PARTITION BY company_id,                UPPER(variant) ORDER BY fiscal_year, fiscal_period)
+                ),
+     streaks AS (SELECT
+                    *,
+                    SUM(CASE WHEN fcf        > 0        THEN 1 ELSE 0 END) OVER w4     AS fcf_streak,
+                    SUM(CASE WHEN net_income > 0        THEN 1 ELSE 0 END) OVER w4     AS ni_streak,
+                    SUM(CASE WHEN revenue    > prev_rev THEN 1 ELSE 0 END) OVER w4_yoy AS rev_growth_streak
+                 FROM lagged
+                 WINDOW w4     AS (PARTITION BY company_id,               UPPER(variant) ORDER BY fiscal_year, fiscal_period ROWS BETWEEN 3 PRECEDING AND CURRENT ROW),
+                        w4_yoy AS (PARTITION BY company_id, fiscal_period, UPPER(variant) ORDER BY fiscal_year              ROWS BETWEEN 3 PRECEDING AND CURRENT ROW)
+                 ),
+     final_metrics AS (SELECT
+                          id,
+                          company_id,
+                          ticker,
+                          currency,
+                          template,
+                          variant,
+                          fiscal_year,
+                          fiscal_period,
+                          report_date,
+                          publish_date,
+                          restated_date,
+                          revenue,
+                          net_income,
+                          equity       AS total_equity,
+                          liabilities  AS total_liabilities,
+                          assets       AS total_assets,
+                          cash         AS cash_equivalents_short_term_investments,
+                          ncf_ops      AS net_cash_from_operating_activities,
+                          ebitda,
+                          fcf          AS free_cash_flow,
+                          ncav,
+                          nnwc         AS net_net_working_capital,
+                          shares       AS shares_stabilized,
+                          eps          AS earnings_per_share,
+                          fcf_per_share,
+                          roce         AS return_on_capital_employed,
+                          roe          AS return_on_equity,
+                          roa          AS return_on_assets,
+                          net_margin,
+                          gross_margin,
+                          op_margin    AS operating_margin,
+                          fcf_margin,
+                          current_ratio,
+                          quick_ratio,
+                          debt_to_equity,
+                          int_coverage      AS interest_coverage_ratio,
+                          inv_turnover      AS inventory_turnover,
+                          asset_turnover,
+                          rev_growth_streak AS revenue_growth_streak,
+                          fcf_streak        AS positive_fcf_streak,
+                          ni_streak         AS positive_earnings_streak,
+                          (revenue    - prev_rev)    / NULLIF(ABS(prev_rev),    0) AS revenue_yoy_growth,
+                          (net_income - prev_ni)     / NULLIF(ABS(prev_ni),     0) AS net_income_yoy_growth,
+                          (ebitda     - prev_ebitda) / NULLIF(ABS(prev_ebitda), 0) AS ebitda_yoy_growth,
+                          (fcf        - prev_fcf)    / NULLIF(ABS(prev_fcf),    0) AS fcf_yoy_growth,
+                          (eps        - prev_eps)    / NULLIF(ABS(prev_eps),    0) AS eps_yoy_growth,
+                          (CASE WHEN roa          >  0            THEN 1 ELSE 0 END) +
+                          (CASE WHEN ncf_ops      >  0            THEN 1 ELSE 0 END) +
+                          (CASE WHEN roa          >  prev_roa     THEN 1 ELSE 0 END) +
+                          (CASE WHEN ncf_ops      >  net_income   THEN 1 ELSE 0 END) +
+                          (CASE WHEN debt_to_equity < prev_d2e    THEN 1 ELSE 0 END) +
+                          (CASE WHEN current_ratio  >  prev_cr    THEN 1 ELSE 0 END) +
+                          (CASE WHEN shares         <= prev_shares THEN 1 ELSE 0 END) +
+                          (CASE WHEN gross_margin   >  prev_gm    THEN 1 ELSE 0 END) +
+                          (CASE WHEN asset_turnover >  prev_at    THEN 1 ELSE 0 END)  AS piotroski_f_score,
+                          ncf_ops / NULLIF(net_income, 0)                             AS earnings_quality_ratio,
+                          (CASE WHEN ncf_ops    >  net_income THEN 1 ELSE 0 END)      AS is_cash_earnings,
+                          (CASE WHEN equity     <  0          THEN 1 ELSE 0 END)      AS is_negative_equity,
+                          (CASE WHEN gross_margin > prev_gm
+                                AND op_margin    > prev_om
+                                AND net_margin   > prev_nm   THEN 1 ELSE 0 END)       AS margin_expansion_signal
+                       FROM streaks
+                       )
+SELECT
+    id,
+    company_id,
+    ticker,
+    currency,
+    template,
+    variant,
+    fiscal_year,
+    fiscal_period,
+    report_date,
+    publish_date,
+    restated_date,
+    revenue,
+    net_income,
+    total_equity,
+    total_liabilities,
+    total_assets,
+    cash_equivalents_short_term_investments,
+    net_cash_from_operating_activities,
+    ebitda,
+    free_cash_flow,
+    ncav,
+    net_net_working_capital,
+    shares_stabilized,
+    earnings_per_share,
+    fcf_per_share,
+    return_on_capital_employed,
+    return_on_equity,
+    return_on_assets,
+    net_margin,
+    gross_margin,
+    operating_margin,
+    fcf_margin,
+    current_ratio,
+    quick_ratio,
+    debt_to_equity,
+    interest_coverage_ratio,
+    inventory_turnover,
+    asset_turnover,
+    revenue_growth_streak,
+    positive_fcf_streak,
+    positive_earnings_streak,
+    revenue_yoy_growth,
+    net_income_yoy_growth,
+    ebitda_yoy_growth,
+    fcf_yoy_growth,
+    eps_yoy_growth,
+    piotroski_f_score,
+    earnings_quality_ratio,
+    is_cash_earnings,
+    is_negative_equity,
+    margin_expansion_signal,
     (CASE WHEN return_on_equity > 0.15 AND return_on_capital_employed > 0.12 THEN 10
-          WHEN return_on_equity > 0.08 OR return_on_capital_employed > 0.08 THEN 5
+          WHEN return_on_equity > 0.08 OR  return_on_capital_employed > 0.08 THEN 5
           ELSE 0 END) * 2.5 +
     (CASE WHEN free_cash_flow > 0 AND fcf_margin > 0.08 AND is_cash_earnings = 1 THEN 10
           WHEN free_cash_flow > 0 THEN 5
@@ -210,13 +257,14 @@ SELECT
     (CASE WHEN debt_to_equity < 0.5 AND current_ratio > 2.0 AND interest_coverage_ratio > 10 THEN 10
           WHEN debt_to_equity < 1.5 AND current_ratio > 1.2 THEN 5
           ELSE 0 END) * 2.0 +
-    (CASE WHEN revenue_yoy_growth > 0.10 AND eps_yoy_growth > 0.10 THEN 10
-          WHEN revenue_yoy_growth > 0 THEN 5
+    (CASE WHEN COALESCE(revenue_yoy_growth, 0) > 0.10
+           AND COALESCE(eps_yoy_growth,     0) > 0.10 THEN 10
+          WHEN COALESCE(revenue_yoy_growth, 0) > 0 THEN 5
           ELSE 0 END) * 2.0 +
     (CASE WHEN piotroski_f_score >= 7 AND revenue_growth_streak >= 3 THEN 10
           WHEN piotroski_f_score >= 4 THEN 5
           ELSE 0 END) * 1.5 AS quality_score
-FROM final_ratios;
+FROM final_metrics;
 
 -- MATERIALIZE Fundamental Ratios
 DO $$ BEGIN RAISE NOTICE 'Materializing view: mv_company_financial_ratios (This may take a while...)'; END $$;
@@ -387,7 +435,7 @@ WITH fundamental_timeline AS (SELECT
                       LEFT JOIN t_company c ON c.id = p.company_id
                       LEFT JOIN fundamental_timeline f ON p.company_id = f.company_id
                                                       AND p.trade_date >= f.valid_from
-                                                      AND p.trade_date < f.valid_to
+                                                      AND p.trade_date <  f.valid_to
                       )
 SELECT
     *,
