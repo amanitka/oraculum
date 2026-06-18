@@ -43,7 +43,6 @@ public class CriticAgent implements Agent<CriticAgentOutput> {
 
         String prompt = promptRegistry.getPrompt(PromptType.CRITIC)
                 .replace("{{ analysis_focus }}", ctx.analysisFocus() != null ? ctx.analysisFocus() : "Standard comprehensive analysis.")
-                .replace("{{ algorithmic_baseline }}", ctx.factSheetData().getAlgorithmicBaselineJson())
                 .replace("{{ agent_timeframes }}", agentTimeframesJson)
                 .replace("{{ prior_outputs }}", priorOutputsJson)
                 .replace("{{ ticker }}", ctx.ticker());

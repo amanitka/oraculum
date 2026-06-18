@@ -35,7 +35,8 @@ Rules:
 ```json
 {
   "cash_flow_history_ttm": {{ cash_flow_history_ttm }},
-  "company_financial_ratios_ttm": {{ company_financial_ratios_ttm }}
+  "company_financial_ratios_ttm": {{ company_financial_ratios_ttm }},
+  "fundamentals_analysis": {{ fundamentals_analysis }}
 }
 ```
 
