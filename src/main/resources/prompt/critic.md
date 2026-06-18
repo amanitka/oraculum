@@ -23,6 +23,7 @@ Your task is to:
 5. **Ignore Known Divergences**:
    - **Market vs. Fundamentals Sentiment**: Do NOT flag contradictions between `News`/`SharePrice` sentiment and `Fundamentals`/`CashFlow` (e.g. "News is bearish but fundamentals are strong"). The market often disconnects from fundamentals.
    - **Market vs. Fundamentals Timeframes**: Do NOT flag chronological discrepancies between market agents (`News`, `SharePrice`) and fundamental agents (`Fundamentals`, `CashFlow`, `Valuation`, `Risk`). Market agents ALWAYS process real-time, up-to-date data (e.g., current year 2026), whereas fundamental agents analyze the latest available historic reporting period (e.g., FY2025 or Q1 2026). This is expected and is NOT a contradiction.
+   - **Quarterly vs. TTM Metrics**: Do NOT flag differences between Quarterly metrics (e.g. Q1 revenue or free cash flow) and Trailing-Twelve-Month (TTM) metrics (e.g. Q1 TTM revenue) as contradictions, even if they share the same end date (e.g., FY2026 Q1). A quarterly metric covers 3 months, while a TTM metric covers 12 months, so their values will naturally be completely different. This is expected and is NOT a contradiction. Do not recommend reruns for this.
 6. **List All Findings**: Compile every contradiction you find into the `contradictions_found` list. If you find no
    contradictions, return an empty list.
 7. **Set Consistency Flag**: If `contradictions_found` is empty, set `is_consistent` to `true`. Otherwise, set it to
