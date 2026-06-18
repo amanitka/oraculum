@@ -54,6 +54,7 @@ public class SynthesizerAgent implements Agent<SynthesizerAgentOutput> {
                 .replace("{{ algorithmic_baseline }}", ctx.factSheetData().getAlgorithmicBaselineJson())
                 .replace("{{ specialist_output }}", specialistOutputJson)
                 .replace("{{ critic_output }}", criticOutputJson)
+                .replace("{{ ttm_ratios_ground_truth }}", ctx.factSheetData().getLatestTtmRatios(4))
                 .replace("{{ unaddressed_warning }}", getWarningMessage(criticOutput))
                 .replace("{{ ticker }}", ctx.ticker());
 

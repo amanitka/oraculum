@@ -32,15 +32,14 @@ public class ValuationAgent implements Agent<ValuationAgentOutput> {
     @Override
     public AgentOutput<ValuationAgentOutput> run(AgentContext ctx) {
         CompanyFactSheetData factSheet = ctx.factSheetData();
-        StatementVariant variant = ctx.getVariantFor(getName());
 
         String recentDailyJson = ctx.factSheetData().getDailySharePriceSignalsList() == null ? "[]" :
                 com.oraculum.analyst.util.JsonUtils.toJson(new tools.jackson.databind.ObjectMapper(),
                         ctx.factSheetData().getDailySharePriceSignalsList().stream().limit(5).collect(java.util.stream.Collectors.toList()), "[]");
-
         String prompt = promptRegistry.getPrompt(PromptType.VALUATION)
                 .replace("{{ analysis_focus }}", ctx.analysisFocus() != null ? ctx.analysisFocus() : "Standard comprehensive analysis.")
-                .replace("{{ company_financial_ratios }}", factSheet.getCompanyFinancialRatios(variant))
+                .replace("{{ company_financial_ratios_a }}", factSheet.getCompanyFinancialRatios(StatementVariant.ANNUAL))
+                .replace("{{ company_financial_ratios_ttm }}", factSheet.getCompanyFinancialRatios(StatementVariant.TTM))
                 .replace("{{ daily_share_price_signals }}", recentDailyJson)
                 .replace("{{ ticker }}", ctx.ticker())
                 .replace("{{ analysis_date }}", ctx.analysisDate().toString());

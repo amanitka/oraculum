@@ -32,13 +32,11 @@ public class FundamentalsAgent implements Agent<FundamentalsAgentOutput> {
     @Override
     public AgentOutput<FundamentalsAgentOutput> run(AgentContext ctx) {
         CompanyFactSheetData factSheet = ctx.factSheetData();
-        StatementVariant variant = ctx.getVariantFor(getName());
-
         String prompt = promptRegistry.getPrompt(PromptType.FUNDAMENTALS)
                 .replace("{{ analysis_focus }}", ctx.analysisFocus() != null ? ctx.analysisFocus() : "Standard comprehensive analysis.")
-                .replace("{{ income_statement_history }}", factSheet.getIncomeStatementHistory(variant))
-                .replace("{{ balance_sheet_history }}", factSheet.getBalanceSheetHistory(variant))
-                .replace("{{ company_financial_ratios }}", factSheet.getCompanyFinancialRatios(variant))
+                .replace("{{ income_statement_history_q }}", factSheet.getIncomeStatementHistory(StatementVariant.QUARTERLY))
+                .replace("{{ balance_sheet_history_q }}", factSheet.getBalanceSheetHistory(StatementVariant.QUARTERLY))
+                .replace("{{ company_financial_ratios_q }}", factSheet.getCompanyFinancialRatios(StatementVariant.QUARTERLY))
                 .replace("{{ ticker }}", ctx.ticker())
                 .replace("{{ analysis_date }}", ctx.analysisDate().toString());
 

@@ -32,7 +32,6 @@ public class RiskAgent implements Agent<RiskAgentOutput> {
     @Override
     public AgentOutput<RiskAgentOutput> run(AgentContext ctx) {
         CompanyFactSheetData factSheet = ctx.factSheetData();
-        StatementVariant variant = ctx.getVariantFor(getName());
 
         SharePriceAgentOutput sharePriceOutput = (SharePriceAgentOutput) ctx.state().getAgentOutput(AgentType.SHARE_PRICE);
         String sharePriceJson = JsonUtils.toJson(objectMapper, sharePriceOutput, "{}");
@@ -45,8 +44,10 @@ public class RiskAgent implements Agent<RiskAgentOutput> {
 
         String prompt = promptRegistry.getPrompt(PromptType.RISK)
                 .replace("{{ analysis_focus }}", ctx.analysisFocus() != null ? ctx.analysisFocus() : "Standard comprehensive analysis.")
-                .replace("{{ balance_sheet_history }}", factSheet.getBalanceSheetHistory(variant))
-                .replace("{{ company_financial_ratios }}", factSheet.getCompanyFinancialRatios(variant))
+                .replace("{{ balance_sheet_history_a }}", factSheet.getBalanceSheetHistory(StatementVariant.ANNUAL))
+                .replace("{{ company_financial_ratios_a }}", factSheet.getCompanyFinancialRatios(StatementVariant.ANNUAL))
+                .replace("{{ balance_sheet_history_ttm }}", factSheet.getBalanceSheetHistory(StatementVariant.TTM))
+                .replace("{{ company_financial_ratios_ttm }}", factSheet.getCompanyFinancialRatios(StatementVariant.TTM))
                 .replace("{{ share_price_analysis }}", sharePriceJson)
                 .replace("{{ fundamentals_analysis }}", fundamentalsJson)
                 .replace("{{ cash_flow_analysis }}", cashFlowJson)

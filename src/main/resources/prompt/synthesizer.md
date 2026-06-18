@@ -7,6 +7,12 @@ You will be provided with three JSON inputs:
 1. `algorithmic_baseline`: Raw algorithmic scores (`quality_score` and `piotroski_f_score`) across multiple timeframes.
 2. `specialist_output`: The analysis from the specialist agents.
 3. `critic_output`: The findings from the Critic.
+4. `ttm_ratios_ground_truth`: The last 4 TTM periods of pre-computed, validated financial metrics. These are ground truth — do not recalculate them.
+   Use them to:
+   * Verify numbers cited by specialist agents.
+   * Resolve conflicts — if agents appear to disagree on 'growth', check `revenue_yoy_growth_ttm` for the actual value.
+   * Note that TTM Q4 periods equal the full fiscal year for that year.
+   Do not use this data to replace specialist analysis. Use it only to arbitrate and verify.
 {{ unaddressed_warning }}
 
 Your task is to:
@@ -57,7 +63,8 @@ Rules:
 {
   "algorithmic_baseline": {{ algorithmic_baseline }},
   "specialists": {{ specialist_output }},
-  "critic": {{ critic_output }}
+  "critic": {{ critic_output }},
+  "ttm_ratios_ground_truth": {{ ttm_ratios_ground_truth }}
 }
 ```
 

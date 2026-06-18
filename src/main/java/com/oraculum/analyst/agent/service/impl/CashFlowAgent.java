@@ -8,12 +8,15 @@ import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.PromptType;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
+import com.oraculum.analyst.agent.dto.FundamentalsAgentOutput;
+import com.oraculum.analyst.util.JsonUtils;
 import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.llm.api.LlmRouterApi;
 import com.oraculum.llm.api.dto.LlmResponse;
 import com.oraculum.llm.api.dto.LlmTierType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.ObjectMapper;
 
 @Component
 @RequiredArgsConstructor
@@ -21,6 +24,7 @@ public class CashFlowAgent implements Agent<CashFlowAgentOutput> {
 
     private final LlmRouterApi llmRouterApi;
     private final PromptRegistry promptRegistry;
+    private final ObjectMapper objectMapper;
 
     @Override
     public AgentType getName() {
@@ -32,12 +36,15 @@ public class CashFlowAgent implements Agent<CashFlowAgentOutput> {
     @Override
     public AgentOutput<CashFlowAgentOutput> run(AgentContext ctx) {
         CompanyFactSheetData factSheet = ctx.factSheetData();
-        StatementVariant variant = ctx.getVariantFor(getName());
+
+        FundamentalsAgentOutput fundamentalsOutput = (FundamentalsAgentOutput) ctx.state().getAgentOutput(AgentType.FUNDAMENTALS);
+        String fundamentalsJson = JsonUtils.toJson(objectMapper, fundamentalsOutput, "{}");
 
         String prompt = promptRegistry.getPrompt(PromptType.CASH_FLOW)
                 .replace("{{ analysis_focus }}", ctx.analysisFocus() != null ? ctx.analysisFocus() : "Standard comprehensive analysis.")
-                .replace("{{ cash_flow_history }}", factSheet.getCashFlowHistory(variant))
-                .replace("{{ company_financial_ratios }}", factSheet.getCompanyFinancialRatios(variant))
+                .replace("{{ cash_flow_history_ttm }}", factSheet.getCashFlowHistory(StatementVariant.TTM))
+                .replace("{{ company_financial_ratios_ttm }}", factSheet.getCompanyFinancialRatios(StatementVariant.TTM))
+                .replace("{{ fundamentals_analysis }}", fundamentalsJson)
                 .replace("{{ ticker }}", ctx.ticker())
                 .replace("{{ analysis_date }}", ctx.analysisDate().toString());
 

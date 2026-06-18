@@ -1,7 +1,7 @@
 package com.oraculum.analyst.agent.dto;
 
 import com.oraculum.analyst.api.domain.AgentType;
-import com.oraculum.company.api.domain.StatementVariant;
+
 import lombok.Getter;
 import lombok.Setter;
 
@@ -18,7 +18,6 @@ public class AgentWorkflowState {
     private int totalTokens = 0;
 
     private String analysisFocus;
-    private Map<AgentType, StatementVariant> statementVariants;
     private Map<AgentType, String> criticFeedback;
 
     public void addTokens(int tokens) {

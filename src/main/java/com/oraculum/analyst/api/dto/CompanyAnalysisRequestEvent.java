@@ -1,6 +1,5 @@
 package com.oraculum.analyst.api.dto;
 
-import com.oraculum.company.api.domain.StatementVariant;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -10,5 +9,5 @@ public record CompanyAnalysisRequestEvent(UUID correlationId,
                                           String ticker,
                                           String market,
                                           LocalDate analysisDate,
-                                          StatementVariant statementVariant) {
+                                          String analysisFocus) {
 }

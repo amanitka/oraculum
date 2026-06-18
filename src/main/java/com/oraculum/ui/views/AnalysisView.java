@@ -5,7 +5,6 @@ import com.oraculum.analyst.api.domain.AnalysisStatus;
 import com.oraculum.analyst.api.dto.CompanyAnalysisDto;
 import com.oraculum.analyst.api.dto.CompanyAnalysisRequestEvent;
 import com.oraculum.company.api.CompanyApi;
-import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.ui.MainLayout;
 import com.oraculum.ui.ViewHelper;
@@ -17,7 +16,6 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
@@ -63,7 +61,7 @@ public class AnalysisView extends VerticalLayout {
     private final ObjectMapper objectMapper;
     private final AnalysisProgressBroadcasterService broadcaster;
     private ComboBox<CompanyDto> companyComboBox;
-    private ComboBox<StatementVariant> variantComboBox;
+    private TextArea analysisFocusInput;
     private Grid<CompanyAnalysisDto> grid;
     private java.util.List<CompanyAnalysisDto> gridData;
 
@@ -122,16 +120,11 @@ public class AnalysisView extends VerticalLayout {
         companyComboBox.setClearButtonVisible(true);
         companyComboBox.setItems(companyApi.getAllCompanies());
 
-        variantComboBox = new ComboBox<>("Statement Variant");
-        variantComboBox.setItems(StatementVariant.values());
-        variantComboBox.setPlaceholder("Auto (Planner Decides)");
-        variantComboBox.setClearButtonVisible(true);
-        variantComboBox.setWidthFull();
+        analysisFocusInput = new TextArea("Custom Instructions / Focus");
+        analysisFocusInput.setPlaceholder("Optional: e.g., Focus on AI revenue impact and margin trends...");
+        analysisFocusInput.setWidth("400px");
 
-        Details advancedDetails = new Details("Advanced Options", variantComboBox);
-        advancedDetails.setOpened(false);
-
-        HorizontalLayout leftGroup = new HorizontalLayout(companyComboBox, advancedDetails);
+        HorizontalLayout leftGroup = new HorizontalLayout(companyComboBox, analysisFocusInput);
         leftGroup.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.BASELINE);
         leftGroup.setSpacing(true);
 
@@ -159,7 +152,7 @@ public class AnalysisView extends VerticalLayout {
             UUID correlationId = UUID.randomUUID();
             CompanyAnalysisRequestEvent request = new CompanyAnalysisRequestEvent(correlationId,
                     company.id(), company.ticker(), company.market(),
-                    LocalDate.now(), variantComboBox.getValue());
+                    LocalDate.now(), analysisFocusInput.getValue());
 
             CompanyAnalysisDto transientDto = new CompanyAnalysisDto();
             transientDto.setId(correlationId);

@@ -4,7 +4,6 @@ import lombok.Getter;
 
 @Getter
 public enum PromptType {
-    PLANNER("/prompt/planner.md"),
     NEWS("/prompt/news.md"),
     RISK("/prompt/risk.md"),
     CRITIC("/prompt/critic.md"),

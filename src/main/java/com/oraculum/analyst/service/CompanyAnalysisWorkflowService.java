@@ -9,7 +9,6 @@ import com.oraculum.analyst.config.AnalystProperties;
 import com.oraculum.analyst.dto.CompanyAnalysisResult;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
 import com.oraculum.company.api.CompanyApi;
-import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.ui.api.AnalysisProgressBroadcasterService;
 import lombok.RequiredArgsConstructor;
@@ -18,10 +17,12 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
-import java.util.*;
-import java.util.function.Supplier;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
+
 
 @Slf4j
 @Service
@@ -42,7 +43,6 @@ public class CompanyAnalysisWorkflowService {
         try {
             AgentContext ctx = initializeContext(request);
 
-            runPlannerPhase(request, ctx);
             runSpecialistPhase(request, ctx);
             runCriticCorrectionLoop(request, ctx);
             SynthesizerAgentOutput finalOutput = runSynthesizerPhase(request, ctx);
@@ -63,23 +63,16 @@ public class CompanyAnalysisWorkflowService {
         CompanyFactSheetData factSheetData = companyFactSheetDataService.create(company);
         LocalDate analysisDate = request.analysisDate() != null ? request.analysisDate() : LocalDate.now();
 
-        return new AgentContext(company, factSheetData, analysisDate, request.statementVariant(), analystProperties.tokenBudget(), new AgentWorkflowState());
+        AgentWorkflowState state = new AgentWorkflowState();
+        String focus = request.analysisFocus();
+        if (focus == null || focus.isBlank()) {
+            focus = "Standard comprehensive fundamental, valuation, and risk analysis.";
+        }
+        state.setAnalysisFocus(focus);
+
+        return new AgentContext(company, factSheetData, analysisDate, analystProperties.tokenBudget(), state);
     }
 
-    private void runPlannerPhase(CompanyAnalysisRequestEvent request, AgentContext ctx) {
-        log.info("Starting Planner phase");
-        broadcaster.broadcast(request.correlationId(), AgentType.PLANNER, false);
-        @SuppressWarnings("unchecked")
-        Agent<PlannerPlan> planner = (Agent<PlannerPlan>) agents.get(AgentType.PLANNER);
-        var output = planner.run(ctx);
-        PlannerPlan plan = output.result();
-
-        recordTraceAndTokens(ctx, AgentType.PLANNER.name(), output);
-        log.info("Planner phase complete. Plan: {}", plan);
-
-        ctx.state().setAnalysisFocus(plan.getAnalysisFocus());
-        ctx.state().setStatementVariants(getAgentStatementVariants(request, plan));
-    }
 
     private void runSpecialistPhase(CompanyAnalysisRequestEvent request, AgentContext ctx) {
         List<Agent<?>> specialists = Arrays.stream(AgentType.values())
@@ -210,24 +203,4 @@ public class CompanyAnalysisWorkflowService {
                 .build();
     }
 
-    private Map<AgentType, StatementVariant> getAgentStatementVariants(CompanyAnalysisRequestEvent request, PlannerPlan plan) {
-        Map<AgentType, StatementVariant> variants = new EnumMap<>(AgentType.class);
-        if (request.statementVariant() != null) {
-            Stream.of(AgentType.values()).filter(AgentType::isSpecialist).forEach(type -> variants.put(type, request.statementVariant()));
-        } else if (plan != null) {
-            Map<AgentType, Supplier<StatementVariant>> getters = Map.of(
-                    AgentType.FUNDAMENTALS, plan::getFundamentalsVariant,
-                    AgentType.CASH_FLOW, plan::getCashFlowVariant,
-                    AgentType.VALUATION, plan::getValuationVariant,
-                    AgentType.RISK, plan::getRiskVariant
-            );
-            getters.forEach((type, getter) -> {
-                StatementVariant val = getter.get();
-                if (val != null) {
-                    variants.put(type, val);
-                }
-            });
-        }
-        return variants;
-    }
 }

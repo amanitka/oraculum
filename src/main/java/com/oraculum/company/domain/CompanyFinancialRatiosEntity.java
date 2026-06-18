@@ -71,8 +71,14 @@ public class CompanyFinancialRatiosEntity {
     @Column(name = "shares_stabilized")
     private Float sharesStabilized;
 
+    @Column(name = "return_on_capital_employed")
+    private Float returnOnCapitalEmployed;
+
     @Column(name = "return_on_equity")
     private Float returnOnEquity;
+
+    @Column(name = "return_on_assets")
+    private Float returnOnAssets;
 
     @Column(name = "net_margin")
     private Float netMargin;
@@ -92,8 +98,17 @@ public class CompanyFinancialRatiosEntity {
     @Column(name = "fcf_margin")
     private Float fcfMargin;
 
+    @Column(name = "current_ratio")
+    private Float currentRatio;
+
     @Column(name = "quick_ratio")
     private Float quickRatio;
+
+    @Column(name = "debt_to_equity")
+    private Float debtToEquity;
+
+    @Column(name = "earnings_per_share")
+    private Float earningsPerShare;
 
     @Column(name = "interest_coverage_ratio")
     private Float interestCoverageRatio;

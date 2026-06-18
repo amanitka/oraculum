@@ -6,17 +6,25 @@ import com.oraculum.company.api.dto.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
+
+import tools.jackson.databind.node.ObjectNode;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Builder
 @AllArgsConstructor
 @Getter
 public class CompanyFactSheetData {
+    private static final Set<String> METADATA_KEYS = Set.of(
+            "Report Date", "Fiscal Year", "Fiscal Period", "Currency", "Ticker",
+            "Publish Date", "Restated Date", "Shares (Basic)", "Shares (Diluted)"
+    );
     private final ObjectMapper objectMapper;
     private final CompanyDto company;
     private final Map<StatementVariant, List<IncomeStatementDto>> incomeStatements;
@@ -37,7 +45,9 @@ public class CompanyFactSheetData {
         if (stmts == null || stmts.isEmpty()) {
             return "[]";
         }
-        return "[" + stmts.stream().map(IncomeStatementDto::statementData).collect(Collectors.joining(",")) + "]";
+        return "[" + stmts.stream()
+                .map(dto -> namespaceJsonMetrics(dto.statementData(), variant))
+                .collect(Collectors.joining(",")) + "]";
     }
 
     public String getBalanceSheetHistory(StatementVariant variant) {
@@ -45,14 +55,18 @@ public class CompanyFactSheetData {
         if (stmts == null || stmts.isEmpty()) {
             return "[]";
         }
-        return "[" + stmts.stream().map(BalanceSheetDto::statementData).collect(Collectors.joining(",")) + "]";
+        return "[" + stmts.stream()
+                .map(dto -> namespaceJsonMetrics(dto.statementData(), variant))
+                .collect(Collectors.joining(",")) + "]";
     }
 
     public String getCashFlowHistory(StatementVariant variant) {
         List<CashFlowStatementDto> stmts = cashFlowStatements.get(variant);
         if (stmts == null || stmts.isEmpty())
             return "[]";
-        return "[" + stmts.stream().map(CashFlowStatementDto::statementData).collect(Collectors.joining(",")) + "]";
+        return "[" + stmts.stream()
+                .map(dto -> namespaceJsonMetrics(dto.statementData(), variant))
+                .collect(Collectors.joining(",")) + "]";
     }
 
     public String getCompanyFinancialRatios(StatementVariant variant) {
@@ -110,6 +124,17 @@ public class CompanyFactSheetData {
         return JsonUtils.toJson(objectMapper, newsSentimentAggregate, "{}");
     }
 
+    public String getLatestTtmRatios(int periods) {
+        List<CompanyFinancialRatiosDto> ttmRatios = companyFinancialRatios.get(StatementVariant.TTM);
+        if (ttmRatios == null || ttmRatios.isEmpty()) return "[]";
+        List<CompanyFinancialRatiosSlim> slim = ttmRatios.stream()
+                .sorted(CompanyFinancialRatiosDto.getComparator().reversed()) // most recent first
+                .limit(periods)
+                .map(CompanyFinancialRatiosSlim::from)
+                .collect(Collectors.toList());
+        return JsonUtils.toJson(objectMapper, slim, "[]");
+    }
+
     public String getAlgorithmicBaselineJson() {
         if (companyFinancialRatios == null || companyFinancialRatios.isEmpty()) {
             return "{}";
@@ -126,5 +151,55 @@ public class CompanyFactSheetData {
 
         AlgorithmicBaselineDto baseline = new AlgorithmicBaselineDto(timeframeMap);
         return JsonUtils.toJson(objectMapper, baseline, "{}");
+    }
+
+    private String namespaceJsonMetrics(String jsonStr, StatementVariant variant) {
+        if (jsonStr == null || jsonStr.isBlank()) return "{}";
+        try {
+            JsonNode root = objectMapper.readTree(jsonStr);
+            if (!root.isObject()) return jsonStr;
+
+            ObjectNode newNode = objectMapper.createObjectNode();
+            processJsonFields((ObjectNode) root, newNode, getVariantSuffix(variant));
+
+            return objectMapper.writeValueAsString(newNode);
+        } catch (Exception e) {
+            return jsonStr;
+        }
+    }
+
+    private String getVariantSuffix(StatementVariant variant) {
+        return switch (variant) {
+            case QUARTERLY -> "_q";
+            case TTM -> "_ttm";
+            case ANNUAL -> "_a";
+        };
+    }
+
+    private void processJsonFields(ObjectNode source, ObjectNode target, String suffix) {
+        for (Map.Entry<String, JsonNode> field : source.properties()) {
+            String key = field.getKey();
+
+            if (METADATA_KEYS.contains(key)) {
+                target.set(key, field.getValue());
+            } else if (!isVendorDerivedRatio(key)) {
+                target.set(formatKey(key, suffix), field.getValue());
+            }
+        }
+    }
+
+    private boolean isVendorDerivedRatio(String key) {
+        String lower = key.toLowerCase();
+        return lower.contains("margin") || lower.contains("ratio") ||
+                lower.contains("growth") || lower.contains("return") ||
+                lower.contains("yield");
+    }
+
+    private String formatKey(String key, String suffix) {
+        String snakeCase = key.toLowerCase()
+                .replaceAll("[\\s\\-()]+", "_")
+                .replaceAll("_+", "_")
+                .replaceAll("^_|_$", "");
+        return snakeCase + suffix;
     }
 }
