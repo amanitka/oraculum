@@ -24,7 +24,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class HarvesterRequestServiceTest {
+class RequestServiceTest {
 
     private final String TOPIC = "harvester-topic";
     @Mock
@@ -35,19 +35,19 @@ class HarvesterRequestServiceTest {
     private OraculumProperties properties;
     @Captor
     private ArgumentCaptor<HarvesterRequest> requestCaptor;
-    private HarvesterRequestService harvesterRequestService;
+    private RequestService requestService;
 
     @BeforeEach
     void setUp() {
         when(properties.kafka().topics().harvesterRequest()).thenReturn(TOPIC);
         when(properties.data().sharePrice().incrementalWindowDays()).thenReturn(5);
 
-        harvesterRequestService = new HarvesterRequestService(companyApi, kafkaTemplate, properties);
+        requestService = new RequestService(companyApi, kafkaTemplate, properties);
     }
 
     @Test
     void refreshMarket_publishesFetchMarketRequest() {
-        harvesterRequestService.refreshMarket();
+        requestService.refreshMarket();
 
         verify(kafkaTemplate).send(eq(TOPIC), anyString(), requestCaptor.capture());
         assertThat(requestCaptor.getValue()).isInstanceOf(FetchMarketRequest.class);
@@ -57,7 +57,7 @@ class HarvesterRequestServiceTest {
     void refreshCompany_publishesForEveryMarket() {
         when(companyApi.getAllMarketIds()).thenReturn(List.of("US", "EU"));
 
-        harvesterRequestService.refreshCompany();
+        requestService.refreshCompany();
 
         verify(kafkaTemplate, times(2)).send(eq(TOPIC), anyString(), requestCaptor.capture());
         List<HarvesterRequest> captured = requestCaptor.getAllValues();
@@ -75,7 +75,7 @@ class HarvesterRequestServiceTest {
         when(companyApi.getSharePricesLastTradeDate()).thenReturn(Optional.of(lastTradeDate));
 
         // Incremental without explicit date
-        harvesterRequestService.refreshSharePrices(true, null);
+        requestService.refreshSharePrices(true, null);
 
         verify(kafkaTemplate).send(eq(TOPIC), anyString(), requestCaptor.capture());
         FetchSharePricePriceRequest request = (FetchSharePricePriceRequest) requestCaptor.getValue();

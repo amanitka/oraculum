@@ -1,7 +1,7 @@
 package com.oraculum.harvester.scheduler;
 
-import com.oraculum.harvester.service.HarvesterRequestService;
 import com.oraculum.harvester.service.NewsService;
+import com.oraculum.harvester.service.RequestService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -12,9 +12,9 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "oraculum.data.refresh-enabled", havingValue = "true", matchIfMissing = true)
-public class HarvesterRefreshScheduler {
+public class RefreshScheduler {
 
-    private final HarvesterRequestService refreshService;
+    private final RequestService refreshService;
     private final NewsService newsService;
 
     @Scheduled(cron = "${oraculum.data.metadata.cron}")

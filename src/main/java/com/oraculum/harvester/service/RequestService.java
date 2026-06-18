@@ -17,18 +17,20 @@ import java.util.stream.Stream;
 
 @Service
 @Slf4j
-public class HarvesterRequestService implements HarvesterRequestApi {
+public class RequestService implements HarvesterRequestApi {
 
     private final CompanyApi companyApi;
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final String harvesterRequestTopic;
     private final int sharePriceIncrementalWindowDays;
+    private final NewsService newsService;
 
-    public HarvesterRequestService(CompanyApi companyApi, KafkaTemplate<String, Object> kafkaTemplate, OraculumProperties properties) {
+    public RequestService(CompanyApi companyApi, KafkaTemplate<String, Object> kafkaTemplate, OraculumProperties properties, NewsService newsService) {
         this.companyApi = companyApi;
         this.kafkaTemplate = kafkaTemplate;
         this.harvesterRequestTopic = properties.kafka().topics().harvesterRequest();
         this.sharePriceIncrementalWindowDays = properties.data().sharePrice().incrementalWindowDays();
+        this.newsService = newsService;
     }
 
     private List<String> getMarkets() {
@@ -102,4 +104,9 @@ public class HarvesterRequestService implements HarvesterRequestApi {
         }
     }
 
+    @Override
+    public void refreshNews() {
+        log.info("Requesting native news refresh via AlphaVantage");
+        newsService.refreshNews();
+    }
 }

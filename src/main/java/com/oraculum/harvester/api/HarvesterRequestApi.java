@@ -12,6 +12,8 @@ public interface HarvesterRequestApi {
 
     void refreshFundamentals();
 
+    void refreshNews();
+
     void refreshSharePrices(boolean incremental, LocalDate fromDate);
 
     default void refreshSharePrices() {
