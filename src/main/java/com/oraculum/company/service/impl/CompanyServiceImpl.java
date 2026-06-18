@@ -7,6 +7,7 @@ import com.oraculum.company.domain.NewsEntity;
 import com.oraculum.company.domain.NewsTickerEntity;
 import com.oraculum.company.repository.*;
 import com.oraculum.company.service.CompanyService;
+import com.oraculum.company.service.mapper.NewsArticleMapper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -43,6 +44,7 @@ public class CompanyServiceImpl implements CompanyService {
     private final ScreenerGrahamDeepValueRepository screenerGrahamDeepValueRepository;
     private final ScreenerFinancialTrendRepository ScreenerFinancialTrendRepository;
     private final TickerNewsSentimentRepository tickerNewsSentimentRepository;
+    private final NewsArticleMapper newsArticleMapper;
 
     @Override
     public CompanyDto getCompanyById(int companyId) {
@@ -235,7 +237,7 @@ public class CompanyServiceImpl implements CompanyService {
     @Override
     @Transactional
     public void createOrUpdateNewsBatch(List<NewsArticleDto> articles) {
-        newsRepository.saveAll(articles.stream().map(NewsArticleDto::toNewsEntity).collect(Collectors.toList()));
-        newsTickerRepository.saveAll(articles.stream().flatMap(a -> a.toNewsTickerEntities().stream()).collect(Collectors.toList()));
+        newsRepository.saveAll(articles.stream().map(newsArticleMapper::toNewsEntity).collect(Collectors.toList()));
+        newsTickerRepository.saveAll(articles.stream().flatMap(a -> newsArticleMapper.toNewsTickerEntities(a).stream()).collect(Collectors.toList()));
     }
 }

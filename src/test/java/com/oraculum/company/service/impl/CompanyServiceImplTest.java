@@ -4,6 +4,7 @@ import com.oraculum.common.exception.EntityNotFoundException;
 import com.oraculum.company.api.dto.*;
 import com.oraculum.company.domain.*;
 import com.oraculum.company.repository.*;
+import com.oraculum.company.service.mapper.NewsArticleMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,6 +39,8 @@ class CompanyServiceImplTest {
     private SharePriceRepository sharePriceRepository;
     @Mock
     private ScreenerMasterRepository screenerMasterRepository;
+    @Mock
+    private NewsArticleMapper newsArticleMapper;
 
     @InjectMocks
     private CompanyServiceImpl companyService;
@@ -188,8 +191,8 @@ class CompanyServiceImplTest {
     @Test
     void createOrUpdateNewsBatch_savesBothRepositories() {
         NewsArticleDto article = mock(NewsArticleDto.class);
-        when(article.toNewsEntity()).thenReturn(new NewsEntity());
-        when(article.toNewsTickerEntities()).thenReturn(List.of(new NewsTickerEntity()));
+        when(newsArticleMapper.toNewsEntity(article)).thenReturn(new NewsEntity());
+        when(newsArticleMapper.toNewsTickerEntities(article)).thenReturn(List.of(new NewsTickerEntity()));
 
         companyService.createOrUpdateNewsBatch(List.of(article));
 

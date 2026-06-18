@@ -2,6 +2,7 @@ package com.oraculum.ui.views;
 
 import com.oraculum.database.api.event.RefreshMaterializedViewsEvent;
 import com.oraculum.harvester.api.HarvesterRequestApi;
+import com.oraculum.harvester.service.NewsService;
 import com.oraculum.ui.MainLayout;
 import com.oraculum.ui.ViewHelper;
 import com.vaadin.flow.component.Component;
@@ -30,10 +31,12 @@ public class RefreshView extends VerticalLayout {
                     "padding: var(--lumo-space-l)";
 
     private final HarvesterRequestApi harvesterRequestApi;
+    private final NewsService newsService;
     private final ApplicationEventPublisher eventPublisher;
 
-    public RefreshView(HarvesterRequestApi harvesterRequestApi, ApplicationEventPublisher eventPublisher) {
+    public RefreshView(HarvesterRequestApi harvesterRequestApi, NewsService newsService, ApplicationEventPublisher eventPublisher) {
         this.harvesterRequestApi = harvesterRequestApi;
+        this.newsService = newsService;
         this.eventPublisher = eventPublisher;
 
         setSizeFull();
@@ -96,7 +99,7 @@ public class RefreshView extends VerticalLayout {
 
         grid.add(createTile("News & Sentiment",
                 "Refreshes recent news articles and sentiment data.",
-                harvesterRequestApi::refreshNews));
+                newsService::refreshNews));
 
         grid.add(createTile("Materialized Views",
                 "Rebuilds all materialized views and refreshes screener cache. Runs asynchronously.",

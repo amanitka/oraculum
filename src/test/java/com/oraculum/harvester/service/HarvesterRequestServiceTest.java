@@ -2,7 +2,10 @@ package com.oraculum.harvester.service;
 
 import com.oraculum.common.config.OraculumProperties;
 import com.oraculum.company.api.CompanyApi;
-import com.oraculum.harvester.api.dto.*;
+import com.oraculum.harvester.api.dto.FetchCompanyRequest;
+import com.oraculum.harvester.api.dto.FetchMarketRequest;
+import com.oraculum.harvester.api.dto.FetchSharePricePriceRequest;
+import com.oraculum.harvester.api.dto.HarvesterRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,7 +16,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.kafka.core.KafkaTemplate;
 
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -39,7 +41,6 @@ class HarvesterRequestServiceTest {
     void setUp() {
         when(properties.kafka().topics().harvesterRequest()).thenReturn(TOPIC);
         when(properties.data().sharePrice().incrementalWindowDays()).thenReturn(5);
-        when(properties.data().news().incrementalWindowHours()).thenReturn(24);
 
         harvesterRequestService = new HarvesterRequestService(companyApi, kafkaTemplate, properties);
     }
@@ -82,20 +83,5 @@ class HarvesterRequestServiceTest {
         // 5 days window
         assertThat(request.getFromDate()).isEqualTo("2023-01-05");
         assertThat(request.getMarket()).isEqualTo("US");
-    }
-
-    @Test
-    void refreshNews_incremental_calculatesTimeFromCorrectly() {
-        OffsetDateTime lastNewsTime = OffsetDateTime.parse("2023-01-02T10:00:00Z");
-        when(companyApi.getNewsLastTimePublished()).thenReturn(Optional.of(lastNewsTime));
-
-        harvesterRequestService.refreshNews();
-
-        verify(kafkaTemplate).send(eq(TOPIC), anyString(), requestCaptor.capture());
-        FetchNewsRequest request = (FetchNewsRequest) requestCaptor.getValue();
-
-        // 24 hours window, so 2023-01-01T10:00:00Z formatted compactly
-        assertThat(request.getTimeFrom()).isEqualTo("20230101T1000");
-        assertThat(request.getTimeFrom()).isNotNull();
     }
 }

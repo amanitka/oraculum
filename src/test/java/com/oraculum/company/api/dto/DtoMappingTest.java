@@ -3,7 +3,9 @@ package com.oraculum.company.api.dto;
 import com.oraculum.company.domain.CompanyEntity;
 import com.oraculum.company.domain.NewsEntity;
 import com.oraculum.company.domain.NewsTickerEntity;
+import com.oraculum.company.service.mapper.NewsArticleMapper;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -83,7 +85,8 @@ class DtoMappingTest {
                 null
         );
 
-        NewsEntity entity = dto.toNewsEntity();
+        NewsArticleMapper mapper = new NewsArticleMapper(JsonMapper.builder().build());
+        NewsEntity entity = mapper.toNewsEntity(dto);
 
         assertThat(entity.getId()).isEqualTo("n1");
         assertThat(entity.getTitle()).isEqualTo("Apple News");
@@ -115,7 +118,8 @@ class DtoMappingTest {
                 List.of(sentiment)
         );
 
-        List<NewsTickerEntity> entities = dto.toNewsTickerEntities();
+        NewsArticleMapper mapper = new NewsArticleMapper(JsonMapper.builder().build());
+        List<NewsTickerEntity> entities = mapper.toNewsTickerEntities(dto);
 
         assertThat(entities).hasSize(1);
         NewsTickerEntity entity = entities.getFirst();
@@ -134,7 +138,8 @@ class DtoMappingTest {
                 "n1", "Title", "url", null, null, null, null, null, null, null, null, null, null, null, null, null, null
         );
 
-        List<NewsTickerEntity> entities = dto.toNewsTickerEntities();
+        NewsArticleMapper mapper = new NewsArticleMapper(JsonMapper.builder().build());
+        List<NewsTickerEntity> entities = mapper.toNewsTickerEntities(dto);
         assertThat(entities).isEmpty();
     }
 

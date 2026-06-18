@@ -12,7 +12,6 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -24,14 +23,12 @@ public class HarvesterRequestService implements HarvesterRequestApi {
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final String harvesterRequestTopic;
     private final int sharePriceIncrementalWindowDays;
-    private final int newsIncrementalWindowHours;
 
     public HarvesterRequestService(CompanyApi companyApi, KafkaTemplate<String, Object> kafkaTemplate, OraculumProperties properties) {
         this.companyApi = companyApi;
         this.kafkaTemplate = kafkaTemplate;
         this.harvesterRequestTopic = properties.kafka().topics().harvesterRequest();
         this.sharePriceIncrementalWindowDays = properties.data().sharePrice().incrementalWindowDays();
-        this.newsIncrementalWindowHours = properties.data().news().incrementalWindowHours();
     }
 
     private List<String> getMarkets() {
@@ -105,13 +102,4 @@ public class HarvesterRequestService implements HarvesterRequestApi {
         }
     }
 
-    @Override
-    public void refreshNews() {
-        OffsetDateTime lastNewsDateTime = companyApi.getNewsLastTimePublished().orElseGet(() -> OffsetDateTime.now().minusDays(1));
-        String timeFrom = DateTimeUtil.toIsoCompactDateTime(lastNewsDateTime.minusHours(newsIncrementalWindowHours));
-
-        log.info("Requesting incremental news refresh from: {}", timeFrom);
-        HarvesterRequest request = FetchNewsRequest.builder().timeFrom(timeFrom).build();
-        publishRequest(request);
-    }
 }

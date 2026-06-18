@@ -17,6 +17,4 @@ public interface HarvesterRequestApi {
     default void refreshSharePrices() {
         refreshSharePrices(true, null);
     }
-
-    void refreshNews();
 }

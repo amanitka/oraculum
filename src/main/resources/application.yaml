@@ -123,6 +123,10 @@ oraculum:
       enabled: ${ORACULUM_HARVESTER_EXCHANGE_CLEANUP_ENABLED:true}
       retention-days: ${ORACULUM_HARVESTER_EXCHANGE_RETENTION_DAYS:1}
       cron: ${ORACULUM_HARVESTER_EXCHANGE_CLEANUP_CRON:0 0 2 * * *}
+    alpha-vantage:
+      api-key: ${ORACULUM_ALPHA_VANTAGE_API_KEY}
+      base-url: "https://www.alphavantage.co"
+      daily-limit: 25
 
   llm:
     common:

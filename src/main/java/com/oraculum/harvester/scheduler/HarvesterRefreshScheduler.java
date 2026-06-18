@@ -1,6 +1,7 @@
 package com.oraculum.harvester.scheduler;
 
 import com.oraculum.harvester.service.HarvesterRequestService;
+import com.oraculum.harvester.service.NewsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Component;
 public class HarvesterRefreshScheduler {
 
     private final HarvesterRequestService refreshService;
+    private final NewsService newsService;
 
     @Scheduled(cron = "${oraculum.data.metadata.cron}")
     public void refreshMetadata() {
@@ -60,7 +62,7 @@ public class HarvesterRefreshScheduler {
     public void refreshNews() {
         log.info("Starting scheduled news & sentiment refresh...");
         try {
-            refreshService.refreshNews();
+            newsService.refreshNews();
         } catch (Exception e) {
             log.error("Scheduled news refresh failed", e);
         }
