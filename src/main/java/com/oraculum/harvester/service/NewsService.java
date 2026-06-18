@@ -6,6 +6,7 @@ import com.oraculum.company.api.CompanyLoadApi;
 import com.oraculum.company.api.dto.NewsArticleDto;
 import com.oraculum.harvester.domain.ProviderType;
 import com.oraculum.harvester.provider.AlphaVantageClient;
+import com.oraculum.harvester.provider.dto.AlphaVantageNewsResponse;
 import com.oraculum.util.DateTimeUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -15,7 +16,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -46,6 +46,14 @@ public class NewsService {
         return DateTimeUtil.toIsoCompactDateTime(lastNewsDateTime.minusHours(newsIncrementalWindowHours));
     }
 
+    private void createOrUpdateNews(AlphaVantageNewsResponse response) {
+        List<NewsArticleDto> enrichedArticles = response.feed().stream()
+                .map(article -> enrichArticle(article, response))
+                .toList();
+        companyLoadApi.createOrUpdateNewsBatch(enrichedArticles);
+        log.info("Successfully loaded {} news into database.", enrichedArticles.size());
+    }
+
     public void refreshNews() {
         if (!apiUsageTrackerService.canMakeCall(ProviderType.ALPHA_VANTAGE, dailyLimit)) {
             log.warn("Alpha Vantage daily limit reached. Skipping news refresh.");
@@ -56,25 +64,17 @@ public class NewsService {
         try {
             var response = alphaVantageClient.fetchNewsSentiment(timeFrom);
             apiUsageTrackerService.recordCall(ProviderType.ALPHA_VANTAGE);
-
             if (response == null || response.feed() == null || response.feed().isEmpty()) {
                 log.info("No new articles found from Alpha Vantage.");
                 return;
             }
-
-            List<NewsArticleDto> enrichedArticles = response.feed().stream()
-                    .map(article -> enrichArticle(article, response.sentimentScoreDefinition(), response.relevanceScoreDefinition()))
-                    .collect(Collectors.toList());
-
-            log.info("Successfully fetched and enriched {} news articles. Sending to CompanyLoadApi.", enrichedArticles.size());
-            companyLoadApi.createOrUpdateNewsBatch(enrichedArticles);
-
+            createOrUpdateNews(response);
         } catch (Exception e) {
             log.error("Failed to fetch or process news from Alpha Vantage", e);
         }
     }
 
-    private NewsArticleDto enrichArticle(NewsArticleDto original, String sentimentDef, String relevanceDef) {
+    private NewsArticleDto enrichArticle(NewsArticleDto original, AlphaVantageNewsResponse response) {
         String id = generateArticleId(original);
         return new NewsArticleDto(
                 id,
@@ -83,16 +83,15 @@ public class NewsService {
                 original.timePublished(),
                 original.authors(),
                 original.summary(),
-                original.bannerImage(),
                 original.source(),
                 original.categoryWithinSource(),
                 original.sourceDomain(),
                 original.topics(),
                 original.overallSentimentScore(),
                 original.overallSentimentLabel(),
-                original.extractedAt(),
-                sentimentDef,
-                relevanceDef,
+                OffsetDateTime.now(),
+                response.sentimentScoreDefinition(),
+                response.relevanceScoreDefinition(),
                 original.tickerSentiment()
         );
     }

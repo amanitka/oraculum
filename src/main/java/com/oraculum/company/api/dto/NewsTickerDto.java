@@ -3,20 +3,22 @@ package com.oraculum.company.api.dto;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.oraculum.company.domain.NewsEntity;
 import com.oraculum.company.domain.NewsTickerEntity;
+import com.oraculum.company.api.dto.NewsArticleDto.TopicRelevanceDto;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 
 public record NewsTickerDto(
         @JsonIgnore String id,
         String title,
         @JsonIgnore String url,
         OffsetDateTime timePublished,
-        @JsonIgnore String authors,
+        @JsonIgnore List<String> authors,
         String summary,
         String source,
         @JsonIgnore String categoryWithinSource,
         @JsonIgnore String sourceDomain,
-        @JsonIgnore String topics,
+        @JsonIgnore List<TopicRelevanceDto> topics,
         Float overallSentimentScore,
         String overallSentimentLabel,
         @JsonIgnore OffsetDateTime extractedAt,

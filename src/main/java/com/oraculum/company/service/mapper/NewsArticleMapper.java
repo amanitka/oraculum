@@ -6,7 +6,6 @@ import com.oraculum.company.domain.NewsTickerEntity;
 import com.oraculum.util.DateTimeUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import tools.jackson.databind.json.JsonMapper;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -15,34 +14,21 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class NewsArticleMapper {
 
-    private final JsonMapper jsonMapper;
-
-    private String toJsonString(Object value) {
-        if (value == null) {
-            return null;
-        }
-        try {
-            return jsonMapper.writeValueAsString(value);
-        } catch (Exception e) {
-            throw new IllegalStateException("Failed to serialize news payload to JSON", e);
-        }
-    }
-
     public NewsEntity toNewsEntity(NewsArticleDto dto) {
         NewsEntity entity = new NewsEntity();
         entity.setId(dto.id());
         entity.setTitle(dto.title());
         entity.setUrl(dto.url());
         entity.setTimePublished(DateTimeUtil.toOffsetDateTime(dto.timePublished()));
-        entity.setAuthors(toJsonString(dto.authors()));
+        entity.setAuthors(dto.authors());
         entity.setSummary(dto.summary());
         entity.setSource(dto.source());
         entity.setCategoryWithinSource(dto.categoryWithinSource());
         entity.setSourceDomain(dto.sourceDomain());
-        entity.setTopics(toJsonString(dto.topics()));
+        entity.setTopics(dto.topics());
         entity.setOverallSentimentScore(dto.overallSentimentScore());
         entity.setOverallSentimentLabel(dto.overallSentimentLabel());
-        entity.setExtractedAt(DateTimeUtil.toOffsetDateTime(dto.extractedAt()));
+        entity.setExtractedAt(dto.extractedAt());
         entity.setSentimentScoreDefinition(dto.sentimentScoreDefinition());
         entity.setRelevanceScoreDefinition(dto.relevanceScoreDefinition());
         return entity;

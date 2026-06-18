@@ -9,6 +9,8 @@ import org.hibernate.type.SqlTypes;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
+import java.util.List;
+import com.oraculum.company.api.dto.NewsArticleDto.TopicRelevanceDto;
 
 @Entity
 @Table(name = "t_news", indexes = {@Index(name = "ix_news_time_published", columnList = "time_published")})
@@ -31,7 +33,7 @@ public class NewsEntity {
     private OffsetDateTime timePublished;
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
-    private String authors;
+    private List<String> authors;
     @Column(columnDefinition = "TEXT", nullable = false)
     private String summary;
     @Column(length = 255)
@@ -42,7 +44,7 @@ public class NewsEntity {
     private String sourceDomain;
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
-    private String topics;
+    private List<TopicRelevanceDto> topics;
     @Column(name = "overall_sentiment_score")
     private Float overallSentimentScore;
     @Column(name = "overall_sentiment_label", length = 50)

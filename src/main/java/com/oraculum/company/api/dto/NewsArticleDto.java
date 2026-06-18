@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.oraculum.common.config.LenientLocalDateTimeDeserializer;
 import tools.jackson.databind.annotation.JsonDeserialize;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 public record NewsArticleDto(String id,
@@ -14,14 +14,13 @@ public record NewsArticleDto(String id,
                              @JsonProperty("time_published") @JsonDeserialize(using = LenientLocalDateTimeDeserializer.class) LocalDateTime timePublished,
                              List<String> authors,
                              String summary,
-                             @JsonProperty("banner_image") String bannerImage,
                              String source,
                              @JsonProperty("category_within_source") String categoryWithinSource,
                              @JsonProperty("source_domain") String sourceDomain,
                              List<TopicRelevanceDto> topics,
                              @JsonProperty("overall_sentiment_score") Float overallSentimentScore,
                              @JsonProperty("overall_sentiment_label") String overallSentimentLabel,
-                             @JsonProperty("extracted_at") LocalDate extractedAt,
+                             @JsonProperty("extracted_at") OffsetDateTime extractedAt,
                              @JsonProperty("sentiment_score_definition") String sentimentScoreDefinition,
                              @JsonProperty("relevance_score_definition") String relevanceScoreDefinition,
                              @JsonProperty("ticker_sentiment") List<NewsTickerSentimentDto> tickerSentiment) {
