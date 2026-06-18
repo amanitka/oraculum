@@ -17,7 +17,7 @@ Your task is to:
     *   Provide a final one-sentence `summary` of the company's overall fundamental health.
 
 ### CORE ANALYSIS FOCUS
-Pay special attention to this thesis passed from the Planner:
+Pay special attention to this thesis requested by the user:
 {{ analysis_focus }}
 
 ### DATA DICTIONARY

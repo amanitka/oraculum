@@ -12,7 +12,7 @@ Your task is to:
 3.  **Summarize Cash Flow Quality**: Provide a one-sentence `summary` of the company's overall cash flow quality.
 
 ### CORE ANALYSIS FOCUS
-Pay special attention to this thesis passed from the Planner:
+Pay special attention to this thesis requested by the user:
 {{ analysis_focus }}
 
 Do not hallucinate data. Your analysis must be based strictly on the provided JSON.

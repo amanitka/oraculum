@@ -5,7 +5,7 @@ You will be provided with two JSON objects:
 2. `recent_news`: A JSON array of news articles including title, summary, source, overall_sentiment_score, and overall_sentiment_label.
 
 ### CORE ANALYSIS FOCUS
-Pay special attention to this thesis passed from the Planner:
+Pay special attention to this thesis requested by the user:
 {{ analysis_focus }}
 
 **Instructions:**

@@ -17,7 +17,7 @@ Your task is to:
 4. **Summarize Key Signals**: Identify the most critical technical or valuation signals (e.g., "Trading 50% below 200 SMA," "P/E at 10-year low," "Extreme volume spike"). Provide a one-sentence `key_signals_summary`.
 
 ### CORE ANALYSIS FOCUS
-Pay special attention to this thesis passed from the Planner:
+Pay special attention to this thesis requested by the user:
 {{ analysis_focus }}
 
 ### DATA DICTIONARY

@@ -51,7 +51,7 @@ public class SynthesizerAgent implements Agent<SynthesizerAgentOutput> {
 
         String prompt = promptRegistry.getPrompt(PromptType.SYNTHESIZER)
                 .replace("{{ analysis_focus }}", ctx.analysisFocus() != null ? ctx.analysisFocus() : "Standard comprehensive analysis.")
-                .replace("{{ algorithmic_baseline }}", ctx.factSheetData().getAlgorithmicBaselineJson())
+                .replace("{{ company_profile }}", ctx.factSheetData().getCompanyProfile())
                 .replace("{{ specialist_output }}", specialistOutputJson)
                 .replace("{{ critic_output }}", criticOutputJson)
                 .replace("{{ ttm_ratios_ground_truth }}", ctx.factSheetData().getLatestTtmRatios(4))

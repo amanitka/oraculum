@@ -21,9 +21,12 @@ public record AnalystProperties(Refresh refresh,
                           int dataRetentionDays) {
     }
 
-    public record FactSheet(int historyLimit) {
-        public LocalDate getFactSheetHistoryDate() {
-            return LocalDate.now().minusDays(historyLimit);
+    public record FactSheet(int annualHistoryLimit, int quarterlyHistoryLimit) {
+        public LocalDate getAnnualFactSheetHistoryDate() {
+            return LocalDate.now().minusDays(annualHistoryLimit);
+        }
+        public LocalDate getQuarterlyFactSheetHistoryDate() {
+            return LocalDate.now().minusDays(quarterlyHistoryLimit);
         }
     }
 

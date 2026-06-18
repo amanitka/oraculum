@@ -15,7 +15,7 @@ Your task is to:
 5.  **Deliver a Verdict**: Provide a one-sentence `summary` of your conclusion.
 
 ### CORE ANALYSIS FOCUS
-Pay special attention to this thesis passed from the Planner:
+Pay special attention to this thesis requested by the user:
 {{ analysis_focus }}
 
 Do not hallucinate data. Base your entire analysis strictly on the provided JSON.

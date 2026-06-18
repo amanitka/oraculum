@@ -22,29 +22,33 @@ public class CompanyFactSheetDataService {
     private final ObjectMapper objectMapper;
     private final AnalystProperties analystProperties;
 
-    private Map<StatementVariant, List<IncomeStatementDto>> getIncomeStatements(CompanyDto company, LocalDate after) {
-        return companyApi.getIncomeStatementsByCompanyId(company.id(), after)
+    private Map<StatementVariant, List<IncomeStatementDto>> getIncomeStatements(CompanyDto company, LocalDate annualAfter, LocalDate quarterlyAfter) {
+        return companyApi.getIncomeStatementsByCompanyId(company.id(), annualAfter)
                 .stream()
+                .filter(dto -> dto.variant() == StatementVariant.ANNUAL || !dto.reportDate().isBefore(quarterlyAfter))
                 .collect(Collectors.groupingBy(IncomeStatementDto::variant));
     }
 
-    private Map<StatementVariant, List<BalanceSheetDto>> getBalanceSheets(CompanyDto company, LocalDate after) {
-        return companyApi.getBalanceSheetsByCompanyId(company.id(), after)
+    private Map<StatementVariant, List<BalanceSheetDto>> getBalanceSheets(CompanyDto company, LocalDate annualAfter, LocalDate quarterlyAfter) {
+        return companyApi.getBalanceSheetsByCompanyId(company.id(), annualAfter)
                 .stream()
+                .filter(dto -> dto.variant() == StatementVariant.ANNUAL || !dto.reportDate().isBefore(quarterlyAfter))
                 .collect(Collectors.groupingBy(BalanceSheetDto::variant));
     }
 
     private Map<StatementVariant, List<CashFlowStatementDto>> getCashFlowStatements(CompanyDto company,
-                                                                                    LocalDate after) {
-        return companyApi.getCashFlowStatementsByCompanyId(company.id(), after)
+                                                                                    LocalDate annualAfter, LocalDate quarterlyAfter) {
+        return companyApi.getCashFlowStatementsByCompanyId(company.id(), annualAfter)
                 .stream()
+                .filter(dto -> dto.variant() == StatementVariant.ANNUAL || !dto.reportDate().isBefore(quarterlyAfter))
                 .collect(Collectors.groupingBy(CashFlowStatementDto::variant));
     }
 
     private Map<StatementVariant, List<CompanyFinancialRatiosDto>> getCompanyFinancialRatios(CompanyDto company,
-                                                                                             LocalDate after) {
-        return companyApi.getCompanyFinancialRatiosByCompanyId(company.id(), after)
+                                                                                             LocalDate annualAfter, LocalDate quarterlyAfter) {
+        return companyApi.getCompanyFinancialRatiosByCompanyId(company.id(), annualAfter)
                 .stream()
+                .filter(dto -> dto.variant() == StatementVariant.ANNUAL || !dto.reportDate().isBefore(quarterlyAfter))
                 .collect(Collectors.groupingBy(CompanyFinancialRatiosDto::variant));
     }
 
@@ -65,15 +69,16 @@ public class CompanyFactSheetDataService {
     }
 
     public CompanyFactSheetData create(CompanyDto company) {
-        LocalDate factSheetAfter = analystProperties.factSheet().getFactSheetHistoryDate();
+        LocalDate annualAfter = analystProperties.factSheet().getAnnualFactSheetHistoryDate();
+        LocalDate quarterlyAfter = analystProperties.factSheet().getQuarterlyFactSheetHistoryDate();
 
         return CompanyFactSheetData.builder()
                 .objectMapper(objectMapper)
                 .company(company)
-                .incomeStatements(getIncomeStatements(company, factSheetAfter))
-                .balanceSheets(getBalanceSheets(company, factSheetAfter))
-                .cashFlowStatements(getCashFlowStatements(company, factSheetAfter))
-                .companyFinancialRatios(getCompanyFinancialRatios(company, factSheetAfter))
+                .incomeStatements(getIncomeStatements(company, annualAfter, quarterlyAfter))
+                .balanceSheets(getBalanceSheets(company, annualAfter, quarterlyAfter))
+                .cashFlowStatements(getCashFlowStatements(company, annualAfter, quarterlyAfter))
+                .companyFinancialRatios(getCompanyFinancialRatios(company, annualAfter, quarterlyAfter))
                 .dailySharePriceSignals(getDailySharePriceSignals(company,
                         analystProperties.sharePrice().getSharePriceHistoryDate()))
                 .monthlySharePriceSignals(getMonthlySharePriceSignals(company,
