@@ -5,9 +5,7 @@ import com.oraculum.company.domain.NewsEntity;
 import com.oraculum.company.domain.NewsTickerEntity;
 import com.oraculum.company.service.mapper.NewsArticleMapper;
 import org.junit.jupiter.api.Test;
-// removed JsonMapper import
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;

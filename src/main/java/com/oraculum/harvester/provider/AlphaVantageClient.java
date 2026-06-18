@@ -1,5 +1,6 @@
 package com.oraculum.harvester.provider;
 
+import com.oraculum.harvester.provider.dto.AlphaVantageEarningsEstimatesResponse;
 import com.oraculum.harvester.provider.dto.AlphaVantageNewsResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -30,7 +31,7 @@ public class AlphaVantageClient {
                 .retrieve()
                 .body(AlphaVantageNewsResponse.class);
     }
-    public String fetchEarningsEstimates(String symbol) {
+    public AlphaVantageEarningsEstimatesResponse fetchEarningsEstimates(String symbol) {
         log.info("Fetching earnings estimates from Alpha Vantage for symbol: {}", symbol);
         return restClient.get()
                 .uri(uriBuilder -> uriBuilder
@@ -39,6 +40,6 @@ public class AlphaVantageClient {
                         .queryParam("symbol", symbol)
                         .build())
                 .retrieve()
-                .body(String.class);
+                .body(AlphaVantageEarningsEstimatesResponse.class);
     }
 }

@@ -76,7 +76,7 @@ oraculum:
       cron: "0 0 3 * * TUE-SAT"
     news:
       incremental-window-hours: 1
-      cron: "0 0 */4 * * *"
+      cron: "0 0 6,10,14,18 * * *"
 
   database:
     host: ${ORACULUM_DATABASE_HOST}
