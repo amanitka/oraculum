@@ -33,9 +33,7 @@ public class ValuationAgent implements Agent<ValuationAgentOutput> {
     public AgentOutput<ValuationAgentOutput> run(AgentContext ctx) {
         CompanyFactSheetData factSheet = ctx.factSheetData();
 
-        String recentDailyJson = ctx.factSheetData().getDailySharePriceSignalsList() == null ? "[]" :
-                com.oraculum.analyst.util.JsonUtils.toJson(new tools.jackson.databind.ObjectMapper(),
-                        ctx.factSheetData().getDailySharePriceSignalsList().stream().limit(5).collect(java.util.stream.Collectors.toList()), "[]");
+        String recentDailyJson = factSheet.getLatestDailySharePriceSignals(5);
         String prompt = promptRegistry.getPrompt(PromptType.VALUATION)
                 .replace("{{ analysis_focus }}", ctx.analysisFocus() != null ? ctx.analysisFocus() : "Standard comprehensive analysis.")
                 .replace("{{ company_financial_ratios_a }}", factSheet.getCompanyFinancialRatios(StatementVariant.ANNUAL))

@@ -152,8 +152,8 @@ public class SharePriceSignalEntity {
     @Column(name = "eps_yoy_growth")
     private Float epsYoyGrowth;
 
-    @Column(name = "piotroski_f_score")
-    private Integer piotroskiFScore;
+    @Column(name = "financial_trend_score")
+    private Integer financialTrendScore;
 
     @Column(name = "revenue_growth_streak")
     private Integer revenueGrowthStreak;

@@ -41,7 +41,7 @@ public class CompanyServiceImpl implements CompanyService {
     private final ScreenerUndervaluedRepository screenerUndervaluedRepository;
     private final ScreenerQualityCompoundersRepository screenerQualityCompoundersRepository;
     private final ScreenerGrahamDeepValueRepository screenerGrahamDeepValueRepository;
-    private final ScreenerPiotroskiRepository screenerPiotroskiRepository;
+    private final ScreenerFinancialTrendRepository ScreenerFinancialTrendRepository;
     private final TickerNewsSentimentRepository tickerNewsSentimentRepository;
 
     @Override
@@ -207,16 +207,16 @@ public class CompanyServiceImpl implements CompanyService {
         return screenerGrahamDeepValueRepository.findAll()
                 .stream()
                 .map(ScreenerDto::fromEntity)
-                .sorted(Comparator.comparing(ScreenerDto::piotroskiFScore, Comparator.nullsLast(Comparator.reverseOrder())))
+                .sorted(Comparator.comparing(ScreenerDto::financialTrendScore, Comparator.nullsLast(Comparator.reverseOrder())))
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<ScreenerDto> getPiotroskiScreener() {
-        return screenerPiotroskiRepository.findAll()
+    public List<ScreenerDto> getFinancialTrendScreener() {
+        return ScreenerFinancialTrendRepository.findAll()
                 .stream()
                 .map(ScreenerDto::fromEntity)
-                .sorted(Comparator.comparing(ScreenerDto::piotroskiFScore, Comparator.nullsLast(Comparator.reverseOrder())))
+                .sorted(Comparator.comparing(ScreenerDto::financialTrendScore, Comparator.nullsLast(Comparator.reverseOrder())))
                 .collect(Collectors.toList());
     }
 

@@ -72,8 +72,8 @@ public abstract class BaseScreenerEntity {
     @Column(name = "earnings_yield")
     private Float earningsYield;
 
-    @Column(name = "piotroski_f_score")
-    private Integer piotroskiFScore;
+    @Column(name = "financial_trend_score")
+    private Integer financialTrendScore;
 
     @Column(name = "quality_score")
     private Float qualityScore;

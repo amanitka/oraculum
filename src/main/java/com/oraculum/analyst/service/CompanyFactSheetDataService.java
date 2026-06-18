@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -60,8 +61,16 @@ public class CompanyFactSheetDataService {
         return companyApi.getMonthlySharePriceSignalsByCompanyId(company.id(), after);
     }
 
-    private List<NewsTickerDto> getNews(CompanyDto company, LocalDate after) {
-        return companyApi.getNewsByTicker(company.ticker(), after);
+    private List<NewsTickerDto> getNews(CompanyDto company, LocalDate after, int limit) {
+        List<NewsTickerDto> news = companyApi.getNewsByTicker(company.ticker(), after);
+        if (news == null || news.isEmpty()) return news;
+
+        return news.stream()
+                .sorted(Comparator.comparing(NewsTickerDto::relevanceScore, java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder()))
+                        .thenComparing(NewsTickerDto::timePublished, java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder())))
+                .limit(limit > 0 ? limit : 50)
+                .sorted(Comparator.comparing(NewsTickerDto::timePublished, java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder())))
+                .collect(Collectors.toList());
     }
 
     private TickerNewsSentimentDto getNewsSentiment(CompanyDto company) {
@@ -83,7 +92,7 @@ public class CompanyFactSheetDataService {
                         analystProperties.sharePrice().getSharePriceHistoryDate()))
                 .monthlySharePriceSignals(getMonthlySharePriceSignals(company,
                         analystProperties.sharePrice().getMonthlySharePriceHistoryDate()))
-                .recentNews(getNews(company, analystProperties.news().getNewsHistoryDate()))
+                .recentNews(getNews(company, analystProperties.news().getNewsHistoryDate(), analystProperties.news().articleLimit()))
                 .newsSentimentAggregate(getNewsSentiment(company))
                 .build();
     }

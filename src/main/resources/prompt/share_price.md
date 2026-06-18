@@ -21,7 +21,7 @@ Pay special attention to this thesis requested by the user:
 {{ analysis_focus }}
 
 ### DATA DICTIONARY
-- **piotroski_f_score**: A 0-9 scale measuring financial trend improvement. >=7 is very healthy.
+- **financial_trend_score**: A 0-9 scale measuring financial trend improvement. >=7 is very healthy.
 
 You MUST respond with valid JSON using exactly this schema:
 {

@@ -40,7 +40,7 @@ public record CompanyFinancialRatiosSlim(
         @JsonProperty("fcf_yoy_growth")        Float fcfYoyGrowth,
 
         // ── Quality signals ──────────────────────────────────────────────────────
-        @JsonProperty("piotroski_f_score")       Integer piotroskiFScore,
+        @JsonProperty("financial_trend_score")       Integer financialTrendScore,
         @JsonProperty("margin_expansion_signal") Integer marginExpansionSignal,
         @JsonProperty("earnings_quality_ratio")  Float   earningsQualityRatio,
         @JsonProperty("is_cash_earnings")        Integer isCashEarnings,
@@ -77,7 +77,7 @@ public record CompanyFinancialRatiosSlim(
                 dto.epsYoyGrowth(),
                 dto.ebitdaYoyGrowth(),
                 dto.fcfYoyGrowth(),
-                dto.piotroskiFScore(),
+                dto.financialTrendScore(),
                 dto.marginExpansionSignal(),
                 dto.earningsQualityRatio(),
                 dto.isCashEarnings(),

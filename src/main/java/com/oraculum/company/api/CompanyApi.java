@@ -54,5 +54,5 @@ public interface CompanyApi {
 
     List<ScreenerDto> getGrahamDeepValueScreener();
 
-    List<ScreenerDto> getPiotroskiScreener();
+    List<ScreenerDto> getFinancialTrendScreener();
 }

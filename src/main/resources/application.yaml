@@ -112,6 +112,7 @@ oraculum:
       daily-history-limit: 30
     news:
       history-limit: 30
+      article-limit: 50
     critic:
       max-reruns: 1
       max-specialists-per-rerun: 3

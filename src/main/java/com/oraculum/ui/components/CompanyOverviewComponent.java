@@ -289,7 +289,7 @@ public class CompanyOverviewComponent extends VerticalLayout {
         Grid<CompanyFinancialRatiosDto> grid = new Grid<>(CompanyFinancialRatiosDto.class, false);
         grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
         grid.addColumn(CompanyFinancialRatiosDto::reportDate).setHeader("Report Date").setSortable(true).setAutoWidth(true);
-        grid.addColumn(CompanyFinancialRatiosDto::piotroskiFScore).setHeader("Piotroski").setSortable(true).setAutoWidth(true);
+        grid.addColumn(CompanyFinancialRatiosDto::financialTrendScore).setHeader("Trend Score").setSortable(true).setAutoWidth(true);
         grid.addColumn(CompanyFinancialRatiosDto::qualityScore).setHeader("Quality").setSortable(true).setAutoWidth(true);
         grid.addColumn(CompanyFinancialRatiosDto::returnOnEquity).setHeader("ROE").setSortable(true).setAutoWidth(true);
         grid.addColumn(CompanyFinancialRatiosDto::grossMargin).setHeader("Gross Margin").setSortable(true).setAutoWidth(true);

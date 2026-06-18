@@ -4,7 +4,7 @@
 DROP VIEW IF EXISTS v_screener_news_sentiment CASCADE;
 DROP VIEW IF EXISTS v_ticker_news_sentiment CASCADE;
 DROP VIEW IF EXISTS v_screener_master CASCADE;
-DROP VIEW IF EXISTS v_screener_piotroski CASCADE;
+DROP VIEW IF EXISTS v_screener_financial_trend CASCADE;
 DROP VIEW IF EXISTS v_screener_graham_deep_value CASCADE;
 DROP VIEW IF EXISTS v_screener_quality_compounders CASCADE;
 DROP VIEW IF EXISTS v_screener_undervalued CASCADE;
@@ -198,7 +198,7 @@ WITH raw_data AS (SELECT
                           (CASE WHEN current_ratio  >  prev_cr    THEN 1 ELSE 0 END) +
                           (CASE WHEN shares         <= prev_shares THEN 1 ELSE 0 END) +
                           (CASE WHEN gross_margin   >  prev_gm    THEN 1 ELSE 0 END) +
-                          (CASE WHEN asset_turnover >  prev_at    THEN 1 ELSE 0 END)  AS piotroski_f_score,
+                          (CASE WHEN asset_turnover >  prev_at    THEN 1 ELSE 0 END)  AS financial_trend_score,
                           ncf_ops / NULLIF(net_income, 0)                             AS earnings_quality_ratio,
                           (CASE WHEN ncf_ops    >  net_income THEN 1 ELSE 0 END)      AS is_cash_earnings,
                           (CASE WHEN equity     <  0          THEN 1 ELSE 0 END)      AS is_negative_equity,
@@ -254,7 +254,7 @@ SELECT
     ebitda_yoy_growth,
     fcf_yoy_growth,
     eps_yoy_growth,
-    piotroski_f_score,
+    financial_trend_score,
     earnings_quality_ratio,
     is_cash_earnings,
     is_negative_equity,
@@ -272,8 +272,8 @@ SELECT
            AND COALESCE(eps_yoy_growth,     0) > 0.10 THEN 10
           WHEN COALESCE(revenue_yoy_growth, 0) > 0 THEN 5
           ELSE 0 END) * 2.0 +
-    (CASE WHEN piotroski_f_score >= 7 AND revenue_growth_streak >= 3 THEN 10
-          WHEN piotroski_f_score >= 4 THEN 5
+    (CASE WHEN financial_trend_score >= 7 AND revenue_growth_streak >= 3 THEN 10
+          WHEN financial_trend_score >= 4 THEN 5
           ELSE 0 END) * 1.5 AS quality_score
 FROM final_metrics;
 
@@ -331,7 +331,7 @@ WITH fundamental_timeline AS (SELECT
                                  cash_equivalents_short_term_investments,
                                  revenue_yoy_growth,
                                  eps_yoy_growth,
-                                 piotroski_f_score,
+                                 financial_trend_score,
                                  quality_score,
                                  revenue_growth_streak,
                                  positive_fcf_streak,
@@ -435,7 +435,7 @@ WITH fundamental_timeline AS (SELECT
                          f.interest_coverage_ratio,
                          f.revenue_yoy_growth,
                          f.eps_yoy_growth,
-                         f.piotroski_f_score,
+                         f.financial_trend_score,
                          f.revenue_growth_streak,
                          f.positive_fcf_streak,
                          f.positive_earnings_streak,
@@ -453,11 +453,11 @@ SELECT
     CASE
        WHEN quality_score >= 70
             AND (earnings_yield > 0.06 OR fcf_yield > 0.06)
-            AND piotroski_f_score >= 7        THEN 'STRONG_BUY'
+            AND financial_trend_score >= 7        THEN 'STRONG_BUY'
        WHEN quality_score >= 50
             AND (earnings_yield > 0.04 OR fcf_yield > 0.04)
-            AND piotroski_f_score >= 5        THEN 'BUY'
-       WHEN piotroski_f_score <= 2
+            AND financial_trend_score >= 5        THEN 'BUY'
+       WHEN financial_trend_score <= 2
             OR quality_score < 30               THEN 'AVOID'
        ELSE 'HOLD'
        END                                                         AS composite_signal
@@ -563,7 +563,7 @@ SELECT s.*,
 
        RANK() OVER (ORDER BY s.quality_score DESC NULLS LAST) AS quality_rank,
        RANK() OVER (ORDER BY s.earnings_yield DESC NULLS LAST) AS value_rank,
-       RANK() OVER (ORDER BY s.piotroski_f_score DESC NULLS LAST) AS fscore_rank
+       RANK() OVER (ORDER BY s.financial_trend_score DESC NULLS LAST) AS fscore_rank
 FROM mv_share_price_signals_recent s
 LEFT JOIN v_ticker_news_sentiment n ON n.ticker = s.ticker
 WHERE s.trade_date = (SELECT MAX(trade_date) FROM mv_share_price_signals_recent WHERE company_id = s.company_id)
@@ -605,7 +605,7 @@ FROM mv_share_price_signals_recent s
 WHERE s.trade_date = (SELECT MAX(trade_date) FROM mv_share_price_signals_recent WHERE company_id = s.company_id)
   AND s.quality_score >= 50
   AND (s.earnings_yield > 0.05 OR s.fcf_yield > 0.05 OR (s.pe_ratio > 0 AND s.pe_ratio <= 15.0))
-  AND s.piotroski_f_score >= 5;
+  AND s.financial_trend_score >= 5;
 
 -- =================================================================
 -- VIEW: v_screener_quality_compounders
@@ -618,7 +618,7 @@ WHERE s.trade_date = (SELECT MAX(trade_date) FROM mv_share_price_signals_recent 
   AND s.quality_score >= 70
   AND s.revenue_growth_streak >= 3
   AND s.positive_fcf_streak >= 3
-  AND s.piotroski_f_score >= 6;
+  AND s.financial_trend_score >= 6;
 
 -- =================================================================
 -- VIEW: v_screener_graham_deep_value
@@ -632,11 +632,11 @@ WHERE s.trade_date = (SELECT MAX(trade_date) FROM mv_share_price_signals_recent 
   AND s.current_ratio > 1.5;
 
 -- =================================================================
--- VIEW: v_screener_piotroski
+-- VIEW: v_screener_financial_trend
 -- Description: Fundamental Health strategy
 -- =================================================================
-CREATE VIEW v_screener_piotroski AS
+CREATE VIEW v_screener_financial_trend AS
 SELECT s.*
 FROM mv_share_price_signals_recent s
 WHERE s.trade_date = (SELECT MAX(trade_date) FROM mv_share_price_signals_recent WHERE company_id = s.company_id)
-  AND s.piotroski_f_score >= 7;
+  AND s.financial_trend_score >= 7;

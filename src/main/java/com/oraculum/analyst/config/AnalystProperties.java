@@ -41,7 +41,7 @@ public record AnalystProperties(Refresh refresh,
         }
     }
 
-    public record News(int historyLimit) {
+    public record News(int historyLimit, int articleLimit) {
         public LocalDate getNewsHistoryDate() {
             return LocalDate.now().minusDays(historyLimit);
         }

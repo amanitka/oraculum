@@ -69,9 +69,9 @@ public class ScreenerView extends VerticalLayout {
         Tab tabQuality = new Tab("Quality Compounders");
         Tab tabValue = new Tab("Undervalued");
         Tab tabGraham = new Tab("Graham Deep Value");
-        Tab tabPiotroski = new Tab("Piotroski 7+");
+        Tab tabFinancialTrend = new Tab("Trend Score 7+");
 
-        Tabs tabs = new Tabs(tabMaster, tabNews, tabQuality, tabValue, tabGraham, tabPiotroski);
+        Tabs tabs = new Tabs(tabMaster, tabNews, tabQuality, tabValue, tabGraham, tabFinancialTrend);
         tabs.setWidthFull();
 
         gridContainer = new VerticalLayout();
@@ -113,7 +113,7 @@ public class ScreenerView extends VerticalLayout {
                 case "Quality Compounders" -> companyApi.getQualityCompoundersScreener();
                 case "Undervalued" -> companyApi.getUndervaluedScreener();
                 case "Graham Deep Value" -> companyApi.getGrahamDeepValueScreener();
-                case "Piotroski 7+" -> companyApi.getPiotroskiScreener();
+                case "Trend Score 7+" -> companyApi.getFinancialTrendScreener();
                 default -> List.of();
             };
             GridListDataView<ScreenerDto> dataView = grid.setItems(data);
@@ -213,7 +213,7 @@ public class ScreenerView extends VerticalLayout {
         grid.addColumn(item -> item.newsCount30d() != null ? String.format("%d articles", item.newsCount30d()) : "-")
                 .setHeader("Coverage (30D)").setAutoWidth(true).setSortable(true);
 
-        grid.addColumn(ScreenerMasterDto::piotroskiFScore).setHeader("F-Score").setAutoWidth(true).setSortable(true);
+        grid.addColumn(ScreenerMasterDto::financialTrendScore).setHeader("Trend Score").setAutoWidth(true).setSortable(true);
         grid.addColumn(new NumberRenderer<>(ScreenerMasterDto::sharePrice, NumberFormat.getCurrencyInstance(Locale.US))).setHeader("Price").setAutoWidth(true).setSortable(true);
         grid.addColumn(ScreenerMasterDto::peRatio).setHeader("P/E").setAutoWidth(true).setSortable(true);
 
@@ -356,7 +356,7 @@ public class ScreenerView extends VerticalLayout {
         grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.qualitySpan(item.qualityScore()))).setHeader("Quality").setAutoWidth(true).setKey("quality")
                 .setComparator(java.util.Comparator.comparing(ScreenerDto::qualityScore, java.util.Comparator.nullsLast(Float::compareTo)));
 
-        grid.addColumn(ScreenerDto::piotroskiFScore).setHeader("F-Score").setAutoWidth(true).setSortable(true);
+        grid.addColumn(ScreenerDto::financialTrendScore).setHeader("Trend Score").setAutoWidth(true).setSortable(true);
         grid.addColumn(new NumberRenderer<>(ScreenerDto::sharePrice, NumberFormat.getCurrencyInstance(Locale.US))).setHeader("Price").setAutoWidth(true).setSortable(true);
         grid.addColumn(ScreenerDto::peRatio).setHeader("P/E").setAutoWidth(true).setSortable(true);
 

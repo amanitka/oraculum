@@ -37,6 +37,7 @@ public class CriticAgent implements Agent<CriticAgentOutput> {
         Map<AgentType, Object> specialistOutputs = ctx.state().getSpecialistOutputs();
         java.util.Map<String, java.util.Set<com.oraculum.company.api.domain.StatementVariant>> agentTimeframes = java.util.Arrays.stream(AgentType.values())
                 .filter(AgentType::isSpecialist)
+                .filter(a -> !a.getRequiredVariants().isEmpty())
                 .collect(java.util.stream.Collectors.toMap(AgentType::getAgentName, AgentType::getRequiredVariants));
         String agentTimeframesJson = JsonUtils.toJson(objectMapper, agentTimeframes, "{}");
         String priorOutputsJson = JsonUtils.toJson(objectMapper, specialistOutputs, "{}");

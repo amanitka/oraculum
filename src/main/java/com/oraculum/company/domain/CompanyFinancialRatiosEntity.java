@@ -128,8 +128,8 @@ public class CompanyFinancialRatiosEntity {
     @Column(name = "eps_yoy_growth")
     private Float epsYoyGrowth;
 
-    @Column(name = "piotroski_f_score")
-    private Integer piotroskiFScore;
+    @Column(name = "financial_trend_score")
+    private Integer financialTrendScore;
 
     @Column(name = "earnings_quality_ratio")
     private Float earningsQualityRatio;

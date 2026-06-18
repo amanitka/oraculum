@@ -11,7 +11,6 @@ import tools.jackson.databind.ObjectMapper;
 
 import tools.jackson.databind.node.ObjectNode;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -88,12 +87,11 @@ public class CompanyFactSheetData {
         return JsonUtils.toJson(objectMapper, slim, "[]");
     }
 
-    public String getDailySharePriceSignalsForPlanner() {
-        if (dailySharePriceSignals == null || dailySharePriceSignals.isEmpty()) {
-            return "[]";
-        }
-        List<PlannerSharePriceInput> slim = dailySharePriceSignals.stream()
-                .map(PlannerSharePriceInput::from)
+    public String getLatestDailySharePriceSignals(int limit) {
+        if (dailySharePriceSignals == null || dailySharePriceSignals.isEmpty()) return "[]";
+        List<SharePriceSignalSlim> slim = dailySharePriceSignals.stream()
+                .limit(limit)
+                .map(SharePriceSignalSlim::from)
                 .collect(Collectors.toList());
         return JsonUtils.toJson(objectMapper, slim, "[]");
     }
@@ -116,10 +114,6 @@ public class CompanyFactSheetData {
         return recentNews;
     }
 
-    public List<SharePriceSignalDto> getDailySharePriceSignalsList() {
-        return dailySharePriceSignals;
-    }
-
     public String getNewsSentimentAggregate() {
         return JsonUtils.toJson(objectMapper, newsSentimentAggregate, "{}");
     }
@@ -133,24 +127,6 @@ public class CompanyFactSheetData {
                 .map(CompanyFinancialRatiosSlim::from)
                 .collect(Collectors.toList());
         return JsonUtils.toJson(objectMapper, slim, "[]");
-    }
-
-    public String getAlgorithmicBaselineJson() {
-        if (companyFinancialRatios == null || companyFinancialRatios.isEmpty()) {
-            return "{}";
-        }
-        Map<String, AlgorithmicBaselineDto.TimeframeScores> timeframeMap = new HashMap<>();
-        for (var entry : companyFinancialRatios.entrySet()) {
-            entry.getValue().stream().max(CompanyFinancialRatiosDto.getComparator())
-                    .ifPresent(companyFinancialRatios ->
-                            timeframeMap.put(entry.getKey().name(), new AlgorithmicBaselineDto.TimeframeScores(
-                                    companyFinancialRatios.qualityScore(),
-                                    companyFinancialRatios.piotroskiFScore()
-                            )));
-        }
-
-        AlgorithmicBaselineDto baseline = new AlgorithmicBaselineDto(timeframeMap);
-        return JsonUtils.toJson(objectMapper, baseline, "{}");
     }
 
     private String namespaceJsonMetrics(String jsonStr, StatementVariant variant) {

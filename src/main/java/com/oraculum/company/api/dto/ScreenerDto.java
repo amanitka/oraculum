@@ -21,7 +21,7 @@ public record ScreenerDto(
         Float volumeVelocity,
         Float peRatio,
         Float earningsYield,
-        Integer piotroskiFScore,
+        Integer financialTrendScore,
         Float qualityScore,
         String compositeSignal
 ) {
@@ -43,7 +43,7 @@ public record ScreenerDto(
                 entity.getVolumeVelocity(),
                 entity.getPeRatio(),
                 entity.getEarningsYield(),
-                entity.getPiotroskiFScore(),
+                entity.getFinancialTrendScore(),
                 entity.getQualityScore(),
                 entity.getCompositeSignal()
         );
