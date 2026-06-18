@@ -4,7 +4,7 @@ import com.oraculum.common.config.OraculumProperties;
 import com.oraculum.company.api.CompanyApi;
 import com.oraculum.company.api.domain.StatementTemplate;
 import com.oraculum.company.api.domain.StatementVariant;
-import com.oraculum.harvester.api.HarvesterRequestApi;
+import com.oraculum.harvester.api.HarvesterBatchApi;
 import com.oraculum.harvester.api.dto.*;
 import com.oraculum.util.DateTimeUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +17,7 @@ import java.util.stream.Stream;
 
 @Service
 @Slf4j
-public class RequestService implements HarvesterRequestApi {
+public class RequestService implements HarvesterBatchApi {
 
     private final CompanyApi companyApi;
     private final KafkaTemplate<String, Object> kafkaTemplate;

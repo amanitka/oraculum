@@ -2,6 +2,7 @@ package com.oraculum.analyst.agent.dto;
 
 import com.oraculum.analyst.dto.CompanyFactSheetData;
 import com.oraculum.company.api.dto.CompanyDto;
+import com.oraculum.company.api.dto.SharePriceSignalDto;
 import lombok.Builder;
 import org.jspecify.annotations.NonNull;
 
@@ -30,5 +31,9 @@ public record AgentContext(CompanyDto company,
     // Convenience delegates so agent code stays clean
     public String analysisFocus() {
         return state.getAnalysisFocus();
+    }
+
+    public SharePriceSignalDto getLatestSignal() {
+        return factSheetData.getLatestDailySignal();
     }
 }

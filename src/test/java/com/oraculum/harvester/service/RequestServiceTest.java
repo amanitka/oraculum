@@ -35,6 +35,8 @@ class RequestServiceTest {
     private OraculumProperties properties;
     @Captor
     private ArgumentCaptor<HarvesterRequest> requestCaptor;
+    @Mock
+    private NewsService newsService;
     private RequestService requestService;
 
     @BeforeEach
@@ -42,7 +44,7 @@ class RequestServiceTest {
         when(properties.kafka().topics().harvesterRequest()).thenReturn(TOPIC);
         when(properties.data().sharePrice().incrementalWindowDays()).thenReturn(5);
 
-        requestService = new RequestService(companyApi, kafkaTemplate, properties);
+        requestService = new RequestService(companyApi, kafkaTemplate, properties, newsService);
     }
 
     @Test

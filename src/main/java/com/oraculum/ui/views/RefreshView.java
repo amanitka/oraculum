@@ -1,7 +1,7 @@
 package com.oraculum.ui.views;
 
 import com.oraculum.database.api.event.RefreshMaterializedViewsEvent;
-import com.oraculum.harvester.api.HarvesterRequestApi;
+import com.oraculum.harvester.api.HarvesterBatchApi;
 import com.oraculum.ui.MainLayout;
 import com.oraculum.ui.ViewHelper;
 import com.vaadin.flow.component.Component;
@@ -29,11 +29,11 @@ public class RefreshView extends VerticalLayout {
                     "border-radius: var(--lumo-border-radius-l);" +
                     "padding: var(--lumo-space-l)";
 
-    private final HarvesterRequestApi harvesterRequestApi;
+    private final HarvesterBatchApi harvesterBatchApi;
     private final ApplicationEventPublisher eventPublisher;
 
-    public RefreshView(HarvesterRequestApi harvesterRequestApi, ApplicationEventPublisher eventPublisher) {
-        this.harvesterRequestApi = harvesterRequestApi;
+    public RefreshView(HarvesterBatchApi harvesterBatchApi, ApplicationEventPublisher eventPublisher) {
+        this.harvesterBatchApi = harvesterBatchApi;
         this.eventPublisher = eventPublisher;
 
         setSizeFull();
@@ -78,25 +78,25 @@ public class RefreshView extends VerticalLayout {
 
         grid.add(createTile("Market Data",
                 "Refreshes the list of all supported stock markets.",
-                harvesterRequestApi::refreshMarket));
+                harvesterBatchApi::refreshMarket));
 
         grid.add(createTile("Industry Data",
                 "Refreshes the list of all industry classifications.",
-                harvesterRequestApi::refreshIndustry));
+                harvesterBatchApi::refreshIndustry));
 
         grid.add(createTile("Company List",
                 "Refreshes the list of companies across all supported markets.",
-                harvesterRequestApi::refreshCompany));
+                harvesterBatchApi::refreshCompany));
 
         grid.add(createTile("Fundamentals",
                 "Refreshes Income Statements, Balance Sheets, and Cash Flow Statements for all companies.",
-                harvesterRequestApi::refreshFundamentals));
+                harvesterBatchApi::refreshFundamentals));
 
         grid.add(createSharePriceTile());
 
         grid.add(createTile("News & Sentiment",
                 "Refreshes recent news articles and sentiment data.",
-                harvesterRequestApi::refreshNews));
+                harvesterBatchApi::refreshNews));
 
         grid.add(createTile("Materialized Views",
                 "Rebuilds all materialized views and refreshes screener cache. Runs asynchronously.",
@@ -137,7 +137,7 @@ public class RefreshView extends VerticalLayout {
         });
 
         Button btn = createRefreshButton("Share Prices",
-                () -> harvesterRequestApi.refreshSharePrices(incremental.getValue(), fromDate.getValue()));
+                () -> harvesterBatchApi.refreshSharePrices(incremental.getValue(), fromDate.getValue()));
 
         HorizontalLayout header = tileHeader("Share Prices", btn);
 

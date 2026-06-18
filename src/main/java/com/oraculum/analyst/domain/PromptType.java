@@ -11,7 +11,8 @@ public enum PromptType {
     VALUATION("/prompt/valuation.md"),
     SHARE_PRICE("/prompt/share_price.md"),
     SYNTHESIZER("/prompt/synthesizer.md"),
-    FUNDAMENTALS("/prompt/fundamentals.md");
+    FUNDAMENTALS("/prompt/fundamentals.md"),
+    EARNINGS_ESTIMATES("/prompt/earnings_estimates.md");
 
     private final String path;
 

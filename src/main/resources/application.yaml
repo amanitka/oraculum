@@ -127,6 +127,7 @@ oraculum:
       api-key: ${ORACULUM_ALPHA_VANTAGE_API_KEY}
       base-url: "https://www.alphavantage.co"
       daily-limit: 25
+      reserved-calls: 3
 
   llm:
     common:

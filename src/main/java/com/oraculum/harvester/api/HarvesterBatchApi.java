@@ -2,7 +2,7 @@ package com.oraculum.harvester.api;
 
 import java.time.LocalDate;
 
-public interface HarvesterRequestApi {
+public interface HarvesterBatchApi {
 
     void refreshMarket();
 

@@ -51,7 +51,8 @@ public record OraculumProperties(Data data,
         
         public record AlphaVantage(String apiKey,
                                    String baseUrl,
-                                   int dailyLimit) {
+                                   int dailyLimit,
+                                   int reservedCalls) {
         }
     }
 }

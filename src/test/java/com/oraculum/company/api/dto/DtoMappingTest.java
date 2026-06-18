@@ -5,7 +5,7 @@ import com.oraculum.company.domain.NewsEntity;
 import com.oraculum.company.domain.NewsTickerEntity;
 import com.oraculum.company.service.mapper.NewsArticleMapper;
 import org.junit.jupiter.api.Test;
-import tools.jackson.databind.json.JsonMapper;
+// removed JsonMapper import
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -61,7 +61,7 @@ class DtoMappingTest {
     @Test
     void newsArticleDto_toNewsEntity_mapsCorrectly() {
         LocalDateTime timePublished = LocalDateTime.of(2023, 1, 1, 10, 0);
-        LocalDate extractedAt = LocalDate.of(2023, 1, 2);
+        OffsetDateTime extractedAt = OffsetDateTime.now();
 
         NewsArticleDto.TopicRelevanceDto topic = new NewsArticleDto.TopicRelevanceDto("Tech", 0.9f);
 
@@ -72,7 +72,6 @@ class DtoMappingTest {
                 timePublished,
                 List.of("John Doe"),
                 "Summary",
-                "image.jpg",
                 "Source",
                 "Category",
                 "Domain",
@@ -85,22 +84,23 @@ class DtoMappingTest {
                 null
         );
 
-        NewsArticleMapper mapper = new NewsArticleMapper(JsonMapper.builder().build());
+        NewsArticleMapper mapper = new NewsArticleMapper();
         NewsEntity entity = mapper.toNewsEntity(dto);
 
         assertThat(entity.getId()).isEqualTo("n1");
         assertThat(entity.getTitle()).isEqualTo("Apple News");
         assertThat(entity.getUrl()).isEqualTo("http://apple.com/news");
         assertThat(entity.getTimePublished().toInstant()).isEqualTo(timePublished.toInstant(ZoneOffset.UTC));
-        assertThat(entity.getAuthors()).isEqualTo("[\"John Doe\"]");
+        assertThat(entity.getAuthors()).containsExactly("John Doe");
         assertThat(entity.getSummary()).isEqualTo("Summary");
         assertThat(entity.getSource()).isEqualTo("Source");
         assertThat(entity.getCategoryWithinSource()).isEqualTo("Category");
         assertThat(entity.getSourceDomain()).isEqualTo("Domain");
-        assertThat(entity.getTopics()).contains("Tech").contains("0.9");
+        assertThat(entity.getTopics()).hasSize(1);
+        assertThat(entity.getTopics().getFirst().topic()).isEqualTo("Tech");
         assertThat(entity.getOverallSentimentScore()).isEqualTo(0.8f);
         assertThat(entity.getOverallSentimentLabel()).isEqualTo("Positive");
-        assertThat(entity.getExtractedAt().toLocalDate()).isEqualTo(extractedAt);
+        assertThat(entity.getExtractedAt()).isEqualTo(extractedAt);
         assertThat(entity.getSentimentScoreDefinition()).isEqualTo("Definition");
         assertThat(entity.getRelevanceScoreDefinition()).isEqualTo("RelevanceDef");
     }
@@ -114,11 +114,11 @@ class DtoMappingTest {
         );
 
         NewsArticleDto dto = new NewsArticleDto(
-                "n1", "Title", "url", timePublished, null, null, null, null, null, null, null, null, null, null, null, null,
+                "n1", "Title", "url", timePublished, null, null, null, null, null, null, null, null, null, null, null,
                 List.of(sentiment)
         );
 
-        NewsArticleMapper mapper = new NewsArticleMapper(JsonMapper.builder().build());
+        NewsArticleMapper mapper = new NewsArticleMapper();
         List<NewsTickerEntity> entities = mapper.toNewsTickerEntities(dto);
 
         assertThat(entities).hasSize(1);
@@ -135,10 +135,10 @@ class DtoMappingTest {
     @Test
     void newsArticleDto_toNewsTickerEntities_handlesNull() {
         NewsArticleDto dto = new NewsArticleDto(
-                "n1", "Title", "url", null, null, null, null, null, null, null, null, null, null, null, null, null, null
+                "n1", "Title", "url", null, null, null, null, null, null, null, null, null, null, null, null, null
         );
 
-        NewsArticleMapper mapper = new NewsArticleMapper(JsonMapper.builder().build());
+        NewsArticleMapper mapper = new NewsArticleMapper();
         List<NewsTickerEntity> entities = mapper.toNewsTickerEntities(dto);
         assertThat(entities).isEmpty();
     }
@@ -151,12 +151,12 @@ class DtoMappingTest {
         news.setUrl("url");
         OffsetDateTime now = OffsetDateTime.now();
         news.setTimePublished(now);
-        news.setAuthors("authors");
+        news.setAuthors(List.of("authors"));
         news.setSummary("summary");
         news.setSource("source");
         news.setCategoryWithinSource("cat");
         news.setSourceDomain("domain");
-        news.setTopics("topics");
+        news.setTopics(List.of(new NewsArticleDto.TopicRelevanceDto("topics", 1.0f)));
         news.setOverallSentimentScore(0.5f);
         news.setOverallSentimentLabel("Neutral");
         news.setExtractedAt(now);
@@ -175,12 +175,13 @@ class DtoMappingTest {
         assertThat(dto.title()).isEqualTo("Title");
         assertThat(dto.url()).isEqualTo("url");
         assertThat(dto.timePublished()).isEqualTo(now);
-        assertThat(dto.authors()).isEqualTo("authors");
+        assertThat(dto.authors()).containsExactly("authors");
         assertThat(dto.summary()).isEqualTo("summary");
         assertThat(dto.source()).isEqualTo("source");
         assertThat(dto.categoryWithinSource()).isEqualTo("cat");
         assertThat(dto.sourceDomain()).isEqualTo("domain");
-        assertThat(dto.topics()).isEqualTo("topics");
+        assertThat(dto.topics()).hasSize(1);
+        assertThat(dto.topics().getFirst().topic()).isEqualTo("topics");
         assertThat(dto.overallSentimentScore()).isEqualTo(0.5f);
         assertThat(dto.overallSentimentLabel()).isEqualTo("Neutral");
         assertThat(dto.extractedAt()).isEqualTo(now);

@@ -17,6 +17,7 @@ public enum AgentType {
     CASH_FLOW("CashFlow", true, 2, true, Set.of(StatementVariant.TTM)),
     VALUATION("Valuation", true, 3, true, Set.of(StatementVariant.TTM, StatementVariant.ANNUAL)),
     SHARE_PRICE("SharePrice", true, 4, false, Collections.emptySet()),
+    EARNINGS_ESTIMATES("EarningsEstimates", true, 0, false, Collections.emptySet()),
     SYNTHESIZER("Synthesizer", false, -1, false, Collections.emptySet());
 
     private final String agentName;

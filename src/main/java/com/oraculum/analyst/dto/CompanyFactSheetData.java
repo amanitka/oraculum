@@ -118,6 +118,13 @@ public class CompanyFactSheetData {
         return JsonUtils.toJson(objectMapper, newsSentimentAggregate, "{}");
     }
 
+    public SharePriceSignalDto getLatestDailySignal() {
+        if (dailySharePriceSignals != null && !dailySharePriceSignals.isEmpty()) {
+            return dailySharePriceSignals.getFirst();
+        }
+        return null;
+    }
+
     public String getLatestTtmRatios(int periods) {
         List<CompanyFinancialRatiosDto> ttmRatios = companyFinancialRatios.get(StatementVariant.TTM);
         if (ttmRatios == null || ttmRatios.isEmpty()) return "[]";

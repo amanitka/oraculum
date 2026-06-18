@@ -30,4 +30,15 @@ public class AlphaVantageClient {
                 .retrieve()
                 .body(AlphaVantageNewsResponse.class);
     }
+    public String fetchEarningsEstimates(String symbol) {
+        log.info("Fetching earnings estimates from Alpha Vantage for symbol: {}", symbol);
+        return restClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/query")
+                        .queryParam("function", "EARNINGS_ESTIMATES")
+                        .queryParam("symbol", symbol)
+                        .build())
+                .retrieve()
+                .body(String.class);
+    }
 }
