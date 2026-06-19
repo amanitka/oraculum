@@ -9,7 +9,9 @@ import com.oraculum.analyst.domain.PromptType;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
 import com.oraculum.analyst.util.JsonUtils;
 import com.oraculum.company.api.domain.StatementVariant;
+import com.oraculum.llm.api.LlmCallRequest;
 import com.oraculum.llm.api.LlmRouterApi;
+import com.oraculum.llm.api.dto.CorrelationType;
 import com.oraculum.llm.api.dto.LlmResponse;
 import com.oraculum.llm.api.dto.LlmTierType;
 import lombok.RequiredArgsConstructor;
@@ -59,9 +61,8 @@ public class RiskAgent implements Agent<RiskAgentOutput> {
 
         String fullPrompt = appendCriticFeedbackIfPresent(prompt, ctx);
 
-        LlmResponse<RiskAgentOutput> response = llmRouterApi.executeCall(LlmTierType.STANDARD,
-                fullPrompt,
-                RiskAgentOutput.class);
+        LlmResponse<RiskAgentOutput> response = llmRouterApi.executeCall(
+                LlmCallRequest.of(LlmTierType.STANDARD, fullPrompt, RiskAgentOutput.class, ctx.correlationId(), CorrelationType.COMPANY_ANALYSIS, getName().name()));
 
         return new AgentOutput<>(response.result(), response.metrics().totalTokens());
     }

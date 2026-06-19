@@ -9,7 +9,9 @@ import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.PromptType;
 import com.oraculum.analyst.util.JsonUtils;
+import com.oraculum.llm.api.LlmCallRequest;
 import com.oraculum.llm.api.LlmRouterApi;
+import com.oraculum.llm.api.dto.CorrelationType;
 import com.oraculum.llm.api.dto.LlmResponse;
 import com.oraculum.llm.api.dto.LlmTierType;
 import lombok.RequiredArgsConstructor;
@@ -58,9 +60,8 @@ public class SynthesizerAgent implements Agent<SynthesizerAgentOutput> {
                 .replace("{{ unaddressed_warning }}", getWarningMessage(criticOutput))
                 .replace("{{ ticker }}", ctx.ticker());
 
-        LlmResponse<SynthesizerAgentOutput> response = llmRouterApi.executeCall(LlmTierType.PRO,
-                prompt,
-                SynthesizerAgentOutput.class);
+        LlmResponse<SynthesizerAgentOutput> response = llmRouterApi.executeCall(
+                LlmCallRequest.of(LlmTierType.PRO, prompt, SynthesizerAgentOutput.class, ctx.correlationId(), CorrelationType.COMPANY_ANALYSIS, getName().name()));
 
         return new AgentOutput<>(response.result(), response.metrics().totalTokens());
     }

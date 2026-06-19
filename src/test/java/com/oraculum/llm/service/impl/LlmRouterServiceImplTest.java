@@ -1,5 +1,6 @@
 package com.oraculum.llm.service.impl;
 
+import com.oraculum.llm.api.LlmCallRequest;
 import com.oraculum.llm.api.dto.LlmResponse;
 import com.oraculum.llm.api.dto.LlmTierType;
 import com.oraculum.llm.config.LlmProperties;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.List;
 import java.util.Map;
@@ -35,6 +37,9 @@ class LlmRouterServiceImplTest {
     @Mock
     private ChatClient geminiClient;
 
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     private LlmRouterServiceImpl routerService;
 
     @BeforeEach
@@ -54,7 +59,7 @@ class LlmRouterServiceImplTest {
                 LlmProviderType.GEMINI,
                 geminiClient);
 
-        routerService = new LlmRouterServiceImpl(clients, executionService, health, properties);
+        routerService = new LlmRouterServiceImpl(clients, executionService, health, properties, eventPublisher);
     }
 
     @Test
@@ -66,7 +71,7 @@ class LlmRouterServiceImplTest {
         when(executionService.executeCall(any())).thenReturn(CompletableFuture.completedFuture(new LlmResponse<>(expectedResult, null)));
 
         // Act
-        LlmResponse<String> result = routerService.executeCall(LlmTierType.STANDARD, prompt, String.class);
+        LlmResponse<String> result = routerService.executeCall(LlmCallRequest.of(LlmTierType.STANDARD, prompt, String.class));
 
         // Assert
         assertEquals(expectedResult, result.result());
@@ -94,7 +99,7 @@ class LlmRouterServiceImplTest {
                 null)));
 
         // Act
-        LlmResponse<String> result = routerService.executeCall(LlmTierType.STANDARD, prompt, String.class);
+        LlmResponse<String> result = routerService.executeCall(LlmCallRequest.of(LlmTierType.STANDARD, prompt, String.class));
 
         // Assert
         assertEquals(expectedResult, result.result());
@@ -115,7 +120,7 @@ class LlmRouterServiceImplTest {
         when(executionService.executeCall(any())).thenReturn(CompletableFuture.completedFuture(new LlmResponse<>(expectedResult, null)));
 
         // Act
-        LlmResponse<String> result = routerService.executeCall(LlmTierType.STANDARD, prompt, String.class);
+        LlmResponse<String> result = routerService.executeCall(LlmCallRequest.of(LlmTierType.STANDARD, prompt, String.class));
 
         // Assert
         assertEquals(expectedResult, result.result());
@@ -131,7 +136,7 @@ class LlmRouterServiceImplTest {
 
         // Act & Assert
         RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> routerService.executeCall(LlmTierType.STANDARD, "prompt", String.class));
+                () -> routerService.executeCall(LlmCallRequest.of(LlmTierType.STANDARD, "prompt", String.class)));
 
         assertEquals("All providers failed", exception.getMessage());
         verify(health, times(1)).markFailure(LlmProviderType.OPENAI, 30_000);
@@ -149,11 +154,12 @@ class LlmRouterServiceImplTest {
         routerService = new LlmRouterServiceImpl(Map.of(LlmProviderType.OPENAI, openaiClient),
                 executionService,
                 health,
-                propertiesWithMissingTier);
+                propertiesWithMissingTier,
+                eventPublisher);
 
         // Act & Assert
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> routerService.executeCall(LlmTierType.STANDARD, "prompt", String.class));
+                () -> routerService.executeCall(LlmCallRequest.of(LlmTierType.STANDARD, "prompt", String.class)));
 
         assertTrue(exception.getMessage().contains("Configuration missing for tier: STANDARD"));
     }

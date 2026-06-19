@@ -8,7 +8,9 @@ import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.PromptType;
 import com.oraculum.company.api.dto.NewsTickerDto;
+import com.oraculum.llm.api.LlmCallRequest;
 import com.oraculum.llm.api.LlmRouterApi;
+import com.oraculum.llm.api.dto.CorrelationType;
 import com.oraculum.llm.api.dto.LlmResponse;
 import com.oraculum.llm.api.dto.LlmTierType;
 import lombok.RequiredArgsConstructor;
@@ -61,7 +63,8 @@ public class NewsAgent implements Agent<NewsAgentOutput> {
 
         String fullPrompt = appendCriticFeedbackIfPresent(systemPrompt, ctx);
 
-        LlmResponse<NewsAgentOutput> response = llmRouterApi.executeCall(LlmTierType.STANDARD, fullPrompt, NewsAgentOutput.class);
+        LlmResponse<NewsAgentOutput> response = llmRouterApi.executeCall(
+                LlmCallRequest.of(LlmTierType.STANDARD, fullPrompt, NewsAgentOutput.class, ctx.correlationId(), CorrelationType.COMPANY_ANALYSIS, getName().name()));
 
         log.info("NewsAgent successfully generated summary for ticker: {}", ctx.ticker());
         return new AgentOutput<>(response.result(), response.metrics().totalTokens());

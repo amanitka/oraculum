@@ -1,5 +1,7 @@
 package com.oraculum.database.service;
 
+import com.oraculum.database.domain.PartitionConfig;
+import com.oraculum.database.domain.PartitionType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -26,23 +28,26 @@ public class DatabaseMaintenanceService {
     public void runPartitionManagement() {
         log.info("Starting scheduled database partition management (creation & purging)...");
         try {
-            jdbcTemplate.execute("""
-                    DO $$
-                    BEGIN
-                        -- Pre-create partitions for the next 3 months to avoid insertion errors
-                        PERFORM create_monthly_partitions('t_share_price', (NOW() - INTERVAL '1 month')::DATE, (NOW() + INTERVAL '3 months')::DATE);
-                        PERFORM create_yearly_partitions('t_news', (NOW() - INTERVAL '1 month')::DATE, (NOW() + INTERVAL '2 years')::DATE);
-                        PERFORM create_yearly_partitions('t_news_ticker', (NOW() - INTERVAL '1 month')::DATE, (NOW() + INTERVAL '2 years')::DATE);
-                    
-                        -- Purge old partition data (older than 3 years)
-                        PERFORM purge_old_partitions('t_news_ticker', '3 years', 'yearly');
-                        PERFORM purge_old_partitions('t_news', '3 years', 'yearly');
-                    END;
-                    $$;
-                    """);
+            for (PartitionConfig config : PartitionConfig.values()) {
+                String createFunction = config.getType() == PartitionType.MONTHLY ? "create_monthly_partitions" : "create_yearly_partitions";
+                
+                String createSql = String.format(
+                    "SELECT %s('%s', (NOW() - INTERVAL '1 month')::DATE, (NOW() + INTERVAL '%d months')::DATE);",
+                    createFunction, config.getTableName(), config.getMonthsAhead()
+                );
+                jdbcTemplate.execute(createSql);
+                log.info("Pre-created partitions for {} ({} months ahead)", config.getTableName(), config.getMonthsAhead());
+
+                String purgeSql = String.format(
+                    "SELECT purge_old_partitions('%s', (NOW() - INTERVAL '%d months')::DATE);",
+                    config.getTableName(), config.getMonthsToKeep()
+                );
+                jdbcTemplate.execute(purgeSql);
+                log.info("Purged old partitions for {} (older than {} months)", config.getTableName(), config.getMonthsToKeep());
+            }
             log.info("Database partition management completed successfully.");
         } catch (Exception e) {
-            log.error("Scheduled database partition management failed", e);
+            log.error("Error during database partition management", e);
         }
     }
 

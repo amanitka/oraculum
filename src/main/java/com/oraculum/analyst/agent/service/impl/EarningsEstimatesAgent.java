@@ -10,7 +10,9 @@ import com.oraculum.analyst.domain.PromptType;
 import com.oraculum.company.api.dto.SharePriceSignalDto;
 import com.oraculum.harvester.api.HarvesterLiveApi;
 import com.oraculum.harvester.api.dto.EarningsEstimateDto;
+import com.oraculum.llm.api.LlmCallRequest;
 import com.oraculum.llm.api.LlmRouterApi;
+import com.oraculum.llm.api.dto.CorrelationType;
 import com.oraculum.llm.api.dto.LlmResponse;
 import com.oraculum.llm.api.dto.LlmTierType;
 import lombok.RequiredArgsConstructor;
@@ -83,12 +85,9 @@ public class EarningsEstimatesAgent implements Agent<EarningsEstimatesAgentOutpu
                     "This analysis does not include forward-looking EPS/revenue consensus estimates.";
             return new AgentOutput<>(new EarningsEstimatesAgentOutput(skipMessage), 0);
         }
-        String prompt = preparePrompt(ctx, earningsEstimatesOpt.get());
+        String fullPrompt = preparePrompt(ctx, earningsEstimatesOpt.get());
         LlmResponse<EarningsEstimatesAgentOutput> response = llmRouterApi.executeCall(
-                LlmTierType.STANDARD,
-                prompt,
-                EarningsEstimatesAgentOutput.class
-        );
+                LlmCallRequest.of(LlmTierType.STANDARD, fullPrompt, EarningsEstimatesAgentOutput.class, ctx.correlationId(), CorrelationType.COMPANY_ANALYSIS, getName().name()));
 
         log.info("EarningsEstimatesAgent successfully generated summary for ticker: {}", ctx.ticker());
         return new AgentOutput<>(response.result(), response.metrics().totalTokens());

@@ -7,9 +7,11 @@ import lombok.Builder;
 import org.jspecify.annotations.NonNull;
 
 import java.time.LocalDate;
+import java.util.UUID;
 
 @Builder
-public record AgentContext(CompanyDto company,
+public record AgentContext(UUID correlationId,
+                           CompanyDto company,
                            CompanyFactSheetData factSheetData,
                            LocalDate analysisDate,
                            int tokenBudget,

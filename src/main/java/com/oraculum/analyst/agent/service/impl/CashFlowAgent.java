@@ -3,16 +3,18 @@ package com.oraculum.analyst.agent.service.impl;
 import com.oraculum.analyst.agent.dto.AgentContext;
 import com.oraculum.analyst.agent.dto.AgentOutput;
 import com.oraculum.analyst.agent.dto.CashFlowAgentOutput;
+import com.oraculum.analyst.agent.dto.FundamentalsAgentOutput;
 import com.oraculum.analyst.agent.service.Agent;
 import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.api.domain.FinancialDataProfile;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.PromptType;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
-import com.oraculum.analyst.agent.dto.FundamentalsAgentOutput;
 import com.oraculum.analyst.util.JsonUtils;
 import com.oraculum.company.api.domain.StatementVariant;
+import com.oraculum.llm.api.LlmCallRequest;
 import com.oraculum.llm.api.LlmRouterApi;
+import com.oraculum.llm.api.dto.CorrelationType;
 import com.oraculum.llm.api.dto.LlmResponse;
 import com.oraculum.llm.api.dto.LlmTierType;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +33,6 @@ public class CashFlowAgent implements Agent<CashFlowAgentOutput> {
     public AgentType getName() {
         return AgentType.CASH_FLOW;
     }
-
 
 
     @Override
@@ -53,9 +54,8 @@ public class CashFlowAgent implements Agent<CashFlowAgentOutput> {
 
         String fullPrompt = appendCriticFeedbackIfPresent(prompt, ctx);
 
-        LlmResponse<CashFlowAgentOutput> response = llmRouterApi.executeCall(LlmTierType.STANDARD,
-                fullPrompt,
-                CashFlowAgentOutput.class);
+        LlmResponse<CashFlowAgentOutput> response = llmRouterApi.executeCall(
+                LlmCallRequest.of(LlmTierType.STANDARD, fullPrompt, CashFlowAgentOutput.class, ctx.correlationId(), CorrelationType.COMPANY_ANALYSIS, getName().name()));
 
         return new AgentOutput<>(response.result(), response.metrics().totalTokens());
     }

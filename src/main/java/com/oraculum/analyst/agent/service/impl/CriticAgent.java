@@ -8,7 +8,9 @@ import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.PromptType;
 import com.oraculum.analyst.util.JsonUtils;
+import com.oraculum.llm.api.LlmCallRequest;
 import com.oraculum.llm.api.LlmRouterApi;
+import com.oraculum.llm.api.dto.CorrelationType;
 import com.oraculum.llm.api.dto.LlmResponse;
 import com.oraculum.llm.api.dto.LlmTierType;
 import lombok.RequiredArgsConstructor;
@@ -42,15 +44,14 @@ public class CriticAgent implements Agent<CriticAgentOutput> {
         String agentTimeframesJson = JsonUtils.toJson(objectMapper, agentTimeframes, "{}");
         String priorOutputsJson = JsonUtils.toJson(objectMapper, specialistOutputs, "{}");
 
-        String prompt = promptRegistry.getPrompt(PromptType.CRITIC)
+        String fullPrompt = promptRegistry.getPrompt(PromptType.CRITIC)
                 .replace("{{ analysis_focus }}", ctx.analysisFocus() != null ? ctx.analysisFocus() : "Standard comprehensive analysis.")
                 .replace("{{ agent_timeframes }}", agentTimeframesJson)
                 .replace("{{ prior_outputs }}", priorOutputsJson)
                 .replace("{{ ticker }}", ctx.ticker());
 
-        LlmResponse<CriticAgentOutput> response = llmRouterApi.executeCall(LlmTierType.PRO,
-                prompt,
-                CriticAgentOutput.class);
+        LlmResponse<CriticAgentOutput> response = llmRouterApi.executeCall(
+                LlmCallRequest.of(LlmTierType.PRO, fullPrompt, CriticAgentOutput.class, ctx.correlationId(), CorrelationType.COMPANY_ANALYSIS, getName().name()));
 
         return new AgentOutput<>(response.result(), response.metrics().totalTokens());
     }

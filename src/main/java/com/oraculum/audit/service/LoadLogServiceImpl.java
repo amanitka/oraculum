@@ -1,10 +1,10 @@
-package com.oraculum.audit.service.impl;
+package com.oraculum.audit.service;
 
+import com.oraculum.audit.api.LoadLogApi;
 import com.oraculum.audit.api.dto.LoadLogDto;
 import com.oraculum.audit.domain.LoadLogEntity;
 import com.oraculum.audit.domain.LoadLogStatus;
 import com.oraculum.audit.repository.LoadLogRepository;
-import com.oraculum.audit.service.LoadLogService;
 import com.oraculum.common.exception.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class LoadLogServiceImpl implements LoadLogService {
+public class LoadLogServiceImpl implements LoadLogApi {
 
     private final LoadLogRepository loadLogRepository;
 

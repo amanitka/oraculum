@@ -1,5 +1,6 @@
 package com.oraculum.llm;
 
+import com.oraculum.llm.api.LlmCallRequest;
 import com.oraculum.llm.api.LlmRouterApi;
 import com.oraculum.llm.api.dto.LlmResponse;
 import com.oraculum.llm.api.dto.LlmTierType;
@@ -32,14 +33,10 @@ public class LlmIntegrationTest {
 
     @Test
     void shouldMakeRealCallToLlm() {
-        // Arrange
-        String prompt = "Say exactly 'hi' and nothing else.";
-
         // Act
         // This makes a real network call!
-        LlmResponse<String> response = llmRouterApi.executeCall(LlmTierType.MINI,
-                prompt,
-                String.class);
+        LlmResponse<String> response = llmRouterApi.executeCall(
+                LlmCallRequest.of(LlmTierType.MINI, "Translate the following to French: Hello, World!", String.class));
 
         // Assert
         assertNotNull(response);

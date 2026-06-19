@@ -70,7 +70,7 @@ public class CompanyAnalysisWorkflowService {
         }
         state.setAnalysisFocus(focus);
 
-        return new AgentContext(company, factSheetData, analysisDate, analystProperties.tokenBudget(), state);
+        return new AgentContext(request.correlationId(), company, factSheetData, analysisDate, analystProperties.tokenBudget(), state);
     }
 
 

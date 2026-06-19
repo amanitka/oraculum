@@ -3,6 +3,8 @@ package com.oraculum.llm.service.impl;
 import com.oraculum.llm.api.dto.LlmResponse;
 import com.oraculum.llm.api.dto.LlmTierType;
 import com.oraculum.llm.config.LlmProperties;
+import com.oraculum.llm.api.LlmCallRequest;
+import com.oraculum.llm.api.LlmExecutionEvent;
 import com.oraculum.llm.domain.LlmProviderType;
 import com.oraculum.llm.domain.LlmRequest;
 import com.oraculum.llm.service.LlmExecutionService;
@@ -10,6 +12,7 @@ import com.oraculum.llm.service.LlmRouterService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -23,9 +26,10 @@ public class LlmRouterServiceImpl implements LlmRouterService {
     private final LlmExecutionService executionService;
     private final LlmHealthProvider health;
     private final LlmProperties properties;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
-    public <T> LlmResponse<T> executeCall(LlmTierType tier, String prompt, Class<T> type) {
+    public <T> LlmResponse<T> executeCall(LlmCallRequest<T> request) {
         Exception last = null;
         for (LlmProviderType provider : properties.common().providerFallbackOrder()) {
             if (health.isBlocked(provider)) {
@@ -35,16 +39,30 @@ public class LlmRouterServiceImpl implements LlmRouterService {
             if (client == null) {
                 continue;
             }
-            String model = resolveModel(tier, provider);
+            String model = resolveModel(request.tier(), provider);
             try {
                 var result = executionService.executeCall(new LlmRequest<>(client,
-                        prompt,
+                        request.prompt(),
                         provider,
                         model,
                         properties.common().temperature(),
                         properties.common().maxCompletionTokens(),
-                        type)).join();
+                        request.responseType())).join();
                 health.markSuccess(provider);
+                
+                try {
+                    eventPublisher.publishEvent(new LlmExecutionEvent(
+                            request.correlationId(),
+                            request.correlationType(),
+                            request.source(),
+                            result.metrics(),
+                            request.prompt(),
+                            result.result()
+                    ));
+                } catch (Exception ex) {
+                    log.warn("Failed to publish LLM execution event", ex);
+                }
+
                 return result;
             } catch (Exception e) {
                 log.warn("LLM call failed for provider: {} [model: {}]. Error: {}. Falling back to next available provider.",
