@@ -12,6 +12,7 @@ DROP MATERIALIZED VIEW IF EXISTS mv_share_price_signals_recent CASCADE;
 DROP VIEW IF EXISTS v_share_price_signals CASCADE;
 DROP MATERIALIZED VIEW IF EXISTS mv_company_financial_ratios CASCADE;
 DROP VIEW IF EXISTS v_company_financial_ratios CASCADE;
+DROP VIEW IF EXISTS v_industry_financial_ratios CASCADE;
 
 -- =================================================================
 -- VIEW: v_company_financial_ratios
@@ -281,8 +282,7 @@ FROM final_metrics;
 DO $$ BEGIN RAISE NOTICE 'Materializing view: mv_company_financial_ratios (This may take a while...)'; END $$;
 CREATE MATERIALIZED VIEW mv_company_financial_ratios AS 
 SELECT * FROM v_company_financial_ratios
-WHERE UPPER(variant) = 'TTM'
-  AND publish_date IS NOT NULL;
+WHERE publish_date IS NOT NULL;
 
 CREATE UNIQUE INDEX idx_mv_cfr_company_variant_year_period 
 ON mv_company_financial_ratios (company_id, variant, fiscal_year, fiscal_period);
@@ -640,3 +640,27 @@ SELECT s.*
 FROM mv_share_price_signals_recent s
 WHERE s.trade_date = (SELECT MAX(trade_date) FROM mv_share_price_signals_recent WHERE company_id = s.company_id)
   AND s.financial_trend_score >= 7;
+
+-- =================================================================
+-- VIEW: v_industry_financial_ratios
+-- Description: Aggregates financial ratios by industry for peer comparison
+-- =================================================================
+DO $$ BEGIN RAISE NOTICE 'Creating view: v_industry_financial_ratios'; END $$;
+CREATE VIEW v_industry_financial_ratios AS
+SELECT
+    c.industry_name,
+    r.variant,
+    r.fiscal_year,
+    r.fiscal_period,
+    percentile_cont(0.5) WITHIN GROUP (ORDER BY r.return_on_equity) AS return_on_equity,
+    percentile_cont(0.5) WITHIN GROUP (ORDER BY r.gross_margin) AS gross_margin,
+    percentile_cont(0.5) WITHIN GROUP (ORDER BY r.net_margin) AS net_margin,
+    percentile_cont(0.5) WITHIN GROUP (ORDER BY r.debt_to_equity) AS debt_to_equity,
+    percentile_cont(0.5) WITHIN GROUP (ORDER BY r.current_ratio) AS current_ratio,
+    percentile_cont(0.5) WITHIN GROUP (ORDER BY r.operating_margin) AS operating_margin,
+    percentile_cont(0.5) WITHIN GROUP (ORDER BY r.fcf_margin) AS fcf_margin,
+    percentile_cont(0.5) WITHIN GROUP (ORDER BY r.revenue_yoy_growth) AS revenue_yoy_growth
+FROM mv_company_financial_ratios r
+JOIN t_company c ON c.id = r.company_id
+WHERE c.industry_name IS NOT NULL
+GROUP BY c.industry_name, r.variant, r.fiscal_year, r.fiscal_period;

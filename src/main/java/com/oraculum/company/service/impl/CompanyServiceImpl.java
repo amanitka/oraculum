@@ -3,6 +3,7 @@ package com.oraculum.company.service.impl;
 import com.oraculum.common.exception.EntityNotFoundException;
 import com.oraculum.company.api.dto.*;
 import com.oraculum.company.domain.CompanyEntity;
+import com.oraculum.company.domain.IndustryFinancialRatiosRepository;
 import com.oraculum.company.domain.NewsEntity;
 import com.oraculum.company.domain.NewsTickerEntity;
 import com.oraculum.company.repository.*;
@@ -44,6 +45,7 @@ public class CompanyServiceImpl implements CompanyService {
     private final ScreenerGrahamDeepValueRepository screenerGrahamDeepValueRepository;
     private final ScreenerFinancialTrendRepository ScreenerFinancialTrendRepository;
     private final TickerNewsSentimentRepository tickerNewsSentimentRepository;
+    private final IndustryFinancialRatiosRepository industryFinancialRatiosRepository;
     private final NewsArticleMapper newsArticleMapper;
 
     @Override
@@ -61,18 +63,8 @@ public class CompanyServiceImpl implements CompanyService {
     }
 
     @Override
-    public List<MarketDto> getAllMarkets() {
-        return marketRepository.findAll().stream().map(MarketDto::fromEntity).collect(Collectors.toList());
-    }
-
-    @Override
     public List<String> getAllMarketIds() {
         return marketRepository.findAllMarketIds();
-    }
-
-    @Override
-    public List<IndustryDto> getAllIndustries() {
-        return industryRepository.findAll().stream().map(IndustryDto::fromEntity).collect(Collectors.toList());
     }
 
     @Override
@@ -166,6 +158,14 @@ public class CompanyServiceImpl implements CompanyService {
                 .map(CompanyFinancialRatiosDto::fromEntity)
                 .sorted(Comparator.comparing(CompanyFinancialRatiosDto::reportDate).reversed())
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<IndustryFinancialRatiosDto> getIndustryFinancialRatiosByIndustryName(String industryName, LocalDate after) {
+        return industryFinancialRatiosRepository.findByIndustryName(industryName).stream()
+                // Assuming we want all available periods, but typically we might filter by year if needed
+                // Currently view doesn't easily filter by "after" without joining back to report dates, so we return all
+                .map(IndustryFinancialRatiosDto::fromEntity).collect(Collectors.toList());
     }
 
     @Override

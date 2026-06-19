@@ -30,6 +30,7 @@ public class CompanyFactSheetData {
     private final Map<StatementVariant, List<BalanceSheetDto>> balanceSheets;
     private final Map<StatementVariant, List<CashFlowStatementDto>> cashFlowStatements;
     private final Map<StatementVariant, List<CompanyFinancialRatiosDto>> companyFinancialRatios;
+    private final Map<StatementVariant, List<IndustryFinancialRatiosDto>> industryFinancialRatios;
     private final List<SharePriceSignalDto> dailySharePriceSignals;
     private final List<SharePriceSignalDto> monthlySharePriceSignals;
     private final List<NewsTickerDto> recentNews;
@@ -150,6 +151,24 @@ public class CompanyFactSheetData {
                 .map(CompanyFinancialRatiosSlim::from)
                 .collect(Collectors.toList());
         return JsonUtils.toJson(objectMapper, slim, "[]");
+    }
+
+    public String getLatestTtmIndustryRatios(int periods) {
+        if (industryFinancialRatios == null) return "[]";
+        List<IndustryFinancialRatiosDto> ttmRatios = industryFinancialRatios.get(StatementVariant.TTM);
+        if (ttmRatios == null || ttmRatios.isEmpty()) return "[]";
+        List<IndustryFinancialRatiosDto> limited = ttmRatios.stream()
+                // assuming the list is sorted by date ascending, we want the latest
+                // or we can sort by fiscal year and period descending
+                .sorted((a, b) -> {
+                    if (a.fiscalYear() != b.fiscalYear()) {
+                        return Integer.compare(b.fiscalYear(), a.fiscalYear());
+                    }
+                    return b.fiscalPeriod().compareTo(a.fiscalPeriod());
+                })
+                .limit(periods)
+                .collect(Collectors.toList());
+        return JsonUtils.toJson(objectMapper, limited, "[]");
     }
 
     private String namespaceJsonMetrics(String jsonStr, StatementVariant variant) {

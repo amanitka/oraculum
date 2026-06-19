@@ -42,6 +42,7 @@ public class ValuationAgent implements Agent<ValuationAgentOutput> {
                 .replace("{{ analysis_focus }}", ctx.analysisFocus() != null ? ctx.analysisFocus() : "Standard comprehensive analysis.")
                 .replace("{{ company_financial_ratios_a }}", factSheet.getCompanyFinancialRatios(StatementVariant.ANNUAL, profile.periodLimit(StatementVariant.ANNUAL)))
                 .replace("{{ company_financial_ratios_ttm }}", factSheet.getCompanyFinancialRatios(StatementVariant.TTM, profile.periodLimit(StatementVariant.TTM)))
+                .replace("{{ industry_ratios }}", factSheet.getLatestTtmIndustryRatios(profile.periodLimit(StatementVariant.TTM)))
                 .replace("{{ daily_share_price_signals }}", recentDailyJson)
                 .replace("{{ ticker }}", ctx.ticker())
                 .replace("{{ analysis_date }}", ctx.analysisDate().toString());

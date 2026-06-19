@@ -16,11 +16,7 @@ public interface CompanyApi {
 
     List<CompanyDto> getAllCompanies();
 
-    List<MarketDto> getAllMarkets();
-
     List<String> getAllMarketIds();
-
-    List<IndustryDto> getAllIndustries();
 
     Optional<OffsetDateTime> getNewsLastTimePublished();
 
@@ -43,6 +39,8 @@ public interface CompanyApi {
     List<SharePriceSignalDto> getMonthlySharePriceSignalsByCompanyId(int companyId, LocalDate after);
 
     List<CompanyFinancialRatiosDto> getCompanyFinancialRatiosByCompanyId(int companyId, LocalDate after);
+
+    List<IndustryFinancialRatiosDto> getIndustryFinancialRatiosByIndustryName(String industryName, LocalDate after);
 
     List<ScreenerMasterDto> getMasterScreener();
 

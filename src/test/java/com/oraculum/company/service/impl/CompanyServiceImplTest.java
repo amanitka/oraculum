@@ -4,6 +4,7 @@ import com.oraculum.common.exception.EntityNotFoundException;
 import com.oraculum.company.api.dto.*;
 import com.oraculum.company.domain.*;
 import com.oraculum.company.repository.*;
+import com.oraculum.company.domain.IndustryFinancialRatiosRepository;
 import com.oraculum.company.service.mapper.NewsArticleMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,8 @@ class CompanyServiceImplTest {
     private SharePriceRepository sharePriceRepository;
     @Mock
     private ScreenerMasterRepository screenerMasterRepository;
+    @Mock
+    private IndustryFinancialRatiosRepository industryFinancialRatiosRepository;
     @Mock
     private NewsArticleMapper newsArticleMapper;
 

@@ -53,6 +53,17 @@ public class CompanyFactSheetDataService {
                 .collect(Collectors.groupingBy(CompanyFinancialRatiosDto::variant));
     }
 
+    private Map<StatementVariant, List<IndustryFinancialRatiosDto>> getIndustryFinancialRatios(CompanyDto company,
+                                                                                               LocalDate annualAfter, LocalDate quarterlyAfter) {
+        if (company.industryName() == null || company.industryName().isBlank()) {
+            return Map.of();
+        }
+        return companyApi.getIndustryFinancialRatiosByIndustryName(company.industryName(), annualAfter)
+                .stream()
+                // Assuming industry ratios lack report dates, we fetch all. Filtering might need to happen by year if needed, but grouping is fine.
+                .collect(Collectors.groupingBy(IndustryFinancialRatiosDto::variant));
+    }
+
     private List<SharePriceSignalDto> getDailySharePriceSignals(CompanyDto company, LocalDate after) {
         return companyApi.getDailySharePriceSignalsByCompanyId(company.id(), after);
     }
@@ -88,6 +99,7 @@ public class CompanyFactSheetDataService {
                 .balanceSheets(getBalanceSheets(company, annualAfter, quarterlyAfter))
                 .cashFlowStatements(getCashFlowStatements(company, annualAfter, quarterlyAfter))
                 .companyFinancialRatios(getCompanyFinancialRatios(company, annualAfter, quarterlyAfter))
+                .industryFinancialRatios(getIndustryFinancialRatios(company, annualAfter, quarterlyAfter))
                 .dailySharePriceSignals(getDailySharePriceSignals(company,
                         analystProperties.sharePrice().getSharePriceHistoryDate()))
                 .monthlySharePriceSignals(getMonthlySharePriceSignals(company,
