@@ -6,8 +6,7 @@ import com.oraculum.company.domain.IndustryFinancialRatiosEntity;
 public record IndustryFinancialRatiosDto(
         String industryName,
         StatementVariant variant,
-        int fiscalYear,
-        String fiscalPeriod,
+        Integer companyCount,
         Float returnOnEquity,
         Float grossMargin,
         Float netMargin,
@@ -22,8 +21,7 @@ public record IndustryFinancialRatiosDto(
         return new IndustryFinancialRatiosDto(
                 entity.getIndustryName(),
                 entity.getVariant(),
-                entity.getFiscalYear(),
-                entity.getFiscalPeriod(),
+                entity.getCompanyCount(),
                 entity.getReturnOnEquity(),
                 entity.getGrossMargin(),
                 entity.getNetMargin(),

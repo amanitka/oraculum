@@ -153,22 +153,12 @@ public class CompanyFactSheetData {
         return JsonUtils.toJson(objectMapper, slim, "[]");
     }
 
-    public String getLatestTtmIndustryRatios(int periods) {
+    public String getLatestIndustryRatios(StatementVariant variant) {
         if (industryFinancialRatios == null) return "[]";
-        List<IndustryFinancialRatiosDto> ttmRatios = industryFinancialRatios.get(StatementVariant.TTM);
+        List<IndustryFinancialRatiosDto> ttmRatios = industryFinancialRatios.get(variant);
         if (ttmRatios == null || ttmRatios.isEmpty()) return "[]";
-        List<IndustryFinancialRatiosDto> limited = ttmRatios.stream()
-                // assuming the list is sorted by date ascending, we want the latest
-                // or we can sort by fiscal year and period descending
-                .sorted((a, b) -> {
-                    if (a.fiscalYear() != b.fiscalYear()) {
-                        return Integer.compare(b.fiscalYear(), a.fiscalYear());
-                    }
-                    return b.fiscalPeriod().compareTo(a.fiscalPeriod());
-                })
-                .limit(periods)
-                .collect(Collectors.toList());
-        return JsonUtils.toJson(objectMapper, limited, "[]");
+        // Now there is only one row per variant representing the current cross-sectional median
+        return JsonUtils.toJson(objectMapper, ttmRatios, "[]");
     }
 
     private String namespaceJsonMetrics(String jsonStr, StatementVariant variant) {

@@ -17,6 +17,4 @@ import java.io.Serializable;
 public class IndustryFinancialRatiosId implements Serializable {
     private String industryName;
     private StatementVariant variant;
-    private int fiscalYear;
-    private String fiscalPeriod;
 }

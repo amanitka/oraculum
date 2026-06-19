@@ -31,7 +31,6 @@ public class FundamentalsAgent implements Agent<FundamentalsAgentOutput> {
     }
 
 
-
     @Override
     public AgentOutput<FundamentalsAgentOutput> run(AgentContext ctx) {
         CompanyFactSheetData factSheet = ctx.factSheetData();
@@ -45,7 +44,7 @@ public class FundamentalsAgent implements Agent<FundamentalsAgentOutput> {
                 // Annual: limited to profile-defined periods — income + ratios only, no balance sheet
                 .replace("{{ income_statement_history_a }}", factSheet.getIncomeStatementHistory(StatementVariant.ANNUAL, profile.periodLimit(StatementVariant.ANNUAL)))
                 .replace("{{ company_financial_ratios_a }}", factSheet.getCompanyFinancialRatios(StatementVariant.ANNUAL, profile.periodLimit(StatementVariant.ANNUAL)))
-                .replace("{{ industry_ratios }}", factSheet.getLatestTtmIndustryRatios(profile.periodLimit(StatementVariant.TTM)))
+                .replace("{{ industry_ratios }}", factSheet.getLatestIndustryRatios(StatementVariant.TTM))
                 .replace("{{ ticker }}", ctx.ticker())
                 .replace("{{ analysis_date }}", ctx.analysisDate().toString());
 

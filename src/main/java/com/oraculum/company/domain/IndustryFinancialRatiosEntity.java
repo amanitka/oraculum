@@ -27,13 +27,8 @@ public class IndustryFinancialRatiosEntity {
     @Enumerated(EnumType.STRING)
     private StatementVariant variant;
 
-    @Id
-    @Column(name = "fiscal_year")
-    private int fiscalYear;
-
-    @Id
-    @Column(name = "fiscal_period")
-    private String fiscalPeriod;
+    @Column(name = "company_count")
+    private Integer companyCount;
 
     @Column(name = "return_on_equity")
     private Float returnOnEquity;

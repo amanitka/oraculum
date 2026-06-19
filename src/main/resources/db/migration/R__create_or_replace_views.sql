@@ -643,15 +643,19 @@ WHERE s.trade_date = (SELECT MAX(trade_date) FROM mv_share_price_signals_recent 
 
 -- =================================================================
 -- VIEW: v_industry_financial_ratios
--- Description: Aggregates financial ratios by industry for peer comparison
+-- Description: Aggregates current cross-sectional financial ratios by industry for peer comparison
 -- =================================================================
 DO $$ BEGIN RAISE NOTICE 'Creating view: v_industry_financial_ratios'; END $$;
 CREATE VIEW v_industry_financial_ratios AS
+WITH latest_ratios AS (
+    SELECT DISTINCT ON (company_id, variant) *
+    FROM mv_company_financial_ratios
+    ORDER BY company_id, variant, report_date DESC
+)
 SELECT
     c.industry_name,
     r.variant,
-    r.fiscal_year,
-    r.fiscal_period,
+    COUNT(r.company_id) AS company_count,
     percentile_cont(0.5) WITHIN GROUP (ORDER BY r.return_on_equity) AS return_on_equity,
     percentile_cont(0.5) WITHIN GROUP (ORDER BY r.gross_margin) AS gross_margin,
     percentile_cont(0.5) WITHIN GROUP (ORDER BY r.net_margin) AS net_margin,
@@ -660,7 +664,7 @@ SELECT
     percentile_cont(0.5) WITHIN GROUP (ORDER BY r.operating_margin) AS operating_margin,
     percentile_cont(0.5) WITHIN GROUP (ORDER BY r.fcf_margin) AS fcf_margin,
     percentile_cont(0.5) WITHIN GROUP (ORDER BY r.revenue_yoy_growth) AS revenue_yoy_growth
-FROM mv_company_financial_ratios r
+FROM latest_ratios r
 JOIN t_company c ON c.id = r.company_id
 WHERE c.industry_name IS NOT NULL
-GROUP BY c.industry_name, r.variant, r.fiscal_year, r.fiscal_period;
+GROUP BY c.industry_name, r.variant;
