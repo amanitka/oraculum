@@ -5,6 +5,7 @@ import com.oraculum.analyst.agent.dto.AgentOutput;
 import com.oraculum.analyst.agent.dto.FundamentalsAgentOutput;
 import com.oraculum.analyst.agent.service.Agent;
 import com.oraculum.analyst.api.domain.AgentType;
+import com.oraculum.analyst.api.domain.FinancialDataProfile;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.PromptType;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
@@ -32,11 +33,16 @@ public class FundamentalsAgent implements Agent<FundamentalsAgentOutput> {
     @Override
     public AgentOutput<FundamentalsAgentOutput> run(AgentContext ctx) {
         CompanyFactSheetData factSheet = ctx.factSheetData();
+        FinancialDataProfile profile = getName().getDataProfile();
         String prompt = promptRegistry.getPrompt(PromptType.FUNDAMENTALS)
                 .replace("{{ analysis_focus }}", ctx.analysisFocus() != null ? ctx.analysisFocus() : "Standard comprehensive analysis.")
+                // Quarterly: recent sequential trend (all periods)
                 .replace("{{ income_statement_history_q }}", factSheet.getIncomeStatementHistory(StatementVariant.QUARTERLY))
                 .replace("{{ balance_sheet_history_q }}", factSheet.getBalanceSheetHistory(StatementVariant.QUARTERLY))
                 .replace("{{ company_financial_ratios_q }}", factSheet.getCompanyFinancialRatios(StatementVariant.QUARTERLY))
+                // Annual: limited to profile-defined periods — income + ratios only, no balance sheet
+                .replace("{{ income_statement_history_a }}", factSheet.getIncomeStatementHistory(StatementVariant.ANNUAL, profile.periodLimit(StatementVariant.ANNUAL)))
+                .replace("{{ company_financial_ratios_a }}", factSheet.getCompanyFinancialRatios(StatementVariant.ANNUAL, profile.periodLimit(StatementVariant.ANNUAL)))
                 .replace("{{ ticker }}", ctx.ticker())
                 .replace("{{ analysis_date }}", ctx.analysisDate().toString());
 

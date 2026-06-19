@@ -5,6 +5,7 @@ import com.oraculum.analyst.agent.dto.AgentOutput;
 import com.oraculum.analyst.agent.dto.CashFlowAgentOutput;
 import com.oraculum.analyst.agent.service.Agent;
 import com.oraculum.analyst.api.domain.AgentType;
+import com.oraculum.analyst.api.domain.FinancialDataProfile;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.PromptType;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
@@ -40,10 +41,12 @@ public class CashFlowAgent implements Agent<CashFlowAgentOutput> {
         FundamentalsAgentOutput fundamentalsOutput = (FundamentalsAgentOutput) ctx.state().getAgentOutput(AgentType.FUNDAMENTALS);
         String fundamentalsJson = JsonUtils.toJson(objectMapper, fundamentalsOutput, "{}");
 
+        FinancialDataProfile profile = getName().getDataProfile();
+
         String prompt = promptRegistry.getPrompt(PromptType.CASH_FLOW)
                 .replace("{{ analysis_focus }}", ctx.analysisFocus() != null ? ctx.analysisFocus() : "Standard comprehensive analysis.")
-                .replace("{{ cash_flow_history_ttm }}", factSheet.getCashFlowHistory(StatementVariant.TTM))
-                .replace("{{ company_financial_ratios_ttm }}", factSheet.getCompanyFinancialRatios(StatementVariant.TTM))
+                .replace("{{ cash_flow_history_ttm }}", factSheet.getCashFlowHistory(StatementVariant.TTM, profile.periodLimit(StatementVariant.TTM)))
+                .replace("{{ company_financial_ratios_ttm }}", factSheet.getCompanyFinancialRatios(StatementVariant.TTM, profile.periodLimit(StatementVariant.TTM)))
                 .replace("{{ fundamentals_analysis }}", fundamentalsJson)
                 .replace("{{ ticker }}", ctx.ticker())
                 .replace("{{ analysis_date }}", ctx.analysisDate().toString());

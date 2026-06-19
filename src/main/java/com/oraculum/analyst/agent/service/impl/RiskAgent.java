@@ -3,6 +3,7 @@ package com.oraculum.analyst.agent.service.impl;
 import com.oraculum.analyst.agent.dto.*;
 import com.oraculum.analyst.agent.service.Agent;
 import com.oraculum.analyst.api.domain.AgentType;
+import com.oraculum.analyst.api.domain.FinancialDataProfile;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.PromptType;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
@@ -42,12 +43,14 @@ public class RiskAgent implements Agent<RiskAgentOutput> {
         CashFlowAgentOutput cashFlowOutput = (CashFlowAgentOutput) ctx.state().getAgentOutput(AgentType.CASH_FLOW);
         String cashFlowJson = JsonUtils.toJson(objectMapper, cashFlowOutput, "{}");
 
+        FinancialDataProfile profile = getName().getDataProfile();
+
         String prompt = promptRegistry.getPrompt(PromptType.RISK)
                 .replace("{{ analysis_focus }}", ctx.analysisFocus() != null ? ctx.analysisFocus() : "Standard comprehensive analysis.")
-                .replace("{{ balance_sheet_history_a }}", factSheet.getBalanceSheetHistory(StatementVariant.ANNUAL))
-                .replace("{{ company_financial_ratios_a }}", factSheet.getCompanyFinancialRatios(StatementVariant.ANNUAL))
-                .replace("{{ balance_sheet_history_ttm }}", factSheet.getBalanceSheetHistory(StatementVariant.TTM))
-                .replace("{{ company_financial_ratios_ttm }}", factSheet.getCompanyFinancialRatios(StatementVariant.TTM))
+                .replace("{{ balance_sheet_history_a }}", factSheet.getBalanceSheetHistory(StatementVariant.ANNUAL, profile.periodLimit(StatementVariant.ANNUAL)))
+                .replace("{{ company_financial_ratios_a }}", factSheet.getCompanyFinancialRatios(StatementVariant.ANNUAL, profile.periodLimit(StatementVariant.ANNUAL)))
+                .replace("{{ balance_sheet_history_ttm }}", factSheet.getBalanceSheetHistory(StatementVariant.TTM, profile.periodLimit(StatementVariant.TTM)))
+                .replace("{{ company_financial_ratios_ttm }}", factSheet.getCompanyFinancialRatios(StatementVariant.TTM, profile.periodLimit(StatementVariant.TTM)))
                 .replace("{{ share_price_analysis }}", sharePriceJson)
                 .replace("{{ fundamentals_analysis }}", fundamentalsJson)
                 .replace("{{ cash_flow_analysis }}", cashFlowJson)

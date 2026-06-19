@@ -27,8 +27,6 @@ public record AgentContext(CompanyDto company,
         return company.id();
     }
 
-
-    // Convenience delegates so agent code stays clean
     public String analysisFocus() {
         return state.getAnalysisFocus();
     }

@@ -40,40 +40,56 @@ public class CompanyFactSheetData {
     }
 
     public String getIncomeStatementHistory(StatementVariant variant) {
+        return getIncomeStatementHistory(variant, Integer.MAX_VALUE);
+    }
+
+    public String getIncomeStatementHistory(StatementVariant variant, int limit) {
         List<IncomeStatementDto> stmts = incomeStatements.get(variant);
         if (stmts == null || stmts.isEmpty()) {
             return "[]";
         }
         return "[" + stmts.stream()
+                .limit(limit)
                 .map(dto -> namespaceJsonMetrics(dto.statementData(), variant))
                 .collect(Collectors.joining(",")) + "]";
     }
 
     public String getBalanceSheetHistory(StatementVariant variant) {
+        return getBalanceSheetHistory(variant, Integer.MAX_VALUE);
+    }
+
+    public String getBalanceSheetHistory(StatementVariant variant, int limit) {
         List<BalanceSheetDto> stmts = balanceSheets.get(variant);
         if (stmts == null || stmts.isEmpty()) {
             return "[]";
         }
         return "[" + stmts.stream()
+                .limit(limit)
                 .map(dto -> namespaceJsonMetrics(dto.statementData(), variant))
                 .collect(Collectors.joining(",")) + "]";
     }
 
-    public String getCashFlowHistory(StatementVariant variant) {
+    public String getCashFlowHistory(StatementVariant variant, int limit) {
         List<CashFlowStatementDto> stmts = cashFlowStatements.get(variant);
         if (stmts == null || stmts.isEmpty())
             return "[]";
         return "[" + stmts.stream()
+                .limit(limit)
                 .map(dto -> namespaceJsonMetrics(dto.statementData(), variant))
                 .collect(Collectors.joining(",")) + "]";
     }
 
     public String getCompanyFinancialRatios(StatementVariant variant) {
+        return getCompanyFinancialRatios(variant, Integer.MAX_VALUE);
+    }
+
+    public String getCompanyFinancialRatios(StatementVariant variant, int limit) {
         List<CompanyFinancialRatiosDto> dtos = companyFinancialRatios.get(variant);
         if (dtos == null || dtos.isEmpty()) {
             return "[]";
         }
         List<CompanyFinancialRatiosSlim> slimDtos = dtos.stream()
+                .limit(limit)
                 .map(CompanyFinancialRatiosSlim::from)
                 .collect(Collectors.toList());
         return JsonUtils.toJson(objectMapper, slimDtos, "[]");
