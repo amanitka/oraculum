@@ -58,6 +58,16 @@ public class RefreshScheduler {
         }
     }
 
+    @Scheduled(cron = "${oraculum.data.insider-transactions.cron}")
+    public void refreshInsiderTransactions() {
+        log.info("Starting scheduled insider transactions refresh...");
+        try {
+            refreshService.refreshInsiderTransactions();
+        } catch (Exception e) {
+            log.error("Scheduled insider transactions refresh failed", e);
+        }
+    }
+
     @Scheduled(cron = "${oraculum.data.news.cron}")
     public void refreshNews() {
         log.info("Starting scheduled news & sentiment refresh...");

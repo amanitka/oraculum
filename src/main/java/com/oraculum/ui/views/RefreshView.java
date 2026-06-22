@@ -98,6 +98,10 @@ public class RefreshView extends VerticalLayout {
                 "Refreshes recent news articles and sentiment data.",
                 harvesterBatchApi::refreshNews));
 
+        grid.add(createTile("Insider Transactions",
+                "Refreshes daily insider trading transactions from OpenInsider.",
+                harvesterBatchApi::refreshInsiderTransactions));
+
         grid.add(createTile("Materialized Views",
                 "Rebuilds all materialized views and refreshes screener cache. Runs asynchronously.",
                 () -> eventPublisher.publishEvent(new RefreshMaterializedViewsEvent())));

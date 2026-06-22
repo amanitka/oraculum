@@ -3,6 +3,7 @@ package com.oraculum.company.api;
 import com.oraculum.company.api.dto.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -33,6 +34,8 @@ public interface CompanyApi {
     List<SharePriceDto> getSharePricesByCompanyId(int companyId, LocalDate after);
 
     Optional<LocalDate> getSharePricesLastTradeDate();
+
+    Optional<LocalDateTime> getInsiderTransactionsLastFilingDate();
 
     List<SharePriceSignalDto> getDailySharePriceSignalsByCompanyId(int companyId, LocalDate after);
 

@@ -12,6 +12,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -82,6 +83,17 @@ public class RequestService implements HarvesterBatchApi {
                 publishRequest(new FetchCashFlowStatementRequest(market, variant.getValue(), templates));
             }
         }
+    }
+
+    @Override
+    public void refreshInsiderTransactions() {
+        log.info("Requesting insider transactions refresh");
+        LocalDateTime maxDate = companyApi.getInsiderTransactionsLastFilingDate().orElse(null);
+        String maxDateStr = maxDate != null ? maxDate.toString() : null;
+        
+        publishRequest(FetchInsiderTransactionsRequest.builder()
+                .maxFilingDate(maxDateStr)
+                .build());
     }
 
     @Override

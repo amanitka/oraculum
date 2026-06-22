@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Comparator;
@@ -38,6 +39,8 @@ public class CompanyServiceImpl implements CompanyService {
     private final SharePriceRepository sharePriceRepository;
     private final SharePriceSignalRepository sharePriceSignalRepository;
     private final CompanyFinancialRatiosRepository companyFinancialRatiosRepository;
+    private final IndustryFinancialRatiosRepository industryFinancialRatiosRepository;
+    private final InsiderTransactionTickerRepository insiderTransactionTickerRepository;
     private final ScreenerMasterRepository screenerMasterRepository;
     private final ScreenerNewsSentimentRepository screenerNewsSentimentRepository;
     private final ScreenerUndervaluedRepository screenerUndervaluedRepository;
@@ -45,7 +48,6 @@ public class CompanyServiceImpl implements CompanyService {
     private final ScreenerGrahamDeepValueRepository screenerGrahamDeepValueRepository;
     private final ScreenerFinancialTrendRepository ScreenerFinancialTrendRepository;
     private final TickerNewsSentimentRepository tickerNewsSentimentRepository;
-    private final IndustryFinancialRatiosRepository industryFinancialRatiosRepository;
     private final NewsArticleMapper newsArticleMapper;
 
     @Override
@@ -131,6 +133,11 @@ public class CompanyServiceImpl implements CompanyService {
     @Override
     public Optional<LocalDate> getSharePricesLastTradeDate() {
         return sharePriceRepository.findMaxTradeDate();
+    }
+
+    @Override
+    public Optional<LocalDateTime> getInsiderTransactionsLastFilingDate() {
+        return insiderTransactionTickerRepository.findMaxFilingDate();
     }
 
     @Override

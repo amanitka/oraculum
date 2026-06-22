@@ -9,12 +9,16 @@ public record OraculumProperties(Data data,
                                  Harvester harvester) {
 
     public record Data(SharePrice sharePrice,
-                       News news) {
+                       News news,
+                       InsiderTransactions insiderTransactions) {
 
         public record SharePrice(int incrementalWindowDays) {
         }
 
         public record News(int incrementalWindowHours) {
+        }
+
+        public record InsiderTransactions(String cron) {
         }
     }
 
