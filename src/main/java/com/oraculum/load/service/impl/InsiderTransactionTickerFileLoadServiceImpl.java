@@ -5,7 +5,7 @@ import com.oraculum.load.service.ParquetFileLoadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-@Component("insider_transaction_ticker")
+@Component("insider_transaction")
 @RequiredArgsConstructor
 public class InsiderTransactionTickerFileLoadServiceImpl implements ParquetFileLoadService {
 
