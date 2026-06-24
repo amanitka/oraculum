@@ -88,6 +88,14 @@ public class CompanyFactSheetDataService {
         return companyApi.getNewsSentimentByTicker(company.ticker()).orElse(null);
     }
 
+    private InsiderTransactionSummaryDto getInsiderTransactionSummary(CompanyDto company) {
+        return companyApi.getInsiderTransactionSummaryByTicker(company.ticker()).orElse(null);
+    }
+
+    private List<InsiderTransactionTickerDto> getRecentInsiderTransactions(CompanyDto company, LocalDate after) {
+        return companyApi.getInsiderTransactionsByTicker(company.ticker(), after);
+    }
+
     public CompanyFactSheetData create(CompanyDto company) {
         LocalDate annualAfter = analystProperties.factSheet().getAnnualFactSheetHistoryDate();
         LocalDate quarterlyAfter = analystProperties.factSheet().getQuarterlyFactSheetHistoryDate();
@@ -106,6 +114,8 @@ public class CompanyFactSheetDataService {
                         analystProperties.sharePrice().getMonthlySharePriceHistoryDate()))
                 .recentNews(getNews(company, analystProperties.news().getNewsHistoryDate(), analystProperties.news().articleLimit()))
                 .newsSentimentAggregate(getNewsSentiment(company))
+                .insiderTransactionSummary(getInsiderTransactionSummary(company))
+                .recentInsiderTransactions(getRecentInsiderTransactions(company, analystProperties.insider().getTransactionHistoryDate()))
                 .build();
     }
 }

@@ -35,6 +35,8 @@ public class CompanyFactSheetData {
     private final List<SharePriceSignalDto> monthlySharePriceSignals;
     private final List<NewsTickerDto> recentNews;
     private final TickerNewsSentimentDto newsSentimentAggregate;
+    private final InsiderTransactionSummaryDto insiderTransactionSummary;
+    private final List<InsiderTransactionTickerDto> recentInsiderTransactions;
 
     public String getCompanyProfile() {
         return JsonUtils.toJson(objectMapper, company, "{}");
@@ -158,7 +160,18 @@ public class CompanyFactSheetData {
         List<IndustryFinancialRatiosDto> ttmRatios = industryFinancialRatios.get(variant);
         if (ttmRatios == null || ttmRatios.isEmpty()) return "[]";
         // Now there is only one row per variant representing the current cross-sectional median
-        return JsonUtils.toJson(objectMapper, ttmRatios, "[]");
+        return JsonUtils.toJson(objectMapper, industryFinancialRatios.get(variant), "[]");
+    }
+
+    public String getInsiderTransactionSummary() {
+        return JsonUtils.toJson(objectMapper, insiderTransactionSummary, "{}");
+    }
+
+    public String getRecentInsiderTransactions() {
+        if (recentInsiderTransactions == null || recentInsiderTransactions.isEmpty()) {
+            return "[]";
+        }
+        return JsonUtils.toJson(objectMapper, recentInsiderTransactions, "[]");
     }
 
     private String namespaceJsonMetrics(String jsonStr, StatementVariant variant) {

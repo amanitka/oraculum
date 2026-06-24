@@ -17,6 +17,7 @@ public enum AgentType {
     VALUATION("Valuation", true, 3, true, FinancialDataProfile.CURRENT_VALUATION),
     SHARE_PRICE("SharePrice", true, 4, false, FinancialDataProfile.MARKET_SIGNALS),
     EARNINGS_ESTIMATES("EarningsEstimates", true, 0, false, FinancialDataProfile.MARKET_SIGNALS),
+    INSIDER("Insider", true, 7, false, FinancialDataProfile.MARKET_SIGNALS),
     SYNTHESIZER("Synthesizer", false, -1, false, FinancialDataProfile.MARKET_SIGNALS);
 
     private final String agentName;

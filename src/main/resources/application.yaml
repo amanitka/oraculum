@@ -118,6 +118,8 @@ oraculum:
     critic:
       max-reruns: 1
       max-specialists-per-rerun: 3
+    insider:
+      transaction-history-limit: 180
 
   harvester:
     exchange-directory: ${ORACULUM_HARVESTER_EXCHANGE_DIRECTORY:/app/exchange}
