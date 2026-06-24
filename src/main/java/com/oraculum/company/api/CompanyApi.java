@@ -56,4 +56,10 @@ public interface CompanyApi {
     List<ScreenerDto> getGrahamDeepValueScreener();
 
     List<ScreenerDto> getFinancialTrendScreener();
+
+    List<ScreenerInsiderDto> getInsiderScreener();
+
+    Optional<InsiderTransactionSummaryDto> getInsiderTransactionSummaryByTicker(String ticker);
+
+    List<InsiderTransactionTickerDto> getInsiderTransactionsByTicker(String ticker, LocalDate after);
 }

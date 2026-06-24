@@ -13,6 +13,8 @@ DROP VIEW IF EXISTS v_share_price_signals CASCADE;
 DROP MATERIALIZED VIEW IF EXISTS mv_company_financial_ratios CASCADE;
 DROP VIEW IF EXISTS v_company_financial_ratios CASCADE;
 DROP VIEW IF EXISTS v_industry_financial_ratios CASCADE;
+DROP VIEW IF EXISTS v_screener_insider_activity CASCADE;
+DROP VIEW IF EXISTS v_insider_transaction_summary CASCADE;
 
 -- =================================================================
 -- VIEW: v_company_financial_ratios
@@ -668,3 +670,131 @@ FROM latest_ratios r
 JOIN t_company c ON c.id = r.company_id
 WHERE c.industry_name IS NOT NULL
 GROUP BY c.industry_name, r.variant;
+
+-- =================================================================
+-- VIEW: v_insider_transaction_summary
+-- Description: Aggregates insider transactions across 3M, 6M and 12M windows.
+--              Provides buy/sell volumes, C-Suite activity and Cluster Buy detection
+--              at each horizon, mirroring the multi-window approach of v_ticker_news_sentiment.
+-- =================================================================
+DO $$ BEGIN RAISE NOTICE 'Creating view: v_insider_transaction_summary'; END $$;
+CREATE VIEW v_insider_transaction_summary AS
+WITH base AS (
+    SELECT
+        ticker,
+        trade_type,
+        value,
+        title,
+        insider_name,
+        filing_date
+    FROM t_insider_transaction_ticker
+    WHERE filing_date >= NOW() - INTERVAL '1 year'
+),
+csuite_filter AS (
+    SELECT * FROM base
+    WHERE title ILIKE '%CEO%' OR title ILIKE '%CFO%' OR title ILIKE '%COO%' OR title ILIKE '%President%'
+),
+aggregates AS (
+    SELECT
+        ticker,
+
+        -- 3 Month window
+        SUM(CASE WHEN trade_type LIKE 'P - Purchase%' AND filing_date >= NOW() - INTERVAL '3 months' THEN value ELSE 0 END) AS buys_value_3m,
+        SUM(CASE WHEN trade_type LIKE 'S - Sale%'     AND filing_date >= NOW() - INTERVAL '3 months' THEN value ELSE 0 END) AS sells_value_3m,
+
+        -- 6 Month window
+        SUM(CASE WHEN trade_type LIKE 'P - Purchase%' AND filing_date >= NOW() - INTERVAL '6 months' THEN value ELSE 0 END) AS buys_value_6m,
+        SUM(CASE WHEN trade_type LIKE 'S - Sale%'     AND filing_date >= NOW() - INTERVAL '6 months' THEN value ELSE 0 END) AS sells_value_6m,
+
+        -- 12 Month window (LTM)
+        SUM(CASE WHEN trade_type LIKE 'P - Purchase%' THEN value ELSE 0 END) AS buys_value_12m,
+        SUM(CASE WHEN trade_type LIKE 'S - Sale%'     THEN value ELSE 0 END) AS sells_value_12m
+    FROM base
+    GROUP BY ticker
+),
+csuite_aggregates AS (
+    SELECT
+        ticker,
+
+        -- 3 Month C-Suite
+        COUNT(CASE WHEN trade_type LIKE 'P - Purchase%' AND filing_date >= NOW() - INTERVAL '3 months' THEN 1 END) AS csuite_buys_count_3m,
+        SUM(CASE WHEN trade_type LIKE 'P - Purchase%' AND filing_date >= NOW() - INTERVAL '3 months' THEN value ELSE 0 END) AS csuite_buys_value_3m,
+
+        -- 6 Month C-Suite
+        COUNT(CASE WHEN trade_type LIKE 'P - Purchase%' AND filing_date >= NOW() - INTERVAL '6 months' THEN 1 END) AS csuite_buys_count_6m,
+        SUM(CASE WHEN trade_type LIKE 'P - Purchase%' AND filing_date >= NOW() - INTERVAL '6 months' THEN value ELSE 0 END) AS csuite_buys_value_6m,
+
+        -- 12 Month C-Suite
+        COUNT(CASE WHEN trade_type LIKE 'P - Purchase%' THEN 1 END) AS csuite_buys_count_12m,
+        SUM(CASE WHEN trade_type LIKE 'P - Purchase%' THEN value ELSE 0 END)  AS csuite_buys_value_12m
+    FROM csuite_filter
+    GROUP BY ticker
+),
+cluster_buys_monthly AS (
+    SELECT ticker, DATE_TRUNC('month', filing_date) AS m, COUNT(DISTINCT insider_name) AS distinct_buyers
+    FROM base
+    WHERE trade_type LIKE 'P - Purchase%'
+    GROUP BY ticker, DATE_TRUNC('month', filing_date)
+),
+cluster_buys AS (
+    SELECT DISTINCT ticker FROM cluster_buys_monthly WHERE distinct_buyers >= 3
+)
+SELECT
+    a.ticker,
+
+    -- 3 Month
+    COALESCE(a.buys_value_3m, 0)            AS buys_value_3m,
+    COALESCE(a.sells_value_3m, 0)           AS sells_value_3m,
+    COALESCE(cs.csuite_buys_count_3m, 0)    AS csuite_buys_count_3m,
+    COALESCE(cs.csuite_buys_value_3m, 0)    AS csuite_buys_value_3m,
+
+    -- 6 Month
+    COALESCE(a.buys_value_6m, 0)            AS buys_value_6m,
+    COALESCE(a.sells_value_6m, 0)           AS sells_value_6m,
+    COALESCE(cs.csuite_buys_count_6m, 0)    AS csuite_buys_count_6m,
+    COALESCE(cs.csuite_buys_value_6m, 0)    AS csuite_buys_value_6m,
+
+    -- 12 Month (LTM)
+    COALESCE(a.buys_value_12m, 0)           AS buys_value_12m,
+    COALESCE(a.sells_value_12m, 0)          AS sells_value_12m,
+    COALESCE(cs.csuite_buys_count_12m, 0)   AS csuite_buys_count_12m,
+    COALESCE(cs.csuite_buys_value_12m, 0)   AS csuite_buys_value_12m,
+
+    -- Cluster Buy flag (any month within LTM with 3+ distinct insider buyers)
+    CASE WHEN cb.ticker IS NOT NULL THEN true ELSE false END AS has_cluster_buy
+FROM aggregates a
+LEFT JOIN csuite_aggregates cs ON a.ticker = cs.ticker
+LEFT JOIN cluster_buys cb      ON a.ticker = cb.ticker;
+
+-- =================================================================
+-- VIEW: v_screener_insider_activity
+-- Description: Screener combining share price signals (mv_share_price_signals_recent),
+--              news sentiment (v_ticker_news_sentiment) and insider activity
+--              (v_insider_transaction_summary). Enables finding companies where
+--              management is actively buying while news sentiment is negative.
+-- =================================================================
+DO $$ BEGIN RAISE NOTICE 'Creating view: v_screener_insider_activity'; END $$;
+CREATE VIEW v_screener_insider_activity AS
+SELECT
+    s.*,
+    n.news_sentiment_30d       AS news_sentiment_score,
+    n.news_sentiment_label_30d AS news_sentiment_label,
+    n.news_count_30d,
+    its.buys_value_3m,
+    its.sells_value_3m,
+    its.csuite_buys_count_3m,
+    its.csuite_buys_value_3m,
+    its.buys_value_6m,
+    its.sells_value_6m,
+    its.csuite_buys_count_6m,
+    its.csuite_buys_value_6m,
+    its.buys_value_12m,
+    its.sells_value_12m,
+    its.csuite_buys_count_12m,
+    its.csuite_buys_value_12m,
+    its.has_cluster_buy
+FROM mv_share_price_signals_recent s
+LEFT JOIN v_ticker_news_sentiment       n   ON n.ticker   = s.ticker
+LEFT JOIN v_insider_transaction_summary its ON its.ticker = s.ticker
+WHERE s.trade_date = (SELECT MAX(trade_date) FROM mv_share_price_signals_recent WHERE company_id = s.company_id)
+  AND s.market_capitalization IS NOT NULL;

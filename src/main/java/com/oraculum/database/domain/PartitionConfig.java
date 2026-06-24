@@ -6,10 +6,10 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum PartitionConfig {
-    SHARE_PRICE("t_share_price", PartitionType.MONTHLY, 3, 36),
+    SHARE_PRICE("t_share_price", PartitionType.MONTHLY, 3, 120),
     NEWS("t_news", PartitionType.YEARLY, 24, 60),
     NEWS_TICKER("t_news_ticker", PartitionType.YEARLY, 24, 60),
-    INSIDER_TRANSACTION_TICKER("t_insider_transaction_ticker", PartitionType.YEARLY, 24, 36),
+    INSIDER_TRANSACTION_TICKER("t_insider_transaction_ticker", PartitionType.YEARLY, 24, 60),
     LLM_EXECUTION_LOG("t_llm_execution_log", PartitionType.MONTHLY, 12, 12);
 
     private final String tableName;

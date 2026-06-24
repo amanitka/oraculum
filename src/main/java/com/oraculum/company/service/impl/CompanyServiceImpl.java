@@ -47,6 +47,8 @@ public class CompanyServiceImpl implements CompanyService {
     private final ScreenerQualityCompoundersRepository screenerQualityCompoundersRepository;
     private final ScreenerGrahamDeepValueRepository screenerGrahamDeepValueRepository;
     private final ScreenerFinancialTrendRepository ScreenerFinancialTrendRepository;
+    private final ScreenerInsiderRepository screenerInsiderRepository;
+    private final InsiderTransactionSummaryRepository insiderTransactionSummaryRepository;
     private final TickerNewsSentimentRepository tickerNewsSentimentRepository;
     private final NewsArticleMapper newsArticleMapper;
 
@@ -226,6 +228,26 @@ public class CompanyServiceImpl implements CompanyService {
                 .stream()
                 .map(ScreenerDto::fromEntity)
                 .sorted(Comparator.comparing(ScreenerDto::financialTrendScore, Comparator.nullsLast(Comparator.reverseOrder())))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ScreenerInsiderDto> getInsiderScreener() {
+        return screenerInsiderRepository.findAll().stream()
+                .map(ScreenerInsiderDto::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public Optional<InsiderTransactionSummaryDto> getInsiderTransactionSummaryByTicker(String ticker) {
+        return insiderTransactionSummaryRepository.findById(ticker)
+                .map(InsiderTransactionSummaryDto::fromEntity);
+    }
+
+    @Override
+    public List<InsiderTransactionTickerDto> getInsiderTransactionsByTicker(String ticker, LocalDate after) {
+        return insiderTransactionTickerRepository.findByTickerAndTradeDateAfterOrderByFilingDateDesc(ticker, after).stream()
+                .map(InsiderTransactionTickerDto::fromEntity)
                 .collect(Collectors.toList());
     }
 
