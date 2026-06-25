@@ -10,14 +10,14 @@ import java.util.Set;
 @RequiredArgsConstructor
 public enum AgentType {
     FUNDAMENTALS("Fundamentals", true, 1, true, FinancialDataProfile.HISTORICAL_OPERATING),
-    NEWS("News", true, 5, false, FinancialDataProfile.MARKET_SIGNALS),
-    RISK("Risk", true, 6, true, FinancialDataProfile.BALANCE_SHEET_RISK),
-    CRITIC("Critic", false, -1, false, FinancialDataProfile.MARKET_SIGNALS),
     CASH_FLOW("CashFlow", true, 2, true, FinancialDataProfile.CASH_GENERATION),
     VALUATION("Valuation", true, 3, true, FinancialDataProfile.CURRENT_VALUATION),
     SHARE_PRICE("SharePrice", true, 4, false, FinancialDataProfile.MARKET_SIGNALS),
-    EARNINGS_ESTIMATES("EarningsEstimates", true, 0, false, FinancialDataProfile.MARKET_SIGNALS),
-    INSIDER_TRANSACTION("InsiderTransaction", true, 7, false, FinancialDataProfile.MARKET_SIGNALS),
+    RISK("Risk", true, 5, true, FinancialDataProfile.BALANCE_SHEET_RISK),
+    NEWS("News", true, 6, false, FinancialDataProfile.MARKET_SIGNALS),
+    INSIDER_TRANSACTION("InsiderTransaction", true, 0, false, FinancialDataProfile.MARKET_SIGNALS),
+    EARNINGS_ESTIMATES("EarningsEstimates", true, 8, false, FinancialDataProfile.MARKET_SIGNALS),
+    CRITIC("Critic", false, -1, false, FinancialDataProfile.MARKET_SIGNALS),
     SYNTHESIZER("Synthesizer", false, -1, false, FinancialDataProfile.MARKET_SIGNALS);
 
     private final String agentName;

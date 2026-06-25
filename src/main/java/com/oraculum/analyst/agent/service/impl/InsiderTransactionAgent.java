@@ -40,14 +40,12 @@ public class InsiderTransactionAgent implements Agent<InsiderTransactionAgentOut
     }
 
     private String getPrompt(AgentContext ctx, String recentTransactions) {
-        String systemPrompt = promptRegistry.getPrompt(PromptType.INSIDER_TRANSACTION)
+        return promptRegistry.getPrompt(PromptType.INSIDER_TRANSACTION)
                 .replace("{{ analysis_focus }}", ctx.analysisFocus())
                 .replace("{{ insider_summary }}", ctx.factSheetData().getInsiderTransactionSummary())
                 .replace("{{ recent_transactions }}", recentTransactions)
                 .replace("{{ ticker }}", ctx.ticker())
                 .replace("{{ analysis_date }}", ctx.analysisDate().toString());
-
-        return appendCriticFeedbackIfPresent(systemPrompt, ctx);
     }
 
     @Override
@@ -59,10 +57,11 @@ public class InsiderTransactionAgent implements Agent<InsiderTransactionAgentOut
             return getDefaultOutput();
         }
 
+        String prompt = getPrompt(ctx, recentTransactions);
         LlmResponse<InsiderTransactionAgentOutput> response = llmRouterApi.executeCall(
                 LlmCallRequest.of(
                         LlmTierType.STANDARD,
-                        getPrompt(ctx, recentTransactions),
+                        prompt,
                         InsiderTransactionAgentOutput.class,
                         ctx.correlationId(),
                         CorrelationType.COMPANY_ANALYSIS,

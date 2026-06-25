@@ -29,7 +29,7 @@ Your task is to:
 7. **Set Consistency Flag**: If `contradictions_found` is empty, set `is_consistent` to `true`. Otherwise, set it to
    `false`.
 8. **Recommend Reruns (Strictly Limited)**: If you find genuine, significant analytical errors (e.g., one agent hallucinated a completely wrong number that materially changes the investment thesis, or ignored its timeframe), you may recommend a rerun for the offending `specialist`. 
-   - **CRITICAL**: Do NOT recommend reruns for the `NEWS` or `SHARE_PRICE` agents. These agents merely summarize external market realities and sentiment. If the news reports "strong revenue" but the fundamental data shows a decline, that is a market disconnect, not an agent error. The News agent cannot "correct" what the media reported. Only fundamental and risk specialists should be rerun for factual errors.
+   - **CRITICAL**: Do NOT recommend reruns for the `NEWS`, `SHARE_PRICE`, or `INSIDER_TRANSACTION` agents. These agents merely summarize external market realities and sentiment. If the news reports "strong revenue" but the fundamental data shows a decline, that is a market disconnect, not an agent error. The News agent cannot "correct" what the media reported. Only fundamental and risk specialists should be rerun for factual errors.
    - Do NOT recommend a rerun for minor differences (e.g. 5.1% vs 5.2% margins, or rounding errors).
    - Do NOT recommend a rerun for differences in subjective interpretation.
    - You must assign a severity (1 = most severe, 5 = least severe) and provide a concise, direct `instruction` on what the specialist needs to fix.
