@@ -75,7 +75,7 @@ class SynthesizerAgentTest {
         SynthesizerAgentOutput outputData = mock(SynthesizerAgentOutput.class);
         LlmResponse<SynthesizerAgentOutput> llmResponse = new LlmResponse<>(outputData, new LlmMetrics(null, null, 100, 50, 150, 100L));
 
-        when(llmRouterApi.executeCall(any(LlmCallRequest.class))).thenReturn((LlmResponse) llmResponse);
+        when(llmRouterApi.executeCall(any(LlmCallRequest.class))).thenReturn(llmResponse);
 
         AgentOutput<SynthesizerAgentOutput> result = agent.run(context);
 
