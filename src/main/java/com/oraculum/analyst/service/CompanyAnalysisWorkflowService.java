@@ -9,7 +9,7 @@ import com.oraculum.analyst.api.event.CompanyAnalysisProgressEvent;
 import com.oraculum.analyst.config.AnalystProperties;
 import com.oraculum.analyst.dto.CompanyAnalysisResult;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
-import com.oraculum.company.api.CompanyApi;
+import com.oraculum.company.api.CompanyMetadataApi;
 import com.oraculum.company.api.dto.CompanyDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CompanyAnalysisWorkflowService {
 
-    private final CompanyApi companyApi;
+    private final CompanyMetadataApi companyMetadataApi;
     private final AnalystProperties analystProperties;
     private final CompanyFactSheetDataService companyFactSheetDataService;
     private final Map<AgentType, Agent<?>> agents;
@@ -57,7 +57,7 @@ public class CompanyAnalysisWorkflowService {
     }
 
     private AgentContext initializeContext(CompanyAnalysisRequestEvent request) {
-        CompanyDto company = companyApi.getCompanyById(request.companyId());
+        CompanyDto company = companyMetadataApi.getCompanyById(request.companyId());
         if (company == null) {
             throw new IllegalArgumentException("Company not found for ticker: " + request.ticker());
         }

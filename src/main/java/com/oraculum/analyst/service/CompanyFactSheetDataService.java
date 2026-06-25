@@ -2,7 +2,10 @@ package com.oraculum.analyst.service;
 
 import com.oraculum.analyst.config.AnalystProperties;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
-import com.oraculum.company.api.CompanyApi;
+import com.oraculum.company.api.CompanyFinancialDataApi;
+import com.oraculum.company.api.CompanyInsiderTransactionApi;
+import com.oraculum.company.api.CompanyNewsApi;
+import com.oraculum.company.api.CompanySharePriceApi;
 import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.dto.*;
 import lombok.RequiredArgsConstructor;
@@ -19,19 +22,22 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CompanyFactSheetDataService {
 
-    private final CompanyApi companyApi;
+    private final CompanyFinancialDataApi companyFinancialDataApi;
+    private final CompanySharePriceApi companySharePriceApi;
+    private final CompanyNewsApi companyNewsApi;
+    private final CompanyInsiderTransactionApi companyInsiderTransactionApi;
     private final ObjectMapper objectMapper;
     private final AnalystProperties analystProperties;
 
     private Map<StatementVariant, List<IncomeStatementDto>> getIncomeStatements(CompanyDto company, LocalDate annualAfter, LocalDate quarterlyAfter) {
-        return companyApi.getIncomeStatementsByCompanyId(company.id(), annualAfter)
+        return companyFinancialDataApi.getIncomeStatementsByCompanyId(company.id(), annualAfter)
                 .stream()
                 .filter(dto -> dto.variant() == StatementVariant.ANNUAL || !dto.reportDate().isBefore(quarterlyAfter))
                 .collect(Collectors.groupingBy(IncomeStatementDto::variant));
     }
 
     private Map<StatementVariant, List<BalanceSheetDto>> getBalanceSheets(CompanyDto company, LocalDate annualAfter, LocalDate quarterlyAfter) {
-        return companyApi.getBalanceSheetsByCompanyId(company.id(), annualAfter)
+        return companyFinancialDataApi.getBalanceSheetsByCompanyId(company.id(), annualAfter)
                 .stream()
                 .filter(dto -> dto.variant() == StatementVariant.ANNUAL || !dto.reportDate().isBefore(quarterlyAfter))
                 .collect(Collectors.groupingBy(BalanceSheetDto::variant));
@@ -39,7 +45,7 @@ public class CompanyFactSheetDataService {
 
     private Map<StatementVariant, List<CashFlowStatementDto>> getCashFlowStatements(CompanyDto company,
                                                                                     LocalDate annualAfter, LocalDate quarterlyAfter) {
-        return companyApi.getCashFlowStatementsByCompanyId(company.id(), annualAfter)
+        return companyFinancialDataApi.getCashFlowStatementsByCompanyId(company.id(), annualAfter)
                 .stream()
                 .filter(dto -> dto.variant() == StatementVariant.ANNUAL || !dto.reportDate().isBefore(quarterlyAfter))
                 .collect(Collectors.groupingBy(CashFlowStatementDto::variant));
@@ -47,33 +53,31 @@ public class CompanyFactSheetDataService {
 
     private Map<StatementVariant, List<CompanyFinancialRatiosDto>> getCompanyFinancialRatios(CompanyDto company,
                                                                                              LocalDate annualAfter, LocalDate quarterlyAfter) {
-        return companyApi.getCompanyFinancialRatiosByCompanyId(company.id(), annualAfter)
+        return companyFinancialDataApi.getCompanyFinancialRatiosByCompanyId(company.id(), annualAfter)
                 .stream()
                 .filter(dto -> dto.variant() == StatementVariant.ANNUAL || !dto.reportDate().isBefore(quarterlyAfter))
                 .collect(Collectors.groupingBy(CompanyFinancialRatiosDto::variant));
     }
 
-    private Map<StatementVariant, List<IndustryFinancialRatiosDto>> getIndustryFinancialRatios(CompanyDto company,
-                                                                                               LocalDate annualAfter, LocalDate quarterlyAfter) {
+    private Map<StatementVariant, List<IndustryFinancialRatiosDto>> getIndustryFinancialRatios(CompanyDto company) {
         if (company.industryName() == null || company.industryName().isBlank()) {
             return Map.of();
         }
-        return companyApi.getIndustryFinancialRatiosByIndustryName(company.industryName(), annualAfter)
+        return companyFinancialDataApi.getIndustryFinancialRatiosByIndustryName(company.industryName())
                 .stream()
-                // Assuming industry ratios lack report dates, we fetch all. Filtering might need to happen by year if needed, but grouping is fine.
                 .collect(Collectors.groupingBy(IndustryFinancialRatiosDto::variant));
     }
 
     private List<SharePriceSignalDto> getDailySharePriceSignals(CompanyDto company, LocalDate after) {
-        return companyApi.getDailySharePriceSignalsByCompanyId(company.id(), after);
+        return companySharePriceApi.getDailySharePriceSignalsByCompanyId(company.id(), after);
     }
 
     private List<SharePriceSignalDto> getMonthlySharePriceSignals(CompanyDto company, LocalDate after) {
-        return companyApi.getMonthlySharePriceSignalsByCompanyId(company.id(), after);
+        return companySharePriceApi.getMonthlySharePriceSignalsByCompanyId(company.id(), after);
     }
 
     private List<NewsTickerDto> getNews(CompanyDto company, LocalDate after, int limit) {
-        List<NewsTickerDto> news = companyApi.getNewsByTicker(company.ticker(), after);
+        List<NewsTickerDto> news = companyNewsApi.getNewsByTicker(company.ticker(), after);
         if (news == null || news.isEmpty()) return news;
 
         return news.stream()
@@ -85,15 +89,15 @@ public class CompanyFactSheetDataService {
     }
 
     private TickerNewsSentimentDto getNewsSentiment(CompanyDto company) {
-        return companyApi.getNewsSentimentByTicker(company.ticker()).orElse(null);
+        return companyNewsApi.getNewsSentimentByTicker(company.ticker()).orElse(null);
     }
 
     private InsiderTransactionSummaryDto getInsiderTransactionSummary(CompanyDto company) {
-        return companyApi.getInsiderTransactionSummaryByTicker(company.ticker()).orElse(null);
+        return companyInsiderTransactionApi.getInsiderTransactionSummaryByTicker(company.ticker()).orElse(null);
     }
 
     private List<InsiderTransactionTickerDto> getRecentInsiderTransactions(CompanyDto company, LocalDate after) {
-        return companyApi.getInsiderTransactionsByTicker(company.ticker(), after);
+        return companyInsiderTransactionApi.getInsiderTransactionsByTicker(company.ticker(), after);
     }
 
     public CompanyFactSheetData create(CompanyDto company) {
@@ -107,7 +111,7 @@ public class CompanyFactSheetDataService {
                 .balanceSheets(getBalanceSheets(company, annualAfter, quarterlyAfter))
                 .cashFlowStatements(getCashFlowStatements(company, annualAfter, quarterlyAfter))
                 .companyFinancialRatios(getCompanyFinancialRatios(company, annualAfter, quarterlyAfter))
-                .industryFinancialRatios(getIndustryFinancialRatios(company, annualAfter, quarterlyAfter))
+                .industryFinancialRatios(getIndustryFinancialRatios(company))
                 .dailySharePriceSignals(getDailySharePriceSignals(company,
                         analystProperties.sharePrice().getSharePriceHistoryDate()))
                 .monthlySharePriceSignals(getMonthlySharePriceSignals(company,

@@ -1,6 +1,6 @@
 package com.oraculum.load.listener;
 
-import com.oraculum.company.api.CompanyLoadApi;
+import com.oraculum.company.api.CompanyNewsApi;
 import com.oraculum.company.api.dto.NewsArticleDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,14 +14,14 @@ import java.util.List;
 @Slf4j
 public class NewsListener {
 
-    private final CompanyLoadApi companyLoadApi;
+    private final CompanyNewsApi companyNewsApi;
 
     @KafkaListener(topics = "${oraculum.kafka.topics.news}", groupId = "${oraculum.kafka.consumer-group}",
             containerFactory = "kafkaListenerContainerFactory")
     public void onNewsBatch(List<NewsArticleDto> articles) {
         try {
             log.info("Received news batch: {} articles", articles.size());
-            companyLoadApi.createOrUpdateNewsBatch(articles);
+            companyNewsApi.createOrUpdateNewsBatch(articles);
         } catch (Exception e) {
             log.error("Failed to process news batch, discarding message", e);
         }

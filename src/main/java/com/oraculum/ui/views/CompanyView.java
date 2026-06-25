@@ -1,6 +1,10 @@
 package com.oraculum.ui.views;
 
-import com.oraculum.company.api.CompanyApi;
+import com.oraculum.company.api.CompanyMetadataApi;
+import com.oraculum.company.api.CompanyFinancialDataApi;
+import com.oraculum.company.api.CompanySharePriceApi;
+import com.oraculum.company.api.CompanyNewsApi;
+import com.oraculum.company.api.CompanyInsiderTransactionApi;
 import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.ui.MainLayout;
 import com.oraculum.ui.components.CompanyOverviewComponent;
@@ -21,13 +25,26 @@ import tools.jackson.databind.ObjectMapper;
 @PageTitle("Company Details")
 public class CompanyView extends VerticalLayout {
 
-    private final CompanyApi companyApi;
+    private final CompanyMetadataApi companyMetadataApi;
+    private final CompanyFinancialDataApi companyFinancialDataApi;
+    private final CompanySharePriceApi companySharePriceApi;
+    private final CompanyNewsApi companyNewsApi;
+    private final CompanyInsiderTransactionApi companyInsiderTransactionApi;
     private final ObjectMapper objectMapper;
     private final Div contentArea;
     private ComboBox<CompanyDto> companyComboBox;
 
-    public CompanyView(CompanyApi companyApi, ObjectMapper objectMapper) {
-        this.companyApi = companyApi;
+    public CompanyView(CompanyMetadataApi companyMetadataApi,
+                       CompanyFinancialDataApi companyFinancialDataApi,
+                       CompanySharePriceApi companySharePriceApi,
+                       CompanyNewsApi companyNewsApi,
+                       CompanyInsiderTransactionApi companyInsiderTransactionApi,
+                       ObjectMapper objectMapper) {
+        this.companyMetadataApi = companyMetadataApi;
+        this.companyFinancialDataApi = companyFinancialDataApi;
+        this.companySharePriceApi = companySharePriceApi;
+        this.companyNewsApi = companyNewsApi;
+        this.companyInsiderTransactionApi = companyInsiderTransactionApi;
         this.objectMapper = objectMapper;
 
         setSizeFull();
@@ -63,7 +80,7 @@ public class CompanyView extends VerticalLayout {
         companyComboBox.setWidth("400px");
         companyComboBox.setClearButtonVisible(true);
 
-        companyComboBox.setItems(companyApi.getAllCompanies());
+        companyComboBox.setItems(companyMetadataApi.getAllCompanies());
         companyComboBox.setItemLabelGenerator(c -> String.format("%s - %s", c.ticker(), c.companyName()));
 
         companyComboBox.addValueChangeListener(_ -> loadCompanyData());
@@ -86,7 +103,7 @@ public class CompanyView extends VerticalLayout {
             return;
         }
 
-        CompanyOverviewComponent overview = new CompanyOverviewComponent(companyApi, selectedCompany, objectMapper);
+        CompanyOverviewComponent overview = new CompanyOverviewComponent(companyFinancialDataApi, companySharePriceApi, companyNewsApi, companyInsiderTransactionApi, selectedCompany, objectMapper);
         contentArea.add(overview);
     }
 

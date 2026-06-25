@@ -1,8 +1,7 @@
 package com.oraculum.harvester.service;
 
 import com.oraculum.common.config.OraculumProperties;
-import com.oraculum.company.api.CompanyApi;
-import com.oraculum.company.api.CompanyLoadApi;
+import com.oraculum.company.api.CompanyNewsApi;
 import com.oraculum.company.api.dto.NewsArticleDto;
 import com.oraculum.harvester.domain.ProviderType;
 import com.oraculum.harvester.provider.AlphaVantageClient;
@@ -22,27 +21,24 @@ import java.util.List;
 public class NewsService {
 
     private final AlphaVantageClient alphaVantageClient;
-    private final CompanyLoadApi companyLoadApi;
-    private final CompanyApi companyApi;
+    private final CompanyNewsApi companyNewsApi;
     private final ApiUsageTrackerService apiUsageTrackerService;
     private final int newsIncrementalWindowHours;
     private final int dailyLimit;
 
     public NewsService(AlphaVantageClient alphaVantageClient,
-                       CompanyLoadApi companyLoadApi,
-                       CompanyApi companyApi,
+                       CompanyNewsApi companyNewsApi,
                        ApiUsageTrackerService apiUsageTrackerService,
                        OraculumProperties properties) {
         this.alphaVantageClient = alphaVantageClient;
-        this.companyLoadApi = companyLoadApi;
-        this.companyApi = companyApi;
+        this.companyNewsApi = companyNewsApi;
         this.apiUsageTrackerService = apiUsageTrackerService;
         this.newsIncrementalWindowHours = properties.data().news().incrementalWindowHours();
         this.dailyLimit = properties.harvester().alphaVantage().dailyLimit();
     }
 
     private String getNewsFromDateTime() {
-        OffsetDateTime lastNewsDateTime = companyApi.getNewsLastTimePublished().orElseGet(() -> OffsetDateTime.now().minusDays(1));
+        OffsetDateTime lastNewsDateTime = companyNewsApi.getNewsLastTimePublished().orElseGet(() -> OffsetDateTime.now().minusDays(1));
         return DateTimeUtil.toIsoCompactDateTime(lastNewsDateTime.minusHours(newsIncrementalWindowHours));
     }
 
@@ -50,7 +46,7 @@ public class NewsService {
         List<NewsArticleDto> enrichedArticles = response.feed().stream()
                 .map(article -> enrichArticle(article, response))
                 .toList();
-        companyLoadApi.createOrUpdateNewsBatch(enrichedArticles);
+        companyNewsApi.createOrUpdateNewsBatch(enrichedArticles);
         log.info("Successfully loaded {} news into database.", enrichedArticles.size());
     }
 

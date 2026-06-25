@@ -1,7 +1,12 @@
 package com.oraculum.ui.views;
 
 import com.oraculum.analyst.api.dto.CompanyAnalysisRequestEvent;
-import com.oraculum.company.api.CompanyApi;
+import com.oraculum.company.api.CompanyMetadataApi;
+import com.oraculum.company.api.CompanyFinancialDataApi;
+import com.oraculum.company.api.CompanySharePriceApi;
+import com.oraculum.company.api.CompanyNewsApi;
+import com.oraculum.company.api.CompanyInsiderTransactionApi;
+import com.oraculum.company.api.CompanyScreenerApi;
 import com.oraculum.company.api.domain.CompanySize;
 import com.oraculum.company.api.dto.*;
 import com.oraculum.ui.MainLayout;
@@ -39,13 +44,30 @@ import java.util.stream.Collectors;
 @PageTitle("Screener")
 public class ScreenerView extends VerticalLayout {
 
-    private final CompanyApi companyApi;
+    private final CompanyScreenerApi companyScreenerApi;
+    private final CompanyMetadataApi companyMetadataApi;
+    private final CompanyFinancialDataApi companyFinancialDataApi;
+    private final CompanySharePriceApi companySharePriceApi;
+    private final CompanyNewsApi companyNewsApi;
+    private final CompanyInsiderTransactionApi companyInsiderTransactionApi;
     private final AnalysisRequestService analysisRequestService;
     private final ObjectMapper objectMapper;
     private final VerticalLayout gridContainer;
 
-    public ScreenerView(CompanyApi companyApi, AnalysisRequestService analysisRequestService, ObjectMapper objectMapper) {
-        this.companyApi = companyApi;
+    public ScreenerView(CompanyScreenerApi companyScreenerApi,
+                        CompanyMetadataApi companyMetadataApi,
+                        CompanyFinancialDataApi companyFinancialDataApi,
+                        CompanySharePriceApi companySharePriceApi,
+                        CompanyNewsApi companyNewsApi,
+                        CompanyInsiderTransactionApi companyInsiderTransactionApi,
+                        AnalysisRequestService analysisRequestService,
+                        ObjectMapper objectMapper) {
+        this.companyScreenerApi = companyScreenerApi;
+        this.companyMetadataApi = companyMetadataApi;
+        this.companyFinancialDataApi = companyFinancialDataApi;
+        this.companySharePriceApi = companySharePriceApi;
+        this.companyNewsApi = companyNewsApi;
+        this.companyInsiderTransactionApi = companyInsiderTransactionApi;
         this.analysisRequestService = analysisRequestService;
         this.objectMapper = objectMapper;
         setPadding(true);
@@ -90,14 +112,14 @@ public class ScreenerView extends VerticalLayout {
         switch (tabLabel) {
             case "Master Ranks" -> {
                 Grid<ScreenerMasterDto> grid = createMasterGrid();
-                GridListDataView<ScreenerMasterDto> dataView = grid.setItems(companyApi.getMasterScreener());
+                GridListDataView<ScreenerMasterDto> dataView = grid.setItems(companyScreenerApi.getMasterScreener());
                 setupFilters(grid, dataView, ScreenerMasterDto.class);
                 runAnalysisBtn.addClickListener(_ -> triggerAnalysisMaster(grid.getSelectedItems(), grid));
                 gridContainer.add(toolbar, ViewHelper.wrapInCard(grid));
             }
             case "News Sentiment" -> {
                 Grid<ScreenerNewsSentimentDto> grid = createNewsSentimentGrid();
-                List<ScreenerNewsSentimentDto> data = companyApi.getNewsSentimentScreener().stream()
+                List<ScreenerNewsSentimentDto> data = companyScreenerApi.getNewsSentimentScreener().stream()
                         .filter(item -> item.newsCount30d() != null && item.newsCount30d() > 0)
                         .collect(Collectors.toList());
                 GridListDataView<ScreenerNewsSentimentDto> dataView = grid.setItems(data);
@@ -107,7 +129,7 @@ public class ScreenerView extends VerticalLayout {
             }
             case "Insider Activity" -> {
                 Grid<ScreenerInsiderDto> grid = createInsiderGrid();
-                GridListDataView<ScreenerInsiderDto> dataView = grid.setItems(companyApi.getInsiderScreener());
+                GridListDataView<ScreenerInsiderDto> dataView = grid.setItems(companyScreenerApi.getInsiderScreener());
                 setupFilters(grid, dataView, ScreenerInsiderDto.class);
                 runAnalysisBtn.addClickListener(_ -> triggerAnalysisInsider(grid.getSelectedItems(), grid));
                 gridContainer.add(toolbar, ViewHelper.wrapInCard(grid));
@@ -115,10 +137,10 @@ public class ScreenerView extends VerticalLayout {
             case null, default -> {
                 Grid<ScreenerDto> grid = createStandardGrid();
                 List<ScreenerDto> data = switch (tabLabel) {
-                    case "Quality Compounders" -> companyApi.getQualityCompoundersScreener();
-                    case "Undervalued" -> companyApi.getUndervaluedScreener();
-                    case "Graham Deep Value" -> companyApi.getGrahamDeepValueScreener();
-                    case "Trend Score 7+" -> companyApi.getFinancialTrendScreener();
+                    case "Quality Compounders" -> companyScreenerApi.getQualityCompoundersScreener();
+                    case "Undervalued" -> companyScreenerApi.getUndervaluedScreener();
+                    case "Graham Deep Value" -> companyScreenerApi.getGrahamDeepValueScreener();
+                    case "Trend Score 7+" -> companyScreenerApi.getFinancialTrendScreener();
                     case null -> null;
                     default -> List.of();
                 };
@@ -304,7 +326,7 @@ public class ScreenerView extends VerticalLayout {
             header.addClassNames(LumoUtility.Margin.Top.NONE, LumoUtility.Margin.Bottom.SMALL);
             layout.add(header);
 
-            List<NewsTickerDto> newsList = companyApi.getNewsByTicker(item.ticker(), LocalDate.now().minusDays(14));
+            List<NewsTickerDto> newsList = companyNewsApi.getNewsByTicker(item.ticker(), LocalDate.now().minusDays(14));
             if (newsList.isEmpty()) {
                 layout.add(new Paragraph("No individual news articles found in the last 14 days."));
             } else {
@@ -471,7 +493,7 @@ public class ScreenerView extends VerticalLayout {
     }
 
     private Button createCompanyDetailsButton(int companyId) {
-        return ViewHelper.createCompanyDetailsButton(companyApi, objectMapper, companyId, true);
+        return ViewHelper.createCompanyDetailsButton(companyMetadataApi, companyFinancialDataApi, companySharePriceApi, companyNewsApi, companyInsiderTransactionApi, objectMapper, companyId, true);
     }
 
     /**

@@ -1,7 +1,9 @@
 package com.oraculum.harvester.service;
 
 import com.oraculum.common.config.OraculumProperties;
-import com.oraculum.company.api.CompanyApi;
+import com.oraculum.company.api.CompanyMetadataApi;
+import com.oraculum.company.api.CompanyInsiderTransactionApi;
+import com.oraculum.company.api.CompanySharePriceApi;
 import com.oraculum.company.api.domain.StatementTemplate;
 import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.harvester.api.HarvesterBatchApi;
@@ -20,14 +22,23 @@ import java.util.stream.Stream;
 @Slf4j
 public class RequestService implements HarvesterBatchApi {
 
-    private final CompanyApi companyApi;
+    private final CompanyMetadataApi companyMetadataApi;
+    private final CompanyInsiderTransactionApi companyInsiderTransactionApi;
+    private final CompanySharePriceApi companySharePriceApi;
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final String harvesterRequestTopic;
     private final int sharePriceIncrementalWindowDays;
     private final NewsService newsService;
 
-    public RequestService(CompanyApi companyApi, KafkaTemplate<String, Object> kafkaTemplate, OraculumProperties properties, NewsService newsService) {
-        this.companyApi = companyApi;
+    public RequestService(CompanyMetadataApi companyMetadataApi,
+                          CompanyInsiderTransactionApi companyInsiderTransactionApi,
+                          CompanySharePriceApi companySharePriceApi,
+                          KafkaTemplate<String, Object> kafkaTemplate,
+                          OraculumProperties properties,
+                          NewsService newsService) {
+        this.companyMetadataApi = companyMetadataApi;
+        this.companyInsiderTransactionApi = companyInsiderTransactionApi;
+        this.companySharePriceApi = companySharePriceApi;
         this.kafkaTemplate = kafkaTemplate;
         this.harvesterRequestTopic = properties.kafka().topics().harvesterRequest();
         this.sharePriceIncrementalWindowDays = properties.data().sharePrice().incrementalWindowDays();
@@ -35,7 +46,7 @@ public class RequestService implements HarvesterBatchApi {
     }
 
     private List<String> getMarkets() {
-        return companyApi.getAllMarketIds();
+        return companyMetadataApi.getAllMarketIds();
     }
 
     private void publishRequest(HarvesterRequest request) {
@@ -85,10 +96,9 @@ public class RequestService implements HarvesterBatchApi {
         }
     }
 
-    @Override
     public void refreshInsiderTransactions() {
         log.info("Requesting insider transactions refresh");
-        LocalDateTime maxDate = companyApi.getInsiderTransactionsLastFilingDate().orElse(null);
+        LocalDateTime maxDate = companyInsiderTransactionApi.getInsiderTransactionsLastFilingDate().orElse(null);
         String maxDateStr = maxDate != null ? maxDate.toString() : null;
         
         publishRequest(FetchInsiderTransactionsRequest.builder()
@@ -96,11 +106,10 @@ public class RequestService implements HarvesterBatchApi {
                 .build());
     }
 
-    @Override
     public void refreshSharePrices(boolean incremental, LocalDate fromDate) {
         var fromTradeDate = fromDate;
         if (incremental && fromDate == null) {
-            fromTradeDate = companyApi.getSharePricesLastTradeDate()
+            fromTradeDate = companySharePriceApi.getSharePricesLastTradeDate()
                     .map(tradeDate -> tradeDate.minusDays(sharePriceIncrementalWindowDays))
                     .orElse(null);
         }

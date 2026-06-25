@@ -2,7 +2,10 @@ package com.oraculum.ui.components;
 
 import com.github.appreciated.apexcharts.ApexCharts;
 import com.github.appreciated.apexcharts.ApexChartsBuilder;
-import com.oraculum.company.api.CompanyApi;
+import com.oraculum.company.api.CompanyFinancialDataApi;
+import com.oraculum.company.api.CompanySharePriceApi;
+import com.oraculum.company.api.CompanyNewsApi;
+import com.oraculum.company.api.CompanyInsiderTransactionApi;
 import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.dto.*;
 import com.oraculum.ui.ViewHelper;
@@ -51,14 +54,24 @@ public class CompanyOverviewComponent extends VerticalLayout {
             </style>
             """;
 
-    private final CompanyApi companyApi;
+    private final CompanyFinancialDataApi companyFinancialDataApi;
+    private final CompanySharePriceApi companySharePriceApi;
+    private final CompanyNewsApi companyNewsApi;
+    private final CompanyInsiderTransactionApi companyInsiderTransactionApi;
     private final CompanyDto company;
     private final ObjectMapper objectMapper;
     private final Div chartPlaceholder;
     private ComboBox<String> timeframeComboBox;
 
-    public CompanyOverviewComponent(CompanyApi companyApi, CompanyDto company, ObjectMapper objectMapper) {
-        this.companyApi = companyApi;
+    public CompanyOverviewComponent(CompanyFinancialDataApi companyFinancialDataApi,
+                                    CompanySharePriceApi companySharePriceApi,
+                                    CompanyNewsApi companyNewsApi,
+                                    CompanyInsiderTransactionApi companyInsiderTransactionApi,
+                                    CompanyDto company, ObjectMapper objectMapper) {
+        this.companyFinancialDataApi = companyFinancialDataApi;
+        this.companySharePriceApi = companySharePriceApi;
+        this.companyNewsApi = companyNewsApi;
+        this.companyInsiderTransactionApi = companyInsiderTransactionApi;
         this.company = company;
         this.objectMapper = objectMapper;
 
@@ -153,22 +166,22 @@ public class CompanyOverviewComponent extends VerticalLayout {
 
     private Component createRatiosLayout() {
         // Fetch data
-        List<CompanyFinancialRatiosDto> data = companyApi.getCompanyFinancialRatiosByCompanyId(company.id(), LocalDate.now().minusYears(20));
+        List<CompanyFinancialRatiosDto> data = companyFinancialDataApi.getCompanyFinancialRatiosByCompanyId(company.id(), LocalDate.now().minusYears(20));
         return createVariantTabSheet(data, this::createRatiosGrid);
     }
 
     private Component createIncomeStatementLayout() {
-        List<IncomeStatementDto> data = companyApi.getIncomeStatementsByCompanyId(company.id(), LocalDate.now().minusYears(20));
+        List<IncomeStatementDto> data = companyFinancialDataApi.getIncomeStatementsByCompanyId(company.id(), LocalDate.now().minusYears(20));
         return createVariantTabSheet(data, this::createIncomeStatementGrid);
     }
 
     private Component createBalanceSheetLayout() {
-        List<BalanceSheetDto> data = companyApi.getBalanceSheetsByCompanyId(company.id(), LocalDate.now().minusYears(20));
+        List<BalanceSheetDto> data = companyFinancialDataApi.getBalanceSheetsByCompanyId(company.id(), LocalDate.now().minusYears(20));
         return createVariantTabSheet(data, this::createBalanceSheetGrid);
     }
 
     private Component createCashFlowLayout() {
-        List<CashFlowStatementDto> data = companyApi.getCashFlowStatementsByCompanyId(company.id(), LocalDate.now().minusYears(20));
+        List<CashFlowStatementDto> data = companyFinancialDataApi.getCashFlowStatementsByCompanyId(company.id(), LocalDate.now().minusYears(20));
         return createVariantTabSheet(data, this::createCashFlowGrid);
     }
 
@@ -177,7 +190,7 @@ public class CompanyOverviewComponent extends VerticalLayout {
         layout.setSizeFull();
         layout.setPadding(true);
 
-        List<NewsTickerDto> news = companyApi.getNewsByTicker(company.ticker(), LocalDate.now().minusDays(30));
+        List<NewsTickerDto> news = companyNewsApi.getNewsByTicker(company.ticker(), LocalDate.now().minusDays(30));
 
         Grid<NewsTickerDto> grid = new Grid<>(NewsTickerDto.class, false);
         grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
@@ -217,7 +230,7 @@ public class CompanyOverviewComponent extends VerticalLayout {
         layout.setSizeFull();
         layout.setPadding(true);
 
-        companyApi.getInsiderTransactionSummaryByTicker(company.ticker()).ifPresent(summary -> {
+        companyInsiderTransactionApi.getInsiderTransactionSummaryByTicker(company.ticker()).ifPresent(summary -> {
             HorizontalLayout summaryLayout = new HorizontalLayout();
             summaryLayout.setWidthFull();
             summaryLayout.setSpacing(true);
@@ -233,7 +246,7 @@ public class CompanyOverviewComponent extends VerticalLayout {
             layout.add(summaryLayout);
         });
 
-        List<InsiderTransactionTickerDto> transactions = companyApi.getInsiderTransactionsByTicker(company.ticker(), LocalDate.now().minusYears(10));
+        List<InsiderTransactionTickerDto> transactions = companyInsiderTransactionApi.getInsiderTransactionsByTicker(company.ticker(), LocalDate.now().minusYears(10));
 
         Grid<InsiderTransactionTickerDto> grid = new Grid<>(InsiderTransactionTickerDto.class, false);
         grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
@@ -435,7 +448,7 @@ public class CompanyOverviewComponent extends VerticalLayout {
             case null, default -> after.minusYears(100);
         };
 
-        List<SharePriceDto> sharePrices = companyApi.getSharePricesByCompanyId(company.id(), after);
+        List<SharePriceDto> sharePrices = companySharePriceApi.getSharePricesByCompanyId(company.id(), after);
 
         if (sharePrices.isEmpty()) {
             chartPlaceholder.removeAll();

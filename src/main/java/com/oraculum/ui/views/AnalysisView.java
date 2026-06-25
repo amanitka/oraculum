@@ -4,7 +4,11 @@ import com.oraculum.analyst.api.CompanyAnalysisApi;
 import com.oraculum.analyst.api.domain.AnalysisStatus;
 import com.oraculum.analyst.api.dto.CompanyAnalysisDto;
 import com.oraculum.analyst.api.dto.CompanyAnalysisRequestEvent;
-import com.oraculum.company.api.CompanyApi;
+import com.oraculum.company.api.CompanyMetadataApi;
+import com.oraculum.company.api.CompanyFinancialDataApi;
+import com.oraculum.company.api.CompanySharePriceApi;
+import com.oraculum.company.api.CompanyNewsApi;
+import com.oraculum.company.api.CompanyInsiderTransactionApi;
 import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.ui.MainLayout;
 import com.oraculum.ui.ViewHelper;
@@ -55,7 +59,11 @@ import java.util.UUID;
 @PageTitle("Analysis | Oraculum")
 public class AnalysisView extends VerticalLayout {
 
-    private final CompanyApi companyApi;
+    private final CompanyMetadataApi companyMetadataApi;
+    private final CompanyFinancialDataApi companyFinancialDataApi;
+    private final CompanySharePriceApi companySharePriceApi;
+    private final CompanyNewsApi companyNewsApi;
+    private final CompanyInsiderTransactionApi companyInsiderTransactionApi;
     private final CompanyAnalysisApi companyAnalysisApi;
     private final AnalysisRequestService analysisRequestService;
     private final ObjectMapper objectMapper;
@@ -67,8 +75,17 @@ public class AnalysisView extends VerticalLayout {
 
     // ── Trigger Toolbar ────────────────────────────────────────────────────
 
-    public AnalysisView(CompanyApi companyApi, CompanyAnalysisApi companyAnalysisApi, AnalysisRequestService analysisRequestService, ObjectMapper objectMapper, AnalysisProgressBroadcasterService broadcaster) {
-        this.companyApi = companyApi;
+    public AnalysisView(CompanyMetadataApi companyMetadataApi,
+                        CompanyFinancialDataApi companyFinancialDataApi,
+                        CompanySharePriceApi companySharePriceApi,
+                        CompanyNewsApi companyNewsApi,
+                        CompanyInsiderTransactionApi companyInsiderTransactionApi,
+                        CompanyAnalysisApi companyAnalysisApi, AnalysisRequestService analysisRequestService, ObjectMapper objectMapper, AnalysisProgressBroadcasterService broadcaster) {
+        this.companyMetadataApi = companyMetadataApi;
+        this.companyFinancialDataApi = companyFinancialDataApi;
+        this.companySharePriceApi = companySharePriceApi;
+        this.companyNewsApi = companyNewsApi;
+        this.companyInsiderTransactionApi = companyInsiderTransactionApi;
         this.companyAnalysisApi = companyAnalysisApi;
         this.analysisRequestService = analysisRequestService;
         this.objectMapper = objectMapper;
@@ -118,7 +135,7 @@ public class AnalysisView extends VerticalLayout {
         companyComboBox.setItemLabelGenerator(c -> String.format("%s - %s", c.ticker(), c.companyName()));
         companyComboBox.setWidth("400px");
         companyComboBox.setClearButtonVisible(true);
-        companyComboBox.setItems(companyApi.getAllCompanies());
+        companyComboBox.setItems(companyMetadataApi.getAllCompanies());
 
         analysisFocusInput = new TextArea("Custom Instructions / Focus");
         analysisFocusInput.setPlaceholder("Optional: e.g., Focus on AI revenue impact and margin trends...");
@@ -237,7 +254,7 @@ public class AnalysisView extends VerticalLayout {
             reportBtn.setTooltipText("View report");
             reportBtn.addClickListener(_ -> showAnalysisDetails(a));
 
-            Button companyBtn = ViewHelper.createCompanyDetailsButton(companyApi, objectMapper, a.getCompanyId(), false);
+            Button companyBtn = ViewHelper.createCompanyDetailsButton(companyMetadataApi, companyFinancialDataApi, companySharePriceApi, companyNewsApi, companyInsiderTransactionApi, objectMapper, a.getCompanyId(), false);
 
             HorizontalLayout actions = new HorizontalLayout(reportBtn, companyBtn);
             actions.setSpacing(true);

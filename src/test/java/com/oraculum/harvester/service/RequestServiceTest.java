@@ -1,12 +1,10 @@
 package com.oraculum.harvester.service;
 
 import com.oraculum.common.config.OraculumProperties;
-import com.oraculum.company.api.CompanyApi;
-import com.oraculum.harvester.api.dto.FetchCompanyRequest;
-import com.oraculum.harvester.api.dto.FetchMarketRequest;
-import com.oraculum.harvester.api.dto.FetchSharePricePriceRequest;
-import com.oraculum.harvester.api.dto.FetchInsiderTransactionsRequest;
-import com.oraculum.harvester.api.dto.HarvesterRequest;
+import com.oraculum.company.api.CompanyInsiderTransactionApi;
+import com.oraculum.company.api.CompanyMetadataApi;
+import com.oraculum.company.api.CompanySharePriceApi;
+import com.oraculum.harvester.api.dto.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,8 +28,6 @@ class RequestServiceTest {
 
     private final String TOPIC = "harvester-topic";
     @Mock
-    private CompanyApi companyApi;
-    @Mock
     private KafkaTemplate<String, Object> kafkaTemplate;
     @Mock(answer = org.mockito.Answers.RETURNS_DEEP_STUBS)
     private OraculumProperties properties;
@@ -39,6 +35,12 @@ class RequestServiceTest {
     private ArgumentCaptor<HarvesterRequest> requestCaptor;
     @Mock
     private NewsService newsService;
+    @Mock
+    private CompanyMetadataApi companyMetadataApi;
+    @Mock
+    private CompanySharePriceApi companySharePriceApi;
+    @Mock
+    private CompanyInsiderTransactionApi companyInsiderTransactionApi;
     private RequestService requestService;
 
     @BeforeEach
@@ -46,7 +48,7 @@ class RequestServiceTest {
         when(properties.kafka().topics().harvesterRequest()).thenReturn(TOPIC);
         when(properties.data().sharePrice().incrementalWindowDays()).thenReturn(5);
 
-        requestService = new RequestService(companyApi, kafkaTemplate, properties, newsService);
+        requestService = new RequestService(companyMetadataApi, companyInsiderTransactionApi, companySharePriceApi, kafkaTemplate, properties, newsService);
     }
 
     @Test
@@ -59,7 +61,7 @@ class RequestServiceTest {
 
     @Test
     void refreshCompany_publishesForEveryMarket() {
-        when(companyApi.getAllMarketIds()).thenReturn(List.of("US", "EU"));
+        when(companyMetadataApi.getAllMarketIds()).thenReturn(List.of("US", "EU"));
 
         requestService.refreshCompany();
 
@@ -74,9 +76,9 @@ class RequestServiceTest {
 
     @Test
     void refreshSharePrices_incremental_calculatesFromDateCorrectly() {
-        when(companyApi.getAllMarketIds()).thenReturn(List.of("US"));
+        when(companyMetadataApi.getAllMarketIds()).thenReturn(List.of("US"));
         LocalDate lastTradeDate = LocalDate.of(2023, 1, 10);
-        when(companyApi.getSharePricesLastTradeDate()).thenReturn(Optional.of(lastTradeDate));
+        when(companySharePriceApi.getSharePricesLastTradeDate()).thenReturn(Optional.of(lastTradeDate));
 
         // Incremental without explicit date
         requestService.refreshSharePrices(true, null);
@@ -92,23 +94,21 @@ class RequestServiceTest {
     @Test
     void refreshInsiderTransactions_publishesFetchInsiderTransactionsRequest_withMaxDate() {
         LocalDateTime maxDate = LocalDateTime.of(2023, 10, 15, 14, 30, 0);
-        when(companyApi.getInsiderTransactionsLastFilingDate()).thenReturn(Optional.of(maxDate));
+        when(companyInsiderTransactionApi.getInsiderTransactionsLastFilingDate()).thenReturn(Optional.of(maxDate));
 
         requestService.refreshInsiderTransactions();
 
         verify(kafkaTemplate).send(eq(TOPIC), anyString(), requestCaptor.capture());
         HarvesterRequest request = requestCaptor.getValue();
         assertThat(request).isInstanceOf(FetchInsiderTransactionsRequest.class);
-        
+
         FetchInsiderTransactionsRequest insiderRequest = (FetchInsiderTransactionsRequest) request;
         assertThat(insiderRequest.getRequestType()).isEqualTo("fetch_insider_transactions");
-        // Due to private field access, we could assert via json serialization or verify it correctly mapped 
-        // For simplicity, we just assert the type is correct since we know the builder was called.
     }
 
     @Test
     void refreshInsiderTransactions_publishesFetchInsiderTransactionsRequest_withNullMaxDate() {
-        when(companyApi.getInsiderTransactionsLastFilingDate()).thenReturn(Optional.empty());
+        when(companyInsiderTransactionApi.getInsiderTransactionsLastFilingDate()).thenReturn(Optional.empty());
 
         requestService.refreshInsiderTransactions();
 

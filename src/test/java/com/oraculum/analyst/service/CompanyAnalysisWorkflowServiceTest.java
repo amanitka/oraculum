@@ -12,7 +12,7 @@ import com.oraculum.analyst.api.event.CompanyAnalysisProgressEvent;
 import com.oraculum.analyst.config.AnalystProperties;
 import com.oraculum.analyst.dto.CompanyAnalysisResult;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
-import com.oraculum.company.api.CompanyApi;
+import com.oraculum.company.api.CompanyMetadataApi;
 import com.oraculum.company.api.dto.CompanyDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,7 +39,7 @@ import static org.mockito.Mockito.*;
 class CompanyAnalysisWorkflowServiceTest {
 
     @Mock
-    private CompanyApi companyApi;
+    private CompanyMetadataApi companyMetadataApi;
 
     @Mock
     private AnalystProperties analystProperties;
@@ -72,7 +72,7 @@ class CompanyAnalysisWorkflowServiceTest {
 
     @Test
     void run_withMissingCompany_failsFast() {
-        when(companyApi.getCompanyById(1)).thenReturn(null);
+        when(companyMetadataApi.getCompanyById(1)).thenReturn(null);
 
         CompanyAnalysisResult result = workflowService.run(request);
 
@@ -83,7 +83,7 @@ class CompanyAnalysisWorkflowServiceTest {
     @Test
     void run_successfulAnalysis_noReruns() {
         CompanyDto companyDto = mock(CompanyDto.class);
-        when(companyApi.getCompanyById(1)).thenReturn(companyDto);
+        when(companyMetadataApi.getCompanyById(1)).thenReturn(companyDto);
         when(companyFactSheetDataService.create(companyDto)).thenReturn(mock(CompanyFactSheetData.class));
         when(analystProperties.tokenBudget()).thenReturn(100000);
 

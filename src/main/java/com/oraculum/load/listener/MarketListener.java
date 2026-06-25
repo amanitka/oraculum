@@ -1,6 +1,6 @@
 package com.oraculum.load.listener;
 
-import com.oraculum.company.api.CompanyLoadApi;
+import com.oraculum.company.api.CompanyMetadataApi;
 import com.oraculum.company.api.dto.MarketDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,14 +12,14 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class MarketListener {
 
-    private final CompanyLoadApi companyLoadApi;
+    private final CompanyMetadataApi companyMetadataApi;
 
     @KafkaListener(topics = "${oraculum.kafka.topics.market}", groupId = "${oraculum.kafka.consumer-group}",
             containerFactory = "kafkaListenerContainerFactory")
     public void onMarket(MarketDto market) {
         try {
             log.debug("Received market: {}", market.marketId());
-            companyLoadApi.createOrUpdateMarket(market);
+            companyMetadataApi.createOrUpdateMarket(market);
         } catch (Exception e) {
             log.error("Failed to process market {}, discarding message", market.marketId(), e);
         }
