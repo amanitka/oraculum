@@ -27,7 +27,7 @@ Pay special attention to this thesis requested by the user, and determine if the
     * **Valuation & Momentum**: Combine insights from the Valuation and Share Price agents.
     * **Recent News & Sentiment**: Summarize the findings from the News agent, discussing how recent events support or
       contradict the financial data.
-    * **Management Sentiment & Insider Activity**: Summarize the findings from the Insider agent, highlighting C-Suite conviction and cluster buying patterns.
+    * **Management Sentiment & Insider Activity**: Summarize the findings from the Insider Transaction agent, highlighting C-Suite conviction and cluster buying patterns.
     * **Earnings Estimates & Analyst Consensus**: Summarize the forward-looking EPS and revenue estimates from the EarningsEstimates agent. If the data was unavailable (API quota exhausted), explicitly state so and note the analysis is based on historical data only.
     * **Risks & Critic's Reconciliation**: Summarize the Risk agent's findings AND explicitly address how any conflicts, contradictions, or red flags flagged by the Critic Agent are resolved.
 3. **Determine Verdict**: Produce a structured verdict including an `outlook`, `recommendation`, and a `conviction`

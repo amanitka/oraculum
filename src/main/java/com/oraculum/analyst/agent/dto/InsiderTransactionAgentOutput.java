@@ -6,7 +6,7 @@ import com.oraculum.analyst.api.domain.InsiderSentiment;
 
 import java.util.List;
 
-public record InsiderAgentOutput(
+public record InsiderTransactionAgentOutput(
         @JsonProperty("management_sentiment") InsiderSentiment managementSentiment,
         @JsonProperty("bullish_conviction") int bullishConviction,
         @JsonProperty("key_signals") List<String> keySignals,
