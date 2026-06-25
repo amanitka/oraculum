@@ -2,14 +2,14 @@ package com.oraculum.analyst.service;
 
 import com.oraculum.analyst.api.domain.AnalysisStatus;
 import com.oraculum.analyst.api.dto.CompanyAnalysisRequestEvent;
+import com.oraculum.analyst.api.event.CompanyAnalysisProgressEvent;
 import com.oraculum.analyst.domain.CompanyAnalysisEntity;
 import com.oraculum.analyst.dto.CompanyAnalysisResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
-import com.oraculum.ui.api.AnalysisProgressBroadcasterService;
 
 import java.time.LocalDate;
 
@@ -21,9 +21,8 @@ public class CompanyAnalysisOrchestrationService {
     private final CompanyAnalysisService companyAnalysisService;
     private final CompanyAnalysisWorkflowService workflow;
     private final ObjectMapper objectMapper;
-    private final AnalysisProgressBroadcasterService broadcaster;
+    private final ApplicationEventPublisher eventPublisher;
 
-    @Transactional
     public void executeAnalysis(CompanyAnalysisRequestEvent request) {
         log.info("Handling orchestrated company analysis request for {}", request.ticker());
         if (companyAnalysisService.isAnalysisCompleted(request.correlationId())) {
@@ -66,7 +65,7 @@ public class CompanyAnalysisOrchestrationService {
         entity.setStatus(AnalysisStatus.FAILED);
         entity.setError(error);
         companyAnalysisService.createOrUpdateAnalysis(entity);
-        broadcaster.broadcast(entity.getId(), null, true);
+        eventPublisher.publishEvent(new CompanyAnalysisProgressEvent(entity.getId(), null, true));
     }
 
     private void completeAnalysis(CompanyAnalysisEntity entity, CompanyAnalysisResult result) {
@@ -79,7 +78,7 @@ public class CompanyAnalysisOrchestrationService {
             entity.setAnalysisData(objectMapper.writeValueAsString(result.agentTrace()));
             entity.setError(result.error());
             companyAnalysisService.createOrUpdateAnalysis(entity);
-            broadcaster.broadcast(entity.getId(), null, true);
+            eventPublisher.publishEvent(new CompanyAnalysisProgressEvent(entity.getId(), null, true));
         } catch (Exception e) {
             log.error("Failed to serialize analysis trace for {}: {}", entity.getTicker(), e.getMessage());
             markAsFailed(entity, "Failed to serialize agent trace: " + e.getMessage());

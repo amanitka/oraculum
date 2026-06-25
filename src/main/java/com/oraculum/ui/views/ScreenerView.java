@@ -425,7 +425,12 @@ public class ScreenerView extends VerticalLayout {
                 .setHeader("C-Suite Buys LTM").setAutoWidth(true).setSortable(true)
                 .setComparator(Comparator.comparing(ScreenerInsiderDto::csuiteBuysValue12m, Comparator.nullsFirst(Double::compareTo)));
 
-        grid.addColumn(item -> item.hasClusterBuy() != null && item.hasClusterBuy() ? "Yes" : "No")
+        grid.addColumn(new ComponentRenderer<>(item -> {
+            boolean hasBuy = item.hasClusterBuy() != null && item.hasClusterBuy();
+            Span badge = new Span(hasBuy ? "Yes" : "No");
+            badge.getElement().getThemeList().addAll(List.of("badge", hasBuy ? "success" : "contrast"));
+            return badge;
+        }))
                 .setHeader("Cluster Buy").setAutoWidth(true).setSortable(true)
                 .setComparator(Comparator.comparing(item -> item.hasClusterBuy() != null && item.hasClusterBuy(), Boolean::compareTo));
 

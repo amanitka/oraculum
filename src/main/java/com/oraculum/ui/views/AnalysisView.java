@@ -495,9 +495,27 @@ public class AnalysisView extends VerticalLayout {
                 pre.getStyle().set("border-radius", "4px").set("font-family", "monospace");
                 layout.add(pre);
             } else {
-                Paragraph p = new Paragraph(value.asString());
-                p.addClassNames(LumoUtility.Margin.Top.NONE, LumoUtility.FontSize.SMALL, LumoUtility.TextColor.BODY);
-                layout.add(p);
+                String strValue = value.asString();
+                if (strValue.contains("\n") || strValue.contains("#") || strValue.contains("**")) {
+                    try {
+                        String htmlContent = HtmlRenderer.builder().build()
+                                .render(Parser.builder().build().parse(strValue));
+                        Div container = new Div();
+                        container.getStyle().set("line-height", "1.6").set("font-size", "0.9rem");
+                        container.add(new Html("<div><div class='rendered-markdown'>" + htmlContent + "</div></div>"));
+                        layout.add(container);
+                    } catch (Exception e) {
+                        Paragraph p = new Paragraph(strValue);
+                        p.getStyle().set("white-space", "pre-wrap");
+                        p.addClassNames(LumoUtility.Margin.Top.NONE, LumoUtility.FontSize.SMALL, LumoUtility.TextColor.BODY);
+                        layout.add(p);
+                    }
+                } else {
+                    Paragraph p = new Paragraph(strValue);
+                    p.getStyle().set("white-space", "pre-wrap");
+                    p.addClassNames(LumoUtility.Margin.Top.NONE, LumoUtility.FontSize.SMALL, LumoUtility.TextColor.BODY);
+                    layout.add(p);
+                }
             }
         }
 

@@ -97,6 +97,9 @@ public class CompanyOverviewComponent extends VerticalLayout {
         // 6. News Tab
         mainTabSheet.add("News", createNewsLayout());
 
+        // 7. Insider Tab
+        mainTabSheet.add("Insider", createInsiderLayout());
+
         add(mainTabSheet);
 
         // Load chart data
@@ -206,6 +209,66 @@ public class CompanyOverviewComponent extends VerticalLayout {
         grid.setDetailsVisibleOnClick(true);
 
         layout.add(grid);
+        return layout;
+    }
+
+    private Component createInsiderLayout() {
+        VerticalLayout layout = new VerticalLayout();
+        layout.setSizeFull();
+        layout.setPadding(true);
+
+        companyApi.getInsiderTransactionSummaryByTicker(company.ticker()).ifPresent(summary -> {
+            HorizontalLayout summaryLayout = new HorizontalLayout();
+            summaryLayout.setWidthFull();
+            summaryLayout.setSpacing(true);
+            summaryLayout.setAlignItems(FlexComponent.Alignment.CENTER);
+
+            Span clusterBuy = new Span("Cluster Buy: " + (Boolean.TRUE.equals(summary.hasClusterBuy()) ? "YES" : "NO"));
+            clusterBuy.getElement().getThemeList().addAll(List.of("badge", Boolean.TRUE.equals(summary.hasClusterBuy()) ? "success" : "contrast"));
+
+            Span buys3m = new Span(String.format("3M Buys: $%,.0f", summary.buysValue3m() != null ? summary.buysValue3m() : 0.0));
+            Span sells3m = new Span(String.format("3M Sells: $%,.0f", summary.sellsValue3m() != null ? summary.sellsValue3m() : 0.0));
+
+            summaryLayout.add(clusterBuy, buys3m, sells3m);
+            layout.add(summaryLayout);
+        });
+
+        List<InsiderTransactionTickerDto> transactions = companyApi.getInsiderTransactionsByTicker(company.ticker(), LocalDate.now().minusYears(10));
+
+        Grid<InsiderTransactionTickerDto> grid = new Grid<>(InsiderTransactionTickerDto.class, false);
+        grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
+
+        grid.addColumn(InsiderTransactionTickerDto::tradeDate).setHeader("Date").setAutoWidth(true).setSortable(true);
+        grid.addColumn(InsiderTransactionTickerDto::insiderName).setHeader("Insider Name").setAutoWidth(true).setSortable(true);
+        grid.addColumn(InsiderTransactionTickerDto::title).setHeader("Title").setAutoWidth(true).setSortable(true);
+
+        grid.addColumn(new ComponentRenderer<>(item -> {
+                    Span typeSpan = new Span(item.tradeType());
+                    String theme = item.tradeType() != null && item.tradeType().contains("Purchase") ? "success" : "error";
+                    typeSpan.getElement().getThemeList().addAll(List.of("badge", theme));
+                    return typeSpan;
+                })).setHeader("Type").setAutoWidth(true)
+                .setComparator(Comparator.comparing(InsiderTransactionTickerDto::tradeType, Comparator.nullsLast(Comparator.naturalOrder()))).setSortable(true);
+
+        grid.addColumn(item -> item.price() != null ? String.format(java.util.Locale.US, "$%.2f", item.price()) : "-").setHeader("Price").setAutoWidth(true)
+                .setComparator(Comparator.comparing(InsiderTransactionTickerDto::price, Comparator.nullsLast(Comparator.naturalOrder()))).setSortable(true);
+
+        grid.addColumn(item -> item.qty() != null ? String.format(java.util.Locale.US, "%,d", item.qty().longValue()) : "-").setHeader("Qty").setAutoWidth(true)
+                .setComparator(Comparator.comparing(InsiderTransactionTickerDto::qty, Comparator.nullsLast(Comparator.naturalOrder()))).setSortable(true);
+
+        grid.addColumn(item -> item.owned() != null ? String.format(java.util.Locale.US, "%,d", item.owned().longValue()) : "-").setHeader("Owned").setAutoWidth(true)
+                .setComparator(Comparator.comparing(InsiderTransactionTickerDto::owned, Comparator.nullsLast(Comparator.naturalOrder()))).setSortable(true);
+
+        grid.addColumn(item -> item.deltaOwn() != null ? String.format(java.util.Locale.US, "%s%.1f%%", item.deltaOwn().signum() > 0 ? "+" : "", item.deltaOwn()) : "-").setHeader("Delta").setAutoWidth(true)
+                .setComparator(Comparator.comparing(InsiderTransactionTickerDto::deltaOwn, Comparator.nullsLast(Comparator.naturalOrder()))).setSortable(true);
+
+        grid.addColumn(item -> item.value() != null ? String.format(java.util.Locale.US, "$%,.0f", item.value()) : "-").setHeader("Value").setAutoWidth(true)
+                .setComparator(Comparator.comparing(InsiderTransactionTickerDto::value, Comparator.nullsLast(Comparator.naturalOrder()))).setSortable(true);
+
+        grid.setItems(transactions.stream().sorted(Comparator.comparing(InsiderTransactionTickerDto::tradeDate, Comparator.nullsFirst(Comparator.naturalOrder())).reversed()).collect(Collectors.toList()));
+
+        layout.add(grid);
+        layout.expand(grid);
         return layout;
     }
 

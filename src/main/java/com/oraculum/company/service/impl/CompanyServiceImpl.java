@@ -9,9 +9,9 @@ import com.oraculum.company.domain.NewsTickerEntity;
 import com.oraculum.company.repository.*;
 import com.oraculum.company.service.CompanyService;
 import com.oraculum.company.service.mapper.NewsArticleMapper;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -46,7 +46,7 @@ public class CompanyServiceImpl implements CompanyService {
     private final ScreenerUndervaluedRepository screenerUndervaluedRepository;
     private final ScreenerQualityCompoundersRepository screenerQualityCompoundersRepository;
     private final ScreenerGrahamDeepValueRepository screenerGrahamDeepValueRepository;
-    private final ScreenerFinancialTrendRepository ScreenerFinancialTrendRepository;
+    private final ScreenerFinancialTrendRepository screenerFinancialTrendRepository;
     private final ScreenerInsiderRepository screenerInsiderRepository;
     private final InsiderTransactionSummaryRepository insiderTransactionSummaryRepository;
     private final TickerNewsSentimentRepository tickerNewsSentimentRepository;
@@ -224,7 +224,7 @@ public class CompanyServiceImpl implements CompanyService {
 
     @Override
     public List<ScreenerDto> getFinancialTrendScreener() {
-        return ScreenerFinancialTrendRepository.findAll()
+        return screenerFinancialTrendRepository.findAll()
                 .stream()
                 .map(ScreenerDto::fromEntity)
                 .sorted(Comparator.comparing(ScreenerDto::financialTrendScore, Comparator.nullsLast(Comparator.reverseOrder())))
