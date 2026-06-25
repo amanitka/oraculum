@@ -25,6 +25,7 @@ public class CompanyFactSheetData {
             "Publish Date", "Restated Date", "Shares (Basic)", "Shares (Diluted)"
     );
     private final ObjectMapper objectMapper;
+    private final CitationRegistry citationRegistry;
     private final CompanyDto company;
     private final Map<StatementVariant, List<IncomeStatementDto>> incomeStatements;
     private final Map<StatementVariant, List<BalanceSheetDto>> balanceSheets;
@@ -53,7 +54,10 @@ public class CompanyFactSheetData {
         }
         return "[" + stmts.stream()
                 .limit(limit)
-                .map(dto -> namespaceJsonMetrics(dto.statementData(), variant))
+                .map(dto -> {
+                    String citationId = citationRegistry.getOrAssignCitationId(IncomeStatementDto.class, dto.id(), dto);
+                    return namespaceJsonMetrics(dto.statementData(), variant, citationId);
+                })
                 .collect(Collectors.joining(",")) + "]";
     }
 
@@ -68,7 +72,10 @@ public class CompanyFactSheetData {
         }
         return "[" + stmts.stream()
                 .limit(limit)
-                .map(dto -> namespaceJsonMetrics(dto.statementData(), variant))
+                .map(dto -> {
+                    String citationId = citationRegistry.getOrAssignCitationId(BalanceSheetDto.class, dto.id(), dto);
+                    return namespaceJsonMetrics(dto.statementData(), variant, citationId);
+                })
                 .collect(Collectors.joining(",")) + "]";
     }
 
@@ -78,7 +85,10 @@ public class CompanyFactSheetData {
             return "[]";
         return "[" + stmts.stream()
                 .limit(limit)
-                .map(dto -> namespaceJsonMetrics(dto.statementData(), variant))
+                .map(dto -> {
+                    String citationId = citationRegistry.getOrAssignCitationId(CashFlowStatementDto.class, dto.id(), dto);
+                    return namespaceJsonMetrics(dto.statementData(), variant, citationId);
+                })
                 .collect(Collectors.joining(",")) + "]";
     }
 
@@ -93,7 +103,10 @@ public class CompanyFactSheetData {
         }
         List<CompanyFinancialRatiosSlim> slimDtos = dtos.stream()
                 .limit(limit)
-                .map(CompanyFinancialRatiosSlim::from)
+                .map(dto -> {
+                    String citationId = citationRegistry.getOrAssignCitationId(CompanyFinancialRatiosDto.class, dto.id(), dto);
+                    return CompanyFinancialRatiosSlim.from(dto, citationId);
+                })
                 .collect(Collectors.toList());
         return JsonUtils.toJson(objectMapper, slimDtos, "[]");
     }
@@ -126,7 +139,28 @@ public class CompanyFactSheetData {
     }
 
     public String getRecentNews() {
-        return JsonUtils.toJson(objectMapper, recentNews, "[]");
+        if (recentNews == null || recentNews.isEmpty()) return "[]";
+        List<NewsTickerSlim> slimNews = recentNews.stream()
+                .map(dto -> {
+                    String citationId = citationRegistry.getOrAssignCitationId(NewsTickerDto.class, dto.id(), dto);
+                    return NewsTickerSlim.from(dto, citationId);
+                })
+                .collect(Collectors.toList());
+        return JsonUtils.toJson(objectMapper, slimNews, "[]");
+    }
+
+    public String getRecentNews(int limit) {
+        if (recentNews == null || recentNews.isEmpty()) {
+            return "[]";
+        }
+        List<NewsTickerSlim> dtos = recentNews.stream()
+                .limit(limit)
+                .map(dto -> {
+                    String citationId = citationRegistry.getOrAssignCitationId(NewsTickerDto.class, dto.id(), dto);
+                    return NewsTickerSlim.from(dto, citationId);
+                })
+                .collect(Collectors.toList());
+        return JsonUtils.toJson(objectMapper, dtos, "[]");
     }
 
     public List<NewsTickerDto> getRecentNewsList() {
@@ -150,7 +184,10 @@ public class CompanyFactSheetData {
         List<CompanyFinancialRatiosSlim> slim = ttmRatios.stream()
                 .sorted(CompanyFinancialRatiosDto.getComparator().reversed()) // most recent first
                 .limit(periods)
-                .map(CompanyFinancialRatiosSlim::from)
+                .map(dto -> {
+                    String citationId = citationRegistry.getOrAssignCitationId(CompanyFinancialRatiosDto.class, dto.id(), dto);
+                    return CompanyFinancialRatiosSlim.from(dto, citationId);
+                })
                 .collect(Collectors.toList());
         return JsonUtils.toJson(objectMapper, slim, "[]");
     }
@@ -174,13 +211,16 @@ public class CompanyFactSheetData {
         return JsonUtils.toJson(objectMapper, recentInsiderTransactions, "[]");
     }
 
-    private String namespaceJsonMetrics(String jsonStr, StatementVariant variant) {
+    private String namespaceJsonMetrics(String jsonStr, StatementVariant variant, String citationId) {
         if (jsonStr == null || jsonStr.isBlank()) return "{}";
         try {
             JsonNode root = objectMapper.readTree(jsonStr);
             if (!root.isObject()) return jsonStr;
 
             ObjectNode newNode = objectMapper.createObjectNode();
+            if (citationId != null) {
+                newNode.put("citation_id", citationId);
+            }
             processJsonFields((ObjectNode) root, newNode, getVariantSuffix(variant));
 
             return objectMapper.writeValueAsString(newNode);

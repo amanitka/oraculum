@@ -355,6 +355,7 @@ public class AnalysisView extends VerticalLayout {
             return ViewHelper.emptyPlaceholder("No report generated yet.");
         }
         try {
+            markdown = injectCitations(markdown, analysis.getAnalysisData());
             String htmlContent = HtmlRenderer.builder().build()
                     .render(Parser.builder().build().parse(markdown));
 
@@ -371,6 +372,34 @@ public class AnalysisView extends VerticalLayout {
             area.setReadOnly(true);
             area.setSizeFull();
             return area;
+        }
+    }
+
+    private String injectCitations(String markdown, String analysisDataJson) {
+        if (analysisDataJson == null || markdown == null) return markdown;
+        try {
+            JsonNode rootNode = objectMapper.readTree(analysisDataJson);
+            if (!rootNode.has("_citations")) return markdown;
+            JsonNode citationsNode = rootNode.get("_citations");
+
+            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\[(\\d+)\\]");
+            java.util.regex.Matcher matcher = pattern.matcher(markdown);
+            StringBuilder sb = new StringBuilder();
+            while (matcher.find()) {
+                String id = matcher.group(1);
+                String replacement = matcher.group(0);
+                if (citationsNode.has(id)) {
+                    JsonNode citationData = citationsNode.get(id);
+                    String prettyJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(citationData);
+                    String escapedJson = prettyJson.replace("\"", "&quot;").replace("<", "&lt;").replace(">", "&gt;");
+                    replacement = "<span style=\"color: var(--lumo-primary-color); cursor: help; font-size: 0.8em; vertical-align: super;\" title=\"" + escapedJson + "\">[" + id + "]</span>";
+                }
+                matcher.appendReplacement(sb, replacement);
+            }
+            matcher.appendTail(sb);
+            return sb.toString();
+        } catch (Exception e) {
+            return markdown;
         }
     }
 
@@ -462,7 +491,7 @@ public class AnalysisView extends VerticalLayout {
                 }
 
                 JsonNode agentData = entry.getValue();
-                Component tabContent = createAgentTabContent(agentData);
+                Component tabContent = createAgentTabContent(agentData, jsonData);
                 if (tabContent != null) {
                     tabSheet.add(formatKeyTitle(key), tabContent);
                 }
@@ -472,7 +501,7 @@ public class AnalysisView extends VerticalLayout {
         }
     }
 
-    private Component createAgentTabContent(JsonNode agentData) {
+    private Component createAgentTabContent(JsonNode agentData, String jsonData) {
         if (agentData == null || agentData.properties().isEmpty()) {
             return null;
         }
@@ -501,7 +530,9 @@ public class AnalysisView extends VerticalLayout {
                         pre.getStyle().set("border-radius", "4px").set("font-family", "monospace");
                         list.add(new ListItem(pre));
                     } else {
-                        list.add(new ListItem(item.asString()));
+                        ListItem li = new ListItem();
+                        li.add(renderMarkdownWithCitations(item.asString(), jsonData));
+                        list.add(li);
                     }
                 }
                 layout.add(list);
@@ -512,31 +543,28 @@ public class AnalysisView extends VerticalLayout {
                 pre.getStyle().set("border-radius", "4px").set("font-family", "monospace");
                 layout.add(pre);
             } else {
-                String strValue = value.asString();
-                if (strValue.contains("\n") || strValue.contains("#") || strValue.contains("**")) {
-                    try {
-                        String htmlContent = HtmlRenderer.builder().build()
-                                .render(Parser.builder().build().parse(strValue));
-                        Div container = new Div();
-                        container.getStyle().set("line-height", "1.6").set("font-size", "0.9rem");
-                        container.add(new Html("<div><div class='rendered-markdown'>" + htmlContent + "</div></div>"));
-                        layout.add(container);
-                    } catch (Exception e) {
-                        Paragraph p = new Paragraph(strValue);
-                        p.getStyle().set("white-space", "pre-wrap");
-                        p.addClassNames(LumoUtility.Margin.Top.NONE, LumoUtility.FontSize.SMALL, LumoUtility.TextColor.BODY);
-                        layout.add(p);
-                    }
-                } else {
-                    Paragraph p = new Paragraph(strValue);
-                    p.getStyle().set("white-space", "pre-wrap");
-                    p.addClassNames(LumoUtility.Margin.Top.NONE, LumoUtility.FontSize.SMALL, LumoUtility.TextColor.BODY);
-                    layout.add(p);
-                }
+                layout.add(renderMarkdownWithCitations(value.asString(), jsonData));
             }
         }
 
         return layout;
+    }
+
+    private Component renderMarkdownWithCitations(String strValue, String jsonData) {
+        try {
+            String processedMd = injectCitations(strValue, jsonData);
+            String htmlContent = HtmlRenderer.builder().build()
+                    .render(Parser.builder().build().parse(processedMd));
+            Div container = new Div();
+            container.getStyle().set("line-height", "1.6").set("font-size", "0.9rem");
+            container.add(new Html("<div><div class='rendered-markdown'>" + htmlContent + "</div></div>"));
+            return container;
+        } catch (Exception e) {
+            Paragraph p = new Paragraph(strValue);
+            p.getStyle().set("white-space", "pre-wrap");
+            p.addClassNames(LumoUtility.Margin.Top.NONE, LumoUtility.FontSize.SMALL, LumoUtility.TextColor.BODY);
+            return p;
+        }
     }
 
     private String formatKeyTitle(String key) {

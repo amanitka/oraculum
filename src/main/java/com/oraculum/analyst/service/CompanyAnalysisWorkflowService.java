@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
@@ -23,7 +24,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 
 @Slf4j
 @Service
@@ -35,6 +35,7 @@ public class CompanyAnalysisWorkflowService {
     private final CompanyFactSheetDataService companyFactSheetDataService;
     private final Map<AgentType, Agent<?>> agents;
     private final ApplicationEventPublisher eventPublisher;
+    private final ObjectMapper objectMapper;
 
     public CompanyAnalysisResult run(CompanyAnalysisRequestEvent request) {
         long startMs = System.currentTimeMillis();
@@ -61,8 +62,6 @@ public class CompanyAnalysisWorkflowService {
         if (company == null) {
             throw new IllegalArgumentException("Company not found for ticker: " + request.ticker());
         }
-        CompanyFactSheetData factSheetData = companyFactSheetDataService.create(company);
-        LocalDate analysisDate = request.analysisDate() != null ? request.analysisDate() : LocalDate.now();
 
         AgentWorkflowState state = new AgentWorkflowState();
         String focus = request.analysisFocus();
@@ -70,6 +69,9 @@ public class CompanyAnalysisWorkflowService {
             focus = "Standard comprehensive fundamental, valuation, and risk analysis.";
         }
         state.setAnalysisFocus(focus);
+
+        CompanyFactSheetData factSheetData = companyFactSheetDataService.create(company, state.getCitationRegistry());
+        LocalDate analysisDate = request.analysisDate() != null ? request.analysisDate() : LocalDate.now();
 
         return new AgentContext(request.correlationId(), company, factSheetData, analysisDate, analystProperties.tokenBudget(), state);
     }
@@ -172,6 +174,9 @@ public class CompanyAnalysisWorkflowService {
     private CompanyAnalysisResult createSuccessResult(CompanyAnalysisRequestEvent req, AgentContext ctx, SynthesizerAgentOutput finalOut, long startMs, ZonedDateTime now) {
         int tokens = ctx.state().getTotalTokens();
         log.info("Analysis workflow completed in {}ms. Tokens: {}", System.currentTimeMillis() - startMs, tokens);
+
+        injectPrunedCitationsToTrace(ctx);
+
         return CompanyAnalysisResult.builder()
                 .correlationId(req.correlationId())
                 .ticker(req.ticker())
@@ -189,6 +194,26 @@ public class CompanyAnalysisWorkflowService {
                 .createdAt(now)
                 .updatedAt(ZonedDateTime.now())
                 .build();
+    }
+
+    private void injectPrunedCitationsToTrace(AgentContext ctx) {
+        String fullTraceStr = objectMapper.writeValueAsString(ctx.state().getAgentTrace());
+        Map<Integer, Object> allCitations = ctx.state().getCitationRegistry().getCitations();
+        Map<String, Object> prunedCitations = new java.util.HashMap<>();
+
+        java.util.regex.Pattern p = java.util.regex.Pattern.compile("\\[(\\d+)\\]");
+        java.util.regex.Matcher m = p.matcher(fullTraceStr);
+        while (m.find()) {
+            String idStr = m.group(1);
+            try {
+                int id = Integer.parseInt(idStr);
+                if (allCitations.containsKey(id)) {
+                    prunedCitations.put(idStr, allCitations.get(id));
+                }
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        ctx.state().putAgentTrace("_citations", prunedCitations);
     }
 
     private CompanyAnalysisResult createFailureResult(CompanyAnalysisRequestEvent req, LocalDate analysisDate, Exception e, ZonedDateTime now) {

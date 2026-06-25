@@ -45,6 +45,7 @@ You MUST respond with valid JSON using exactly this schema:
 }
 
 Rules:
+- CRITICAL CITATIONS: Every time you state a fact, metric, event, margin, or financial number derived from the data, you MUST cite the `citation_id` of the exact source immediately after the claim using brackets. Example: "Revenue grew by 20% to $1.44B [2]." Do not cite data that does not have a `citation_id`. Do not hallucinate citations. Preserve any `[id]` citations provided by the specialist agents.
 - ALWAYS explicitly cite the specific year or timeframe and the exact source of your information (e.g., 'In 2023, according to the income statement...').
 
 - `report_md` must be valid Markdown and include the requested sections.

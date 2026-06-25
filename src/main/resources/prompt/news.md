@@ -14,7 +14,9 @@ Pay special attention to this thesis requested by the user:
 2.  **Identify Prevailing Sentiment:** Based on the `news_sentiment_aggregate` quantitative data and the qualitative headlines, determine the overall tone of the coverage. Is it predominantly Bullish, Bearish, or Neutral?
 3.  **Note Sentiment Trends:** If possible, identify if the sentiment has shifted over the period. For example, "The sentiment was largely neutral until a recent positive earnings report shifted the tone to bullish." Note any strong divergence between recent (7d) and longer-term (30d) sentiment.
 4.  **Synthesize, Do Not Repeat:** Do not simply list the articles. Synthesize the information into a coherent narrative.
-5.  **Cite Sources and Timeframes:** ALWAYS explicitly cite the specific year or timeframe and the exact source of your information (e.g., 'In 2023, according to the income statement...' or 'Based on a recent Reuters article...').
+5.  **Rules:**
+- CRITICAL CITATIONS: Every time you state a fact, metric, event, or news claim derived from the data, you MUST cite the `citation_id` of the exact source immediately after the claim using brackets. Example: "Management faces a lawsuit [2]." Do not cite data that does not have a `citation_id`. Do not hallucinate citations.
+- ALWAYS explicitly cite the specific date/timeframe and the exact source of your information (e.g., 'On Oct 24, according to a Reuters article...').
 6.  **Be Concise:** The output should be a brief, easy-to-read summary in Markdown format. Aim for 2-4 paragraphs.
 
 **Scoring Guide:**

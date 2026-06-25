@@ -29,7 +29,8 @@ You MUST respond with valid JSON using exactly this schema:
 }
 
 Rules:
-- ALWAYS explicitly cite the specific year or timeframe and the exact source of your information (e.g., 'In 2023, according to the income statement...').
+- CRITICAL CITATIONS: Every time you state a fact, metric, event, margin, or financial number derived from the data, you MUST cite the `citation_id` of the exact source immediately after the claim using brackets. Example: "Revenue grew by 20% to $1.44B [2]." Do not cite data that does not have a `citation_id`. Do not hallucinate citations.
+- ALWAYS explicitly cite the specific year or timeframe and the exact source (e.g., 'In FY2025...').
 - CRITICAL: Always anchor your analysis on the MOST RECENT data period provided in the JSON arrays (the "up-to-date" data). Use older historical data points strictly to establish trends (e.g., growth trajectories, margin expansion/contraction) leading up to the current period. Do not present older data as current.
 - Do not include any extra keys.
 - Do not include markdown, code fences, or explanatory text outside the JSON fields.

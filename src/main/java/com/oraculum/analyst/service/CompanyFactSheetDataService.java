@@ -11,6 +11,7 @@ import com.oraculum.company.api.dto.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
+import com.oraculum.analyst.dto.CitationRegistry;
 
 import java.time.LocalDate;
 import java.util.Comparator;
@@ -100,13 +101,14 @@ public class CompanyFactSheetDataService {
         return companyInsiderTransactionApi.getInsiderTransactionsByTicker(company.ticker(), after);
     }
 
-    public CompanyFactSheetData create(CompanyDto company) {
+    public CompanyFactSheetData create(CompanyDto company, CitationRegistry citationRegistry) {
         LocalDate annualAfter = analystProperties.factSheet().getAnnualFactSheetHistoryDate();
         LocalDate quarterlyAfter = analystProperties.factSheet().getQuarterlyFactSheetHistoryDate();
 
         return CompanyFactSheetData.builder()
                 .objectMapper(objectMapper)
                 .company(company)
+                .citationRegistry(citationRegistry)
                 .incomeStatements(getIncomeStatements(company, annualAfter, quarterlyAfter))
                 .balanceSheets(getBalanceSheets(company, annualAfter, quarterlyAfter))
                 .cashFlowStatements(getCashFlowStatements(company, annualAfter, quarterlyAfter))

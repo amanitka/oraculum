@@ -115,7 +115,7 @@ class CompanyFactSheetDataServiceTest {
         when(companyInsiderTransactionApi.getInsiderTransactionsByTicker(anyString(), any(LocalDate.class)))
                 .thenReturn(List.of(transaction));
 
-        CompanyFactSheetData data = service.create(company);
+        CompanyFactSheetData data = service.create(company, new com.oraculum.analyst.dto.CitationRegistry());
 
         assertThat(data).isNotNull();
         assertThat(data.getCompany()).isEqualTo(company);

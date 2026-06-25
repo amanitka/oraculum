@@ -45,6 +45,9 @@ class CompanyAnalysisWorkflowServiceTest {
     private AnalystProperties analystProperties;
 
     @Mock
+    private tools.jackson.databind.ObjectMapper objectMapper;
+
+    @Mock
     private CompanyFactSheetDataService companyFactSheetDataService;
 
     @Mock
@@ -84,7 +87,7 @@ class CompanyAnalysisWorkflowServiceTest {
     void run_successfulAnalysis_noReruns() {
         CompanyDto companyDto = mock(CompanyDto.class);
         when(companyMetadataApi.getCompanyById(1)).thenReturn(companyDto);
-        when(companyFactSheetDataService.create(companyDto)).thenReturn(mock(CompanyFactSheetData.class));
+        when(companyFactSheetDataService.create(eq(companyDto), any())).thenReturn(mock(CompanyFactSheetData.class));
         when(analystProperties.tokenBudget()).thenReturn(100000);
 
         AnalystProperties.Critic criticProps = mock(AnalystProperties.Critic.class);

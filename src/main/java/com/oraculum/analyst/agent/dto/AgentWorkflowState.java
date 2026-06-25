@@ -1,11 +1,12 @@
 package com.oraculum.analyst.agent.dto;
 
 import com.oraculum.analyst.api.domain.AgentType;
-
+import com.oraculum.analyst.dto.CitationRegistry;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -14,7 +15,8 @@ import java.util.stream.Collectors;
 public class AgentWorkflowState {
 
     private final Map<AgentType, Object> agentOutputs = new EnumMap<>(AgentType.class);
-    private final Map<String, Object> agentTrace = new java.util.LinkedHashMap<>();
+    private final Map<String, Object> agentTrace = new LinkedHashMap<>();
+    private final CitationRegistry citationRegistry = new CitationRegistry();
     private int totalTokens = 0;
 
     private String analysisFocus;

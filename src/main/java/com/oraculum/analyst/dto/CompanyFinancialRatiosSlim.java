@@ -8,6 +8,7 @@ import java.time.LocalDate;
 public record CompanyFinancialRatiosSlim(
 
         // ── Period ──────────────────────────────────────────────────────────────
+        @JsonProperty("citation_id")   String    citationId,
         @JsonProperty("fiscal_year")   int       fiscalYear,
         @JsonProperty("fiscal_period") String    fiscalPeriod,
         @JsonProperty("report_date")   LocalDate reportDate,
@@ -52,9 +53,10 @@ public record CompanyFinancialRatiosSlim(
         @JsonProperty("positive_earnings_streak") Integer positiveEarningsStreak
 
 ) {
-    public static CompanyFinancialRatiosSlim from(CompanyFinancialRatiosDto dto) {
+    public static CompanyFinancialRatiosSlim from(CompanyFinancialRatiosDto dto, String citationId) {
         if (dto == null) return null;
         return new CompanyFinancialRatiosSlim(
+                citationId,
                 dto.fiscalYear(),
                 dto.fiscalPeriod(),
                 dto.reportDate(),
