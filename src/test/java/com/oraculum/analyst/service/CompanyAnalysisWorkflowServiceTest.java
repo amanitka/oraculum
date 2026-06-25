@@ -93,17 +93,17 @@ class CompanyAnalysisWorkflowServiceTest {
         when(criticProps.maxSpecialistsPerRerun()).thenReturn(2);
 
         // mock critic output
-        Agent criticAgent = mock(Agent.class);
-        when(agents.get(AgentType.CRITIC)).thenReturn(criticAgent);
-        AgentOutput criticOutput = new AgentOutput(
+        Agent<CriticAgentOutput> criticAgent = mock(Agent.class);
+        when(agents.get(AgentType.CRITIC)).thenReturn((Agent) criticAgent);
+        AgentOutput<CriticAgentOutput> criticOutput = new AgentOutput<>(
                 new CriticAgentOutput(List.of("Consolidated feedback"), true, null), 100
         );
         when(criticAgent.run(any())).thenReturn(criticOutput);
 
         // mock synthesizer output
-        Agent synthesizerAgent = mock(Agent.class);
-        when(agents.get(AgentType.SYNTHESIZER)).thenReturn(synthesizerAgent);
-        AgentOutput synthOutput = new AgentOutput(
+        Agent<SynthesizerAgentOutput> synthesizerAgent = mock(Agent.class);
+        when(agents.get(AgentType.SYNTHESIZER)).thenReturn((Agent) synthesizerAgent);
+        AgentOutput<SynthesizerAgentOutput> synthOutput = new AgentOutput<>(
                 new SynthesizerAgentOutput("Report", AnalysisOutlook.BULLISH, AnalysisRecommendation.BUY, 80, null, null), 200
         );
         when(synthesizerAgent.run(any())).thenReturn(synthOutput);
