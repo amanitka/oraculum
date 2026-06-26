@@ -118,7 +118,7 @@ Oraculum doesn't just pass numbers to an LLM; it orchestrates a team of speciali
 - 🧠 **Synthesizer (Final Analyst)**: Once the Critic is satisfied, the Synthesizer compiles all the verified specialist signals to deliver a final investment thesis with a conviction score and target price.
 
 ### 🔍 Traceability & Hallucination Prevention
-A major challenge with AI in finance is data hallucination. Oraculum solves this by enforcing strict **Data Provenance**. Every metric cited by an agent (e.g., `[87]`, `[39]`) is a hard-linked citation back to a specific, immutable row in the PostgreSQL database (such as a Trailing-Twelve-Month cash flow record). The Synthesizer uses these ground-truth citations to arbitrate disputes between agents, ensuring the final thesis is mathematically auditable.
+A major challenge with AI in finance is data hallucination. Oraculum solves this by enforcing strict **Data Provenance**. Every metric cited by an agent (e.g., `[87]`, `[39]`) is a hard-linked citation back to a specific, immutable row in the PostgreSQL database (such as a Trailing-Twelve-Month cash flow record). These citations are passed all the way through to the final report, allowing the human user to easily audit the AI's claims and instantly verify the exact source data that led to the investment thesis.
 
 ## 📄 Sample Output & Agent Trace
 
