@@ -115,6 +115,14 @@ public class AnalysisView extends VerticalLayout {
         }
     }
 
+    private static String formatKeyTitle(String key) {
+        if (key == null || key.isEmpty()) {
+            return "";
+        }
+        String formatted = key.replaceAll("([a-z])([A-Z]+)", "$1 $2").replace("_", " ").toLowerCase();
+        return Character.toUpperCase(formatted.charAt(0)) + formatted.substring(1).trim();
+    }
+
     private Component createTriggerToolbar() {
         VerticalLayout wrapper = new VerticalLayout();
         wrapper.setPadding(false);
@@ -155,7 +163,6 @@ public class AnalysisView extends VerticalLayout {
         return wrapper;
     }
 
-
     private void triggerAnalysis() {
         CompanyDto company = companyComboBox.getValue();
         if (company == null) {
@@ -186,6 +193,8 @@ public class AnalysisView extends VerticalLayout {
         }
     }
 
+    // ── Analysis Details Dialog ────────────────────────────────────────────
+
     private Component createHistoryGrid() {
         VerticalLayout layout = new VerticalLayout();
         layout.setPadding(false);
@@ -208,8 +217,6 @@ public class AnalysisView extends VerticalLayout {
 
         return ViewHelper.wrapInCard(layout);
     }
-
-    // ── Analysis Details Dialog ────────────────────────────────────────────
 
     private Grid<CompanyAnalysisDto> buildGrid() {
         Grid<CompanyAnalysisDto> g = new Grid<>(CompanyAnalysisDto.class, false);
@@ -262,6 +269,8 @@ public class AnalysisView extends VerticalLayout {
         return g;
     }
 
+    // ── Report Tab ─────────────────────────────────────────────────────────
+
     private void setupFilters(GridListDataView<CompanyAnalysisDto> dataView) {
         HeaderRow filterRow = grid.appendHeaderRow();
         AnalysisFilter filter = new AnalysisFilter();
@@ -289,7 +298,7 @@ public class AnalysisView extends VerticalLayout {
         });
     }
 
-    // ── Report Tab ─────────────────────────────────────────────────────────
+    // ── JSON Tab ───────────────────────────────────────────────────────────
 
     private void showAnalysisDetails(CompanyAnalysisDto analysis) {
         Dialog dialog = new Dialog();
@@ -318,7 +327,7 @@ public class AnalysisView extends VerticalLayout {
         dialog.open();
     }
 
-    // ── JSON Tab ───────────────────────────────────────────────────────────
+    // ── Error Tab ──────────────────────────────────────────────────────────
 
     private HorizontalLayout buildDialogHeader(CompanyAnalysisDto analysis) {
         HorizontalLayout header = new HorizontalLayout();
@@ -343,8 +352,6 @@ public class AnalysisView extends VerticalLayout {
         }
         return header;
     }
-
-    // ── Error Tab ──────────────────────────────────────────────────────────
 
     private Component createReportTab(CompanyAnalysisDto analysis) {
         String markdown = analysis.getReport();
@@ -380,6 +387,8 @@ public class AnalysisView extends VerticalLayout {
         }
     }
 
+    // ── Helpers ─────────────────────────────────────────────────────────────
+
     private String injectCitations(String markdown, String analysisDataJson) {
         if (analysisDataJson == null || markdown == null) return markdown;
         try {
@@ -404,7 +413,7 @@ public class AnalysisView extends VerticalLayout {
         }
     }
 
-    // ── Helpers ─────────────────────────────────────────────────────────────
+    // ── Analysis Filter ────────────────────────────────────────────────────
 
     private Component createJsonTab(CompanyAnalysisDto analysis) {
         String jsonData = analysis.getAnalysisData();
@@ -453,7 +462,7 @@ public class AnalysisView extends VerticalLayout {
         return layout;
     }
 
-    // ── Analysis Filter ────────────────────────────────────────────────────
+    // ── Markdown CSS ───────────────────────────────────────────────────────
 
     private Component createErrorTab(CompanyAnalysisDto analysis) {
         Div errorBanner = new Div();
@@ -474,8 +483,6 @@ public class AnalysisView extends VerticalLayout {
         layout.setFlexGrow(1, errorDetails);
         return layout;
     }
-
-    // ── Markdown CSS ───────────────────────────────────────────────────────
 
     private void addAgentTabs(TabSheet tabSheet, String jsonData) {
         if (jsonData == null || jsonData.isBlank()) {
@@ -576,22 +583,6 @@ public class AnalysisView extends VerticalLayout {
         }
     }
 
-    private String formatKeyTitle(String key) {
-        if (key == null || key.isEmpty()) {
-            return "";
-        }
-        String[] parts = key.split("_");
-        StringBuilder sb = new StringBuilder();
-        for (String part : parts) {
-            if (!part.isEmpty()) {
-                sb.append(Character.toUpperCase(part.charAt(0)))
-                        .append(part.substring(1).toLowerCase())
-                        .append(" ");
-            }
-        }
-        return sb.toString().trim();
-    }
-
     private void refreshGridData() {
         getUI().ifPresent(ui -> ui.access(() -> {
             List<CompanyAnalysisDto> latest = companyAnalysisApi.getCompanyAnalysisList(PageRequest.of(0, 1000)).getContent();
@@ -689,19 +680,23 @@ public class AnalysisView extends VerticalLayout {
 
             Grid<Map.Entry<String, JsonNode>> grid = new Grid<>();
             grid.addThemeVariants(com.vaadin.flow.component.grid.GridVariant.LUMO_NO_BORDER,
-                    com.vaadin.flow.component.grid.GridVariant.LUMO_COMPACT,
-                    com.vaadin.flow.component.grid.GridVariant.LUMO_ROW_STRIPES);
-            grid.addColumn(Map.Entry::getKey).setHeader("Property").setAutoWidth(true).setFlexGrow(0);
+                    com.vaadin.flow.component.grid.GridVariant.LUMO_COMPACT);
+            grid.addColumn(entry -> formatKeyTitle(entry.getKey())).setHeader("Property").setAutoWidth(true).setFlexGrow(1);
             grid.addComponentColumn(entry -> {
                 JsonNode val = entry.getValue();
                 if (val.isObject() || val.isArray()) {
                     Pre pre = new Pre(val.toPrettyString());
                     pre.getStyle().set("margin", "0").set("font-size", "0.85em").set("white-space", "pre-wrap");
                     return pre;
+                } else if (val.isNumber()) {
+                    java.text.NumberFormat nf = java.text.NumberFormat.getInstance(java.util.Locale.US);
+                    nf.setGroupingUsed(true);
+                    nf.setMaximumFractionDigits(4);
+                    return new Span(nf.format(val.asDouble()));
                 } else {
                     return new Span(val.asString());
                 }
-            }).setHeader("Value").setAutoWidth(true).setFlexGrow(1);
+            }).setHeader("Value").setAutoWidth(true).setFlexGrow(2);
 
             List<Map.Entry<String, JsonNode>> items = new java.util.ArrayList<>(data.properties());
             grid.setItems(items);
