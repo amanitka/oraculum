@@ -2,10 +2,12 @@ package com.oraculum.ui.views.components;
 
 import com.oraculum.analyst.api.dto.CompanyAnalysisDto;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.Html;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.*;
+import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.component.textfield.TextArea;
@@ -75,7 +77,12 @@ public class AnalysisResultRenderer {
         if (md == null || md.isBlank()) {
             layout.add(new Span("No report generated."));
         } else {
-            layout.add(renderMarkdownWithCitations(md, analysis.getAnalysisData()));
+            Component markdownContainer = renderMarkdownWithCitations(md, analysis.getAnalysisData());
+            markdownContainer.getStyle().set("padding", "24px").set("color", "var(--lumo-body-text-color)");
+
+            Scroller scroller = new Scroller(markdownContainer);
+            scroller.setSizeFull();
+            layout.add(scroller);
         }
 
         return layout;
@@ -144,8 +151,8 @@ public class AnalysisResultRenderer {
             String key = field.getKey();
             JsonNode value = field.getValue();
 
-            H4 fieldHeader = new H4(formatKeyTitle(key));
-            fieldHeader.addClassNames(LumoUtility.Margin.Top.MEDIUM, LumoUtility.Margin.Bottom.XSMALL);
+            com.vaadin.flow.component.html.H3 fieldHeader = new com.vaadin.flow.component.html.H3(formatKeyTitle(key));
+            fieldHeader.addClassName("json-key-header");
             layout.add(fieldHeader);
 
             if (value.isArray()) {
@@ -277,7 +284,7 @@ public class AnalysisResultRenderer {
 
         public CitationMarkdownContainer(String html, JsonNode citationsNode) {
             this.citationsNode = citationsNode;
-            getElement().setProperty("innerHTML", html);
+            add(new Html("<div><div class='rendered-markdown'>" + html + "</div></div>"));
 
             getElement().executeJs(
                     "const links = this.querySelectorAll('.reference-data-link');" +

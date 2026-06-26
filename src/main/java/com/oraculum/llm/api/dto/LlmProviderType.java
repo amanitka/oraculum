@@ -1,4 +1,4 @@
-package com.oraculum.llm.domain;
+package com.oraculum.llm.api.dto;
 
 public enum LlmProviderType {
     OPENAI,

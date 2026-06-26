@@ -4,7 +4,7 @@ import com.oraculum.llm.api.LlmCallRequest;
 import com.oraculum.llm.api.dto.LlmResponse;
 import com.oraculum.llm.api.dto.LlmTierType;
 import com.oraculum.llm.config.LlmProperties;
-import com.oraculum.llm.domain.LlmProviderType;
+import com.oraculum.llm.api.dto.LlmProviderType;
 import com.oraculum.llm.service.LlmExecutionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -5,7 +5,7 @@ import com.oraculum.llm.api.dto.LlmTierType;
 import com.oraculum.llm.config.LlmProperties;
 import com.oraculum.llm.api.LlmCallRequest;
 import com.oraculum.llm.api.LlmExecutionEvent;
-import com.oraculum.llm.domain.LlmProviderType;
+import com.oraculum.llm.api.dto.LlmProviderType;
 import com.oraculum.llm.domain.LlmRequest;
 import com.oraculum.llm.service.LlmExecutionService;
 import com.oraculum.llm.service.LlmRouterService;

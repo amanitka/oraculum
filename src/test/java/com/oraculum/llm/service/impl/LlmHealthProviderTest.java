@@ -1,6 +1,6 @@
 package com.oraculum.llm.service.impl;
 
-import com.oraculum.llm.domain.LlmProviderType;
+import com.oraculum.llm.api.dto.LlmProviderType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

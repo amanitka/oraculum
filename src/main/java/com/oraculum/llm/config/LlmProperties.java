@@ -1,7 +1,7 @@
 package com.oraculum.llm.config;
 
 import com.oraculum.llm.api.dto.LlmTierType;
-import com.oraculum.llm.domain.LlmProviderType;
+import com.oraculum.llm.api.dto.LlmProviderType;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.util.List;

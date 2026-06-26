@@ -5,7 +5,7 @@
     font-size: 1rem;
 }
 
-.rendered-markdown h1, .rendered-markdown h2, .rendered-markdown h3, .rendered-markdown h4 {
+.rendered-markdown h1, .rendered-markdown h2, .rendered-markdown h3, .rendered-markdown h4, .json-key-header {
     color: var(--lumo-header-text-color);
     font-weight: 600;
     margin-top: 1.5em;
@@ -13,19 +13,19 @@
 }
 
 .rendered-markdown h1 {
-    font-size: 1.75rem;
+    font-size: 1.2rem;
     border-bottom: 1px solid var(--lumo-contrast-10pct);
     padding-bottom: 0.3em;
 }
 
-.rendered-markdown h2 {
-    font-size: 1.4rem;
+.rendered-markdown h2, .json-key-header {
+    font-size: 1.1rem;
     border-bottom: 1px solid var(--lumo-contrast-10pct);
     padding-bottom: 0.3em;
 }
 
 .rendered-markdown h3 {
-    font-size: 1.2rem;
+    font-size: 1.0rem;
 }
 
 .rendered-markdown p {
