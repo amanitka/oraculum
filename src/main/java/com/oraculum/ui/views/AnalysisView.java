@@ -55,6 +55,7 @@ import java.util.UUID;
 @Route(value = "analysis", layout = MainLayout.class)
 @PageTitle("Analysis | Oraculum")
 public class AnalysisView extends VerticalLayout {
+    private static final String TRACE_CITATIONS_KEY = "CITATIONS";
 
     private final CompanyMetadataApi companyMetadataApi;
     private final CompanyFinancialDataApi companyFinancialDataApi;
@@ -363,8 +364,8 @@ public class AnalysisView extends VerticalLayout {
             String jsonData = analysis.getAnalysisData();
             if (jsonData != null) {
                 JsonNode rootNode = objectMapper.readTree(jsonData);
-                if (rootNode.has("_citations")) {
-                    citationsNode = rootNode.get("_citations");
+                if (rootNode.has(TRACE_CITATIONS_KEY)) {
+                    citationsNode = rootNode.get(TRACE_CITATIONS_KEY);
                 }
             }
 
@@ -393,8 +394,8 @@ public class AnalysisView extends VerticalLayout {
         if (analysisDataJson == null || markdown == null) return markdown;
         try {
             JsonNode rootNode = objectMapper.readTree(analysisDataJson);
-            if (!rootNode.has("_citations")) return markdown;
-            JsonNode citationsNode = rootNode.get("_citations");
+            if (!rootNode.has(TRACE_CITATIONS_KEY)) return markdown;
+            JsonNode citationsNode = rootNode.get(TRACE_CITATIONS_KEY);
 
             java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\[(\\d+)\\]");
             java.util.regex.Matcher matcher = pattern.matcher(markdown);
@@ -494,7 +495,7 @@ public class AnalysisView extends VerticalLayout {
 
             for (Map.Entry<String, JsonNode> entry : rootNode.properties()) {
                 String key = entry.getKey();
-                if (key.startsWith("SYNTHESIZER") || key.equals("_citations")) {
+                if (key.startsWith("SYNTHESIZER") || key.equals(TRACE_CITATIONS_KEY)) {
                     continue;
                 }
 
@@ -563,8 +564,8 @@ public class AnalysisView extends VerticalLayout {
             JsonNode citationsNode = null;
             if (jsonData != null) {
                 JsonNode rootNode = objectMapper.readTree(jsonData);
-                if (rootNode.has("_citations")) {
-                    citationsNode = rootNode.get("_citations");
+                if (rootNode.has(TRACE_CITATIONS_KEY)) {
+                    citationsNode = rootNode.get(TRACE_CITATIONS_KEY);
                 }
             }
 
@@ -674,7 +675,17 @@ public class AnalysisView extends VerticalLayout {
 
         private void showCitationDialog(String id, JsonNode data) {
             Dialog dialog = new Dialog();
-            dialog.setHeaderTitle("Citation Source [" + id + "]");
+
+            String title = "Citation Source [" + id + "]";
+            if (data.isObject()) {
+                if (data.has("_source") && data.has("_variant")) {
+                    title += " - " + data.get("_source").asString() + " (" + data.get("_variant").asString() + ")";
+                } else if (data.has("_source")) {
+                    title += " - " + data.get("_source").asString();
+                }
+            }
+            dialog.setHeaderTitle(title);
+
             dialog.setWidth("700px");
             dialog.setMaxHeight("85vh");
 
@@ -698,7 +709,12 @@ public class AnalysisView extends VerticalLayout {
                 }
             }).setHeader("Value").setAutoWidth(true).setFlexGrow(2);
 
-            List<Map.Entry<String, JsonNode>> items = new java.util.ArrayList<>(data.properties());
+            List<Map.Entry<String, JsonNode>> items = new java.util.ArrayList<>();
+            data.properties().forEach(entry -> {
+                if (!entry.getKey().startsWith("_")) {
+                    items.add(entry);
+                }
+            });
             grid.setItems(items);
 
             Button closeButton = new Button("Close", _ -> dialog.close());

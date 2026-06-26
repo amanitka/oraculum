@@ -213,7 +213,7 @@ public class CompanyAnalysisWorkflowService {
             } catch (NumberFormatException ignored) {
             }
         }
-        ctx.state().putAgentTrace("_citations", prunedCitations);
+        ctx.state().putAgentTrace(AgentWorkflowState.TRACE_CITATIONS_KEY, prunedCitations);
     }
 
     private CompanyAnalysisResult createFailureResult(CompanyAnalysisRequestEvent req, LocalDate analysisDate, Exception e, ZonedDateTime now) {

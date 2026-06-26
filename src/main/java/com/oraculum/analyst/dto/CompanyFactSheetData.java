@@ -55,7 +55,7 @@ public class CompanyFactSheetData {
         return "[" + stmts.stream()
                 .limit(limit)
                 .map(dto -> {
-                    Object payload = getCitationPayload(dto.statementData(), dto);
+                    Object payload = getCitationPayload(dto.statementData(), dto, "Income Statement", variant);
                     String citationId = citationRegistry.getOrAssignCitationId(IncomeStatementDto.class, dto.id(), payload);
                     return namespaceJsonMetrics(dto.statementData(), variant, citationId);
                 })
@@ -74,7 +74,7 @@ public class CompanyFactSheetData {
         return "[" + stmts.stream()
                 .limit(limit)
                 .map(dto -> {
-                    Object payload = getCitationPayload(dto.statementData(), dto);
+                    Object payload = getCitationPayload(dto.statementData(), dto, "Balance Sheet", variant);
                     String citationId = citationRegistry.getOrAssignCitationId(BalanceSheetDto.class, dto.id(), payload);
                     return namespaceJsonMetrics(dto.statementData(), variant, citationId);
                 })
@@ -88,7 +88,7 @@ public class CompanyFactSheetData {
         return "[" + stmts.stream()
                 .limit(limit)
                 .map(dto -> {
-                    Object payload = getCitationPayload(dto.statementData(), dto);
+                    Object payload = getCitationPayload(dto.statementData(), dto, "Cash Flow Statement", variant);
                     String citationId = citationRegistry.getOrAssignCitationId(CashFlowStatementDto.class, dto.id(), payload);
                     return namespaceJsonMetrics(dto.statementData(), variant, citationId);
                 })
@@ -107,7 +107,8 @@ public class CompanyFactSheetData {
         List<CompanyFinancialRatiosSlim> slimDtos = dtos.stream()
                 .limit(limit)
                 .map(dto -> {
-                    String citationId = citationRegistry.getOrAssignCitationId(CompanyFinancialRatiosDto.class, dto.id(), dto);
+                    Object payload = getCitationPayloadFromDto(dto, "Financial Ratios", variant);
+                    String citationId = citationRegistry.getOrAssignCitationId(CompanyFinancialRatiosDto.class, dto.id(), payload);
                     return CompanyFinancialRatiosSlim.from(dto, citationId);
                 })
                 .collect(Collectors.toList());
@@ -218,12 +219,41 @@ public class CompanyFactSheetData {
         }
     }
 
-    private Object getCitationPayload(String jsonStr, Object fallbackDto) {
+    private Object getCitationPayload(String jsonStr, Object fallbackDto, String sourceName, StatementVariant variant) {
         if (jsonStr == null || jsonStr.isBlank()) return fallbackDto;
         try {
-            return jsonMapper.readTree(jsonStr);
+            JsonNode node = jsonMapper.readTree(jsonStr);
+            if (node.isObject()) {
+                ObjectNode objNode = (ObjectNode) node;
+                if (sourceName != null) {
+                    objNode.put("_source", sourceName);
+                }
+                if (variant != null) {
+                    objNode.put("_variant", variant.name());
+                }
+            }
+            return node;
         } catch (Exception e) {
             return fallbackDto;
+        }
+    }
+
+    private Object getCitationPayloadFromDto(Object dto, String sourceName, StatementVariant variant) {
+        try {
+            JsonNode node = jsonMapper.valueToTree(dto);
+            if (node.isObject()) {
+                ObjectNode objNode = (ObjectNode) node;
+                if (sourceName != null) {
+                    objNode.put("_source", sourceName);
+                }
+                if (variant != null) {
+                    objNode.put("_variant", variant.name());
+                }
+                return objNode;
+            }
+            return dto;
+        } catch (Exception e) {
+            return dto;
         }
     }
 

@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 @Getter
 @Setter
 public class AgentWorkflowState {
+    public static final String TRACE_CITATIONS_KEY = "CITATIONS";
 
     private final Map<AgentType, Object> agentOutputs = new EnumMap<>(AgentType.class);
     private final Map<String, Object> agentTrace = new LinkedHashMap<>();
