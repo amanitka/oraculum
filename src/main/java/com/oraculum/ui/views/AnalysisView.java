@@ -10,10 +10,8 @@ import com.oraculum.ui.MainLayout;
 import com.oraculum.ui.ViewHelper;
 import com.oraculum.ui.api.CompanyAnalysisProgressBroadcasterService;
 import com.oraculum.ui.service.AnalysisRequestService;
-import com.vaadin.flow.component.ClientCallable;
+import com.oraculum.ui.views.components.AnalysisResultRenderer;
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.Html;
-import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -22,40 +20,27 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.grid.HeaderRow;
 import com.vaadin.flow.component.grid.dataview.GridListDataView;
-import com.vaadin.flow.component.html.*;
+import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.server.streams.DownloadHandler;
-import com.vaadin.flow.server.streams.DownloadResponse;
 import com.vaadin.flow.theme.lumo.LumoUtility;
-import org.commonmark.parser.Parser;
-import org.commonmark.renderer.html.HtmlRenderer;
-import org.springframework.data.domain.PageRequest;
-import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
-import java.io.ByteArrayInputStream;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @Route(value = "analysis", layout = MainLayout.class)
 @PageTitle("Analysis | Oraculum")
 public class AnalysisView extends VerticalLayout {
-    private static final String TRACE_CITATIONS_KEY = "CITATIONS";
 
     private final CompanyMetadataApi companyMetadataApi;
     private final CompanyFinancialDataApi companyFinancialDataApi;
@@ -66,19 +51,22 @@ public class AnalysisView extends VerticalLayout {
     private final AnalysisRequestService analysisRequestService;
     private final ObjectMapper objectMapper;
     private final CompanyAnalysisProgressBroadcasterService broadcaster;
+    private final AnalysisResultRenderer analysisResultRenderer;
     private ComboBox<CompanyDto> companyComboBox;
     private TextArea analysisFocusInput;
     private Grid<CompanyAnalysisDto> grid;
     private java.util.List<CompanyAnalysisDto> gridData;
-
-    // ── Trigger Toolbar ────────────────────────────────────────────────────
 
     public AnalysisView(CompanyMetadataApi companyMetadataApi,
                         CompanyFinancialDataApi companyFinancialDataApi,
                         CompanySharePriceApi companySharePriceApi,
                         CompanyNewsApi companyNewsApi,
                         CompanyInsiderTransactionApi companyInsiderTransactionApi,
-                        CompanyAnalysisApi companyAnalysisApi, AnalysisRequestService analysisRequestService, ObjectMapper objectMapper, CompanyAnalysisProgressBroadcasterService broadcaster) {
+                        CompanyAnalysisApi companyAnalysisApi,
+                        AnalysisRequestService analysisRequestService,
+                        ObjectMapper objectMapper,
+                        CompanyAnalysisProgressBroadcasterService broadcaster,
+                        AnalysisResultRenderer analysisResultRenderer) {
         this.companyMetadataApi = companyMetadataApi;
         this.companyFinancialDataApi = companyFinancialDataApi;
         this.companySharePriceApi = companySharePriceApi;
@@ -88,6 +76,7 @@ public class AnalysisView extends VerticalLayout {
         this.analysisRequestService = analysisRequestService;
         this.objectMapper = objectMapper;
         this.broadcaster = broadcaster;
+        this.analysisResultRenderer = analysisResultRenderer;
 
         setSizeFull();
         setPadding(true);
@@ -105,23 +94,6 @@ public class AnalysisView extends VerticalLayout {
 
         add(content);
         setFlexGrow(1, content);
-    }
-
-    private static String formatJson(String raw) {
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(mapper.readValue(raw, Object.class));
-        } catch (Exception e) {
-            return raw;
-        }
-    }
-
-    private static String formatKeyTitle(String key) {
-        if (key == null || key.isEmpty()) {
-            return "";
-        }
-        String formatted = key.replaceAll("([a-z])([A-Z]+)", "$1 $2").replace("_", " ").toLowerCase();
-        return Character.toUpperCase(formatted.charAt(0)) + formatted.substring(1).trim();
     }
 
     private Component createTriggerToolbar() {
@@ -194,8 +166,6 @@ public class AnalysisView extends VerticalLayout {
         }
     }
 
-    // ── Analysis Details Dialog ────────────────────────────────────────────
-
     private Component createHistoryGrid() {
         VerticalLayout layout = new VerticalLayout();
         layout.setPadding(false);
@@ -208,7 +178,7 @@ public class AnalysisView extends VerticalLayout {
         title.getStyle().set("margin-top", "1rem");
         grid = buildGrid();
 
-        List<CompanyAnalysisDto> data = companyAnalysisApi.getCompanyAnalysisList(PageRequest.of(0, 1000)).getContent();
+        List<CompanyAnalysisDto> data = companyAnalysisApi.getCompanyAnalysisList(org.springframework.data.domain.PageRequest.of(0, 1000)).getContent();
         gridData = new java.util.ArrayList<>(data);
         GridListDataView<CompanyAnalysisDto> dataView = grid.setItems(gridData);
         setupFilters(dataView);
@@ -270,8 +240,6 @@ public class AnalysisView extends VerticalLayout {
         return g;
     }
 
-    // ── Report Tab ─────────────────────────────────────────────────────────
-
     private void setupFilters(GridListDataView<CompanyAnalysisDto> dataView) {
         HeaderRow filterRow = grid.appendHeaderRow();
         AnalysisFilter filter = new AnalysisFilter();
@@ -299,8 +267,6 @@ public class AnalysisView extends VerticalLayout {
         });
     }
 
-    // ── JSON Tab ───────────────────────────────────────────────────────────
-
     private void showAnalysisDetails(CompanyAnalysisDto analysis) {
         Dialog dialog = new Dialog();
         dialog.setWidth("85vw");
@@ -308,19 +274,7 @@ public class AnalysisView extends VerticalLayout {
         dialog.setCloseOnEsc(true);
         dialog.setCloseOnOutsideClick(true);
 
-        dialog.getHeader().add(buildDialogHeader(analysis));
-
-        TabSheet tabSheet = new TabSheet();
-        tabSheet.setSizeFull();
-        tabSheet.add("Markdown Report", createReportTab(analysis));
-
-        addAgentTabs(tabSheet, analysis.getAnalysisData());
-
-        tabSheet.add("JSON Data", createJsonTab(analysis));
-        if (analysis.getStatus() == AnalysisStatus.FAILED && analysis.getError() != null) {
-            tabSheet.add("Error Details", createErrorTab(analysis));
-        }
-        dialog.add(tabSheet);
+        dialog.add(analysisResultRenderer.renderAnalysisTabs(analysis));
 
         Button closeButton = new Button("Close", _ -> dialog.close());
         closeButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -328,265 +282,9 @@ public class AnalysisView extends VerticalLayout {
         dialog.open();
     }
 
-    // ── Error Tab ──────────────────────────────────────────────────────────
-
-    private HorizontalLayout buildDialogHeader(CompanyAnalysisDto analysis) {
-        HorizontalLayout header = new HorizontalLayout();
-        header.setWidthFull();
-        header.setAlignItems(FlexComponent.Alignment.CENTER);
-        header.setSpacing(true);
-
-        H3 title = new H3(String.format("%s - %s Analysis", analysis.getTicker(), analysis.getMarket().toUpperCase()));
-        title.addClassNames(LumoUtility.Margin.NONE);
-        header.add(title, ViewHelper.statusBadge(analysis.getStatus()));
-
-        if (analysis.getRecommendation() != null) {
-            header.add(new Span("Rec:"), ViewHelper.recommendationBadge(analysis.getRecommendation()));
-        }
-        if (analysis.getOutlook() != null) {
-            header.add(new Span("Outlook:"), ViewHelper.outlookBadge(analysis.getOutlook()));
-        }
-        if (analysis.getConviction() != null) {
-            Span conv = new Span("Conviction: " + analysis.getConviction() + "/5");
-            conv.addClassNames(LumoUtility.FontWeight.BOLD, LumoUtility.TextColor.SECONDARY);
-            header.add(conv);
-        }
-        return header;
-    }
-
-    private Component createReportTab(CompanyAnalysisDto analysis) {
-        String markdown = analysis.getReport();
-        if (markdown == null || markdown.isBlank()) {
-            return ViewHelper.emptyPlaceholder("No report generated yet.");
-        }
-        try {
-            JsonNode citationsNode = null;
-            String jsonData = analysis.getAnalysisData();
-            if (jsonData != null) {
-                JsonNode rootNode = objectMapper.readTree(jsonData);
-                if (rootNode.has(TRACE_CITATIONS_KEY)) {
-                    citationsNode = rootNode.get(TRACE_CITATIONS_KEY);
-                }
-            }
-
-            markdown = injectCitations(markdown, analysis.getAnalysisData());
-            String htmlContent = HtmlRenderer.builder().build()
-                    .render(Parser.builder().build().parse(markdown));
-
-            CitationMarkdownContainer container = new CitationMarkdownContainer(htmlContent, citationsNode);
-            container.getStyle().set("padding", "24px").set("line-height", "1.6").set("color", "var(--lumo-body-text-color)");
-
-            Scroller scroller = new Scroller(container);
-            scroller.setSizeFull();
-            return scroller;
-        } catch (Exception e) {
-            TextArea area = new TextArea();
-            area.setValue(markdown);
-            area.setReadOnly(true);
-            area.setSizeFull();
-            return area;
-        }
-    }
-
-    // ── Helpers ─────────────────────────────────────────────────────────────
-
-    private String injectCitations(String markdown, String analysisDataJson) {
-        if (analysisDataJson == null || markdown == null) return markdown;
-        try {
-            JsonNode rootNode = objectMapper.readTree(analysisDataJson);
-            if (!rootNode.has(TRACE_CITATIONS_KEY)) return markdown;
-            JsonNode citationsNode = rootNode.get(TRACE_CITATIONS_KEY);
-
-            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\[(\\d+)\\]");
-            java.util.regex.Matcher matcher = pattern.matcher(markdown);
-            StringBuilder sb = new StringBuilder();
-            while (matcher.find()) {
-                String id = matcher.group(1);
-                if (citationsNode.has(id)) {
-                    String replacement = "<span class=\"citation-link\" data-citation-id=\"" + id + "\" style=\"color: var(--lumo-primary-color); cursor: pointer; font-weight: bold; vertical-align: super; text-decoration: underline;\">[" + id + "]</span>";
-                    matcher.appendReplacement(sb, java.util.regex.Matcher.quoteReplacement(replacement));
-                }
-            }
-            matcher.appendTail(sb);
-            return sb.toString();
-        } catch (Exception e) {
-            return markdown;
-        }
-    }
-
-    // ── Analysis Filter ────────────────────────────────────────────────────
-
-    private Component createJsonTab(CompanyAnalysisDto analysis) {
-        String jsonData = analysis.getAnalysisData();
-        if (jsonData == null || jsonData.isBlank()) {
-            return ViewHelper.emptyPlaceholder("No JSON data generated.");
-        }
-
-        String prettyJson = formatJson(jsonData);
-
-        HorizontalLayout toolbar = new HorizontalLayout();
-        toolbar.setWidthFull();
-        toolbar.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
-        toolbar.setSpacing(true);
-
-        Button copyBtn = new Button("Copy to Clipboard", VaadinIcon.COPY.create());
-        copyBtn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
-        copyBtn.addClickListener(_ -> {
-            UI.getCurrent().getPage().executeJs("navigator.clipboard.writeText($0);", prettyJson);
-            Notification.show("JSON copied to clipboard!", 2000, Notification.Position.BOTTOM_END)
-                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-        });
-
-        Button downloadBtn = new Button("Download JSON", VaadinIcon.DOWNLOAD.create());
-        downloadBtn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
-        DownloadHandler downloadHandler = DownloadHandler.fromInputStream(_ -> {
-            byte[] bytes = prettyJson.getBytes(StandardCharsets.UTF_8);
-            return new DownloadResponse(new ByteArrayInputStream(bytes),
-                    analysis.getTicker() + "_analysis.json", "application/json", bytes.length);
-        });
-        Anchor downloadLink = new Anchor(downloadHandler, "");
-        downloadLink.getElement().setAttribute("download", true);
-        downloadLink.add(downloadBtn);
-        toolbar.add(copyBtn, downloadLink);
-
-        TextArea textArea = new TextArea();
-        textArea.setValue(prettyJson);
-        textArea.setReadOnly(true);
-        textArea.setSizeFull();
-        textArea.getStyle().set("font-family", "monospace").set("font-size", "0.9rem");
-
-        VerticalLayout layout = new VerticalLayout(toolbar, textArea);
-        layout.setSizeFull();
-        layout.setPadding(true);
-        layout.setSpacing(true);
-        layout.setFlexGrow(1, textArea);
-        return layout;
-    }
-
-    // ── Markdown CSS ───────────────────────────────────────────────────────
-
-    private Component createErrorTab(CompanyAnalysisDto analysis) {
-        Div errorBanner = new Div();
-        errorBanner.setText("Analysis execution encountered an error:");
-        errorBanner.addClassNames(LumoUtility.Background.ERROR_10, LumoUtility.TextColor.ERROR,
-                LumoUtility.Padding.MEDIUM, LumoUtility.BorderRadius.MEDIUM,
-                LumoUtility.FontWeight.BOLD, LumoUtility.Width.FULL);
-
-        TextArea errorDetails = new TextArea();
-        errorDetails.setValue(analysis.getError() != null ? analysis.getError() : "Unknown error");
-        errorDetails.setReadOnly(true);
-        errorDetails.setSizeFull();
-        errorDetails.getStyle().set("font-family", "monospace");
-
-        VerticalLayout layout = new VerticalLayout(errorBanner, errorDetails);
-        layout.setSizeFull();
-        layout.setPadding(true);
-        layout.setFlexGrow(1, errorDetails);
-        return layout;
-    }
-
-    private void addAgentTabs(TabSheet tabSheet, String jsonData) {
-        if (jsonData == null || jsonData.isBlank()) {
-            return;
-        }
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode rootNode = mapper.readTree(jsonData);
-
-            for (Map.Entry<String, JsonNode> entry : rootNode.properties()) {
-                String key = entry.getKey();
-                if (key.startsWith("SYNTHESIZER") || key.equals(TRACE_CITATIONS_KEY)) {
-                    continue;
-                }
-
-                JsonNode agentData = entry.getValue();
-                Component tabContent = createAgentTabContent(agentData, jsonData);
-                if (tabContent != null) {
-                    tabSheet.add(formatKeyTitle(key), tabContent);
-                }
-            }
-        } catch (Exception e) {
-            // Silently fallback without adding tabs
-        }
-    }
-
-    private Component createAgentTabContent(JsonNode agentData, String jsonData) {
-        if (agentData == null || agentData.properties().isEmpty()) {
-            return null;
-        }
-
-        VerticalLayout layout = new VerticalLayout();
-        layout.setPadding(true);
-        layout.setSpacing(true);
-        layout.setSizeFull();
-        layout.getStyle().set("overflow-y", "auto");
-
-        for (Map.Entry<String, JsonNode> field : agentData.properties()) {
-            String key = field.getKey();
-            JsonNode value = field.getValue();
-
-            H4 fieldHeader = new H4(formatKeyTitle(key));
-            fieldHeader.addClassNames(LumoUtility.Margin.Top.MEDIUM, LumoUtility.Margin.Bottom.XSMALL);
-            layout.add(fieldHeader);
-
-            if (value.isArray()) {
-                UnorderedList list = new UnorderedList();
-                list.addClassNames(LumoUtility.Margin.Top.NONE, LumoUtility.FontSize.SMALL);
-                for (JsonNode item : value) {
-                    if (item.isObject()) {
-                        Pre pre = new Pre(item.toPrettyString());
-                        pre.addClassNames(LumoUtility.Background.CONTRAST_5, LumoUtility.Padding.SMALL, LumoUtility.FontSize.SMALL);
-                        pre.getStyle().set("border-radius", "4px").set("font-family", "monospace");
-                        list.add(new ListItem(pre));
-                    } else {
-                        ListItem li = new ListItem();
-                        li.add(renderMarkdownWithCitations(item.asString(), jsonData));
-                        list.add(li);
-                    }
-                }
-                layout.add(list);
-            } else if (value.isObject()) {
-                Pre pre = new Pre();
-                pre.setText(value.toPrettyString());
-                pre.addClassNames(LumoUtility.Background.CONTRAST_5, LumoUtility.Padding.SMALL, LumoUtility.FontSize.SMALL);
-                pre.getStyle().set("border-radius", "4px").set("font-family", "monospace");
-                layout.add(pre);
-            } else {
-                layout.add(renderMarkdownWithCitations(value.asString(), jsonData));
-            }
-        }
-
-        return layout;
-    }
-
-    private Component renderMarkdownWithCitations(String strValue, String jsonData) {
-        try {
-            JsonNode citationsNode = null;
-            if (jsonData != null) {
-                JsonNode rootNode = objectMapper.readTree(jsonData);
-                if (rootNode.has(TRACE_CITATIONS_KEY)) {
-                    citationsNode = rootNode.get(TRACE_CITATIONS_KEY);
-                }
-            }
-
-            String processedMd = injectCitations(strValue, jsonData);
-            String htmlContent = HtmlRenderer.builder().build()
-                    .render(Parser.builder().build().parse(processedMd));
-
-            CitationMarkdownContainer container = new CitationMarkdownContainer(htmlContent, citationsNode);
-            container.getStyle().set("line-height", "1.6").set("font-size", "0.9rem");
-            return container;
-        } catch (Exception e) {
-            Paragraph p = new Paragraph(strValue);
-            p.getStyle().set("white-space", "pre-wrap");
-            p.addClassNames(LumoUtility.Margin.Top.NONE, LumoUtility.FontSize.SMALL, LumoUtility.TextColor.BODY);
-            return p;
-        }
-    }
-
     private void refreshGridData() {
         getUI().ifPresent(ui -> ui.access(() -> {
-            List<CompanyAnalysisDto> latest = companyAnalysisApi.getCompanyAnalysisList(PageRequest.of(0, 1000)).getContent();
+            List<CompanyAnalysisDto> latest = companyAnalysisApi.getCompanyAnalysisList(org.springframework.data.domain.PageRequest.of(0, 1000)).getContent();
             gridData.clear();
             gridData.addAll(latest);
             grid.getDataProvider().refreshAll();
@@ -649,81 +347,5 @@ public class AnalysisView extends VerticalLayout {
         }
     }
 
-    public static class CitationMarkdownContainer extends Div {
-        private final JsonNode citationsNode;
 
-        public CitationMarkdownContainer(String htmlContent, JsonNode citationsNode) {
-            this.citationsNode = citationsNode;
-            add(new Html("<div><div class='rendered-markdown'>" + htmlContent + "</div></div>"));
-
-            getElement().executeJs(
-                    "this.addEventListener('click', function(e) {" +
-                            "  if(e.target && e.target.classList.contains('citation-link')) {" +
-                            "    var cid = e.target.getAttribute('data-citation-id');" +
-                            "    $0.$server.showCitation(cid);" +
-                            "  }" +
-                            "});", getElement());
-        }
-
-        @ClientCallable
-        public void showCitation(String citationId) {
-            if (citationsNode != null && citationsNode.has(citationId)) {
-                JsonNode data = citationsNode.get(citationId);
-                showCitationDialog(citationId, data);
-            }
-        }
-
-        private void showCitationDialog(String id, JsonNode data) {
-            Dialog dialog = new Dialog();
-
-            String title = "Citation Source [" + id + "]";
-            if (data.isObject()) {
-                if (data.has("_source") && data.has("_variant")) {
-                    title += " - " + data.get("_source").asString() + " (" + data.get("_variant").asString() + ")";
-                } else if (data.has("_source")) {
-                    title += " - " + data.get("_source").asString();
-                }
-            }
-            dialog.setHeaderTitle(title);
-
-            dialog.setWidth("700px");
-            dialog.setMaxHeight("85vh");
-
-            Grid<Map.Entry<String, JsonNode>> grid = new Grid<>();
-            grid.addThemeVariants(com.vaadin.flow.component.grid.GridVariant.LUMO_NO_BORDER,
-                    com.vaadin.flow.component.grid.GridVariant.LUMO_COMPACT,
-                    com.vaadin.flow.component.grid.GridVariant.LUMO_WRAP_CELL_CONTENT);
-            grid.addColumn(entry -> formatKeyTitle(entry.getKey())).setHeader("Property").setAutoWidth(true).setFlexGrow(1);
-            grid.addComponentColumn(entry -> {
-                JsonNode val = entry.getValue();
-                if (val.isObject() || val.isArray()) {
-                    Pre pre = new Pre(val.toPrettyString());
-                    pre.getStyle().set("margin", "0").set("font-size", "0.85em").set("white-space", "pre-wrap");
-                    return pre;
-                } else if (val.isNumber()) {
-                    java.text.NumberFormat nf = java.text.NumberFormat.getInstance(java.util.Locale.US);
-                    nf.setGroupingUsed(true);
-                    nf.setMaximumFractionDigits(4);
-                    return new Span(nf.format(val.asDouble()));
-                } else {
-                    return new Span(val.asString());
-                }
-            }).setHeader("Value").setFlexGrow(2);
-
-            List<Map.Entry<String, JsonNode>> items = new java.util.ArrayList<>();
-            data.properties().forEach(entry -> {
-                if (!entry.getKey().startsWith("_")) {
-                    items.add(entry);
-                }
-            });
-            grid.setItems(items);
-
-            Button closeButton = new Button("Close", _ -> dialog.close());
-            closeButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-            dialog.getFooter().add(closeButton);
-
-            dialog.add(grid);
-            dialog.open();
-        }
-    }
 }
