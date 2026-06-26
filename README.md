@@ -11,10 +11,17 @@ Oraculum acts as your personal AI stock analyst. It orchestrates a multi-agent s
 
 ## 📸 Screenshots & UI
 
-*(Add screenshots of your application here before sharing on LinkedIn!)*
-* `![Screener View](docs/images/screener.png)` - Show the multi-strategy screener grid.
-* `![Analysis Progress](docs/images/progress.png)` - Show the real-time agent stepper.
-* `![Company Tearsheet](docs/images/tearsheet.png)` - Show the ApexCharts and dynamic financial grids.
+* **Screener View**
+  ![Screener View](docs/images/screener.png)
+
+* **Company Overview**
+  ![Company Overview](docs/images/company.png)
+
+* **Analysis Progress & Multi-Agent UI**
+  ![Analysis UI](docs/images/analysis.png)
+
+* **Analysis Detail & AI Report**
+  ![Analysis Detail](docs/images/analysis_detail.png)
 
 ---
 
@@ -26,38 +33,38 @@ Oraculum uses a decoupled, event-driven architecture powered by **Spring Modulit
 flowchart TD
     %% Users & UI
     User([User])
-    UI[Vaadin UI<br/>(Screener & Analysis)]
+    UI["Vaadin UI<br/>(Screener & Analysis)"]
     User <--> UI
     
     %% Java Backend Modules
     subgraph Spring Modulith Backend
-        UI_Mod[UI Module]
-        Company[Company Module<br/>(Screener API)]
-        Harvester_Mod[Harvester Module]
-        Load[Load Module]
-        Database[Database Module<br/>(DuckDB & Flyway)]
-        Analyst[Analyst Module<br/>(Multi-Agent Orchestrator)]
-        LLM[LLM Module<br/>(Resilience4j & Router)]
-        Audit[Audit Module]
+        UI_Mod["UI Module"]
+        Company["Company Module<br/>(Screener API)"]
+        Harvester_Mod["Harvester Module"]
+        Load["Load Module"]
+        Database["Database Module<br/>(DuckDB & Flyway)"]
+        Analyst["Analyst Module<br/>(Multi-Agent Orchestrator)"]
+        LLM["LLM Module<br/>(Resilience4j & Router)"]
+        Audit["Audit Module"]
     end
 
     %% External Systems
     subgraph Data Ingestion System
-        Kafka[(Kafka Broker)]
-        PythonHarvester[Python Harvester<br/>(FastStream)]
-        ExchangeDir[(Parquet Exchange Dir)]
-        SimFin[SimFin API]
-        OpenInsider[OpenInsider]
+        Kafka[("Kafka Broker")]
+        PythonHarvester["Python Harvester<br/>(FastStream)"]
+        ExchangeDir[("Parquet Exchange Dir")]
+        SimFin["SimFin API"]
+        OpenInsider["OpenInsider"]
     end
 
     subgraph Data Persistence
-        Postgres[(PostgreSQL)]
+        Postgres[("PostgreSQL")]
     end
     
     subgraph AI Providers
-        OpenAI[OpenAI]
-        Gemini[Gemini]
-        Groq[Groq]
+        OpenAI["OpenAI"]
+        Gemini["Gemini"]
+        Groq["Groq"]
     end
 
     %% Internal connections
@@ -102,13 +109,29 @@ flowchart TD
 
 ## 🤖 Multi-Agent AI System
 
-Oraculum doesn't just pass numbers to an LLM; it orchestrates a team of specialized AI agents:
+Oraculum doesn't just pass numbers to an LLM; it orchestrates a team of specialized AI agents working together in a recursive workflow:
 
+**1. The Specialists**
 - 📊 **Fundamentals Agent**: Analyzes ROCE, margins, cash flows, and balance sheet health.
 - 🗞️ **News Agent**: Evaluates real-time news for market sentiment and materiality.
 - 🕴️ **Insider Agent**: Detects cluster buys and executive confidence signals.
 - 📈 **Share Price Agent**: Analyzes technicals, moving averages, and volume velocity.
-- 🧠 **Synthesizer (Final Analyst)**: Weighs conflicting signals from the sub-agents to deliver a final investment thesis with a conviction score and target price.
+
+**2. The Review Loop**
+- 🧐 **Critic Agent**: Reviews the raw outputs of the specialist agents for logical inconsistencies, bias, or conflicting conclusions. If it finds issues, it instructs specific specialists to re-evaluate their data, creating a powerful feedback loop.
+
+**3. The Final Thesis**
+- 🧠 **Synthesizer (Final Analyst)**: Once the Critic is satisfied, the Synthesizer compiles all the verified specialist signals to deliver a final investment thesis with a conviction score and target price.
+
+### 🔍 Traceability & Hallucination Prevention
+A major challenge with AI in finance is data hallucination. Oraculum solves this by enforcing strict **Data Provenance**. Every metric cited by an agent (e.g., `[87]`, `[39]`) is a hard-linked citation back to a specific, immutable row in the PostgreSQL database (such as a Trailing-Twelve-Month cash flow record). The Synthesizer uses these ground-truth citations to arbitrate disputes between agents, ensuring the final thesis is mathematically auditable.
+
+## 📄 Sample Output & Agent Trace
+
+Curious how the multi-agent system thinks and resolves data conflicts? Check out the raw outputs from a real analysis run on Micron Technology (MU):
+
+* [Example Synthesizer Report (Markdown)](docs/samples/MU_analysis_report.md)
+* [Raw Agent Trace (JSON)](docs/samples/MU_analysis_agent_trace.json) - *Shows the full state progression, Critic interventions, and ground-truth citations.*
 
 ## 🚀 Getting Started
 
