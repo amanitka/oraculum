@@ -11,17 +11,17 @@ Oraculum acts as your personal AI stock analyst. It orchestrates a multi-agent s
 
 ## 📸 Screenshots & UI
 
-* **Screener View**
-  ![Screener View](docs/images/screener.png)
+* **Screener View**  
+  <a href="docs/images/screener.png"><img src="docs/images/screener.png" width="400" alt="Screener View"></a>
 
-* **Company Overview**
-  ![Company Overview](docs/images/company.png)
+* **Company Overview**  
+  <a href="docs/images/company.png"><img src="docs/images/company.png" width="400" alt="Company Overview"></a>
 
-* **Analysis Progress & Multi-Agent UI**
-  ![Analysis UI](docs/images/analysis.png)
+* **Analysis Progress & Multi-Agent UI**  
+  <a href="docs/images/analysis.png"><img src="docs/images/analysis.png" width="400" alt="Analysis UI"></a>
 
-* **Analysis Detail & AI Report**
-  ![Analysis Detail](docs/images/analysis_detail.png)
+* **Analysis Detail & AI Report**  
+  <a href="docs/images/analysis_detail.png"><img src="docs/images/analysis_detail.png" width="400" alt="Analysis Detail"></a>
 
 ---
 
@@ -31,70 +31,64 @@ Oraculum uses a decoupled, event-driven architecture powered by **Spring Modulit
 
 ```mermaid
 flowchart TD
-    %% Users & UI
-    User([User])
-    UI["Vaadin UI<br/>(Screener & Analysis)"]
-    User <--> UI
+    User([User]) <--> UI["Vaadin UI"]
     
-    %% Java Backend Modules
     subgraph Spring Modulith Backend
+        direction TB
         UI_Mod["UI Module"]
-        Company["Company Module<br/>(Screener API)"]
+        Company["Company Module"]
+        Analyst["Analyst Module"]
         Harvester_Mod["Harvester Module"]
         Load["Load Module"]
-        Database["Database Module<br/>(DuckDB & Flyway)"]
-        Analyst["Analyst Module<br/>(Multi-Agent Orchestrator)"]
-        LLM["LLM Module<br/>(Resilience4j & Router)"]
+        Database["Database Module"]
+        LLM["LLM Module"]
         Audit["Audit Module"]
     end
-
-    %% External Systems
-    subgraph Data Ingestion System
+    
+    subgraph Data Ingestion
+        direction TB
         Kafka[("Kafka Broker")]
-        PythonHarvester["Python Harvester<br/>(FastStream)"]
-        ExchangeDir[("Parquet Exchange Dir")]
+        PythonHarvester["Python Harvester"]
+        ExchangeDir[("Parquet Exchange")]
+    end
+
+    subgraph External APIs
+        direction TB
         SimFin["SimFin API"]
         OpenInsider["OpenInsider"]
+        AI_Models["OpenAI / Gemini / Groq"]
     end
 
-    subgraph Data Persistence
+    subgraph Persistence
         Postgres[("PostgreSQL")]
     end
-    
-    subgraph AI Providers
-        OpenAI["OpenAI"]
-        Gemini["Gemini"]
-        Groq["Groq"]
-    end
 
-    %% Internal connections
-    UI --> UI_Mod
+    %% Core UI Flow
+    UI <--> UI_Mod
     UI_Mod <--> Company
     UI_Mod --> Analyst
     UI_Mod --> Harvester_Mod
     
-    %% Data Harvesting Flow
-    Harvester_Mod -- "HarvesterRequest" --> Kafka
+    %% Harvester / Ingestion Pipeline
+    Harvester_Mod -- "Request" --> Kafka
     Kafka -- "Consume" --> PythonHarvester
     PythonHarvester -- "Fetch" --> SimFin
     PythonHarvester -- "Fetch" --> OpenInsider
-    PythonHarvester -- "Write Parquet" --> ExchangeDir
-    PythonHarvester -- "DataFileReadyEvent" --> Kafka
+    PythonHarvester -- "Write" --> ExchangeDir
+    PythonHarvester -- "Ready Event" --> Kafka
     
-    %% Data Loading Flow
+    %% Data Load Pipeline
     Kafka -- "Consume" --> Load
-    Load -- "Read Parquet" --> ExchangeDir
-    Load -- "High-Speed ETL" --> Database
+    Load -- "Read" --> ExchangeDir
+    Load -- "DuckDB ETL" --> Database
     Database -- "UPSERT" --> Postgres
     
     %% Analysis Flow
     Analyst -- "Query Data" --> Company
     Company -- "Read Views" --> Postgres
     Analyst -- "Execute Prompts" --> LLM
-    LLM -- "API Calls" --> OpenAI
-    LLM -- "Fallback" --> Gemini
-    LLM -- "Fallback" --> Groq
-    LLM -- "LlmExecutionEvent" --> Audit
+    LLM -- "API Call" --> AI_Models
+    LLM -- "Event" --> Audit
     Audit -- "Log" --> Postgres
 ```
 
