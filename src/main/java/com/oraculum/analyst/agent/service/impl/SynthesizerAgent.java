@@ -16,7 +16,7 @@ import com.oraculum.llm.api.dto.LlmResponse;
 import com.oraculum.llm.api.dto.LlmTierType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.Map;
 
@@ -26,7 +26,7 @@ public class SynthesizerAgent implements Agent<SynthesizerAgentOutput> {
 
     private final LlmRouterApi llmRouterApi;
     private final PromptRegistry promptRegistry;
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
 
     @Override
     public AgentType getName() {
@@ -46,10 +46,10 @@ public class SynthesizerAgent implements Agent<SynthesizerAgentOutput> {
     public AgentOutput<SynthesizerAgentOutput> run(AgentContext ctx) {
         // Safe selection: Only include specialists and ignore null outputs to prevent NPE in Collectors.toMap
         Map<AgentType, Object> specialistOutputs = ctx.state().getSpecialistOutputs();
-        String specialistOutputJson = JsonUtils.toJson(objectMapper, specialistOutputs, "{}");
+        String specialistOutputJson = JsonUtils.toJson(jsonMapper, specialistOutputs, "{}");
         // Retrieve Critic Agent output from prior outputs
         CriticAgentOutput criticOutput = (CriticAgentOutput) ctx.state().getAgentOutput(AgentType.CRITIC);
-        String criticOutputJson = JsonUtils.toJson(objectMapper, criticOutput, "{}");
+        String criticOutputJson = JsonUtils.toJson(jsonMapper, criticOutput, "{}");
 
         String prompt = promptRegistry.getPrompt(PromptType.SYNTHESIZER)
                 .replace("{{ analysis_focus }}", ctx.analysisFocus() != null ? ctx.analysisFocus() : "Standard comprehensive analysis.")

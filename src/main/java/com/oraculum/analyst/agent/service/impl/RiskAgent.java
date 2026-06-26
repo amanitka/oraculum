@@ -16,7 +16,7 @@ import com.oraculum.llm.api.dto.LlmResponse;
 import com.oraculum.llm.api.dto.LlmTierType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 @Component
 @RequiredArgsConstructor
@@ -24,7 +24,7 @@ public class RiskAgent implements Agent<RiskAgentOutput> {
 
     private final LlmRouterApi llmRouterApi;
     private final PromptRegistry promptRegistry;
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
 
     @Override
     public AgentType getName() {
@@ -37,13 +37,13 @@ public class RiskAgent implements Agent<RiskAgentOutput> {
         CompanyFactSheetData factSheet = ctx.factSheetData();
 
         SharePriceAgentOutput sharePriceOutput = (SharePriceAgentOutput) ctx.state().getAgentOutput(AgentType.SHARE_PRICE);
-        String sharePriceJson = JsonUtils.toJson(objectMapper, sharePriceOutput, "{}");
+        String sharePriceJson = JsonUtils.toJson(jsonMapper, sharePriceOutput, "{}");
 
         FundamentalsAgentOutput fundamentalsOutput = (FundamentalsAgentOutput) ctx.state().getAgentOutput(AgentType.FUNDAMENTALS);
-        String fundamentalsJson = JsonUtils.toJson(objectMapper, fundamentalsOutput, "{}");
+        String fundamentalsJson = JsonUtils.toJson(jsonMapper, fundamentalsOutput, "{}");
 
         CashFlowAgentOutput cashFlowOutput = (CashFlowAgentOutput) ctx.state().getAgentOutput(AgentType.CASH_FLOW);
-        String cashFlowJson = JsonUtils.toJson(objectMapper, cashFlowOutput, "{}");
+        String cashFlowJson = JsonUtils.toJson(jsonMapper, cashFlowOutput, "{}");
 
         FinancialDataProfile profile = getName().getDataProfile();
 

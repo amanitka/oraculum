@@ -1,6 +1,7 @@
 package com.oraculum.analyst.service;
 
 import com.oraculum.analyst.config.AnalystProperties;
+import com.oraculum.analyst.dto.CitationRegistry;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
 import com.oraculum.company.api.CompanyFinancialDataApi;
 import com.oraculum.company.api.CompanyInsiderTransactionApi;
@@ -10,8 +11,7 @@ import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.dto.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import tools.jackson.databind.ObjectMapper;
-import com.oraculum.analyst.dto.CitationRegistry;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDate;
 import java.util.Comparator;
@@ -27,7 +27,7 @@ public class CompanyFactSheetDataService {
     private final CompanySharePriceApi companySharePriceApi;
     private final CompanyNewsApi companyNewsApi;
     private final CompanyInsiderTransactionApi companyInsiderTransactionApi;
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
     private final AnalystProperties analystProperties;
 
     private Map<StatementVariant, List<IncomeStatementDto>> getIncomeStatements(CompanyDto company, LocalDate annualAfter, LocalDate quarterlyAfter) {
@@ -106,7 +106,7 @@ public class CompanyFactSheetDataService {
         LocalDate quarterlyAfter = analystProperties.factSheet().getQuarterlyFactSheetHistoryDate();
 
         return CompanyFactSheetData.builder()
-                .objectMapper(objectMapper)
+                .jsonMapper(jsonMapper)
                 .company(company)
                 .citationRegistry(citationRegistry)
                 .incomeStatements(getIncomeStatements(company, annualAfter, quarterlyAfter))

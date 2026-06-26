@@ -4,16 +4,13 @@ import com.oraculum.analyst.api.CompanyAnalysisApi;
 import com.oraculum.analyst.api.domain.AnalysisStatus;
 import com.oraculum.analyst.api.dto.CompanyAnalysisDto;
 import com.oraculum.analyst.api.dto.CompanyAnalysisRequestEvent;
-import com.oraculum.company.api.CompanyMetadataApi;
-import com.oraculum.company.api.CompanyFinancialDataApi;
-import com.oraculum.company.api.CompanySharePriceApi;
-import com.oraculum.company.api.CompanyNewsApi;
-import com.oraculum.company.api.CompanyInsiderTransactionApi;
+import com.oraculum.company.api.*;
 import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.ui.MainLayout;
 import com.oraculum.ui.ViewHelper;
 import com.oraculum.ui.api.AnalysisProgressBroadcasterService;
 import com.oraculum.ui.service.AnalysisRequestService;
+import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Html;
 import com.vaadin.flow.component.UI;
@@ -355,13 +352,21 @@ public class AnalysisView extends VerticalLayout {
             return ViewHelper.emptyPlaceholder("No report generated yet.");
         }
         try {
+            JsonNode citationsNode = null;
+            String jsonData = analysis.getAnalysisData();
+            if (jsonData != null) {
+                JsonNode rootNode = objectMapper.readTree(jsonData);
+                if (rootNode.has("_citations")) {
+                    citationsNode = rootNode.get("_citations");
+                }
+            }
+
             markdown = injectCitations(markdown, analysis.getAnalysisData());
             String htmlContent = HtmlRenderer.builder().build()
                     .render(Parser.builder().build().parse(markdown));
 
-            Div container = new Div();
+            CitationMarkdownContainer container = new CitationMarkdownContainer(htmlContent, citationsNode);
             container.getStyle().set("padding", "24px").set("line-height", "1.6").set("color", "var(--lumo-body-text-color)");
-            container.add(new Html("<div><div class='rendered-markdown'>" + htmlContent + "</div></div>"));
 
             Scroller scroller = new Scroller(container);
             scroller.setSizeFull();
@@ -387,14 +392,10 @@ public class AnalysisView extends VerticalLayout {
             StringBuilder sb = new StringBuilder();
             while (matcher.find()) {
                 String id = matcher.group(1);
-                String replacement = matcher.group(0);
                 if (citationsNode.has(id)) {
-                    JsonNode citationData = citationsNode.get(id);
-                    String prettyJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(citationData);
-                    String escapedJson = prettyJson.replace("\"", "&quot;").replace("<", "&lt;").replace(">", "&gt;");
-                    replacement = "<span style=\"color: var(--lumo-primary-color); cursor: help; font-size: 0.8em; vertical-align: super;\" title=\"" + escapedJson + "\">[" + id + "]</span>";
+                    String replacement = "<span class=\"citation-link\" data-citation-id=\"" + id + "\" style=\"color: var(--lumo-primary-color); cursor: pointer; font-weight: bold; vertical-align: super; text-decoration: underline;\">[" + id + "]</span>";
+                    matcher.appendReplacement(sb, java.util.regex.Matcher.quoteReplacement(replacement));
                 }
-                matcher.appendReplacement(sb, replacement);
             }
             matcher.appendTail(sb);
             return sb.toString();
@@ -486,7 +487,7 @@ public class AnalysisView extends VerticalLayout {
 
             for (Map.Entry<String, JsonNode> entry : rootNode.properties()) {
                 String key = entry.getKey();
-                if (key.startsWith("SYNTHESIZER")) {
+                if (key.startsWith("SYNTHESIZER") || key.equals("_citations")) {
                     continue;
                 }
 
@@ -552,12 +553,20 @@ public class AnalysisView extends VerticalLayout {
 
     private Component renderMarkdownWithCitations(String strValue, String jsonData) {
         try {
+            JsonNode citationsNode = null;
+            if (jsonData != null) {
+                JsonNode rootNode = objectMapper.readTree(jsonData);
+                if (rootNode.has("_citations")) {
+                    citationsNode = rootNode.get("_citations");
+                }
+            }
+
             String processedMd = injectCitations(strValue, jsonData);
             String htmlContent = HtmlRenderer.builder().build()
                     .render(Parser.builder().build().parse(processedMd));
-            Div container = new Div();
+
+            CitationMarkdownContainer container = new CitationMarkdownContainer(htmlContent, citationsNode);
             container.getStyle().set("line-height", "1.6").set("font-size", "0.9rem");
-            container.add(new Html("<div><div class='rendered-markdown'>" + htmlContent + "</div></div>"));
             return container;
         } catch (Exception e) {
             Paragraph p = new Paragraph(strValue);
@@ -645,6 +654,64 @@ public class AnalysisView extends VerticalLayout {
             });
 
             addDetachListener(_ -> unregister.run());
+        }
+    }
+
+    public static class CitationMarkdownContainer extends Div {
+        private final JsonNode citationsNode;
+
+        public CitationMarkdownContainer(String htmlContent, JsonNode citationsNode) {
+            this.citationsNode = citationsNode;
+            add(new Html("<div><div class='rendered-markdown'>" + htmlContent + "</div></div>"));
+
+            getElement().executeJs(
+                    "this.addEventListener('click', function(e) {" +
+                            "  if(e.target && e.target.classList.contains('citation-link')) {" +
+                            "    var cid = e.target.getAttribute('data-citation-id');" +
+                            "    $0.$server.showCitation(cid);" +
+                            "  }" +
+                            "});", getElement());
+        }
+
+        @ClientCallable
+        public void showCitation(String citationId) {
+            if (citationsNode != null && citationsNode.has(citationId)) {
+                JsonNode data = citationsNode.get(citationId);
+                showCitationDialog(citationId, data);
+            }
+        }
+
+        private void showCitationDialog(String id, JsonNode data) {
+            Dialog dialog = new Dialog();
+            dialog.setHeaderTitle("Citation Source [" + id + "]");
+            dialog.setWidth("700px");
+            dialog.setMaxHeight("85vh");
+
+            Grid<Map.Entry<String, JsonNode>> grid = new Grid<>();
+            grid.addThemeVariants(com.vaadin.flow.component.grid.GridVariant.LUMO_NO_BORDER,
+                    com.vaadin.flow.component.grid.GridVariant.LUMO_COMPACT,
+                    com.vaadin.flow.component.grid.GridVariant.LUMO_ROW_STRIPES);
+            grid.addColumn(Map.Entry::getKey).setHeader("Property").setAutoWidth(true).setFlexGrow(0);
+            grid.addComponentColumn(entry -> {
+                JsonNode val = entry.getValue();
+                if (val.isObject() || val.isArray()) {
+                    Pre pre = new Pre(val.toPrettyString());
+                    pre.getStyle().set("margin", "0").set("font-size", "0.85em").set("white-space", "pre-wrap");
+                    return pre;
+                } else {
+                    return new Span(val.asString());
+                }
+            }).setHeader("Value").setAutoWidth(true).setFlexGrow(1);
+
+            List<Map.Entry<String, JsonNode>> items = new java.util.ArrayList<>(data.properties());
+            grid.setItems(items);
+
+            Button closeButton = new Button("Close", _ -> dialog.close());
+            closeButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+            dialog.getFooter().add(closeButton);
+
+            dialog.add(grid);
+            dialog.open();
         }
     }
 }

@@ -1,14 +1,14 @@
 package com.oraculum.analyst.util;
 
-import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 public class JsonUtils {
-    public static String toJson(ObjectMapper objectMapper, Object value, String defaultValue) {
+    public static String toJson(JsonMapper jsonMapper, Object value, String defaultValue) {
         if (value == null) {
             return defaultValue;
         }
         try {
-            return objectMapper.writeValueAsString(value);
+            return jsonMapper.writeValueAsString(value);
         } catch (Exception e) {
             return defaultValue;
         }

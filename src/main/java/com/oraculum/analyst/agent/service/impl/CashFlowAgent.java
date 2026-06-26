@@ -19,7 +19,7 @@ import com.oraculum.llm.api.dto.LlmResponse;
 import com.oraculum.llm.api.dto.LlmTierType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 @Component
 @RequiredArgsConstructor
@@ -27,7 +27,7 @@ public class CashFlowAgent implements Agent<CashFlowAgentOutput> {
 
     private final LlmRouterApi llmRouterApi;
     private final PromptRegistry promptRegistry;
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
 
     @Override
     public AgentType getName() {
@@ -40,7 +40,7 @@ public class CashFlowAgent implements Agent<CashFlowAgentOutput> {
         CompanyFactSheetData factSheet = ctx.factSheetData();
 
         FundamentalsAgentOutput fundamentalsOutput = (FundamentalsAgentOutput) ctx.state().getAgentOutput(AgentType.FUNDAMENTALS);
-        String fundamentalsJson = JsonUtils.toJson(objectMapper, fundamentalsOutput, "{}");
+        String fundamentalsJson = JsonUtils.toJson(jsonMapper, fundamentalsOutput, "{}");
 
         FinancialDataProfile profile = getName().getDataProfile();
 

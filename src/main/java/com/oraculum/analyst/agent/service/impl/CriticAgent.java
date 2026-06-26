@@ -15,7 +15,7 @@ import com.oraculum.llm.api.dto.LlmResponse;
 import com.oraculum.llm.api.dto.LlmTierType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.Map;
 
@@ -25,13 +25,12 @@ public class CriticAgent implements Agent<CriticAgentOutput> {
 
     private final LlmRouterApi llmRouterApi;
     private final PromptRegistry promptRegistry;
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
 
     @Override
     public AgentType getName() {
         return AgentType.CRITIC;
     }
-
 
 
     @Override
@@ -41,8 +40,8 @@ public class CriticAgent implements Agent<CriticAgentOutput> {
                 .filter(AgentType::isSpecialist)
                 .filter(a -> !a.requiredVariants().isEmpty())
                 .collect(java.util.stream.Collectors.toMap(AgentType::getAgentName, AgentType::requiredVariants));
-        String agentTimeframesJson = JsonUtils.toJson(objectMapper, agentTimeframes, "{}");
-        String priorOutputsJson = JsonUtils.toJson(objectMapper, specialistOutputs, "{}");
+        String agentTimeframesJson = JsonUtils.toJson(jsonMapper, agentTimeframes, "{}");
+        String priorOutputsJson = JsonUtils.toJson(jsonMapper, specialistOutputs, "{}");
 
         String fullPrompt = promptRegistry.getPrompt(PromptType.CRITIC)
                 .replace("{{ analysis_focus }}", ctx.analysisFocus() != null ? ctx.analysisFocus() : "Standard comprehensive analysis.")
