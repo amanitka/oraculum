@@ -8,7 +8,7 @@ import com.oraculum.company.api.*;
 import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.ui.MainLayout;
 import com.oraculum.ui.ViewHelper;
-import com.oraculum.ui.api.AnalysisProgressBroadcasterService;
+import com.oraculum.ui.api.CompanyAnalysisProgressBroadcasterService;
 import com.oraculum.ui.service.AnalysisRequestService;
 import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.Component;
@@ -65,7 +65,7 @@ public class AnalysisView extends VerticalLayout {
     private final CompanyAnalysisApi companyAnalysisApi;
     private final AnalysisRequestService analysisRequestService;
     private final ObjectMapper objectMapper;
-    private final AnalysisProgressBroadcasterService broadcaster;
+    private final CompanyAnalysisProgressBroadcasterService broadcaster;
     private ComboBox<CompanyDto> companyComboBox;
     private TextArea analysisFocusInput;
     private Grid<CompanyAnalysisDto> grid;
@@ -78,7 +78,7 @@ public class AnalysisView extends VerticalLayout {
                         CompanySharePriceApi companySharePriceApi,
                         CompanyNewsApi companyNewsApi,
                         CompanyInsiderTransactionApi companyInsiderTransactionApi,
-                        CompanyAnalysisApi companyAnalysisApi, AnalysisRequestService analysisRequestService, ObjectMapper objectMapper, AnalysisProgressBroadcasterService broadcaster) {
+                        CompanyAnalysisApi companyAnalysisApi, AnalysisRequestService analysisRequestService, ObjectMapper objectMapper, CompanyAnalysisProgressBroadcasterService broadcaster) {
         this.companyMetadataApi = companyMetadataApi;
         this.companyFinancialDataApi = companyFinancialDataApi;
         this.companySharePriceApi = companySharePriceApi;
@@ -608,7 +608,7 @@ public class AnalysisView extends VerticalLayout {
     private static class ProgressCell extends Span {
         private final Runnable unregister;
 
-        public ProgressCell(CompanyAnalysisDto analysis, AnalysisProgressBroadcasterService broadcaster, Runnable onComplete) {
+        public ProgressCell(CompanyAnalysisDto analysis, CompanyAnalysisProgressBroadcasterService broadcaster, Runnable onComplete) {
             getElement().getThemeList().add("badge");
             if (analysis.getStatus() == AnalysisStatus.QUEUED) {
                 getElement().getThemeList().add("contrast");

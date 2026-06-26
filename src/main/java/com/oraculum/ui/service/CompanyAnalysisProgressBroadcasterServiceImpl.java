@@ -1,7 +1,7 @@
 package com.oraculum.ui.service;
 
 import com.oraculum.analyst.api.domain.AgentType;
-import com.oraculum.ui.api.AnalysisProgressBroadcasterService;
+import com.oraculum.ui.api.CompanyAnalysisProgressBroadcasterService;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -9,7 +9,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
 @Service
-public class AnalysisProgressBroadcasterServiceImpl implements AnalysisProgressBroadcasterService {
+public class CompanyAnalysisProgressBroadcasterServiceImpl implements CompanyAnalysisProgressBroadcasterService {
 
     private final CopyOnWriteArrayList<Consumer<ProgressUpdate>> listeners = new CopyOnWriteArrayList<>();
 

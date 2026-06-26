@@ -5,7 +5,7 @@ import com.oraculum.analyst.api.domain.AgentType;
 import java.util.UUID;
 import java.util.function.Consumer;
 
-public interface AnalysisProgressBroadcasterService {
+public interface CompanyAnalysisProgressBroadcasterService {
 
     Runnable register(Consumer<ProgressUpdate> listener);
 
