@@ -691,7 +691,8 @@ public class AnalysisView extends VerticalLayout {
 
             Grid<Map.Entry<String, JsonNode>> grid = new Grid<>();
             grid.addThemeVariants(com.vaadin.flow.component.grid.GridVariant.LUMO_NO_BORDER,
-                    com.vaadin.flow.component.grid.GridVariant.LUMO_COMPACT);
+                    com.vaadin.flow.component.grid.GridVariant.LUMO_COMPACT,
+                    com.vaadin.flow.component.grid.GridVariant.LUMO_WRAP_CELL_CONTENT);
             grid.addColumn(entry -> formatKeyTitle(entry.getKey())).setHeader("Property").setAutoWidth(true).setFlexGrow(1);
             grid.addComponentColumn(entry -> {
                 JsonNode val = entry.getValue();
@@ -707,7 +708,7 @@ public class AnalysisView extends VerticalLayout {
                 } else {
                     return new Span(val.asString());
                 }
-            }).setHeader("Value").setAutoWidth(true).setFlexGrow(2);
+            }).setHeader("Value").setFlexGrow(2);
 
             List<Map.Entry<String, JsonNode>> items = new java.util.ArrayList<>();
             data.properties().forEach(entry -> {
