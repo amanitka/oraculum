@@ -9,7 +9,5 @@ import java.util.List;
 
 @Repository
 public interface MacroObservationRepository extends JpaRepository<MacroObservationEntity, Long> {
-    List<MacroObservationEntity> findByIndicatorCodeOrderByObservationDateDesc(MacroIndicator indicator);
-
     List<MacroObservationEntity> findByIndicatorCodeIn(List<MacroIndicator> indicators);
 }

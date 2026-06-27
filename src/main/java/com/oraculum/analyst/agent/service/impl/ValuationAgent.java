@@ -43,6 +43,7 @@ public class ValuationAgent implements Agent<ValuationAgentOutput> {
                 .replace("{{ company_financial_ratios_ttm }}", factSheet.getCompanyFinancialRatios(StatementVariant.TTM, profile.periodLimit(StatementVariant.TTM)))
                 .replace("{{ industry_ratios }}", factSheet.getLatestIndustryRatios(StatementVariant.TTM))
                 .replace("{{ daily_share_price_signals }}", recentDailyJson)
+                .replace("{{ macroeconomic_context }}", ctx.state().getMacroeconomicAgentOutput())
                 .replace("{{ ticker }}", ctx.ticker())
                 .replace("{{ analysis_date }}", ctx.analysisDate().toString());
 

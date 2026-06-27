@@ -16,6 +16,7 @@ public enum AgentType {
     RISK("Risk", true, 5, true, FinancialDataProfile.BALANCE_SHEET_RISK),
     NEWS("News", true, 6, false, FinancialDataProfile.MARKET_SIGNALS),
     INSIDER_TRANSACTION("InsiderTransaction", true, 0, false, FinancialDataProfile.MARKET_SIGNALS),
+    MACROECONOMIC("Macroeconomic", true, 0, false, FinancialDataProfile.MARKET_SIGNALS),
     EARNINGS_ESTIMATES("EarningsEstimates", true, 8, false, FinancialDataProfile.MARKET_SIGNALS),
     CRITIC("Critic", false, -1, false, FinancialDataProfile.MARKET_SIGNALS),
     SYNTHESIZER("Synthesizer", false, -1, false, FinancialDataProfile.MARKET_SIGNALS);

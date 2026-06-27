@@ -36,4 +36,5 @@ public record AgentContext(UUID correlationId,
     public SharePriceSignalDto getLatestSignal() {
         return factSheetData.getLatestDailySignal();
     }
+
 }

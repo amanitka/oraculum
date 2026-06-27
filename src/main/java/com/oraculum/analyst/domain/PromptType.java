@@ -13,7 +13,8 @@ public enum PromptType {
     SYNTHESIZER("/prompt/synthesizer.md"),
     FUNDAMENTALS("/prompt/fundamentals.md"),
     EARNINGS_ESTIMATES("/prompt/earnings_estimates.md"),
-    INSIDER_TRANSACTION("/prompt/insider_transaction.md");
+    INSIDER_TRANSACTION("/prompt/insider_transaction.md"),
+    MACROECONOMIC("/prompt/macroeconomic.md");
 
     private final String path;
 

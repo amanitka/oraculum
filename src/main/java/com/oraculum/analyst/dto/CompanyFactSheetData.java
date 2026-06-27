@@ -3,6 +3,7 @@ package com.oraculum.analyst.dto;
 import com.oraculum.analyst.util.JsonUtils;
 import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.dto.*;
+import com.oraculum.economy.api.dto.MacroSummaryDto;
 import com.oraculum.harvester.api.dto.EarningsEstimateDto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -41,6 +42,7 @@ public class CompanyFactSheetData {
     private final InsiderTransactionSummaryDto insiderTransactionSummary;
     private final List<InsiderTransactionTickerDto> recentInsiderTransactions;
     private final List<EarningsEstimateDto> earningsEstimates;
+    private final List<MacroSummaryDto> macroeconomicSummary;
 
     private String wrapWithCitation(Class<?> clazz, Object uniqueId, Object dto) {
         if (dto == null) return "{}";
@@ -227,6 +229,15 @@ public class CompanyFactSheetData {
         return "[" + earningsEstimates.stream()
                 .filter(est -> est.date() != null && est.date().isAfter(analysisDate))
                 .map(dto -> wrapWithCitation(EarningsEstimateDto.class, company.ticker() + "_" + dto.date(), dto))
+                .collect(Collectors.joining(",")) + "]";
+    }
+
+    public String getMacroeconomicSummary() {
+        if (macroeconomicSummary == null || macroeconomicSummary.isEmpty()) {
+            return "[]";
+        }
+        return "[" + macroeconomicSummary.stream()
+                .map(dto -> wrapWithCitation(MacroSummaryDto.class, dto.indicator(), dto))
                 .collect(Collectors.joining(",")) + "]";
     }
 

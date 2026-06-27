@@ -4,8 +4,10 @@ import com.oraculum.economy.api.EconomyDataApi;
 import com.oraculum.economy.api.domain.MacroIndicator;
 import com.oraculum.economy.api.dto.MacroObservationDto;
 import com.oraculum.economy.api.dto.MacroObservationKey;
+import com.oraculum.economy.api.dto.MacroSummaryDto;
 import com.oraculum.economy.domain.MacroObservationEntity;
 import com.oraculum.economy.repository.MacroObservationRepository;
+import com.oraculum.economy.repository.MacroSummaryRepository;
 import com.oraculum.economy.service.mapper.MacroObservationMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,6 +24,8 @@ public class EconomyDataServiceImpl implements EconomyDataApi {
 
     private final MacroObservationRepository macroObservationRepository;
     private final MacroObservationMapper macroObservationMapper;
+
+    private final MacroSummaryRepository macroSummaryRepository;
 
     private List<MacroIndicator> getIndicatorsFromObservations(List<MacroObservationDto> observations) {
         return observations.stream()
@@ -57,10 +61,20 @@ public class EconomyDataServiceImpl implements EconomyDataApi {
 
     @Override
     @Transactional(readOnly = true)
-    public List<MacroObservationDto> getObservations(MacroIndicator indicator) {
-        return macroObservationRepository.findByIndicatorCodeOrderByObservationDateDesc(indicator).stream()
-                .map(macroObservationMapper::toDto)
+    public List<MacroSummaryDto> getMacroeconomicSummary() {
+        return macroSummaryRepository.findAll().stream()
+                .map(entity -> new MacroSummaryDto(
+                        entity.getIndicator(),
+                        entity.getIndicator() != null ? entity.getIndicator().getTitle() : null,
+                        entity.getLatestDate(),
+                        entity.getLatestValue(),
+                        entity.getValue1yAgo(),
+                        entity.getYoyChangePct(),
+                        entity.getMin1y(),
+                        entity.getMax1y(),
+                        entity.getAvg1y(),
+                        entity.getDiffFrom1yAvg()
+                ))
                 .collect(Collectors.toList());
     }
-
 }

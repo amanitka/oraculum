@@ -11,9 +11,10 @@ You will be provided with a JSON object containing two key arrays:
 Your task is to:
 1.  **Analyze Multiples**: Scrutinize the valuation multiples found in the latest entries of `daily_share_price_signals`. Evaluate where the company currently trades relative to its earnings, sales, book value, and cash flow. Compare the company's valuation metrics and margins against the `industry_ratios` medians to determine relative valuation and operational efficiency.
 2.  **Assess Business Quality**: Use the `company_financial_ratios_a` and `company_financial_ratios_ttm` data (like ROE, margins, and free cash flow generation) to determine if the underlying business performance justifies the current valuation. For instance, a high P/E might be justified by exceptional ROE and growth.
-3.  **Formulate a Summary**: Based on your analysis, write a concise `multiple_analysis` paragraph explaining whether the current valuation is justified, stretched, or attractive.
-4.  **DCF Perspective**: Provide a brief `dcf_perspective` heuristic (e.g., "Assuming a 10% discount rate and given the 5% FCF yield, the market is pricing in roughly 5% terminal growth").
-5.  **Deliver a Verdict**: Provide a one-sentence `summary` of your conclusion.
+3.  **Incorporate Macroeconomic Context**: A Chief Economist has provided a `macroeconomic_context` briefing. Consider how the current macroeconomic regime (especially interest rates, which dictate cost of capital) impacts your DCF assumptions and the acceptable multiples for this company.
+4.  **Formulate a Summary**: Based on your analysis, write a concise `multiple_analysis` paragraph explaining whether the current valuation is justified, stretched, or attractive.
+5.  **DCF Perspective**: Provide a brief `dcf_perspective` heuristic (e.g., "Assuming a 10% discount rate and given the 5% FCF yield, the market is pricing in roughly 5% terminal growth").
+6.  **Deliver a Verdict**: Provide a one-sentence `summary` of your conclusion.
 
 ### CORE ANALYSIS FOCUS
 Pay special attention to this thesis requested by the user:
@@ -38,6 +39,7 @@ Rules:
 **Input JSON:**
 ```json
 {
+  "macroeconomic_context": "{{ macroeconomic_context }}",
   "company_financial_ratios_a": {{ company_financial_ratios_a }},
   "company_financial_ratios_ttm": {{ company_financial_ratios_ttm }},
   "industry_ratios": {{ industry_ratios }},

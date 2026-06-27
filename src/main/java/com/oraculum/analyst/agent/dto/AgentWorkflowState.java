@@ -52,4 +52,12 @@ public class AgentWorkflowState {
     public void clearCriticFeedback() {
         this.criticFeedback = null;
     }
+
+    public String getMacroeconomicAgentOutput() {
+        if (agentOutputs.containsKey(AgentType.MACROECONOMIC)) {
+            MacroeconomicAgentOutput macroOutput = (MacroeconomicAgentOutput) getAgentOutput(AgentType.MACROECONOMIC);
+            return macroOutput.macroeconomicContext();
+        }
+        return "No macroeconomic analysis available.";
+    }
 }

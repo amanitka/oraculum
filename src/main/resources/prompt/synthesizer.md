@@ -23,6 +23,7 @@ Pay special attention to this thesis requested by the user, and determine if the
    Resolve any contradictions highlighted by the Critic Agent. Reconcile any divergence between the organic agent consensus and the `company_profile` context. Does strong growth justify a high valuation? Does recent negative news contradict a strong balance sheet?
 2. **Structure the Report**: Generate a Markdown report (`report_md`) with the following sections:
     * **Executive Summary**: A concise overview of the investment case.
+    * **Macroeconomic Context**: Summarize the findings from the Macroeconomic agent, discussing how the current economic regime impacts the company.
     * **Fundamental Health**: Combine insights from the Fundamentals and Cash Flow agents.
     * **Valuation & Momentum**: Combine insights from the Valuation and Share Price agents.
     * **Recent News & Sentiment**: Summarize the findings from the News agent, discussing how recent events support or
