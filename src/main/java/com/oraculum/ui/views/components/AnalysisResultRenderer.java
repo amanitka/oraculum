@@ -3,10 +3,14 @@ package com.oraculum.ui.views.components;
 import com.oraculum.analyst.api.dto.CompanyAnalysisDto;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Html;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.*;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.TabSheet;
@@ -19,6 +23,7 @@ import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -105,7 +110,31 @@ public class AnalysisResultRenderer {
         textArea.setSizeFull();
         textArea.getStyle().set("font-family", "monospace").set("font-size", "0.9rem");
 
-        VerticalLayout layout = new VerticalLayout(textArea);
+        final String finalJson = prettyJson;
+        Button copyButton = new Button("Copy JSON", _ -> {
+            UI.getCurrent().getPage().executeJs("navigator.clipboard.writeText($0)", finalJson);
+            Notification.show("JSON copied to clipboard");
+        });
+        copyButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
+
+        Anchor downloadAnchor = new Anchor((com.vaadin.flow.server.streams.DownloadEvent event) -> {
+            String filename = analysis.getTicker() != null ? "analysis_" + analysis.getTicker() + ".json" : "analysis.json";
+            event.setFileName(filename);
+            event.getResponse().setHeader("Content-Type", "application/json");
+            try (java.io.OutputStream out = event.getOutputStream()) {
+                out.write(finalJson.getBytes(StandardCharsets.UTF_8));
+            } catch (java.io.IOException ignored) {
+            }
+        }, "");
+        downloadAnchor.getElement().setAttribute("download", true);
+        Button downloadButton = new Button("Download JSON");
+        downloadButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
+        downloadAnchor.add(downloadButton);
+
+        HorizontalLayout toolbar = new HorizontalLayout(copyButton, downloadAnchor);
+        toolbar.setSpacing(true);
+
+        VerticalLayout layout = new VerticalLayout(toolbar, textArea);
         layout.setSizeFull();
         layout.setPadding(true);
         layout.setSpacing(true);
