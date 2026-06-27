@@ -45,9 +45,6 @@ class CompanyAnalysisWorkflowServiceTest {
     private AnalystProperties analystProperties;
 
     @Mock
-    private tools.jackson.databind.ObjectMapper objectMapper;
-
-    @Mock
     private CompanyFactSheetDataService companyFactSheetDataService;
 
     @Mock
