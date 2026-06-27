@@ -8,8 +8,6 @@ import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.PromptType;
 import com.oraculum.company.api.dto.SharePriceSignalDto;
-import com.oraculum.harvester.api.HarvesterLiveApi;
-import com.oraculum.harvester.api.dto.EarningsEstimateDto;
 import com.oraculum.llm.api.LlmCallRequest;
 import com.oraculum.llm.api.LlmRouterApi;
 import com.oraculum.llm.api.dto.CorrelationType;
@@ -18,42 +16,22 @@ import com.oraculum.llm.api.dto.LlmTierType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import tools.jackson.databind.ObjectMapper;
 
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class EarningsEstimatesAgent implements Agent<EarningsEstimatesAgentOutput> {
 
-    private final HarvesterLiveApi harvesterLiveApi;
     private final LlmRouterApi llmRouterApi;
     private final PromptRegistry promptRegistry;
-    private final ObjectMapper objectMapper;
 
     @Override
     public AgentType getName() {
         return AgentType.EARNINGS_ESTIMATES;
     }
 
-    private String getFutureEstimates(LocalDate analysisDate, List<EarningsEstimateDto> estimates) {
-        try {
-            List<EarningsEstimateDto> filtered = estimates.stream()
-                    .filter(est -> est.date() != null && est.date().isAfter(analysisDate))
-                    .collect(Collectors.toList());
-
-            return objectMapper.writeValueAsString(filtered);
-        } catch (Exception e) {
-            log.warn("Failed to serialize filtered earnings estimates for future dates", e);
-            return "[]";
-        }
-    }
-
-    private String preparePrompt(AgentContext ctx, List<EarningsEstimateDto> earningsEstimates) {
+    private String preparePrompt(AgentContext ctx, String earningsEstimatesJson) {
         SharePriceSignalDto currentSignal = ctx.getLatestSignal();
         String priceStr = "N/A";
         String peStr = "N/A";
@@ -66,7 +44,7 @@ public class EarningsEstimatesAgent implements Agent<EarningsEstimatesAgentOutpu
         }
         String prompt = promptRegistry.getPrompt(PromptType.EARNINGS_ESTIMATES)
                 .replace("{{ analysis_focus }}", ctx.analysisFocus() != null ? ctx.analysisFocus() : "Standard comprehensive analysis.")
-                .replace("{{ earnings_estimates_json }}", getFutureEstimates(ctx.analysisDate(), earningsEstimates))
+                .replace("{{ earnings_estimates_json }}", earningsEstimatesJson)
                 .replace("{{ ticker }}", ctx.ticker())
                 .replace("{{ current_price }}", priceStr)
                 .replace("{{ trailing_pe }}", peStr)
@@ -78,14 +56,14 @@ public class EarningsEstimatesAgent implements Agent<EarningsEstimatesAgentOutpu
     @Override
     public AgentOutput<EarningsEstimatesAgentOutput> run(AgentContext ctx) {
         log.info("EarningsEstimatesAgent starting analysis for ticker: {}", ctx.ticker());
-        Optional<List<EarningsEstimateDto>> earningsEstimatesOpt = harvesterLiveApi.fetchEarningsEstimates(ctx.ticker());
-        if (earningsEstimatesOpt.isEmpty() || earningsEstimatesOpt.get().isEmpty()) {
+        String earningsEstimatesJson = ctx.factSheetData().getFutureEarningsEstimates(ctx.analysisDate());
+        if ("[]".equals(earningsEstimatesJson)) {
             log.warn("Earnings estimates data unavailable for ticker: {}. Skipping LLM call.", ctx.ticker());
             String skipMessage = "Earnings estimates data unavailable: API quota exhausted (or reserved capacity reached). " +
                     "This analysis does not include forward-looking EPS/revenue consensus estimates.";
             return new AgentOutput<>(new EarningsEstimatesAgentOutput(skipMessage), 0);
         }
-        String fullPrompt = preparePrompt(ctx, earningsEstimatesOpt.get());
+        String fullPrompt = preparePrompt(ctx, earningsEstimatesJson);
         LlmResponse<EarningsEstimatesAgentOutput> response = llmRouterApi.executeCall(
                 LlmCallRequest.of(LlmTierType.STANDARD, fullPrompt, EarningsEstimatesAgentOutput.class, ctx.correlationId(), CorrelationType.COMPANY_ANALYSIS, getName().name()));
 

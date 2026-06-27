@@ -3,6 +3,7 @@ package com.oraculum.analyst.dto;
 import com.oraculum.analyst.util.JsonUtils;
 import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.dto.*;
+import com.oraculum.harvester.api.dto.EarningsEstimateDto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -11,6 +12,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ObjectNode;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,9 +40,24 @@ public class CompanyFactSheetData {
     private final TickerNewsSentimentDto newsSentimentAggregate;
     private final InsiderTransactionSummaryDto insiderTransactionSummary;
     private final List<InsiderTransactionTickerDto> recentInsiderTransactions;
+    private final List<EarningsEstimateDto> earningsEstimates;
+
+    private String wrapWithCitation(Class<?> clazz, Object uniqueId, Object dto) {
+        if (dto == null) return "{}";
+        String citationId = citationRegistry.getOrAssignCitationId(clazz, uniqueId, dto);
+        try {
+            JsonNode root = jsonMapper.valueToTree(dto);
+            if (!root.isObject()) return JsonUtils.toJson(jsonMapper, dto, "{}");
+            ObjectNode newNode = (ObjectNode) root;
+            newNode.put("citation_id", citationId);
+            return jsonMapper.writeValueAsString(newNode);
+        } catch (Exception e) {
+            return JsonUtils.toJson(jsonMapper, dto, "{}");
+        }
+    }
 
     public String getCompanyProfile() {
-        return JsonUtils.toJson(jsonMapper, company, "{}");
+        return wrapWithCitation(CompanyDto.class, company.id(), company);
     }
 
     public String getIncomeStatementHistory(StatementVariant variant) {
@@ -158,7 +175,7 @@ public class CompanyFactSheetData {
     }
 
     public String getNewsSentimentAggregate() {
-        return JsonUtils.toJson(jsonMapper, newsSentimentAggregate, "{}");
+        return wrapWithCitation(TickerNewsSentimentDto.class, company.ticker(), newsSentimentAggregate);
     }
 
     public SharePriceSignalDto getLatestDailySignal() {
@@ -187,18 +204,30 @@ public class CompanyFactSheetData {
         List<IndustryFinancialRatiosDto> ttmRatios = industryFinancialRatios.get(variant);
         if (ttmRatios == null || ttmRatios.isEmpty()) return "[]";
         // Now there is only one row per variant representing the current cross-sectional median
-        return JsonUtils.toJson(jsonMapper, industryFinancialRatios.get(variant), "[]");
+        return wrapWithCitation(IndustryFinancialRatiosDto.class, company.industryName() + "_" + variant, industryFinancialRatios.get(variant));
     }
 
     public String getInsiderTransactionSummary() {
-        return JsonUtils.toJson(jsonMapper, insiderTransactionSummary, "{}");
+        return wrapWithCitation(InsiderTransactionSummaryDto.class, company.ticker(), insiderTransactionSummary);
     }
 
     public String getRecentInsiderTransactions() {
         if (recentInsiderTransactions == null || recentInsiderTransactions.isEmpty()) {
             return "[]";
         }
-        return JsonUtils.toJson(jsonMapper, recentInsiderTransactions, "[]");
+        return "[" + recentInsiderTransactions.stream()
+                .map(dto -> wrapWithCitation(InsiderTransactionTickerDto.class, dto.id(), dto))
+                .collect(Collectors.joining(",")) + "]";
+    }
+
+    public String getFutureEarningsEstimates(LocalDate analysisDate) {
+        if (earningsEstimates == null || earningsEstimates.isEmpty()) {
+            return "[]";
+        }
+        return "[" + earningsEstimates.stream()
+                .filter(est -> est.date() != null && est.date().isAfter(analysisDate))
+                .map(dto -> wrapWithCitation(EarningsEstimateDto.class, company.ticker() + "_" + dto.date(), dto))
+                .collect(Collectors.joining(",")) + "]";
     }
 
     private String namespaceJsonMetrics(String jsonStr, StatementVariant variant, String citationId) {

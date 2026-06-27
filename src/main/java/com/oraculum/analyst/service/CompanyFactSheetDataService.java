@@ -9,6 +9,7 @@ import com.oraculum.company.api.CompanyNewsApi;
 import com.oraculum.company.api.CompanySharePriceApi;
 import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.dto.*;
+import com.oraculum.harvester.api.HarvesterLiveApi;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.json.JsonMapper;
@@ -27,6 +28,7 @@ public class CompanyFactSheetDataService {
     private final CompanySharePriceApi companySharePriceApi;
     private final CompanyNewsApi companyNewsApi;
     private final CompanyInsiderTransactionApi companyInsiderTransactionApi;
+    private final HarvesterLiveApi harvesterLiveApi;
     private final JsonMapper jsonMapper;
     private final AnalystProperties analystProperties;
 
@@ -122,6 +124,7 @@ public class CompanyFactSheetDataService {
                 .newsSentimentAggregate(getNewsSentiment(company))
                 .insiderTransactionSummary(getInsiderTransactionSummary(company))
                 .recentInsiderTransactions(getRecentInsiderTransactions(company, analystProperties.insider().getTransactionHistoryDate()))
+                .earningsEstimates(harvesterLiveApi.fetchEarningsEstimates(company.ticker()).orElse(List.of()))
                 .build();
     }
 }
