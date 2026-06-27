@@ -10,6 +10,8 @@ import org.jspecify.annotations.NonNull;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.Optional;
+
 @Slf4j
 @Configuration
 public class ResilienceConfig {
@@ -19,14 +21,13 @@ public class ResilienceConfig {
         return new RegistryEventConsumer<>() {
             @Override
             public void onEntryAddedEvent(@NonNull EntryAddedEvent<Retry> entryAddedEvent) {
-                String name = entryAddedEvent.getAddedEntry().getName();
-                Retry retryInstance = entryAddedEvent.getAddedEntry();
-
-                if ("llm".equals(name)) {
-                    retryInstance.getEventPublisher()
-                            .onRetry(e -> log.warn("LLM retry #{} failed", e.getNumberOfRetryAttempts()))
-                            .onError(_ -> log.error("LLM failed permanently"));
-                }
+                Retry retry = entryAddedEvent.getAddedEntry();
+                retry.getEventPublisher()
+                        .onRetry(e -> log.warn("Retry attempt #{} for '{}' failed",
+                                e.getNumberOfRetryAttempts(), retry.getName()))
+                        .onError(e -> log.error("Retry for '{}' failed permanently: {}",
+                                retry.getName(), Optional.ofNullable(e.getLastThrowable()).map(Throwable::getMessage)
+                                        .orElse("No error message provided")));
             }
 
             @Override

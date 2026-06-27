@@ -52,6 +52,13 @@ resilience4j:
           - java.io.IOException
           - java.net.SocketTimeoutException
           - java.util.concurrent.TimeoutException
+      fredApi:
+        max-attempts: 3
+        wait-duration: 2s
+        enable-exponential-backoff: true
+        retry-exceptions:
+          - org.springframework.web.client.RestClientException
+          - java.io.IOException
   timelimiter:
     time-limiter-aspect-order: 400
     instances:
@@ -132,6 +139,9 @@ oraculum:
       base-url: "https://www.alphavantage.co"
       daily-limit: 25
       reserved-calls: 3
+    fred:
+      api-key: ${ORACULUM_FRED_API_KEY}
+      base-url: "https://api.stlouisfed.org/fred"
 
   llm:
     common:

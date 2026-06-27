@@ -47,16 +47,21 @@ public record OraculumProperties(Data data,
 
     public record Harvester(String exchangeDirectory,
                             ExchangeCleanup exchangeCleanup,
-                            AlphaVantage alphaVantage) {
+                            AlphaVantage alphaVantage,
+                            Fred fred) {
         public record ExchangeCleanup(Boolean enabled,
                                       Integer retentionDays,
                                       String cron) {
         }
-        
+
         public record AlphaVantage(String apiKey,
                                    String baseUrl,
                                    int dailyLimit,
                                    int reservedCalls) {
+        }
+
+        public record Fred(String apiKey,
+                           String baseUrl) {
         }
     }
 }
