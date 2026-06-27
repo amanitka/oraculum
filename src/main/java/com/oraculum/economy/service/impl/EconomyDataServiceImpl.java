@@ -8,15 +8,14 @@ import com.oraculum.economy.domain.MacroObservationEntity;
 import com.oraculum.economy.repository.MacroObservationRepository;
 import com.oraculum.economy.service.mapper.MacroObservationMapper;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class EconomyDataServiceImpl implements EconomyDataApi {
@@ -42,7 +41,6 @@ public class EconomyDataServiceImpl implements EconomyDataApi {
     @Override
     @Transactional
     public void createOrUpdateObservations(List<MacroObservationDto> observations) {
-        log.info("Saving {} macro observations", observations.size());
         var observationEntities = macroObservationRepository.findByIndicatorCodeIn(getIndicatorsFromObservations(observations));
         var observationDtoMap = getObservationMapByIndicatorAndDate(observationEntities);
 
@@ -50,7 +48,7 @@ public class EconomyDataServiceImpl implements EconomyDataApi {
             var existingEntity = observationDtoMap.get(dto.getKey());
             if (existingEntity == null) {
                 macroObservationRepository.save(macroObservationMapper.toEntity(dto));
-            } else if (!existingEntity.getValue().equals(dto.value())) {
+            } else if (!Objects.equals(existingEntity.getValue(), dto.value())) {
                 existingEntity.setValue(dto.value());
                 macroObservationRepository.save(existingEntity);
             }

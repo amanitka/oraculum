@@ -4,10 +4,12 @@ import com.oraculum.common.config.OraculumProperties;
 import com.oraculum.company.api.CompanyNewsApi;
 import com.oraculum.company.api.dto.NewsArticleDto;
 import com.oraculum.harvester.domain.ProviderType;
+import com.oraculum.harvester.event.FetchNewsRequestEvent;
 import com.oraculum.harvester.provider.AlphaVantageClient;
 import com.oraculum.harvester.provider.dto.AlphaVantageNewsResponse;
 import com.oraculum.util.DateTimeUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
@@ -50,7 +52,9 @@ public class NewsService {
         log.info("Successfully loaded {} news into database.", enrichedArticles.size());
     }
 
+    @EventListener(FetchNewsRequestEvent.class)
     public void refreshNews() {
+        log.info("Starting scheduled news refresh");
         if (!apiUsageTrackerService.canMakeCall(ProviderType.ALPHA_VANTAGE, dailyLimit)) {
             log.warn("Alpha Vantage daily limit reached. Skipping news refresh.");
             return;

@@ -53,6 +53,9 @@ class CompanyAnalysisWorkflowServiceTest {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
+    @Mock
+    private tools.jackson.databind.ObjectMapper objectMapper;
+
     @InjectMocks
     private CompanyAnalysisWorkflowService workflowService;
 
@@ -60,6 +63,7 @@ class CompanyAnalysisWorkflowServiceTest {
 
     @BeforeEach
     void setUp() {
+        when(objectMapper.writeValueAsString(any())).thenReturn("[]");
         request = new CompanyAnalysisRequestEvent(
                 UUID.randomUUID(),
                 1,

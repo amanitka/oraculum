@@ -16,7 +16,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -41,7 +40,7 @@ class CompanyFactSheetDataServiceTest {
     @Mock
     private CompanyInsiderTransactionApi companyInsiderTransactionApi;
     @Mock
-    private ObjectMapper objectMapper;
+    private tools.jackson.databind.json.JsonMapper jsonMapper;
     @Mock(answer = org.mockito.Answers.RETURNS_DEEP_STUBS)
     private AnalystProperties analystProperties;
 
@@ -57,7 +56,7 @@ class CompanyFactSheetDataServiceTest {
         when(company.ticker()).thenReturn("AAPL");
         when(company.industryName()).thenReturn("Technology");
 
-        when(objectMapper.writeValueAsString(any())).thenReturn("[]");
+        when(jsonMapper.writeValueAsString(any())).thenReturn("[]");
 
         when(analystProperties.factSheet().getAnnualFactSheetHistoryDate()).thenReturn(LocalDate.now().minusYears(10));
         when(analystProperties.factSheet().getQuarterlyFactSheetHistoryDate()).thenReturn(LocalDate.now().minusYears(2));

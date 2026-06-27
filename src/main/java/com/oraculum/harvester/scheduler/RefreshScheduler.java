@@ -1,7 +1,8 @@
 package com.oraculum.harvester.scheduler;
 
+import com.oraculum.harvester.service.FredService;
+import com.oraculum.harvester.service.HarvesterBatchService;
 import com.oraculum.harvester.service.NewsService;
-import com.oraculum.harvester.service.RequestService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -14,8 +15,9 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(name = "oraculum.data.refresh-enabled", havingValue = "true", matchIfMissing = true)
 public class RefreshScheduler {
 
-    private final RequestService refreshService;
+    private final HarvesterBatchService refreshService;
     private final NewsService newsService;
+    private final FredService fredService;
 
     @Scheduled(cron = "${oraculum.data.metadata.cron}")
     public void refreshMetadata() {
@@ -75,6 +77,16 @@ public class RefreshScheduler {
             newsService.refreshNews();
         } catch (Exception e) {
             log.error("Scheduled news refresh failed", e);
+        }
+    }
+
+    @Scheduled(cron = "${oraculum.data.macroeconomic.cron}")
+    public void refreshMacroeconomic() {
+        log.info("Starting scheduled macroeconomic refresh...");
+        try {
+            fredService.refreshMacroeconomic();
+        } catch (Exception e) {
+            log.error("Scheduled macroeconomic refresh failed", e);
         }
     }
 }

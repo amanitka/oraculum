@@ -10,7 +10,6 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
@@ -38,8 +37,8 @@ public class MacroObservationEntity {
     @Column(name = "observation_date", nullable = false)
     private LocalDate observationDate;
 
-    @Column(precision = 19, scale = 4)
-    private BigDecimal value;
+    @Column
+    private Double value;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

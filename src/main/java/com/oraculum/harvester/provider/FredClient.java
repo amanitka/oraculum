@@ -20,7 +20,6 @@ public class FredClient {
 
     @Retry(name = "fredApi")
     public FredResponse fetchMacroeconomicData(String seriesId, String dateFrom) {
-        log.info("Fetching macroeconomic data from FRED. DateFrom: {}", dateFrom);
         return restClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/series/observations")

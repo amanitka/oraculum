@@ -14,6 +14,8 @@ public interface HarvesterBatchApi {
 
     void refreshNews();
 
+    void refreshMacroeconomic();
+
     void refreshInsiderTransactions();
 
     void refreshSharePrices(boolean incremental, LocalDate fromDate);

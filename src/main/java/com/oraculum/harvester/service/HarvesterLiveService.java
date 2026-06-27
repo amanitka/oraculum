@@ -14,14 +14,14 @@ import java.util.Optional;
 
 @Service
 @Slf4j
-public class LiveHarvesterService implements HarvesterLiveApi {
+public class HarvesterLiveService implements HarvesterLiveApi {
 
     private final AlphaVantageClient alphaVantageClient;
     private final ApiUsageTrackerService apiUsageTrackerService;
     private final int dailyLimit;
     private final int reservedCalls;
 
-    public LiveHarvesterService(AlphaVantageClient alphaVantageClient,
+    public HarvesterLiveService(AlphaVantageClient alphaVantageClient,
                                 ApiUsageTrackerService apiUsageTrackerService,
                                 OraculumProperties properties) {
         this.alphaVantageClient = alphaVantageClient;

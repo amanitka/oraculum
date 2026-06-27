@@ -1,15 +1,18 @@
 package com.oraculum.harvester.service;
 
 import com.oraculum.common.config.OraculumProperties;
-import com.oraculum.company.api.CompanyMetadataApi;
 import com.oraculum.company.api.CompanyInsiderTransactionApi;
+import com.oraculum.company.api.CompanyMetadataApi;
 import com.oraculum.company.api.CompanySharePriceApi;
 import com.oraculum.company.api.domain.StatementTemplate;
 import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.harvester.api.HarvesterBatchApi;
 import com.oraculum.harvester.api.dto.*;
+import com.oraculum.harvester.event.FetchMacroeconomicRequestEvent;
+import com.oraculum.harvester.event.FetchNewsRequestEvent;
 import com.oraculum.util.DateTimeUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
@@ -20,7 +23,7 @@ import java.util.stream.Stream;
 
 @Service
 @Slf4j
-public class RequestService implements HarvesterBatchApi {
+public class HarvesterBatchService implements HarvesterBatchApi {
 
     private final CompanyMetadataApi companyMetadataApi;
     private final CompanyInsiderTransactionApi companyInsiderTransactionApi;
@@ -28,21 +31,21 @@ public class RequestService implements HarvesterBatchApi {
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final String harvesterRequestTopic;
     private final int sharePriceIncrementalWindowDays;
-    private final NewsService newsService;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public RequestService(CompanyMetadataApi companyMetadataApi,
-                          CompanyInsiderTransactionApi companyInsiderTransactionApi,
-                          CompanySharePriceApi companySharePriceApi,
-                          KafkaTemplate<String, Object> kafkaTemplate,
-                          OraculumProperties properties,
-                          NewsService newsService) {
+    public HarvesterBatchService(CompanyMetadataApi companyMetadataApi,
+                                 CompanyInsiderTransactionApi companyInsiderTransactionApi,
+                                 CompanySharePriceApi companySharePriceApi,
+                                 KafkaTemplate<String, Object> kafkaTemplate,
+                                 OraculumProperties properties,
+                                 ApplicationEventPublisher eventPublisher) {
         this.companyMetadataApi = companyMetadataApi;
         this.companyInsiderTransactionApi = companyInsiderTransactionApi;
         this.companySharePriceApi = companySharePriceApi;
         this.kafkaTemplate = kafkaTemplate;
         this.harvesterRequestTopic = properties.kafka().topics().harvesterRequest();
         this.sharePriceIncrementalWindowDays = properties.data().sharePrice().incrementalWindowDays();
-        this.newsService = newsService;
+        this.eventPublisher = eventPublisher;
     }
 
     private List<String> getMarkets() {
@@ -96,16 +99,18 @@ public class RequestService implements HarvesterBatchApi {
         }
     }
 
+    @Override
     public void refreshInsiderTransactions() {
         log.info("Requesting insider transactions refresh");
         LocalDateTime maxDate = companyInsiderTransactionApi.getInsiderTransactionsLastFilingDate().orElse(null);
         String maxDateStr = maxDate != null ? maxDate.toString() : null;
-        
+
         publishRequest(FetchInsiderTransactionsRequest.builder()
                 .maxFilingDate(maxDateStr)
                 .build());
     }
 
+    @Override
     public void refreshSharePrices(boolean incremental, LocalDate fromDate) {
         var fromTradeDate = fromDate;
         if (incremental && fromDate == null) {
@@ -127,7 +132,13 @@ public class RequestService implements HarvesterBatchApi {
 
     @Override
     public void refreshNews() {
-        log.info("Requesting native news refresh via AlphaVantage");
-        newsService.refreshNews();
+        log.info("Broadcasting news refresh requested event");
+        eventPublisher.publishEvent(new FetchNewsRequestEvent());
+    }
+
+    @Override
+    public void refreshMacroeconomic() {
+        log.info("Broadcasting macroeconomic refresh requested event");
+        eventPublisher.publishEvent(new FetchMacroeconomicRequestEvent());
     }
 }

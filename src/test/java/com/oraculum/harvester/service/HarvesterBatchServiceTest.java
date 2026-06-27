@@ -12,6 +12,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.kafka.core.KafkaTemplate;
 
 import java.time.LocalDate;
@@ -24,7 +25,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class RequestServiceTest {
+class HarvesterBatchServiceTest {
 
     private final String TOPIC = "harvester-topic";
     @Mock
@@ -34,26 +35,26 @@ class RequestServiceTest {
     @Captor
     private ArgumentCaptor<HarvesterRequest> requestCaptor;
     @Mock
-    private NewsService newsService;
+    private ApplicationEventPublisher eventPublisher;
     @Mock
     private CompanyMetadataApi companyMetadataApi;
     @Mock
     private CompanySharePriceApi companySharePriceApi;
     @Mock
     private CompanyInsiderTransactionApi companyInsiderTransactionApi;
-    private RequestService requestService;
+    private HarvesterBatchService harvesterBatchService;
 
     @BeforeEach
     void setUp() {
         when(properties.kafka().topics().harvesterRequest()).thenReturn(TOPIC);
         when(properties.data().sharePrice().incrementalWindowDays()).thenReturn(5);
 
-        requestService = new RequestService(companyMetadataApi, companyInsiderTransactionApi, companySharePriceApi, kafkaTemplate, properties, newsService);
+        harvesterBatchService = new HarvesterBatchService(companyMetadataApi, companyInsiderTransactionApi, companySharePriceApi, kafkaTemplate, properties, eventPublisher);
     }
 
     @Test
     void refreshMarket_publishesFetchMarketRequest() {
-        requestService.refreshMarket();
+        harvesterBatchService.refreshMarket();
 
         verify(kafkaTemplate).send(eq(TOPIC), anyString(), requestCaptor.capture());
         assertThat(requestCaptor.getValue()).isInstanceOf(FetchMarketRequest.class);
@@ -63,7 +64,7 @@ class RequestServiceTest {
     void refreshCompany_publishesForEveryMarket() {
         when(companyMetadataApi.getAllMarketIds()).thenReturn(List.of("US", "EU"));
 
-        requestService.refreshCompany();
+        harvesterBatchService.refreshCompany();
 
         verify(kafkaTemplate, times(2)).send(eq(TOPIC), anyString(), requestCaptor.capture());
         List<HarvesterRequest> captured = requestCaptor.getAllValues();
@@ -81,7 +82,7 @@ class RequestServiceTest {
         when(companySharePriceApi.getSharePricesLastTradeDate()).thenReturn(Optional.of(lastTradeDate));
 
         // Incremental without explicit date
-        requestService.refreshSharePrices(true, null);
+        harvesterBatchService.refreshSharePrices(true, null);
 
         verify(kafkaTemplate).send(eq(TOPIC), anyString(), requestCaptor.capture());
         FetchSharePricePriceRequest request = (FetchSharePricePriceRequest) requestCaptor.getValue();
@@ -96,7 +97,7 @@ class RequestServiceTest {
         LocalDateTime maxDate = LocalDateTime.of(2023, 10, 15, 14, 30, 0);
         when(companyInsiderTransactionApi.getInsiderTransactionsLastFilingDate()).thenReturn(Optional.of(maxDate));
 
-        requestService.refreshInsiderTransactions();
+        harvesterBatchService.refreshInsiderTransactions();
 
         verify(kafkaTemplate).send(eq(TOPIC), anyString(), requestCaptor.capture());
         HarvesterRequest request = requestCaptor.getValue();
@@ -110,9 +111,21 @@ class RequestServiceTest {
     void refreshInsiderTransactions_publishesFetchInsiderTransactionsRequest_withNullMaxDate() {
         when(companyInsiderTransactionApi.getInsiderTransactionsLastFilingDate()).thenReturn(Optional.empty());
 
-        requestService.refreshInsiderTransactions();
+        harvesterBatchService.refreshInsiderTransactions();
 
         verify(kafkaTemplate).send(eq(TOPIC), anyString(), requestCaptor.capture());
         assertThat(requestCaptor.getValue()).isInstanceOf(FetchInsiderTransactionsRequest.class);
+    }
+
+    @Test
+    void refreshNews_publishesNewsRefreshRequestedEvent() {
+        harvesterBatchService.refreshNews();
+        verify(eventPublisher).publishEvent(any(com.oraculum.harvester.event.FetchNewsRequestEvent.class));
+    }
+
+    @Test
+    void refreshMacroeconomic_publishesMacroeconomicRefreshRequestedEvent() {
+        harvesterBatchService.refreshMacroeconomic();
+        verify(eventPublisher).publishEvent(any(com.oraculum.harvester.event.FetchMacroeconomicRequestEvent.class));
     }
 }

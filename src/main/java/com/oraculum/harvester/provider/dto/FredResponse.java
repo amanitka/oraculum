@@ -2,6 +2,7 @@ package com.oraculum.harvester.provider.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public record FredResponse(
@@ -20,9 +21,9 @@ public record FredResponse(
         @JsonProperty("observations") List<FredObservation> observations
 ) {
     public record FredObservation(
-            @JsonProperty("realtime_start") String realtimeStart,
-            @JsonProperty("realtime_end") String realtimeEnd,
-            @JsonProperty("date") String date,
+            @JsonProperty("realtime_start") LocalDate realtimeStart,
+            @JsonProperty("realtime_end") LocalDate realtimeEnd,
+            @JsonProperty("date") LocalDate date,
             @JsonProperty("value") String value
     ) {
     }

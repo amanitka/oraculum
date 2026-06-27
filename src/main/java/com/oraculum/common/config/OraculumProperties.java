@@ -61,7 +61,8 @@ public record OraculumProperties(Data data,
         }
 
         public record Fred(String apiKey,
-                           String baseUrl) {
+                           String baseUrl,
+                           int historyLimitYears) {
         }
     }
 }
