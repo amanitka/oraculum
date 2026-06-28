@@ -2,6 +2,7 @@ package com.oraculum.ui;
 
 import com.oraculum.ui.views.AnalysisView;
 import com.oraculum.ui.views.CompanyView;
+import com.oraculum.ui.views.EconomyView;
 import com.oraculum.ui.views.RefreshView;
 import com.oraculum.ui.views.ScreenerView;
 import com.vaadin.flow.component.Component;
@@ -67,24 +68,28 @@ public class MainLayout extends AppLayout implements RouterLayout, AfterNavigati
         RouterLink screenerLink = new RouterLink("Screener", ScreenerView.class);
         RouterLink analysisLink = new RouterLink("Analysis", AnalysisView.class);
         RouterLink companyLink = new RouterLink("Company", CompanyView.class);
+        RouterLink economyLink = new RouterLink("Economy", EconomyView.class);
         RouterLink refreshLink = new RouterLink("Refresh", RefreshView.class);
 
         screenerLink.getStyle().set("text-decoration", "none");
         analysisLink.getStyle().set("text-decoration", "none");
         companyLink.getStyle().set("text-decoration", "none");
+        economyLink.getStyle().set("text-decoration", "none");
         refreshLink.getStyle().set("text-decoration", "none");
 
         Tab tabScreener = new Tab(screenerLink);
         Tab tabAnalysis = new Tab(analysisLink);
         Tab tabCompany = new Tab(companyLink);
+        Tab tabEconomy = new Tab(economyLink);
         Tab tabRefresh = new Tab(refreshLink);
 
         tabMap.put(ScreenerView.class, tabScreener);
         tabMap.put(AnalysisView.class, tabAnalysis);
         tabMap.put(CompanyView.class, tabCompany);
+        tabMap.put(EconomyView.class, tabEconomy);
         tabMap.put(RefreshView.class, tabRefresh);
 
-        tabs = new Tabs(tabScreener, tabAnalysis, tabCompany, tabRefresh);
+        tabs = new Tabs(tabScreener, tabAnalysis, tabCompany, tabEconomy, tabRefresh);
 
         // Override the internal Lumo CSS variables that vaadin-tabs use inside their shadow DOM
         tabs.getStyle().set("--lumo-font-size-m", "var(--lumo-font-size-xl)"); // Make text large (H2/H3 scale)

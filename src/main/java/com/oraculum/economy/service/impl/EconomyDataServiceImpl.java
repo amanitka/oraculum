@@ -77,4 +77,12 @@ public class EconomyDataServiceImpl implements EconomyDataApi {
                 ))
                 .collect(Collectors.toList());
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MacroObservationDto> getHistoricalData(MacroIndicator indicator) {
+        return macroObservationRepository.findByIndicatorCodeOrderByObservationDateAsc(indicator).stream()
+                .map(macroObservationMapper::toDto)
+                .collect(Collectors.toList());
+    }
 }

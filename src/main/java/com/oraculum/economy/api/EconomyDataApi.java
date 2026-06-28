@@ -9,4 +9,6 @@ public interface EconomyDataApi {
     void createOrUpdateObservations(List<MacroObservationDto> observations);
 
     List<MacroSummaryDto> getMacroeconomicSummary();
+
+    List<MacroObservationDto> getHistoricalData(com.oraculum.economy.api.domain.MacroIndicator indicator);
 }
