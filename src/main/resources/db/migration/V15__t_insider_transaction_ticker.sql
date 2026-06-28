@@ -16,7 +16,5 @@ CREATE TABLE t_insider_transaction_ticker (
     PRIMARY KEY (id, filing_date)
 ) PARTITION BY RANGE (filing_date);
 
-CREATE INDEX idx_insider_transaction_ticker ON t_insider_transaction_ticker (ticker);
-CREATE INDEX idx_insider_transaction_filing_date ON t_insider_transaction_ticker (filing_date);
-CREATE INDEX ix_insider_tx_ticker_date ON public.t_insider_transaction_ticker (ticker, trade_date DESC);
-CREATE INDEX ix_insider_tx_filing_date ON public.t_insider_transaction_ticker (filing_date DESC);
+CREATE INDEX ix_insider_transaction_ticker_ticker_trade_date ON public.t_insider_transaction_ticker (ticker, trade_date DESC);
+CREATE INDEX ix_insider_transaction_ticker_filing_date ON public.t_insider_transaction_ticker (filing_date DESC);

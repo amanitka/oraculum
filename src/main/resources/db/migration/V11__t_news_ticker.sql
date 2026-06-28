@@ -1,5 +1,4 @@
 -- Table: t_news_ticker (Partitioned by time_published)
--- =================================================================
 CREATE TABLE public.t_news_ticker (
     news_id VARCHAR(64) NOT NULL,
     ticker VARCHAR(16) NOT NULL,
@@ -12,5 +11,4 @@ CREATE TABLE public.t_news_ticker (
     PRIMARY KEY (news_id, ticker, time_published)
 ) PARTITION BY RANGE (time_published);
 
-CREATE INDEX ix_news_ticker_ticker ON public.t_news_ticker (ticker);
-CREATE INDEX ix_news_ticker_ticker_time ON public.t_news_ticker (ticker, time_published DESC);
+CREATE INDEX ix_news_ticker_ticker_time_published ON public.t_news_ticker (ticker, time_published DESC);
