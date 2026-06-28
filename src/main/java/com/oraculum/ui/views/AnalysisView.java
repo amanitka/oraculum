@@ -79,6 +79,7 @@ public class AnalysisView extends VerticalLayout {
         this.analysisResultRenderer = analysisResultRenderer;
 
         setSizeFull();
+        getStyle().set("padding-bottom", "2rem");
         setPadding(true);
         setSpacing(false);
         setDefaultHorizontalComponentAlignment(Alignment.CENTER);

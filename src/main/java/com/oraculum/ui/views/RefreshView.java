@@ -36,7 +36,8 @@ public class RefreshView extends VerticalLayout {
         this.harvesterBatchApi = harvesterBatchApi;
         this.eventPublisher = eventPublisher;
 
-        setSizeFull();
+        setWidthFull();
+        getStyle().set("padding-bottom", "2rem");
         setPadding(true);
         setAlignItems(Alignment.CENTER);
 

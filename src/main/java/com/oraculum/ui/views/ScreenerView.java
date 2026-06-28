@@ -73,6 +73,7 @@ public class ScreenerView extends VerticalLayout {
         setPadding(true);
         setSpacing(false);
         setSizeFull();
+        getStyle().set("padding-bottom", "2rem");
 
         H3 title = new H3("Investment Screeners");
         title.addClassNames(LumoUtility.Margin.Bottom.NONE);
@@ -98,6 +99,7 @@ public class ScreenerView extends VerticalLayout {
         tabs.addSelectedChangeListener(event -> setContent(event.getSelectedTab().getLabel()));
 
         add(title, description, tabs, gridContainer);
+        setFlexGrow(1, gridContainer);
 
         // Load initial tab
         setContent(tabMaster.getLabel());

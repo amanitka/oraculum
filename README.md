@@ -2,7 +2,7 @@
 
 An AI-powered quantitative investment analysis platform built with Spring Modulith, DuckDB, Redpanda, and Vaadin. 
 
-Oraculum acts as your personal AI stock analyst. It orchestrates a multi-agent system to synthesize fundamental financial data, technical share price signals, insider trading activity, and real-time news sentiment into comprehensive, actionable investment recommendations.
+Oraculum acts as your personal AI stock analyst. It orchestrates a multi-agent system to synthesize macroeconomic indicators, fundamental financial data, technical share price signals, insider trading activity, and real-time news sentiment into comprehensive, actionable investment recommendations.
 
 > [!NOTE]
 > Oraculum was built as an advanced personal project to explore Agentic AI orchestration, high-performance data engineering, and modern Java modularity. 
@@ -30,11 +30,10 @@ Oraculum acts as your personal AI stock analyst. It orchestrates a multi-agent s
 Oraculum uses a decoupled, event-driven architecture powered by **Spring Modulith** on the backend and an asynchronous Python **Harvester** for data ingestion.
 
 ```mermaid
-flowchart TD
+flowchart LR
     User([User]) <--> UI["Vaadin UI"]
     
     subgraph Spring Modulith Backend
-        direction TB
         UI_Mod["UI Module"]
         Company["Company Module"]
         Analyst["Analyst Module"]
@@ -46,14 +45,12 @@ flowchart TD
     end
     
     subgraph Data Ingestion
-        direction TB
         Kafka[("Redpanda Broker")]
         PythonHarvester["Python Harvester"]
         ExchangeDir[("Parquet Exchange")]
     end
 
     subgraph External APIs
-        direction TB
         SimFin["SimFin API"]
         OpenInsider["OpenInsider"]
         AI_Models["OpenAI / Gemini / Groq"]
@@ -110,6 +107,7 @@ Oraculum doesn't just pass numbers to an LLM; it orchestrates a team of speciali
 - 🗞️ **News Agent**: Evaluates real-time news for market sentiment and materiality.
 - 🕴️ **Insider Agent**: Detects cluster buys and executive confidence signals.
 - 📈 **Share Price Agent**: Analyzes technicals, moving averages, and volume velocity.
+- 🌍 **Macroeconomic Agent**: Evaluates broader economic indicators (e.g., inflation, treasury yields, GDP) and their systemic impact on the company's sector.
 
 **2. The Review Loop**
 - 🧐 **Critic Agent**: Reviews the raw outputs of the specialist agents for logical inconsistencies, bias, or conflicting conclusions. If it finds issues, it instructs specific specialists to re-evaluate their data, creating a powerful feedback loop.
