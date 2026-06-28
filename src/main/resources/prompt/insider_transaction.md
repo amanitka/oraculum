@@ -31,6 +31,9 @@ You MUST respond with valid JSON using exactly this schema:
 - `bullish_conviction` (integer): Score from 1 to 5. (1 = very bearish/heavy selling, 3 = neutral/noise, 5 = extreme conviction buying).
 - `summary` (string): A concise 2-3 sentence summary in Markdown format starting with `### Insider Activity & Management Conviction`.
 
+Rules:
+- CRITICAL CITATIONS: Every time you state a fact, metric, event, margin, or financial number derived from the data, you MUST cite the `citation_id` of the exact source immediately after the claim using brackets. Example: "Revenue grew by 20% to $1.44B [2]." Do not cite data that does not have a `citation_id`. Do not hallucinate citations.
+
 **Input JSON:**
 ```json
 {

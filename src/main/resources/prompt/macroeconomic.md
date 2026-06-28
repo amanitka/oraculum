@@ -17,14 +17,15 @@ Pay special attention to this thesis requested by the user:
 
 You MUST respond with valid JSON using exactly this schema:
 {
-  "macroeconomicContext": "string"
+  "summary": "string"
 }
 
 Rules:
-- Write exactly one highly dense paragraph in the "macroeconomicContext" field.
+- CRITICAL CITATIONS: Every time you state a fact, metric, event, margin, or financial number derived from the data, you MUST cite the `citation_id` of the exact source immediately after the claim using brackets. Example: "Revenue grew by 20% to $1.44B [2]." Do not cite data that does not have a `citation_id`. Do not hallucinate citations.
+- Write exactly one highly dense paragraph in the "summary" field.
 - Be objective and use an institutional tone.
 - Do not include markdown code fences or explanatory text outside the JSON fields.
-- **CRITICAL**: The "macroeconomicContext" text is embedded inside a JSON string. Ensure all control characters (such as newlines, tabs) and double quotes inside are correctly escaped (e.g. use \n for newlines and \" for quotes) to prevent JSON parsing errors.
+- **CRITICAL**: The "summary" text is embedded inside a JSON string. Ensure all control characters (such as newlines, tabs) and double quotes inside are correctly escaped (e.g. use \n for newlines and \" for quotes) to prevent JSON parsing errors.
 
 **Input JSON:**
 

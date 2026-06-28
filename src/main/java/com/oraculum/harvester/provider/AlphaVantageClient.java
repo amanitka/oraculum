@@ -2,6 +2,7 @@ package com.oraculum.harvester.provider;
 
 import com.oraculum.harvester.provider.dto.AlphaVantageEarningsEstimatesResponse;
 import com.oraculum.harvester.provider.dto.AlphaVantageNewsResponse;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -19,6 +20,7 @@ public class AlphaVantageClient {
         this.restClient = restClient;
     }
 
+    @Retry(name = "alphaVantageApi")
     public AlphaVantageNewsResponse fetchNewsSentiment(String timeFrom) {
         log.info("Fetching news sentiment from Alpha Vantage. TimeFrom: {}", timeFrom);
         return restClient.get()
@@ -31,6 +33,8 @@ public class AlphaVantageClient {
                 .retrieve()
                 .body(AlphaVantageNewsResponse.class);
     }
+
+    @Retry(name = "alphaVantageApi")
     public AlphaVantageEarningsEstimatesResponse fetchEarningsEstimates(String symbol) {
         log.info("Fetching earnings estimates from Alpha Vantage for symbol: {}", symbol);
         return restClient.get()

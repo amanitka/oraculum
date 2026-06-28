@@ -137,7 +137,10 @@ public class CompanyFactSheetData {
     public String getDailySharePriceSignals() {
         if (dailySharePriceSignals == null) return "[]";
         List<SharePriceSignalSlim> slim = dailySharePriceSignals.stream()
-                .map(SharePriceSignalSlim::from)
+                .map(dto -> {
+                    String citationId = citationRegistry.getOrAssignCitationId(SharePriceSignalDto.class, dto.getId(), dto);
+                    return SharePriceSignalSlim.from(dto, citationId);
+                })
                 .collect(Collectors.toList());
         return JsonUtils.toJson(jsonMapper, slim, "[]");
     }
@@ -146,7 +149,10 @@ public class CompanyFactSheetData {
         if (dailySharePriceSignals == null || dailySharePriceSignals.isEmpty()) return "[]";
         List<SharePriceSignalSlim> slim = dailySharePriceSignals.stream()
                 .limit(limit)
-                .map(SharePriceSignalSlim::from)
+                .map(dto -> {
+                    String citationId = citationRegistry.getOrAssignCitationId(SharePriceSignalDto.class, dto.getId(), dto);
+                    return SharePriceSignalSlim.from(dto, citationId);
+                })
                 .collect(Collectors.toList());
         return JsonUtils.toJson(jsonMapper, slim, "[]");
     }
@@ -156,7 +162,10 @@ public class CompanyFactSheetData {
             return "[]";
         }
         List<SharePriceSignalSlim> slim = monthlySharePriceSignals.stream()
-                .map(SharePriceSignalSlim::from)
+                .map(dto -> {
+                    String citationId = citationRegistry.getOrAssignCitationId(SharePriceSignalDto.class, dto.getId(), dto);
+                    return SharePriceSignalSlim.from(dto, citationId);
+                })
                 .collect(Collectors.toList());
         return JsonUtils.toJson(jsonMapper, slim, "[]");
     }

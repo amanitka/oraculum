@@ -114,4 +114,8 @@ public record SharePriceSignalDto(
                 entity.getCompositeSignal()
         );
     }
+
+    public String getId() {
+        return companyId() + "_" + tradeDate().toString();
+    }
 }

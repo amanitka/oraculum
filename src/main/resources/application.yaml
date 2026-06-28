@@ -59,6 +59,13 @@ resilience4j:
         retry-exceptions:
           - org.springframework.web.client.RestClientException
           - java.io.IOException
+      alphaVantageApi:
+        max-attempts: 3
+        wait-duration: 2s
+        enable-exponential-backoff: true
+        retry-exceptions:
+          - org.springframework.web.client.RestClientException
+          - java.io.IOException
   timelimiter:
     time-limiter-aspect-order: 400
     instances:

@@ -20,9 +20,10 @@ public record SharePriceSignalSlim(
         @JsonProperty("enterprise_value_to_ebitda") Float enterpriseValueToEbitda,
         @JsonProperty("return_on_equity") Float returnOnEquity,
         @JsonProperty("revenue_yoy_growth") Float revenueYoyGrowth,
-        @JsonProperty("financial_trend_score") Integer financialTrendScore
+        @JsonProperty("financial_trend_score") Integer financialTrendScore,
+        @JsonProperty("citation_id") String citationId
 ) {
-    public static SharePriceSignalSlim from(SharePriceSignalDto dto) {
+    public static SharePriceSignalSlim from(SharePriceSignalDto dto, String citationId) {
         if (dto == null) return null;
         return new SharePriceSignalSlim(
                 dto.tradeDate(),
@@ -39,7 +40,8 @@ public record SharePriceSignalSlim(
                 dto.enterpriseValueToEbitda(),
                 dto.returnOnEquity(),
                 dto.revenueYoyGrowth(),
-                dto.financialTrendScore()
+                dto.financialTrendScore(),
+                citationId
         );
     }
 }
