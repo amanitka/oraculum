@@ -66,7 +66,7 @@ $$ LANGUAGE plpgsql;
 
 -- Execute Partition Creation
 SELECT create_monthly_partitions('t_share_price', (NOW() - INTERVAL '10 years')::DATE, (NOW() + INTERVAL '2 years')::DATE);
-SELECT create_monthly_partitions('t_news', (NOW() - INTERVAL '5 years')::DATE, (NOW() + INTERVAL '2 years')::DATE);
-SELECT create_monthly_partitions('t_news_ticker', (NOW() - INTERVAL '5 years')::DATE, (NOW() + INTERVAL '2 years')::DATE);
+SELECT create_yearly_partitions('t_news', (NOW() - INTERVAL '5 years')::DATE, (NOW() + INTERVAL '2 years')::DATE);
+SELECT create_yearly_partitions('t_news_ticker', (NOW() - INTERVAL '5 years')::DATE, (NOW() + INTERVAL '2 years')::DATE);
 SELECT create_monthly_partitions('t_llm_execution_log', (NOW() - INTERVAL '1 month')::DATE, (NOW() + INTERVAL '1 year')::DATE);
 SELECT create_yearly_partitions('t_insider_transaction_ticker', (NOW() - INTERVAL '3 years')::DATE, (NOW() + INTERVAL '1 years')::DATE);
