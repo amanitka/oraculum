@@ -34,7 +34,7 @@ public class EconomyView extends VerticalLayout {
         setPadding(false);
         setSpacing(true);
         getStyle().set("padding-top", "2rem");
-        getStyle().set("padding-bottom", "0.5rem");
+        getStyle().set("padding-bottom", "2rem");
 
         H3 title = new H3("Macroeconomic Indicators");
         title.addClassNames(LumoUtility.Margin.Top.LARGE, LumoUtility.Margin.Bottom.MEDIUM);
@@ -60,7 +60,6 @@ public class EconomyView extends VerticalLayout {
         chartContainer.setWidthFull();
         // Remove fixed height so contents don't overflow the border padding
         chartContainer.getStyle().set("margin-top", "2rem");
-        chartContainer.getStyle().set("margin-bottom", "2rem"); // Add space below the chart container
         chartContainer.getStyle().set("border", "1px solid var(--lumo-contrast-10pct)");
         chartContainer.getStyle().set("border-radius", "var(--lumo-border-radius-l)");
         chartContainer.getStyle().set("padding", "var(--lumo-space-l)");

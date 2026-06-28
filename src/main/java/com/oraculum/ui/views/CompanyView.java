@@ -47,7 +47,6 @@ public class CompanyView extends VerticalLayout {
         setPadding(false);
         setSpacing(true);
         getStyle().set("padding-top", "2rem");
-        getStyle().set("padding-bottom", "0.5rem");
         setDefaultHorizontalComponentAlignment(Alignment.CENTER);
 
         // Header
@@ -57,6 +56,7 @@ public class CompanyView extends VerticalLayout {
         // Main Dashboard Area
         contentArea = new Div();
         contentArea.setWidthFull();
+        contentArea.getStyle().set("margin-bottom", "2rem");
         contentArea.addClassNames(LumoUtility.Background.CONTRAST_5, LumoUtility.Padding.LARGE);
         add(contentArea);
     }
