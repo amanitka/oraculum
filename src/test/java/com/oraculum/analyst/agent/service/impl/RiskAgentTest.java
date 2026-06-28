@@ -52,6 +52,7 @@ class RiskAgentTest {
         when(companyDto.ticker()).thenReturn("AAPL");
         com.oraculum.analyst.agent.dto.AgentWorkflowState state = mock(com.oraculum.analyst.agent.dto.AgentWorkflowState.class);
         when(state.getAnalysisFocus()).thenReturn("Focus on risks");
+        when(state.getMacroeconomicAgentOutput()).thenReturn("Macro output");
         context = AgentContext.builder()
                 .correlationId(UUID.randomUUID())
                 .company(companyDto)

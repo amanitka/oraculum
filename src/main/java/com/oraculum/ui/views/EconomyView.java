@@ -2,19 +2,13 @@ package com.oraculum.ui.views;
 
 import com.github.appreciated.apexcharts.ApexCharts;
 import com.github.appreciated.apexcharts.ApexChartsBuilder;
-import com.github.appreciated.apexcharts.config.builder.ChartBuilder;
-import com.github.appreciated.apexcharts.config.builder.DataLabelsBuilder;
-import com.github.appreciated.apexcharts.config.builder.StrokeBuilder;
-import com.github.appreciated.apexcharts.config.builder.ThemeBuilder;
-import com.github.appreciated.apexcharts.config.builder.XAxisBuilder;
-import com.github.appreciated.apexcharts.config.builder.YAxisBuilder;
+import com.github.appreciated.apexcharts.config.builder.*;
 import com.github.appreciated.apexcharts.config.chart.Type;
 import com.github.appreciated.apexcharts.config.chart.builder.AnimationsBuilder;
 import com.github.appreciated.apexcharts.config.chart.builder.ToolbarBuilder;
 import com.github.appreciated.apexcharts.config.chart.builder.ZoomBuilder;
 import com.github.appreciated.apexcharts.config.chart.toolbar.AutoSelected;
 import com.github.appreciated.apexcharts.config.stroke.Curve;
-import com.github.appreciated.apexcharts.config.theme.Mode;
 import com.github.appreciated.apexcharts.config.xaxis.XAxisType;
 import com.github.appreciated.apexcharts.config.yaxis.builder.LabelsBuilder;
 import com.github.appreciated.apexcharts.helper.Series;
@@ -254,9 +248,6 @@ public class EconomyView extends VerticalLayout {
             double paddingY = range * 0.1;
 
             ApexCharts chart = ApexChartsBuilder.get()
-                    .withTheme(ThemeBuilder.get()
-                            .withMode(Mode.DARK)
-                            .build())
                     .withChart(ChartBuilder.get()
                             .withType(Type.LINE)
                             .withWidth("100%")

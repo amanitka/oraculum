@@ -6,7 +6,6 @@ import com.github.appreciated.apexcharts.config.builder.*;
 import com.github.appreciated.apexcharts.config.chart.Type;
 import com.github.appreciated.apexcharts.config.chart.builder.ZoomBuilder;
 import com.github.appreciated.apexcharts.config.stroke.Curve;
-import com.github.appreciated.apexcharts.config.theme.Mode;
 import com.github.appreciated.apexcharts.config.xaxis.XAxisType;
 import com.github.appreciated.apexcharts.config.yaxis.builder.LabelsBuilder;
 import com.github.appreciated.apexcharts.helper.Series;
@@ -456,9 +455,6 @@ public class CompanyOverviewComponent extends VerticalLayout {
         String[] dates = sortedPrices.stream().map(sp -> sp.tradeDate().toString()).toArray(String[]::new);
 
         ApexCharts lineChart = ApexChartsBuilder.get()
-                .withTheme(ThemeBuilder.get()
-                        .withMode(Mode.DARK)
-                        .build())
                 .withChart(ChartBuilder.get()
                         .withType(Type.LINE)
                         .withWidth("100%")

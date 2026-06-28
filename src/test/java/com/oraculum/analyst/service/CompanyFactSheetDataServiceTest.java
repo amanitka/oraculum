@@ -11,6 +11,7 @@ import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.dto.*;
 import com.oraculum.economy.api.EconomyDataApi;
 import com.oraculum.economy.api.dto.MacroSummaryDto;
+import com.oraculum.harvester.api.HarvesterLiveApi;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,6 +45,8 @@ class CompanyFactSheetDataServiceTest {
     private EconomyDataApi economyDataApi;
     @Mock
     private CompanyInsiderTransactionApi companyInsiderTransactionApi;
+    @Mock
+    private HarvesterLiveApi harvesterLiveApi;
     @Mock
     private tools.jackson.databind.json.JsonMapper jsonMapper;
     @Mock(answer = org.mockito.Answers.RETURNS_DEEP_STUBS)
@@ -121,6 +124,8 @@ class CompanyFactSheetDataServiceTest {
 
         MacroSummaryDto macroSummary = mock(MacroSummaryDto.class);
         when(economyDataApi.getMacroeconomicSummary()).thenReturn(List.of(macroSummary));
+
+        when(harvesterLiveApi.fetchEarningsEstimates(anyString())).thenReturn(Optional.empty());
 
         CompanyFactSheetData data = service.create(company, new CitationRegistry());
 
