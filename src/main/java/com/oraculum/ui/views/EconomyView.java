@@ -3,9 +3,9 @@ package com.oraculum.ui.views;
 import com.github.appreciated.apexcharts.ApexCharts;
 import com.github.appreciated.apexcharts.ApexChartsBuilder;
 import com.oraculum.economy.api.EconomyDataApi;
+import com.oraculum.economy.api.domain.MacroIndicator;
 import com.oraculum.economy.api.dto.MacroObservationDto;
 import com.oraculum.economy.api.dto.MacroSummaryDto;
-import com.oraculum.economy.api.domain.MacroIndicator;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.H4;
@@ -30,14 +30,15 @@ public class EconomyView extends VerticalLayout {
     public EconomyView(EconomyDataApi economyDataApi) {
         this.economyDataApi = economyDataApi;
 
-        setSizeFull();
+        setWidthFull();
         setPadding(false);
         setSpacing(true);
+        getStyle().set("padding-top", "2rem");
+        getStyle().set("padding-bottom", "0.5rem");
 
         H3 title = new H3("Macroeconomic Indicators");
         title.addClassNames(LumoUtility.Margin.Top.LARGE, LumoUtility.Margin.Bottom.MEDIUM);
         title.getStyle().set("margin-bottom", "1rem");
-        title.getStyle().set("margin-top", "2rem");
         add(title);
 
         Div dashboardGrid = new Div();
@@ -230,7 +231,8 @@ public class EconomyView extends VerticalLayout {
                 }
             }
             if (minY == Double.MAX_VALUE) {
-                minY = 0.0; maxY = 100.0;
+                minY = 0.0;
+                maxY = 100.0;
             }
             double range = maxY - minY;
             if (range == 0) range = 1.0;

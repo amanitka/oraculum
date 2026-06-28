@@ -166,7 +166,7 @@ public class CompanyOverviewComponent extends VerticalLayout {
 
     private Component createNewsLayout() {
         VerticalLayout layout = new VerticalLayout();
-        layout.setSizeFull();
+        layout.setWidthFull();
         layout.setPadding(true);
 
         List<NewsTickerDto> news = companyNewsApi.getNewsByTicker(company.ticker(), LocalDate.now().minusDays(30));
@@ -200,13 +200,15 @@ public class CompanyOverviewComponent extends VerticalLayout {
         }));
         grid.setDetailsVisibleOnClick(true);
 
+        grid.setWidthFull();
+        grid.setAllRowsVisible(true);
         layout.add(grid);
         return layout;
     }
 
     private Component createInsiderLayout() {
         VerticalLayout layout = new VerticalLayout();
-        layout.setSizeFull();
+        layout.setWidthFull();
         layout.setPadding(true);
 
         companyInsiderTransactionApi.getInsiderTransactionSummaryByTicker(company.ticker()).ifPresent(summary -> {
@@ -258,9 +260,10 @@ public class CompanyOverviewComponent extends VerticalLayout {
                 .setComparator(Comparator.comparing(InsiderTransactionTickerDto::value, Comparator.nullsLast(Comparator.naturalOrder()))).setSortable(true);
 
         grid.setItems(transactions.stream().sorted(Comparator.comparing(InsiderTransactionTickerDto::tradeDate, Comparator.nullsFirst(Comparator.naturalOrder())).reversed()).collect(Collectors.toList()));
+        grid.setWidthFull();
+        grid.setAllRowsVisible(true);
 
         layout.add(grid);
-        layout.expand(grid);
         return layout;
     }
 
@@ -401,13 +404,16 @@ public class CompanyOverviewComponent extends VerticalLayout {
 
     private <T> Component createGridContainer(List<T> items, java.util.function.Function<List<T>, Component> gridCreator) {
         VerticalLayout layout = new VerticalLayout();
-        layout.setSizeFull();
+        layout.setWidthFull(); // Allow height to grow based on content
         layout.setPadding(true);
         if (items.isEmpty()) {
             layout.add(new Span("No records found for this timeframe."));
         } else {
             Component grid = gridCreator.apply(items);
-            if (grid instanceof Grid) ((Grid<?>) grid).setSizeFull();
+            if (grid instanceof Grid) {
+                ((Grid<?>) grid).setWidthFull();
+                ((Grid<?>) grid).setAllRowsVisible(true); // Force grid to show all rows so it doesn't collapse in a scrolling layout
+            }
             layout.add(grid);
         }
         return layout;

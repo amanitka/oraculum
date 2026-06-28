@@ -1,10 +1,6 @@
 package com.oraculum.ui.views;
 
-import com.oraculum.company.api.CompanyMetadataApi;
-import com.oraculum.company.api.CompanyFinancialDataApi;
-import com.oraculum.company.api.CompanySharePriceApi;
-import com.oraculum.company.api.CompanyNewsApi;
-import com.oraculum.company.api.CompanyInsiderTransactionApi;
+import com.oraculum.company.api.*;
 import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.ui.MainLayout;
 import com.oraculum.ui.components.CompanyOverviewComponent;
@@ -47,9 +43,11 @@ public class CompanyView extends VerticalLayout {
         this.companyInsiderTransactionApi = companyInsiderTransactionApi;
         this.objectMapper = objectMapper;
 
-        setSizeFull();
+        setWidthFull();
         setPadding(false);
-        setSpacing(false);
+        setSpacing(true);
+        getStyle().set("padding-top", "2rem");
+        getStyle().set("padding-bottom", "0.5rem");
         setDefaultHorizontalComponentAlignment(Alignment.CENTER);
 
         // Header
@@ -58,10 +56,9 @@ public class CompanyView extends VerticalLayout {
 
         // Main Dashboard Area
         contentArea = new Div();
-        contentArea.setSizeFull();
+        contentArea.setWidthFull();
         contentArea.addClassNames(LumoUtility.Background.CONTRAST_5, LumoUtility.Padding.LARGE);
         add(contentArea);
-        setFlexGrow(1, contentArea);
     }
 
     private Component createHeader() {
@@ -69,11 +66,9 @@ public class CompanyView extends VerticalLayout {
         wrapper.setWidthFull();
         wrapper.setPadding(true);
         wrapper.setSpacing(false);
-        wrapper.getStyle().set("margin-bottom", "1rem");
 
         H3 title = new H3("Select company");
-        title.getStyle().set("margin-top", "1rem");
-        title.getStyle().set("margin-bottom", "0.5rem");
+        title.getStyle().set("margin-bottom", "1rem");
 
         companyComboBox = new ComboBox<>();
         companyComboBox.setPlaceholder("Search Company or Ticker...");
