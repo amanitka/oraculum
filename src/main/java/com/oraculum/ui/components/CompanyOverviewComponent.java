@@ -2,10 +2,18 @@ package com.oraculum.ui.components;
 
 import com.github.appreciated.apexcharts.ApexCharts;
 import com.github.appreciated.apexcharts.ApexChartsBuilder;
+import com.github.appreciated.apexcharts.config.builder.*;
+import com.github.appreciated.apexcharts.config.chart.Type;
+import com.github.appreciated.apexcharts.config.chart.builder.ZoomBuilder;
+import com.github.appreciated.apexcharts.config.stroke.Curve;
+import com.github.appreciated.apexcharts.config.theme.Mode;
+import com.github.appreciated.apexcharts.config.xaxis.XAxisType;
+import com.github.appreciated.apexcharts.config.yaxis.builder.LabelsBuilder;
+import com.github.appreciated.apexcharts.helper.Series;
 import com.oraculum.company.api.CompanyFinancialDataApi;
-import com.oraculum.company.api.CompanySharePriceApi;
-import com.oraculum.company.api.CompanyNewsApi;
 import com.oraculum.company.api.CompanyInsiderTransactionApi;
+import com.oraculum.company.api.CompanyNewsApi;
+import com.oraculum.company.api.CompanySharePriceApi;
 import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.dto.*;
 import com.oraculum.ui.ViewHelper;
@@ -94,8 +102,8 @@ public class CompanyOverviewComponent extends VerticalLayout {
 
         add(mainTabSheet);
 
-        // Load chart data
-        loadChartData();
+        // Load chart data once component is attached to DOM to fix initial width rendering bug
+        addAttachListener(_ -> loadChartData());
     }
 
     private Component createHeader() {
@@ -118,7 +126,7 @@ public class CompanyOverviewComponent extends VerticalLayout {
 
     private Component createOverviewLayout() {
         VerticalLayout layout = new VerticalLayout();
-        layout.setSizeFull();
+        layout.setWidthFull();
         layout.setPadding(true);
 
         HorizontalLayout chartHeader = new HorizontalLayout();
@@ -448,26 +456,29 @@ public class CompanyOverviewComponent extends VerticalLayout {
         String[] dates = sortedPrices.stream().map(sp -> sp.tradeDate().toString()).toArray(String[]::new);
 
         ApexCharts lineChart = ApexChartsBuilder.get()
-                .withChart(com.github.appreciated.apexcharts.config.builder.ChartBuilder.get()
-                        .withType(com.github.appreciated.apexcharts.config.chart.Type.LINE)
+                .withTheme(ThemeBuilder.get()
+                        .withMode(Mode.DARK)
+                        .build())
+                .withChart(ChartBuilder.get()
+                        .withType(Type.LINE)
                         .withWidth("100%")
                         .withHeight("400px")
-                        .withZoom(com.github.appreciated.apexcharts.config.chart.builder.ZoomBuilder.get().withEnabled(true).build())
+                        .withZoom(ZoomBuilder.get().withEnabled(true).build())
                         .withForeColor("var(--lumo-body-text-color)")
                         .withBackground("transparent")
                         .build())
-                .withStroke(com.github.appreciated.apexcharts.config.builder.StrokeBuilder.get()
-                        .withCurve(com.github.appreciated.apexcharts.config.stroke.Curve.STRAIGHT)
+                .withStroke(StrokeBuilder.get()
+                        .withCurve(Curve.STRAIGHT)
                         .withWidth(2.0)
                         .build())
-                .withDataLabels(com.github.appreciated.apexcharts.config.builder.DataLabelsBuilder.get().withEnabled(false).build())
-                .withSeries(new com.github.appreciated.apexcharts.helper.Series<>("Close Price", prices))
-                .withXaxis(com.github.appreciated.apexcharts.config.builder.XAxisBuilder.get()
-                        .withType(com.github.appreciated.apexcharts.config.xaxis.XAxisType.DATETIME)
+                .withDataLabels(DataLabelsBuilder.get().withEnabled(false).build())
+                .withSeries(new Series<>("Close Price", prices))
+                .withXaxis(XAxisBuilder.get()
+                        .withType(XAxisType.DATETIME)
                         .withCategories(dates)
                         .build())
-                .withYaxis(com.github.appreciated.apexcharts.config.builder.YAxisBuilder.get()
-                        .withLabels(com.github.appreciated.apexcharts.config.yaxis.builder.LabelsBuilder.get()
+                .withYaxis(YAxisBuilder.get()
+                        .withLabels(LabelsBuilder.get()
                                 .withFormatter("function (value) { return value.toFixed(2); }")
                                 .build())
                         .build())
@@ -481,5 +492,13 @@ public class CompanyOverviewComponent extends VerticalLayout {
 
         chartPlaceholder.removeAll();
         chartPlaceholder.add(lineChart);
+
+        // Force the browser to trigger a resize event after the DOM layout settles.
+        // Dialog animations can take ~300ms, so we stagger a few resize events to guarantee the chart snaps to 100%.
+        chartPlaceholder.getUI().ifPresent(ui ->
+                ui.getPage().executeJs("setTimeout(() => window.dispatchEvent(new Event('resize')), 100); " +
+                        "setTimeout(() => window.dispatchEvent(new Event('resize')), 350); " +
+                        "setTimeout(() => window.dispatchEvent(new Event('resize')), 600);")
+        );
     }
 }

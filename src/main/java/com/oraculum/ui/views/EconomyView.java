@@ -2,6 +2,22 @@ package com.oraculum.ui.views;
 
 import com.github.appreciated.apexcharts.ApexCharts;
 import com.github.appreciated.apexcharts.ApexChartsBuilder;
+import com.github.appreciated.apexcharts.config.builder.ChartBuilder;
+import com.github.appreciated.apexcharts.config.builder.DataLabelsBuilder;
+import com.github.appreciated.apexcharts.config.builder.StrokeBuilder;
+import com.github.appreciated.apexcharts.config.builder.ThemeBuilder;
+import com.github.appreciated.apexcharts.config.builder.XAxisBuilder;
+import com.github.appreciated.apexcharts.config.builder.YAxisBuilder;
+import com.github.appreciated.apexcharts.config.chart.Type;
+import com.github.appreciated.apexcharts.config.chart.builder.AnimationsBuilder;
+import com.github.appreciated.apexcharts.config.chart.builder.ToolbarBuilder;
+import com.github.appreciated.apexcharts.config.chart.builder.ZoomBuilder;
+import com.github.appreciated.apexcharts.config.chart.toolbar.AutoSelected;
+import com.github.appreciated.apexcharts.config.stroke.Curve;
+import com.github.appreciated.apexcharts.config.theme.Mode;
+import com.github.appreciated.apexcharts.config.xaxis.XAxisType;
+import com.github.appreciated.apexcharts.config.yaxis.builder.LabelsBuilder;
+import com.github.appreciated.apexcharts.helper.Series;
 import com.oraculum.economy.api.EconomyDataApi;
 import com.oraculum.economy.api.domain.MacroIndicator;
 import com.oraculum.economy.api.dto.MacroObservationDto;
@@ -238,38 +254,41 @@ public class EconomyView extends VerticalLayout {
             double paddingY = range * 0.1;
 
             ApexCharts chart = ApexChartsBuilder.get()
-                    .withChart(com.github.appreciated.apexcharts.config.builder.ChartBuilder.get()
-                            .withType(com.github.appreciated.apexcharts.config.chart.Type.LINE)
+                    .withTheme(ThemeBuilder.get()
+                            .withMode(Mode.DARK)
+                            .build())
+                    .withChart(ChartBuilder.get()
+                            .withType(Type.LINE)
                             .withWidth("100%")
                             .withHeight("400px")
                             .withForeColor("var(--lumo-body-text-color)")
                             .withBackground("transparent")
-                            .withAnimations(com.github.appreciated.apexcharts.config.chart.builder.AnimationsBuilder.get()
+                            .withAnimations(AnimationsBuilder.get()
                                     .withEnabled(false) // Disable animations for massive performance boost on large datasets
                                     .build())
-                            .withZoom(com.github.appreciated.apexcharts.config.chart.builder.ZoomBuilder.get()
+                            .withZoom(ZoomBuilder.get()
                                     .withEnabled(true)
                                     .withAutoScaleYaxis(true)
                                     .build())
-                            .withToolbar(com.github.appreciated.apexcharts.config.chart.builder.ToolbarBuilder.get()
-                                    .withAutoSelected(com.github.appreciated.apexcharts.config.chart.toolbar.AutoSelected.ZOOM)
+                            .withToolbar(ToolbarBuilder.get()
+                                    .withAutoSelected(AutoSelected.ZOOM)
                                     .build())
                             .build())
-                    .withStroke(com.github.appreciated.apexcharts.config.builder.StrokeBuilder.get()
-                            .withCurve(com.github.appreciated.apexcharts.config.stroke.Curve.STRAIGHT)
+                    .withStroke(StrokeBuilder.get()
+                            .withCurve(Curve.STRAIGHT)
                             .withWidth(2.0)
                             .build())
-                    .withDataLabels(com.github.appreciated.apexcharts.config.builder.DataLabelsBuilder.get().withEnabled(false).build())
-                    .withSeries(new com.github.appreciated.apexcharts.helper.Series<>((summary.indicatorTitle() != null ? summary.indicatorTitle() : summary.indicator().name()) + " (" + summary.indicator().getUnit() + ")", filteredValues))
-                    .withXaxis(com.github.appreciated.apexcharts.config.builder.XAxisBuilder.get()
-                            .withType(com.github.appreciated.apexcharts.config.xaxis.XAxisType.DATETIME)
+                    .withDataLabels(DataLabelsBuilder.get().withEnabled(false).build())
+                    .withSeries(new Series<>((summary.indicatorTitle() != null ? summary.indicatorTitle() : summary.indicator().name()) + " (" + summary.indicator().getUnit() + ")", filteredValues))
+                    .withXaxis(XAxisBuilder.get()
+                            .withType(XAxisType.DATETIME)
                             .withCategories(filteredDates)
                             .withTickAmount(java.math.BigDecimal.valueOf(10.0)) // Force ticks to display so we don't lose the bottom axis labels
                             .build())
-                    .withYaxis(com.github.appreciated.apexcharts.config.builder.YAxisBuilder.get()
+                    .withYaxis(YAxisBuilder.get()
                             .withMin(minY - paddingY)
                             .withMax(maxY + paddingY)
-                            .withLabels(com.github.appreciated.apexcharts.config.yaxis.builder.LabelsBuilder.get()
+                            .withLabels(LabelsBuilder.get()
                                     .withFormatter("function (value) { return value.toFixed(2); }")
                                     .build())
                             .build())

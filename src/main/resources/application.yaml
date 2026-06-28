@@ -1,3 +1,7 @@
+logging:
+  level:
+    com.oraculum.harvester.config.RestClientLoggingInterceptor: INFO
+
 spring:
   autoconfigure:
     exclude:
@@ -90,7 +94,7 @@ oraculum:
       cron: "0 0 3 * * TUE-SAT"
     news:
       incremental-window-hours: 1
-      cron: "0 0 5,10,14,18 * * *"
+      cron: "0 0 4,10,15,20 * * *"
     insider-transactions:
       cron: "0 0 4,16 * * *"
     macroeconomic:
