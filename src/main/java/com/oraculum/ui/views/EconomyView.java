@@ -5,9 +5,10 @@ import com.github.appreciated.apexcharts.ApexChartsBuilder;
 import com.oraculum.economy.api.EconomyDataApi;
 import com.oraculum.economy.api.dto.MacroObservationDto;
 import com.oraculum.economy.api.dto.MacroSummaryDto;
+import com.oraculum.economy.api.domain.MacroIndicator;
 import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
@@ -33,7 +34,7 @@ public class EconomyView extends VerticalLayout {
         setPadding(false);
         setSpacing(true);
 
-        H2 title = new H2("Macroeconomic Indicators");
+        H3 title = new H3("Macroeconomic Indicators");
         title.addClassNames(LumoUtility.Margin.Top.LARGE, LumoUtility.Margin.Bottom.MEDIUM);
         title.getStyle().set("margin-bottom", "1rem");
         title.getStyle().set("margin-top", "2rem");
@@ -56,8 +57,9 @@ public class EconomyView extends VerticalLayout {
 
         chartContainer = new Div();
         chartContainer.setWidthFull();
-        chartContainer.setHeight("450px");
+        // Remove fixed height so contents don't overflow the border padding
         chartContainer.getStyle().set("margin-top", "2rem");
+        chartContainer.getStyle().set("margin-bottom", "2rem"); // Add space below the chart container
         chartContainer.getStyle().set("border", "1px solid var(--lumo-contrast-10pct)");
         chartContainer.getStyle().set("border-radius", "var(--lumo-border-radius-l)");
         chartContainer.getStyle().set("padding", "var(--lumo-space-l)");
@@ -100,7 +102,7 @@ public class EconomyView extends VerticalLayout {
             card.getStyle().set("transform", "none");
         });
 
-        H3 name = new H3(summary.indicatorTitle() != null ? summary.indicatorTitle() : summary.indicator().name());
+        H4 name = new H4(summary.indicatorTitle() != null ? summary.indicatorTitle() : summary.indicator().name());
         name.addClassNames(LumoUtility.Margin.NONE, LumoUtility.FontSize.MEDIUM);
 
         Div latestLayout = new Div();
@@ -113,25 +115,22 @@ public class EconomyView extends VerticalLayout {
         val.addClassNames(LumoUtility.FontSize.XXLARGE, LumoUtility.FontWeight.BOLD);
 
         Span yoy = new Span(summary.yoyChangePct() != null ? String.format(java.util.Locale.US, "%+.2f%%", summary.yoyChangePct()) : "");
-        yoy.addClassNames(LumoUtility.FontWeight.BOLD, LumoUtility.TextColor.SECONDARY);
+        yoy.getStyle().set("font-weight", "bold");
+        yoy.getStyle().set("color", "var(--lumo-body-text-color)"); // Default to white in dark mode
 
         if (summary.yoyChangePct() != null && summary.yoyChangePct() != 0) {
-            com.oraculum.economy.api.domain.MacroIndicator.SentimentDirection dir = summary.indicator().getSentimentDirection();
-            if (dir == com.oraculum.economy.api.domain.MacroIndicator.SentimentDirection.POSITIVE_IS_GOOD) {
+            MacroIndicator.SentimentDirection dir = summary.indicator().getSentimentDirection();
+            if (dir == MacroIndicator.SentimentDirection.POSITIVE_IS_GOOD) {
                 if (summary.yoyChangePct() > 0) {
-                    yoy.removeClassName(LumoUtility.TextColor.SECONDARY);
-                    yoy.addClassName(LumoUtility.TextColor.SUCCESS);
+                    yoy.getStyle().set("color", "var(--lumo-success-text-color)");
                 } else if (summary.yoyChangePct() < 0) {
-                    yoy.removeClassName(LumoUtility.TextColor.SECONDARY);
-                    yoy.addClassName(LumoUtility.TextColor.ERROR);
+                    yoy.getStyle().set("color", "var(--lumo-error-text-color)");
                 }
-            } else if (dir == com.oraculum.economy.api.domain.MacroIndicator.SentimentDirection.NEGATIVE_IS_GOOD) {
+            } else if (dir == MacroIndicator.SentimentDirection.NEGATIVE_IS_GOOD) {
                 if (summary.yoyChangePct() < 0) {
-                    yoy.removeClassName(LumoUtility.TextColor.SECONDARY);
-                    yoy.addClassName(LumoUtility.TextColor.SUCCESS);
+                    yoy.getStyle().set("color", "var(--lumo-success-text-color)");
                 } else if (summary.yoyChangePct() > 0) {
-                    yoy.removeClassName(LumoUtility.TextColor.SECONDARY);
-                    yoy.addClassName(LumoUtility.TextColor.ERROR);
+                    yoy.getStyle().set("color", "var(--lumo-error-text-color)");
                 }
             }
         }
@@ -221,6 +220,22 @@ public class EconomyView extends VerticalLayout {
             Object[] filteredValues = filteredHistory.stream().map(MacroObservationDto::value).toArray();
             String[] filteredDates = filteredHistory.stream().map(obs -> obs.observationDate().toString()).toArray(String[]::new);
 
+            double minY = Double.MAX_VALUE;
+            double maxY = -Double.MAX_VALUE;
+            for (Object v : filteredValues) {
+                if (v instanceof Number num) {
+                    double val = num.doubleValue();
+                    if (val < minY) minY = val;
+                    if (val > maxY) maxY = val;
+                }
+            }
+            if (minY == Double.MAX_VALUE) {
+                minY = 0.0; maxY = 100.0;
+            }
+            double range = maxY - minY;
+            if (range == 0) range = 1.0;
+            double paddingY = range * 0.1;
+
             ApexCharts chart = ApexChartsBuilder.get()
                     .withChart(com.github.appreciated.apexcharts.config.builder.ChartBuilder.get()
                             .withType(com.github.appreciated.apexcharts.config.chart.Type.LINE)
@@ -248,8 +263,11 @@ public class EconomyView extends VerticalLayout {
                     .withXaxis(com.github.appreciated.apexcharts.config.builder.XAxisBuilder.get()
                             .withType(com.github.appreciated.apexcharts.config.xaxis.XAxisType.DATETIME)
                             .withCategories(filteredDates)
+                            .withTickAmount(java.math.BigDecimal.valueOf(10.0)) // Force ticks to display so we don't lose the bottom axis labels
                             .build())
                     .withYaxis(com.github.appreciated.apexcharts.config.builder.YAxisBuilder.get()
+                            .withMin(minY - paddingY)
+                            .withMax(maxY + paddingY)
                             .withLabels(com.github.appreciated.apexcharts.config.yaxis.builder.LabelsBuilder.get()
                                     .withFormatter("function (value) { return value.toFixed(2); }")
                                     .build())

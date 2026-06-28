@@ -5,7 +5,7 @@ import lombok.Getter;
 @Getter
 public enum MacroIndicator {
     FEDFUNDS("Fed Funds Effective Rate", "%", SentimentDirection.NEUTRAL),
-    T10Y2Y("10-Year Minus 2-Year Spread", "%", SentimentDirection.NEUTRAL),
+    T10Y2Y("10-Year Minus 2-Year Spread", "%", SentimentDirection.POSITIVE_IS_GOOD),
     CPIAUCSL("Consumer Price Index (All Urban)", "Index 1982-1984=100", SentimentDirection.NEGATIVE_IS_GOOD),
     UNRATE("Civilian Unemployment Rate", "%", SentimentDirection.NEGATIVE_IS_GOOD),
     RSAFS("Retail Sales: Total", "Millions of Dollars", SentimentDirection.POSITIVE_IS_GOOD),
