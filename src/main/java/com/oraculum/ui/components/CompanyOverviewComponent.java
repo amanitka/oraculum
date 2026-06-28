@@ -34,26 +34,6 @@ import java.util.stream.Collectors;
 
 public class CompanyOverviewComponent extends VerticalLayout {
 
-    private static final String CHART_CSS = """
-            <style>
-            .apexcharts-tooltip {
-                background: var(--lumo-base-color) !important;
-                border: 1px solid var(--lumo-contrast-10pct) !important;
-                box-shadow: var(--lumo-box-shadow-s) !important;
-                color: var(--lumo-body-text-color) !important;
-            }
-            .apexcharts-tooltip-title {
-                background: var(--lumo-contrast-5pct) !important;
-                border-bottom: 1px solid var(--lumo-contrast-10pct) !important;
-                font-family: var(--lumo-font-family) !important;
-                font-weight: 600 !important;
-            }
-            .apexcharts-tooltip-text {
-                color: var(--lumo-body-text-color) !important;
-            }
-            </style>
-            """;
-
     private final CompanyFinancialDataApi companyFinancialDataApi;
     private final CompanySharePriceApi companySharePriceApi;
     private final CompanyNewsApi companyNewsApi;
@@ -81,7 +61,6 @@ public class CompanyOverviewComponent extends VerticalLayout {
 
         // Header
         add(createHeader());
-        add(new com.vaadin.flow.component.Html(CHART_CSS));
 
         // Main TabSheet
         TabSheet mainTabSheet = new TabSheet();

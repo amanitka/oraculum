@@ -22,28 +22,9 @@ import java.util.List;
 @PageTitle("Economy | Oraculum")
 public class EconomyView extends VerticalLayout {
 
-    private static final String CHART_CSS = """
-            <style>
-            .apexcharts-tooltip {
-                background: var(--lumo-base-color) !important;
-                border: 1px solid var(--lumo-contrast-10pct) !important;
-                box-shadow: var(--lumo-box-shadow-s) !important;
-                color: var(--lumo-body-text-color) !important;
-            }
-            .apexcharts-tooltip-title {
-                background: var(--lumo-contrast-5pct) !important;
-                border-bottom: 1px solid var(--lumo-contrast-10pct) !important;
-                font-family: var(--lumo-font-family) !important;
-                font-weight: 600 !important;
-            }
-            .apexcharts-tooltip-text {
-                color: var(--lumo-body-text-color) !important;
-            }
-            </style>
-            """;
-
     private final EconomyDataApi economyDataApi;
     private final Div chartContainer;
+    private Div selectedCard;
 
     public EconomyView(EconomyDataApi economyDataApi) {
         this.economyDataApi = economyDataApi;
@@ -51,7 +32,6 @@ public class EconomyView extends VerticalLayout {
         setSizeFull();
         setPadding(false);
         setSpacing(true);
-        add(new com.vaadin.flow.component.Html(CHART_CSS));
 
         H2 title = new H2("Macroeconomic Indicators");
         title.addClassNames(LumoUtility.Margin.Top.LARGE, LumoUtility.Margin.Bottom.MEDIUM);
@@ -94,6 +74,10 @@ public class EconomyView extends VerticalLayout {
         add(chartContainer);
 
         if (!summaries.isEmpty()) {
+            selectedCard = (Div) dashboardGrid.getChildren().findFirst().orElse(null);
+            if (selectedCard != null) {
+                selectedCard.addClassName("selected-card");
+            }
             loadChart(summaries.getFirst());
         }
     }
@@ -129,20 +113,40 @@ public class EconomyView extends VerticalLayout {
         val.addClassNames(LumoUtility.FontSize.XXLARGE, LumoUtility.FontWeight.BOLD);
 
         Span yoy = new Span(summary.yoyChangePct() != null ? String.format(java.util.Locale.US, "%+.2f%%", summary.yoyChangePct()) : "");
-        if (summary.yoyChangePct() != null) {
-            if (summary.yoyChangePct() > 0) {
-                yoy.addClassNames(LumoUtility.TextColor.SUCCESS);
-            } else if (summary.yoyChangePct() < 0) {
-                yoy.addClassNames(LumoUtility.TextColor.ERROR);
-            } else {
-                yoy.addClassNames(LumoUtility.TextColor.SECONDARY);
+        yoy.addClassNames(LumoUtility.FontWeight.BOLD, LumoUtility.TextColor.SECONDARY);
+
+        if (summary.yoyChangePct() != null && summary.yoyChangePct() != 0) {
+            com.oraculum.economy.api.domain.MacroIndicator.SentimentDirection dir = summary.indicator().getSentimentDirection();
+            if (dir == com.oraculum.economy.api.domain.MacroIndicator.SentimentDirection.POSITIVE_IS_GOOD) {
+                if (summary.yoyChangePct() > 0) {
+                    yoy.removeClassName(LumoUtility.TextColor.SECONDARY);
+                    yoy.addClassName(LumoUtility.TextColor.SUCCESS);
+                } else if (summary.yoyChangePct() < 0) {
+                    yoy.removeClassName(LumoUtility.TextColor.SECONDARY);
+                    yoy.addClassName(LumoUtility.TextColor.ERROR);
+                }
+            } else if (dir == com.oraculum.economy.api.domain.MacroIndicator.SentimentDirection.NEGATIVE_IS_GOOD) {
+                if (summary.yoyChangePct() < 0) {
+                    yoy.removeClassName(LumoUtility.TextColor.SECONDARY);
+                    yoy.addClassName(LumoUtility.TextColor.SUCCESS);
+                } else if (summary.yoyChangePct() > 0) {
+                    yoy.removeClassName(LumoUtility.TextColor.SECONDARY);
+                    yoy.addClassName(LumoUtility.TextColor.ERROR);
+                }
             }
         }
 
         latestLayout.add(val, yoy);
         card.add(name, latestLayout);
 
-        card.addClickListener(_ -> loadChart(summary));
+        card.addClickListener(_ -> {
+            if (selectedCard != null) {
+                selectedCard.removeClassName("selected-card");
+            }
+            selectedCard = card;
+            selectedCard.addClassName("selected-card");
+            loadChart(summary);
+        });
 
         return card;
     }
@@ -153,7 +157,7 @@ public class EconomyView extends VerticalLayout {
 
         List<MacroObservationDto> history = economyDataApi.getHistoricalData(summary.indicator());
 
-        if (history.isEmpty()) {
+        if (history == null || history.isEmpty()) {
             Span placeholder = new Span("No historical data available.");
             placeholder.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontSize.LARGE);
             chartContainer.add(placeholder);
@@ -164,58 +168,98 @@ public class EconomyView extends VerticalLayout {
         // ApexCharts requires data to be strictly sorted and unique by date for line charts
         List<MacroObservationDto> uniqueSortedHistory = new java.util.ArrayList<>(
                 history.stream()
+                        .filter(obs -> obs.value() != null) // Filter out missing values (holidays in daily series) which break the line into dots and ruin performance
                         .collect(java.util.stream.Collectors.toMap(
                                 MacroObservationDto::observationDate,
                                 obs -> obs,
-                                (_, replacement) -> replacement,
-                                java.util.TreeMap::new
+                                (_, replacement) -> replacement, // keep the latest if duplicates exist
+                                java.util.TreeMap::new // guarantees sorted by date
                         ))
                         .values()
         );
 
-        Object[] values = uniqueSortedHistory.stream().map(MacroObservationDto::value).toArray();
-        String[] dates = uniqueSortedHistory.stream().map(obs -> obs.observationDate().toString()).toArray(String[]::new);
+        com.vaadin.flow.component.orderedlayout.HorizontalLayout chartHeader = new com.vaadin.flow.component.orderedlayout.HorizontalLayout();
+        chartHeader.setWidthFull();
+        chartHeader.setJustifyContentMode(com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode.BETWEEN);
+        chartHeader.setAlignItems(com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.BASELINE);
 
-        // Zoom to last 10 years
-        long maxDate = uniqueSortedHistory.getLast().observationDate().atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli();
-        long minDate10YearsAgo = uniqueSortedHistory.getLast().observationDate().minusYears(10).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli();
+        H3 title = new H3((summary.indicatorTitle() != null ? summary.indicatorTitle() : summary.indicator().name()) + " (" + summary.indicator().getUnit() + ")");
+        title.getStyle().set("margin-top", "0");
+
+        com.vaadin.flow.component.combobox.ComboBox<String> timeframeComboBox = new com.vaadin.flow.component.combobox.ComboBox<>("Timeframe");
+        timeframeComboBox.setItems("1Y", "5Y", "10Y", "MAX");
+        timeframeComboBox.setValue("10Y");
+
+        chartHeader.add(title, timeframeComboBox);
+        chartContainer.add(chartHeader);
+
+        Div actualChartDiv = new Div();
+        actualChartDiv.setWidthFull();
+        chartContainer.add(actualChartDiv);
+
         long actualMinDate = uniqueSortedHistory.getFirst().observationDate().atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli();
-        long initialMinX = Math.max(actualMinDate, minDate10YearsAgo);
 
-        ApexCharts chart = ApexChartsBuilder.get()
-                .withChart(com.github.appreciated.apexcharts.config.builder.ChartBuilder.get()
-                        .withType(com.github.appreciated.apexcharts.config.chart.Type.LINE)
-                        .withWidth("100%")
-                        .withHeight("400px")
-                        .withZoom(com.github.appreciated.apexcharts.config.chart.builder.ZoomBuilder.get()
-                                .withEnabled(true)
-                                .withAutoScaleYaxis(true)
-                                .build())
-                        .withForeColor("var(--lumo-body-text-color)")
-                        .withBackground("transparent")
-                        .build())
-                .withStroke(com.github.appreciated.apexcharts.config.builder.StrokeBuilder.get()
-                        .withCurve(com.github.appreciated.apexcharts.config.stroke.Curve.STRAIGHT)
-                        .withWidth(2.0)
-                        .build())
-                .withDataLabels(com.github.appreciated.apexcharts.config.builder.DataLabelsBuilder.get().withEnabled(false).build())
-                .withSeries(new com.github.appreciated.apexcharts.helper.Series<>((summary.indicatorTitle() != null ? summary.indicatorTitle() : summary.indicator().name()) + " (" + summary.indicator().getUnit() + ")", values))
-                .withXaxis(com.github.appreciated.apexcharts.config.builder.XAxisBuilder.get()
-                        .withType(com.github.appreciated.apexcharts.config.xaxis.XAxisType.DATETIME)
-                        .withCategories(dates)
-                        .withMin((double) initialMinX)
-                        .withMax((double) maxDate)
-                        .build())
-                .withYaxis(com.github.appreciated.apexcharts.config.builder.YAxisBuilder.get()
-                        .withLabels(com.github.appreciated.apexcharts.config.yaxis.builder.LabelsBuilder.get()
-                                .withFormatter("function (value) { return value.toFixed(2); }")
-                                .build())
-                        .build())
-                .withColors("var(--lumo-primary-color)")
-                .build();
+        Runnable renderChart = () -> {
+            actualChartDiv.removeAll();
 
-        chart.setWidth("100%");
-        chart.setHeight("400px");
-        chartContainer.add(chart);
+            String tf = timeframeComboBox.getValue();
+            long initialMinX = switch (tf) {
+                case "1Y" ->
+                        Math.max(actualMinDate, uniqueSortedHistory.getLast().observationDate().minusYears(1).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli());
+                case "5Y" ->
+                        Math.max(actualMinDate, uniqueSortedHistory.getLast().observationDate().minusYears(5).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli());
+                case "MAX" -> actualMinDate;
+                case null, default ->
+                        Math.max(actualMinDate, uniqueSortedHistory.getLast().observationDate().minusYears(10).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli());
+            };
+
+            // Filter data instead of relying on XAxis min/max which causes SVG clipping bugs
+            java.util.List<MacroObservationDto> filteredHistory = uniqueSortedHistory.stream()
+                    .filter(obs -> obs.observationDate().atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli() >= initialMinX)
+                    .toList();
+
+            Object[] filteredValues = filteredHistory.stream().map(MacroObservationDto::value).toArray();
+            String[] filteredDates = filteredHistory.stream().map(obs -> obs.observationDate().toString()).toArray(String[]::new);
+
+            ApexCharts chart = ApexChartsBuilder.get()
+                    .withChart(com.github.appreciated.apexcharts.config.builder.ChartBuilder.get()
+                            .withType(com.github.appreciated.apexcharts.config.chart.Type.LINE)
+                            .withWidth("100%")
+                            .withHeight("400px")
+                            .withForeColor("var(--lumo-body-text-color)")
+                            .withBackground("transparent")
+                            .withAnimations(com.github.appreciated.apexcharts.config.chart.builder.AnimationsBuilder.get()
+                                    .withEnabled(false) // Disable animations for massive performance boost on large datasets
+                                    .build())
+                            .withZoom(com.github.appreciated.apexcharts.config.chart.builder.ZoomBuilder.get()
+                                    .withEnabled(true)
+                                    .withAutoScaleYaxis(true)
+                                    .build())
+                            .withToolbar(com.github.appreciated.apexcharts.config.chart.builder.ToolbarBuilder.get()
+                                    .withAutoSelected(com.github.appreciated.apexcharts.config.chart.toolbar.AutoSelected.ZOOM)
+                                    .build())
+                            .build())
+                    .withStroke(com.github.appreciated.apexcharts.config.builder.StrokeBuilder.get()
+                            .withCurve(com.github.appreciated.apexcharts.config.stroke.Curve.STRAIGHT)
+                            .withWidth(2.0)
+                            .build())
+                    .withDataLabels(com.github.appreciated.apexcharts.config.builder.DataLabelsBuilder.get().withEnabled(false).build())
+                    .withSeries(new com.github.appreciated.apexcharts.helper.Series<>((summary.indicatorTitle() != null ? summary.indicatorTitle() : summary.indicator().name()) + " (" + summary.indicator().getUnit() + ")", filteredValues))
+                    .withXaxis(com.github.appreciated.apexcharts.config.builder.XAxisBuilder.get()
+                            .withType(com.github.appreciated.apexcharts.config.xaxis.XAxisType.DATETIME)
+                            .withCategories(filteredDates)
+                            .build())
+                    .withYaxis(com.github.appreciated.apexcharts.config.builder.YAxisBuilder.get()
+                            .withLabels(com.github.appreciated.apexcharts.config.yaxis.builder.LabelsBuilder.get()
+                                    .withFormatter("function (value) { return value.toFixed(2); }")
+                                    .build())
+                            .build())
+                    .withColors("var(--lumo-primary-color)")
+                    .build();
+            actualChartDiv.add(chart);
+        };
+
+        timeframeComboBox.addValueChangeListener(_ -> renderChart.run());
+        renderChart.run();
     }
 }

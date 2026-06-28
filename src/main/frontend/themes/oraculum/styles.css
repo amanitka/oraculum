@@ -126,3 +126,28 @@
 .apexcharts-tooltip-text {
     color: var(--lumo-body-text-color) !important;
 }
+
+/* ApexCharts Toolbar Menu Styles (Dark Mode Fix) */
+.apexcharts-menu {
+    background: var(--lumo-base-color) !important;
+    border: 1px solid var(--lumo-contrast-10pct) !important;
+    color: var(--lumo-body-text-color) !important;
+    box-shadow: var(--lumo-box-shadow-m) !important;
+}
+
+.apexcharts-theme-light .apexcharts-menu-item:hover,
+.apexcharts-theme-dark .apexcharts-menu-item:hover {
+    background: var(--lumo-contrast-5pct) !important;
+    color: var(--lumo-primary-color) !important;
+}
+
+.apexcharts-menu-item {
+    color: var(--lumo-body-text-color) !important;
+}
+
+/* Economy View Selected Card */
+.selected-card {
+    background-color: var(--lumo-primary-color-10pct) !important;
+    box-shadow: 0 0 0 1px var(--lumo-primary-color-50pct) !important;
+    border-color: var(--lumo-primary-color-50pct) !important;
+}
