@@ -15,4 +15,4 @@ CREATE TABLE public.t_llm_execution_log (
     PRIMARY KEY (id, created_at)
 ) PARTITION BY RANGE (created_at);
 
-SELECT create_monthly_partitions('t_llm_execution_log', (NOW() - INTERVAL '1 month')::DATE, (NOW() + INTERVAL '1 year')::DATE);
+

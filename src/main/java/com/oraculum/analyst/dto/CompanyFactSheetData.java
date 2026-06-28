@@ -8,6 +8,7 @@ import com.oraculum.harvester.api.dto.EarningsEstimateDto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.JsonNode;
 
 import tools.jackson.databind.json.JsonMapper;
@@ -22,6 +23,7 @@ import java.util.stream.Collectors;
 @Builder
 @AllArgsConstructor
 @Getter
+@Slf4j
 public class CompanyFactSheetData {
     private static final Set<String> METADATA_KEYS = Set.of(
             "Report Date", "Fiscal Year", "Fiscal Period", "Currency", "Ticker",
@@ -134,20 +136,9 @@ public class CompanyFactSheetData {
         return JsonUtils.toJson(jsonMapper, slimDtos, "[]");
     }
 
-    public String getDailySharePriceSignals() {
-        if (dailySharePriceSignals == null) return "[]";
-        List<SharePriceSignalSlim> slim = dailySharePriceSignals.stream()
-                .map(dto -> {
-                    String citationId = citationRegistry.getOrAssignCitationId(SharePriceSignalDto.class, dto.getId(), dto);
-                    return SharePriceSignalSlim.from(dto, citationId);
-                })
-                .collect(Collectors.toList());
-        return JsonUtils.toJson(jsonMapper, slim, "[]");
-    }
-
-    public String getLatestDailySharePriceSignals(int limit) {
-        if (dailySharePriceSignals == null || dailySharePriceSignals.isEmpty()) return "[]";
-        List<SharePriceSignalSlim> slim = dailySharePriceSignals.stream()
+    private String processSharePriceSignals(List<SharePriceSignalDto> signals, int limit) {
+        if (signals == null || signals.isEmpty()) return "[]";
+        List<SharePriceSignalSlim> slim = signals.stream()
                 .limit(limit)
                 .map(dto -> {
                     String citationId = citationRegistry.getOrAssignCitationId(SharePriceSignalDto.class, dto.getId(), dto);
@@ -157,17 +148,16 @@ public class CompanyFactSheetData {
         return JsonUtils.toJson(jsonMapper, slim, "[]");
     }
 
+    public String getDailySharePriceSignals() {
+        return processSharePriceSignals(dailySharePriceSignals, Integer.MAX_VALUE);
+    }
+
+    public String getLatestDailySharePriceSignals(int limit) {
+        return processSharePriceSignals(dailySharePriceSignals, limit);
+    }
+
     public String getMonthlySharePriceSignals() {
-        if (monthlySharePriceSignals == null || monthlySharePriceSignals.isEmpty()) {
-            return "[]";
-        }
-        List<SharePriceSignalSlim> slim = monthlySharePriceSignals.stream()
-                .map(dto -> {
-                    String citationId = citationRegistry.getOrAssignCitationId(SharePriceSignalDto.class, dto.getId(), dto);
-                    return SharePriceSignalSlim.from(dto, citationId);
-                })
-                .collect(Collectors.toList());
-        return JsonUtils.toJson(jsonMapper, slim, "[]");
+        return processSharePriceSignals(monthlySharePriceSignals, Integer.MAX_VALUE);
     }
 
     public String getRecentNews() {
@@ -264,6 +254,7 @@ public class CompanyFactSheetData {
 
             return jsonMapper.writeValueAsString(newNode);
         } catch (Exception e) {
+            log.warn("Failed to namespace json metrics. Variant: {}, Citation ID: {}", variant, citationId, e);
             return jsonStr;
         }
     }
@@ -283,6 +274,7 @@ public class CompanyFactSheetData {
             }
             return node;
         } catch (Exception e) {
+            log.warn("Failed to parse json string for citation payload. Source: {}", sourceName, e);
             return fallbackDto;
         }
     }
@@ -302,6 +294,7 @@ public class CompanyFactSheetData {
             }
             return dto;
         } catch (Exception e) {
+            log.warn("Failed to convert dto to json tree for citation payload. Source: {}", sourceName, e);
             return dto;
         }
     }
