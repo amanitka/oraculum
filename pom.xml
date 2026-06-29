@@ -30,7 +30,7 @@
         <java.version>25</java.version>
         <spring-modulith.version>2.0.6</spring-modulith.version>
         <spring.ai.version>2.0.0-M8</spring.ai.version>
-        <vaadin.version>25.1.5</vaadin.version>
+        <vaadin.version>25.2.1</vaadin.version>
         <duckdb.version>1.5.3.0</duckdb.version>
         <lombok.version>1.18.38</lombok.version>
         <commonmark.version>0.28.0</commonmark.version>

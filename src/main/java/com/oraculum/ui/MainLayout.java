@@ -27,6 +27,8 @@ public class MainLayout extends AppLayout implements RouterLayout, AfterNavigati
     private Tabs tabs;
 
     public MainLayout() {
+        setPrimarySection(Section.NAVBAR);
+        setDrawerOpened(false);
         addHeaderContent();
     }
 
