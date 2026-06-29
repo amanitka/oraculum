@@ -79,7 +79,6 @@ resilience4j:
 
 vaadin:
   launch-browser: true
-  theme: oraculum
 
 oraculum:
   data:
