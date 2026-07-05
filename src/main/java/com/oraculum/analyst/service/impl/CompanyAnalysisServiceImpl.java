@@ -4,7 +4,6 @@ import com.oraculum.analyst.api.dto.CompanyAnalysisDto;
 import com.oraculum.analyst.domain.CompanyAnalysisEntity;
 import com.oraculum.analyst.repository.CompanyAnalysisRepository;
 import com.oraculum.analyst.service.CompanyAnalysisService;
-import com.oraculum.common.exception.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -33,25 +32,9 @@ public class CompanyAnalysisServiceImpl implements CompanyAnalysisService {
     }
 
     @Override
-    public CompanyAnalysisDto getById(UUID id) {
-        return companyAnalysisRepository.findById(id)
-                .map(CompanyAnalysisDto::fromEntity)
-                .orElseThrow(() -> new EntityNotFoundException(CompanyAnalysisEntity.class, "id:" + id));
-    }
-
-    @Override
     public Page<CompanyAnalysisDto> getCompanyAnalysisList(Pageable pageable) {
         return companyAnalysisRepository.findAllByOrderByCreatedAtDesc(pageable)
                 .map(CompanyAnalysisDto::fromEntity);
     }
 
-    @Override
-    public int getRunningCount() {
-        return 0;
-    }
-
-    @Override
-    public long getAnalysisCount() {
-        return companyAnalysisRepository.count();
-    }
 }
