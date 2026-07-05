@@ -6,11 +6,15 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
+import org.springframework.security.oauth2.core.oidc.OidcIdToken;
+import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
-public class OraculumUserDetails implements OAuth2User {
+public class OraculumUserDetails implements OAuth2User, OidcUser {
 
     private final Long id;
     private final String email;
@@ -19,14 +23,22 @@ public class OraculumUserDetails implements OAuth2User {
     @Getter
     private final AnalysisLimit limit;
     private final Map<String, Object> attributes;
+    private final OidcIdToken idToken;
+    private final OidcUserInfo userInfo;
 
-    public OraculumUserDetails(Long id, String email, String displayName, String role, AnalysisLimit limit, Map<String, Object> attributes) {
+    public OraculumUserDetails(Long id, String email, String displayName, String role, AnalysisLimit limit, Map<String, Object> attributes, OidcIdToken idToken, OidcUserInfo userInfo) {
         this.id = id;
         this.email = email;
         this.displayName = displayName;
         this.role = role;
         this.limit = limit;
         this.attributes = attributes;
+        this.idToken = idToken;
+        this.userInfo = userInfo;
+    }
+
+    public OraculumUserDetails(Long id, String email, String displayName, String role, AnalysisLimit limit, Map<String, Object> attributes) {
+        this(id, email, displayName, role, limit, attributes, null, null);
     }
 
     public @NonNull Long getId() {
@@ -54,5 +66,20 @@ public class OraculumUserDetails implements OAuth2User {
     @Override
     public @NonNull String getName() {
         return email;
+    }
+
+    @Override
+    public @NonNull Map<String, Object> getClaims() {
+        return attributes;
+    }
+
+    @Override
+    public @NonNull OidcIdToken getIdToken() {
+        return idToken;
+    }
+
+    @Override
+    public OidcUserInfo getUserInfo() {
+        return userInfo;
     }
 }

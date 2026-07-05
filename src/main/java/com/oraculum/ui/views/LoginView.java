@@ -23,6 +23,7 @@ public class LoginView extends VerticalLayout {
         H3 subtitle = new H3("Please log in to continue");
 
         Anchor keycloakLogin = new Anchor("/oauth2/authorization/keycloak", "Login with Keycloak (Admin)");
+        keycloakLogin.getElement().setAttribute("router-ignore", true);
         keycloakLogin.getElement().getThemeList().add("button");
         keycloakLogin.getElement().getThemeList().add("primary");
         keycloakLogin.getStyle().set("margin-top", "20px");
@@ -30,6 +31,7 @@ public class LoginView extends VerticalLayout {
         keycloakLogin.getStyle().set("text-align", "center");
 
         Anchor googleLogin = new Anchor("/oauth2/authorization/google", "Login with Google");
+        googleLogin.getElement().setAttribute("router-ignore", true);
         googleLogin.getElement().getThemeList().add("button");
         googleLogin.getStyle().set("margin-top", "10px");
         googleLogin.getStyle().set("width", "250px");

@@ -1,6 +1,8 @@
 package com.oraculum.security.config;
 
 import com.oraculum.security.service.OraculumOAuth2UserService;
+import com.oraculum.security.service.OraculumOidcUserService;
+import com.vaadin.flow.spring.security.VaadinSecurityConfigurer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,6 +16,7 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
     private final OraculumOAuth2UserService oauth2UserService;
+    private final OraculumOidcUserService oidcUserService;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) {
@@ -22,6 +25,7 @@ public class SecurityConfig {
                 .loginPage("/login")
                 .userInfoEndpoint(userInfo -> userInfo
                         .userService(oauth2UserService)
+                        .oidcUserService(oidcUserService)
                 )
         );
         
@@ -30,7 +34,7 @@ public class SecurityConfig {
         );
 
         // Apply Vaadin security
-        http.with(com.vaadin.flow.spring.security.VaadinSecurityConfigurer.vaadin(), vaadin -> vaadin
+        http.with(VaadinSecurityConfigurer.vaadin(), vaadin -> vaadin
                 .loginView("/login")
         );
 

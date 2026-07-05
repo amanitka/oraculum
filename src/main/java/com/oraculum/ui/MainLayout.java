@@ -28,6 +28,9 @@ import com.oraculum.analyst.api.dto.UserAnalysisUsage;
 import com.vaadin.flow.component.html.Span;
 
 
+import jakarta.annotation.security.PermitAll;
+
+@PermitAll
 public class MainLayout extends AppLayout implements RouterLayout, AfterNavigationObserver {
 
     private final java.util.Map<Class<?>, Tab> tabMap = new java.util.HashMap<>();
