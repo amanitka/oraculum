@@ -17,8 +17,11 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import tools.jackson.databind.ObjectMapper;
 
+import jakarta.annotation.security.PermitAll;
+
 @Route(value = "company", layout = MainLayout.class)
 @PageTitle("Company Details")
+@PermitAll
 public class CompanyView extends VerticalLayout {
 
     private final CompanyMetadataApi companyMetadataApi;

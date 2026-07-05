@@ -24,6 +24,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
+import jakarta.annotation.security.PermitAll;
 
 import java.time.ZoneOffset;
 import java.util.Comparator;
@@ -31,6 +32,7 @@ import java.util.List;
 
 @Route(value = "economy", layout = com.oraculum.ui.MainLayout.class)
 @PageTitle("Economy | Oraculum")
+@PermitAll
 public class EconomyView extends VerticalLayout {
 
     private final EconomyDataApi economyDataApi;

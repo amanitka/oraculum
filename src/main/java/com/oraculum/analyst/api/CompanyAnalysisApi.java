@@ -7,11 +7,5 @@ import org.springframework.data.domain.Pageable;
 import java.util.UUID;
 
 public interface CompanyAnalysisApi {
-    CompanyAnalysisDto getById(UUID id);
-
     Page<CompanyAnalysisDto> getCompanyAnalysisList(Pageable pageable);
-
-    int getRunningCount();
-
-    long getAnalysisCount();
 }

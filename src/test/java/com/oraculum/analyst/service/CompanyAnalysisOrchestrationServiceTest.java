@@ -50,7 +50,8 @@ class CompanyAnalysisOrchestrationServiceTest {
                 "AAPL",
                 "US",
                 LocalDate.now(),
-                "focus"
+                "focus",
+                null
         );
     }
 

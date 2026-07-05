@@ -53,6 +53,7 @@ public class CompanyAnalysisOrchestrationService {
         entity.setMarket(request.market());
         entity.setAnalysisDate(request.analysisDate() != null ? request.analysisDate() : LocalDate.now());
         entity.setStatus(AnalysisStatus.PENDING);
+        entity.setRequestedBy(request.requestedBy());
         return companyAnalysisService.createOrUpdateAnalysis(entity);
     }
 

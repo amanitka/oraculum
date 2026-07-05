@@ -2,8 +2,8 @@ package com.oraculum.ui.views;
 
 import com.oraculum.analyst.api.CompanyAnalysisApi;
 import com.oraculum.analyst.api.domain.AnalysisStatus;
+import com.oraculum.analyst.api.dto.CompanyAnalysisRequest;
 import com.oraculum.analyst.api.dto.CompanyAnalysisDto;
-import com.oraculum.analyst.api.dto.CompanyAnalysisRequestEvent;
 import com.oraculum.company.api.*;
 import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.ui.MainLayout;
@@ -38,8 +38,11 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
+import jakarta.annotation.security.PermitAll;
+
 @Route(value = "analysis", layout = MainLayout.class)
 @PageTitle("Analysis | Oraculum")
+@PermitAll
 public class AnalysisView extends VerticalLayout {
 
     private final CompanyMetadataApi companyMetadataApi;
@@ -145,9 +148,6 @@ public class AnalysisView extends VerticalLayout {
         }
         try {
             UUID correlationId = UUID.randomUUID();
-            CompanyAnalysisRequestEvent request = new CompanyAnalysisRequestEvent(correlationId,
-                    company.id(), company.ticker(), company.market(),
-                    LocalDate.now(), analysisFocusInput.getValue());
 
             CompanyAnalysisDto transientDto = new CompanyAnalysisDto();
             transientDto.setId(correlationId);
@@ -160,7 +160,8 @@ public class AnalysisView extends VerticalLayout {
             gridData.addFirst(transientDto);
             grid.getDataProvider().refreshAll();
 
-            analysisRequestService.requestAnalysis(request);
+            CompanyAnalysisRequest requestDto = new CompanyAnalysisRequest(correlationId, company.id(), company.ticker(), company.market(), LocalDate.now(), analysisFocusInput.getValue());
+            analysisRequestService.requestAnalysis(requestDto);
             ViewHelper.showSuccess("Analysis triggered for " + company.ticker());
         } catch (Exception e) {
             ViewHelper.showError("Failed to trigger analysis: " + e.getMessage());

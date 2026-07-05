@@ -9,5 +9,6 @@ public record CompanyAnalysisRequestEvent(UUID correlationId,
                                           String ticker,
                                           String market,
                                           LocalDate analysisDate,
-                                          String analysisFocus) {
+                                          String analysisFocus,
+                                          Long requestedBy) {
 }

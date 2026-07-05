@@ -70,7 +70,8 @@ class CompanyAnalysisWorkflowServiceTest {
                 "AAPL",
                 "US",
                 LocalDate.now(),
-                "focus"
+                "focus",
+                null
         );
     }
 

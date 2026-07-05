@@ -1,6 +1,6 @@
 package com.oraculum.ui.views;
 
-import com.oraculum.analyst.api.dto.CompanyAnalysisRequestEvent;
+import com.oraculum.analyst.api.dto.CompanyAnalysisRequest;
 import com.oraculum.company.api.CompanyMetadataApi;
 import com.oraculum.company.api.CompanyFinancialDataApi;
 import com.oraculum.company.api.CompanySharePriceApi;
@@ -39,9 +39,12 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import jakarta.annotation.security.PermitAll;
+
 @Route(value = "screener", layout = MainLayout.class)
 @RouteAlias(value = "", layout = MainLayout.class)
 @PageTitle("Screener")
+@PermitAll
 public class ScreenerView extends VerticalLayout {
 
     private final CompanyScreenerApi companyScreenerApi;
@@ -171,8 +174,8 @@ public class ScreenerView extends VerticalLayout {
     private void triggerAnalysisMaster(Set<ScreenerMasterDto> selectedItems, Grid<ScreenerMasterDto> grid) {
         if (!validateBatchSelection(selectedItems.size())) return;
         for (ScreenerMasterDto item : selectedItems) {
-            analysisRequestService.requestAnalysis(new CompanyAnalysisRequestEvent(UUID.randomUUID(),
-                    item.companyId(), item.ticker(), item.market(), LocalDate.now(), null));
+            CompanyAnalysisRequest requestDto = new CompanyAnalysisRequest(UUID.randomUUID(), item.companyId(), item.ticker(), item.market(), LocalDate.now(), null);
+            analysisRequestService.requestAnalysis(requestDto);
         }
         ViewHelper.showSuccess("Triggered analysis for " + selectedItems.size() + " companies.");
         grid.deselectAll();
@@ -181,8 +184,8 @@ public class ScreenerView extends VerticalLayout {
     private void triggerAnalysisNewsSentiment(Set<ScreenerNewsSentimentDto> selectedItems, Grid<ScreenerNewsSentimentDto> grid) {
         if (!validateBatchSelection(selectedItems.size())) return;
         for (ScreenerNewsSentimentDto item : selectedItems) {
-            analysisRequestService.requestAnalysis(new CompanyAnalysisRequestEvent(UUID.randomUUID(),
-                    item.companyId(), item.ticker(), item.market(), LocalDate.now(), null));
+            CompanyAnalysisRequest requestDto = new CompanyAnalysisRequest(UUID.randomUUID(), item.companyId(), item.ticker(), item.market(), LocalDate.now(), null);
+            analysisRequestService.requestAnalysis(requestDto);
         }
         ViewHelper.showSuccess("Triggered analysis for " + selectedItems.size() + " companies.");
         grid.deselectAll();
@@ -191,8 +194,8 @@ public class ScreenerView extends VerticalLayout {
     private void triggerAnalysisInsider(Set<ScreenerInsiderDto> selectedItems, Grid<ScreenerInsiderDto> grid) {
         if (!validateBatchSelection(selectedItems.size())) return;
         for (ScreenerInsiderDto item : selectedItems) {
-            analysisRequestService.requestAnalysis(new CompanyAnalysisRequestEvent(UUID.randomUUID(),
-                    item.companyId().intValue(), item.ticker(), item.market(), LocalDate.now(), null));
+            CompanyAnalysisRequest requestDto = new CompanyAnalysisRequest(UUID.randomUUID(), item.companyId().intValue(), item.ticker(), item.market(), LocalDate.now(), null);
+            analysisRequestService.requestAnalysis(requestDto);
         }
         ViewHelper.showSuccess("Triggered analysis for " + selectedItems.size() + " companies.");
         grid.deselectAll();
@@ -201,8 +204,8 @@ public class ScreenerView extends VerticalLayout {
     private void triggerAnalysisStandard(Set<ScreenerDto> selectedItems, Grid<ScreenerDto> grid) {
         if (!validateBatchSelection(selectedItems.size())) return;
         for (ScreenerDto item : selectedItems) {
-            analysisRequestService.requestAnalysis(new CompanyAnalysisRequestEvent(UUID.randomUUID(),
-                    item.companyId(), item.ticker(), item.market(), LocalDate.now(), null));
+            CompanyAnalysisRequest requestDto = new CompanyAnalysisRequest(UUID.randomUUID(), item.companyId(), item.ticker(), item.market(), LocalDate.now(), null);
+            analysisRequestService.requestAnalysis(requestDto);
         }
         ViewHelper.showSuccess("Triggered analysis for " + selectedItems.size() + " companies.");
         grid.deselectAll();

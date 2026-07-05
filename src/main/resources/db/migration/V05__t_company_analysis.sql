@@ -13,6 +13,7 @@ CREATE TABLE public.t_company_analysis (
     conviction INTEGER,
     analysis_data JSON,
     error TEXT,
+    requested_by BIGINT REFERENCES t_user(id),
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL
 );

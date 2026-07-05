@@ -18,9 +18,11 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import org.springframework.context.ApplicationEventPublisher;
+import jakarta.annotation.security.RolesAllowed;
 
 @Route(value = "refresh", layout = MainLayout.class)
 @PageTitle("Refresh | Oraculum")
+@RolesAllowed("ADMIN")
 public class RefreshView extends VerticalLayout {
 
     private static final String TILE_STYLE =

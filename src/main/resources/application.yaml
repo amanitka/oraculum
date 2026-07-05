@@ -15,6 +15,7 @@ spring:
   threads:
     virtual:
       enabled: true
+
   application:
     name: oraculum
 
@@ -24,6 +25,11 @@ spring:
     password: ${ORACULUM_DATABASE_PASSWORD}
     hikari:
       max-lifetime: 540000 # 9 minutes (shorter than the default 30 mins)
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
 
   kafka:
     bootstrap-servers: ${ORACULUM_KAFKA_BROKERS}
@@ -39,11 +45,6 @@ spring:
     enabled: true
     schemas: ${ORACULUM_FLYWAY_DEFAULT_SCHEMA:public}
     default-schema: ${ORACULUM_FLYWAY_DEFAULT_SCHEMA:public}
-
-  jpa:
-    hibernate:
-      ddl-auto: none
-    show-sql: false
 
 resilience4j:
   retry:
@@ -81,6 +82,17 @@ vaadin:
   launch-browser: true
 
 oraculum:
+  oauth2:
+    keycloak:
+      client-id: ${ORACULUM_OAUTH_KEYCLOAK_CLIENT_ID:}
+      client-secret: ${ORACULUM_OAUTH_KEYCLOAK_CLIENT_SECRET:}
+      issuer-uri: ${ORACULUM_OAUTH_KEYCLOAK_ISSUER_URI:}
+      scopes: ${ORACULUM_OAUTH_KEYCLOAK_SCOPES:openid,profile,email}
+    google:
+      client-id: ${ORACULUM_OAUTH_GOOGLE_CLIENT_ID:}
+      client-secret: ${ORACULUM_OAUTH_GOOGLE_CLIENT_SECRET:}
+      scopes: ${ORACULUM_OAUTH_GOOGLE_SCOPES:openid,profile,email}
+
   data:
     refresh-enabled: true
     metadata:

@@ -5,11 +5,13 @@ import com.oraculum.ui.views.CompanyView;
 import com.oraculum.ui.views.EconomyView;
 import com.oraculum.ui.views.RefreshView;
 import com.oraculum.ui.views.ScreenerView;
+import com.oraculum.user.api.CurrentUserApi;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Image;
+import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -21,26 +23,33 @@ import com.vaadin.flow.router.RouterLayout;
 import com.vaadin.flow.router.RouterLink;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 
+import com.oraculum.analyst.api.AnalysisUsageApi;
+import com.oraculum.analyst.api.dto.UserAnalysisUsage;
+import com.vaadin.flow.component.html.Span;
+
+
 public class MainLayout extends AppLayout implements RouterLayout, AfterNavigationObserver {
 
     private final java.util.Map<Class<?>, Tab> tabMap = new java.util.HashMap<>();
     private Tabs tabs;
+    private final AnalysisUsageApi analysisUsageApi;
+    private final CurrentUserApi currentUserApi;
 
-    public MainLayout() {
+    public MainLayout(AnalysisUsageApi analysisUsageApi, CurrentUserApi currentUserApi) {
+        this.analysisUsageApi = analysisUsageApi;
+        this.currentUserApi = currentUserApi;
         setPrimarySection(Section.NAVBAR);
         setDrawerOpened(false);
         addHeaderContent();
     }
 
     private void addHeaderContent() {
-        // Outer wrapper unconditionally taking full space with FlexBox centering
         Div outerHeader = new Div();
         outerHeader.setWidthFull();
         outerHeader.getStyle().set("display", "flex");
         outerHeader.getStyle().set("justify-content", "center");
         outerHeader.getStyle().set("box-shadow", "var(--lumo-box-shadow-xs)");
 
-        // Inner max-width container that holds the header content
         HorizontalLayout header = new HorizontalLayout();
         header.setWidthFull();
         header.setMaxWidth("1440px");
@@ -49,10 +58,19 @@ public class MainLayout extends AppLayout implements RouterLayout, AfterNavigati
         header.setAlignItems(Alignment.CENTER);
         header.setJustifyContentMode(JustifyContentMode.BETWEEN);
 
-        // Left Zone: Title and Logo
+        HorizontalLayout leftGroup = new HorizontalLayout(createLogoLayout(), createNavigationTabs());
+        leftGroup.setAlignItems(Alignment.CENTER);
+        leftGroup.getStyle().set("gap", "48px");
+
+        header.add(leftGroup, createUserProfileGroup());
+        outerHeader.add(header);
+        addToNavbar(true, outerHeader);
+    }
+
+    private HorizontalLayout createLogoLayout() {
         HorizontalLayout logoLayout = new HorizontalLayout();
         logoLayout.setAlignItems(Alignment.CENTER);
-        logoLayout.addClassNames(LumoUtility.Gap.SMALL); // Minimal gap between text and logo
+        logoLayout.addClassNames(LumoUtility.Gap.SMALL);
 
         H1 viewTitle = new H1("oraculum");
         viewTitle.addClassNames(LumoUtility.FontSize.LARGE,
@@ -61,12 +79,14 @@ public class MainLayout extends AppLayout implements RouterLayout, AfterNavigati
                 LumoUtility.FontWeight.BOLD);
 
         Image logo = new Image("images/logo.svg", "Oraculum Logo");
-        logo.setHeight("30px"); // Even smaller to match text exactly
-        logo.getStyle().set("margin-top", "6px"); // Nudge down slightly to align with the text baseline
+        logo.setHeight("30px");
+        logo.getStyle().set("margin-top", "6px");
 
         logoLayout.add(logo, viewTitle);
+        return logoLayout;
+    }
 
-        // Navigation Links using Vaadin Tabs
+    private Tabs createNavigationTabs() {
         RouterLink screenerLink = new RouterLink("Screener", ScreenerView.class);
         RouterLink analysisLink = new RouterLink("Analysis", AnalysisView.class);
         RouterLink companyLink = new RouterLink("Company", CompanyView.class);
@@ -92,20 +112,53 @@ public class MainLayout extends AppLayout implements RouterLayout, AfterNavigati
         tabMap.put(RefreshView.class, tabRefresh);
 
         tabs = new Tabs(tabScreener, tabAnalysis, tabCompany, tabEconomy, tabRefresh);
+        tabs.getStyle().set("--lumo-font-size-m", "var(--lumo-font-size-xl)");
+        tabs.getStyle().set("--lumo-secondary-text-color", "var(--lumo-body-text-color)");
 
-        // Override the internal Lumo CSS variables that vaadin-tabs use inside their shadow DOM
-        tabs.getStyle().set("--lumo-font-size-m", "var(--lumo-font-size-xl)"); // Make text large (H2/H3 scale)
-        tabs.getStyle().set("--lumo-secondary-text-color", "var(--lumo-body-text-color)"); // Make inactive tabs black instead of grey/blue
+        return tabs;
+    }
 
-        // Group Logo and Nav together on the left
-        HorizontalLayout leftGroup = new HorizontalLayout(logoLayout, tabs);
-        leftGroup.setAlignItems(Alignment.CENTER);
-        leftGroup.getStyle().set("gap", "48px"); // Exactly 48px distance as requested
+    private HorizontalLayout createUserProfileGroup() {
+        HorizontalLayout rightGroup = new HorizontalLayout();
+        rightGroup.setAlignItems(Alignment.CENTER);
+        rightGroup.setSpacing(true);
 
-        header.add(leftGroup);
+        currentUserApi.getCurrentUser().ifPresent(userDetails -> {
+            String displayName = userDetails.getDisplayName();
+            String role = userDetails.getRole();
+            UserAnalysisUsage usage = analysisUsageApi.getUsage(userDetails.getId(), userDetails.getLimit());
 
-        outerHeader.add(header);
-        addToNavbar(true, outerHeader);
+            Avatar avatar = new Avatar(displayName);
+            rightGroup.add(avatar);
+
+            if (usage != null && usage.isLimited()) {
+                Span usageBadge = new Span("Analyses: " + usage.usedAnalyses() + " / " + usage.limitCount());
+                usageBadge.getElement().getThemeList().addAll(java.util.List.of("badge", usage.isExceeded() ? "error" : "success"));
+                rightGroup.add(usageBadge);
+            } else if (usage != null) {
+                Span unlimitedBadge = new Span("Analyses: Unlimited");
+                unlimitedBadge.getElement().getThemeList().addAll(java.util.List.of("badge", "success"));
+                rightGroup.add(unlimitedBadge);
+            }
+
+            if ("ADMIN".equals(role)) {
+                RouterLink adminLink = new RouterLink("Admin", com.oraculum.ui.views.UserManagementView.class);
+                adminLink.getStyle().set("text-decoration", "none");
+                adminLink.getStyle().set("margin-right", "10px");
+                rightGroup.add(adminLink);
+            }
+
+            Span userName = new Span(displayName);
+            userName.addClassNames(LumoUtility.FontWeight.BOLD, LumoUtility.Margin.Right.SMALL);
+            rightGroup.add(userName);
+        });
+
+        com.vaadin.flow.component.html.Anchor logoutLink = new com.vaadin.flow.component.html.Anchor("/logout", "Logout");
+        logoutLink.getStyle().set("text-decoration", "none");
+        logoutLink.getStyle().set("color", "var(--lumo-error-text-color)");
+        rightGroup.add(logoutLink);
+
+        return rightGroup;
     }
 
     @Override

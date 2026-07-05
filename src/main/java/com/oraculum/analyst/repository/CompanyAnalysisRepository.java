@@ -8,7 +8,11 @@ import org.springframework.stereotype.Repository;
 
 import java.util.UUID;
 
+import java.time.OffsetDateTime;
+
 @Repository
 public interface CompanyAnalysisRepository extends JpaRepository<CompanyAnalysisEntity, UUID> {
     Page<CompanyAnalysisEntity> findAllByOrderByCreatedAtDesc(Pageable pageable);
+    
+    long countByRequestedByAndCreatedAtAfter(Long requestedBy, OffsetDateTime createdAt);
 }
