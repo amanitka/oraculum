@@ -10,6 +10,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
+
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -17,6 +19,11 @@ public class SecurityConfig {
 
     private final OraculumOAuth2UserService oauth2UserService;
     private final OraculumOidcUserService oidcUserService;
+
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        return (web) -> web.ignoring().requestMatchers("/images/**");
+    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) {
