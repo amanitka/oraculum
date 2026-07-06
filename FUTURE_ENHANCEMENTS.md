@@ -45,3 +45,21 @@ Tato funkce posune Oraculum z pasivního analytického nástroje do pozice aktiv
 - **Implementace:** Pro E-commerce a SaaS sektory automaticky analyzovat data o návštěvnosti webu (např. SimilarWeb)
   nebo o popularitě (stažení) aplikací. Poskytnutí tzv. *leading indicators* budoucích zisků ještě před jejich finančním
   zveřejněním.
+
+---
+
+## 5. SEC EDGAR Additional Datasets (Python Harvester)
+
+Because the Python Harvester uses `edgartools`, it is extremely trivial to expand its capabilities to pull other SEC forms.
+
+### Form 13F (Institutional Holdings) - "Smart Money Tracker"
+- **Goal:** Track what major hedge funds (Berkshire Hathaway, Renaissance Technologies, etc.) are buying and selling.
+- **Why it matters:** If Oraculum flags a company as undervalued, and the 13F data shows multiple top-tier hedge funds are aggressively accumulating shares, the AI Conviction Score can be significantly increased.
+- **Implementation Idea:** Use `edgartools` to fetch `13F-HR` filings for specific CIKs (hedge funds) and parse the XML information table to extract the list of held stocks and share counts.
+
+### Form 10-K (Annual Reports)
+- **Goal:** Provide the AI with the company's full business model and identified risks.
+- **Why it matters:** 
+  - **Item 1A (Risk Factors):** Essential for the "Critic Agent" to understand what the company itself identifies as threats to its long-term survival.
+  - **Item 7 (MD&A):** Deep dive into long-term financial trends and capital allocation strategies.
+- **Implementation Idea:** Fetch the 10-K and use NLP or targeted parsing to extract only Items 1A and 7 to avoid blowing up the LLM token context limits.
