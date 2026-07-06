@@ -47,52 +47,57 @@ public class LoginView extends VerticalLayout {
 
         H3 subtitle = new H3("Welcome back. Please log in.");
         subtitle.getStyle().set("margin-top", "var(--lumo-space-xs)");
-        subtitle.getStyle().set("margin-bottom", "var(--lumo-space-xl)");
+        subtitle.getStyle().set("margin-bottom", "var(--lumo-space-m)");
         subtitle.getStyle().set("color", "var(--lumo-secondary-text-color)");
         subtitle.getStyle().set("font-weight", "400");
         subtitle.getStyle().set("font-size", "var(--lumo-font-size-m)");
 
+        // Social Login Container
+        com.vaadin.flow.component.orderedlayout.HorizontalLayout buttonContainer = new com.vaadin.flow.component.orderedlayout.HorizontalLayout();
+        buttonContainer.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
+        buttonContainer.setAlignItems(FlexComponent.Alignment.CENTER);
+        buttonContainer.setSpacing(false);
+        buttonContainer.getStyle().set("gap", "var(--lumo-space-l)");
+        buttonContainer.setWidthFull();
+
         // Google Button
         Anchor googleLogin = new Anchor("/oauth2/authorization/google");
         googleLogin.getElement().setAttribute("router-ignore", true);
-        googleLogin.getStyle().set("text-decoration", "none");
-        googleLogin.setWidthFull();
         
-        com.vaadin.flow.component.button.Button googleBtn = new com.vaadin.flow.component.button.Button("Continue with Google");
-        googleBtn.setWidthFull();
-        googleBtn.getStyle().set("height", "44px");
-        googleBtn.getStyle().set("border-radius", "var(--lumo-border-radius-m)");
+        com.vaadin.flow.component.button.Button googleBtn = new com.vaadin.flow.component.button.Button();
+        googleBtn.setWidth("56px");
+        googleBtn.setHeight("56px");
+        googleBtn.getStyle().set("border-radius", "50%");
         googleBtn.getStyle().set("border", "1px solid var(--lumo-contrast-20pct)");
         googleBtn.getStyle().set("background", "var(--lumo-base-color)");
-        googleBtn.getStyle().set("color", "var(--lumo-body-text-color)");
-        googleBtn.getStyle().set("font-weight", "600");
+        googleBtn.getStyle().set("box-shadow", "0 2px 5px rgba(0,0,0,0.05)");
+        googleBtn.getStyle().set("cursor", "pointer");
         
         com.vaadin.flow.component.html.Image googleIcon = new com.vaadin.flow.component.html.Image("/images/google.svg", "Google");
-        googleIcon.setHeight("30px");
+        googleIcon.setHeight("28px");
         googleBtn.setIcon(googleIcon);
         googleLogin.add(googleBtn);
 
         // Keycloak Button
         Anchor keycloakLogin = new Anchor("/oauth2/authorization/keycloak");
         keycloakLogin.getElement().setAttribute("router-ignore", true);
-        keycloakLogin.getStyle().set("text-decoration", "none");
-        keycloakLogin.setWidthFull();
-        keycloakLogin.getStyle().set("margin-top", "var(--lumo-space-s)");
 
-        com.vaadin.flow.component.button.Button keycloakBtn = new com.vaadin.flow.component.button.Button("Continue with Keycloak");
-        keycloakBtn.setWidthFull();
-        keycloakBtn.getStyle().set("height", "44px");
-        keycloakBtn.getStyle().set("border-radius", "var(--lumo-border-radius-m)");
-        keycloakBtn.getStyle().set("background", "var(--lumo-contrast-5pct)");
-        keycloakBtn.getStyle().set("color", "var(--lumo-body-text-color)");
-        keycloakBtn.getStyle().set("font-weight", "600");
+        com.vaadin.flow.component.button.Button keycloakBtn = new com.vaadin.flow.component.button.Button();
+        keycloakBtn.setWidth("56px");
+        keycloakBtn.setHeight("56px");
+        keycloakBtn.getStyle().set("border-radius", "50%");
+        keycloakBtn.getStyle().set("border", "1px solid var(--lumo-contrast-20pct)");
+        keycloakBtn.getStyle().set("background", "var(--lumo-base-color)");
+        keycloakBtn.getStyle().set("box-shadow", "0 2px 5px rgba(0,0,0,0.05)");
+        keycloakBtn.getStyle().set("cursor", "pointer");
 
         com.vaadin.flow.component.html.Image keycloakIcon = new com.vaadin.flow.component.html.Image("/images/keycloak.svg", "Keycloak");
-        keycloakIcon.setHeight("30px");
+        keycloakIcon.setHeight("28px");
         keycloakBtn.setIcon(keycloakIcon);
         keycloakLogin.add(keycloakBtn);
 
-        loginCard.add(logo, title, subtitle, googleLogin, keycloakLogin);
+        buttonContainer.add(googleLogin, keycloakLogin);
+        loginCard.add(logo, title, subtitle, buttonContainer);
         add(loginCard);
     }
 }
