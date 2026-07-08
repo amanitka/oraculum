@@ -1,5 +1,7 @@
 package com.oraculum.company.service.impl;
 
+import com.oraculum.company.api.domain.SyncExtractionStatus;
+import com.oraculum.company.api.domain.SyncStatus;
 import com.oraculum.company.api.domain.TickerDocumentType;
 import com.oraculum.company.api.event.TickerDocumentLoadEvent;
 import com.oraculum.company.domain.TickerDocumentSyncStatusEntity;
@@ -9,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 
 @Service
@@ -20,12 +22,10 @@ public class TickerDocumentSyncStatusService {
     private final TickerDocumentSyncStatusRepository repository;
 
     private TickerDocumentType getDocumentType(String fileType) {
-        try {
-            return TickerDocumentType.valueOf(fileType.toUpperCase());
-        } catch (IllegalArgumentException e) {
+        return TickerDocumentType.fromString(fileType).orElseGet(() -> {
             log.warn("Unknown document type: {}", fileType);
             return null;
-        }
+        });
     }
 
     private TickerDocumentSyncStatusEntity.TickerDocumentSyncStatusId getTickerDocumentSyncStatusId(TickerDocumentType documentType, DataFileStatus status) {
@@ -43,27 +43,29 @@ public class TickerDocumentSyncStatusService {
         );
     }
 
-    private void processDataFileStatus(DataFileStatus status, LocalDate processingDate) {
+    private void processDataFileStatus(DataFileStatus status, OffsetDateTime processingDate) {
         var docType = getDocumentType(status.fileType());
         if (docType == null) {
             return;
         }
         var id = getTickerDocumentSyncStatusId(docType, status);
         var entity = getTickerDocumentSyncStatusEntity(id);
-        entity.setStatus(status.status());
-        entity.setExtractionStatus(status.extractionStatus());
+        SyncStatus.fromString(status.status())
+                .ifPresentOrElse(entity::setStatus, () -> log.warn("Unknown sync status: {}", status.status()));
+        SyncExtractionStatus.fromString(status.extractionStatus())
+                .ifPresentOrElse(entity::setExtractionStatus, () -> log.warn("Unknown extraction status: {}", status.extractionStatus()));
         entity.setMessage(status.message());
         if (status.latestProcessedDate() != null) {
             entity.setLastProcessedFileDate(status.latestProcessedDate());
-            entity.setLastFileRefreshDate(processingDate);
+            entity.setLastFileRefreshAt(processingDate);
         }
-        entity.setLastRefreshDate(processingDate);
+        entity.setLastRefreshAt(processingDate);
 
         repository.save(entity);
     }
 
     public void processDocumentLoadEvent(TickerDocumentLoadEvent event) {
-        LocalDate processingDate = LocalDate.now(ZoneOffset.UTC);
+        OffsetDateTime processingDate = OffsetDateTime.now(ZoneOffset.UTC);
         for (DataFileStatus status : event.fileStatuses()) {
             processDataFileStatus(status, processingDate);
         }

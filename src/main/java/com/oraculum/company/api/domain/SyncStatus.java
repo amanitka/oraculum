@@ -1,21 +1,13 @@
 package com.oraculum.company.api.domain;
 
-import lombok.Getter;
 import java.util.Optional;
 
-@Getter
-public enum TickerDocumentType {
-    FORM_8K("8K"),
-    FORM_10K("10K"),
-    EARNINGS_CALL("EARNINGS_CALL");
+public enum SyncStatus {
+    PENDING,
+    COMPLETED,
+    FAILED;
 
-    private final String code;
-
-    TickerDocumentType(String code) {
-        this.code = code;
-    }
-
-    public static Optional<TickerDocumentType> fromString(String value) {
+    public static Optional<SyncStatus> fromString(String value) {
         if (value == null || value.isBlank()) {
             return Optional.empty();
         }

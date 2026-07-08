@@ -1,5 +1,7 @@
 package com.oraculum.company.domain;
 
+import com.oraculum.company.api.domain.SyncExtractionStatus;
+import com.oraculum.company.api.domain.SyncStatus;
 import com.oraculum.company.api.domain.TickerDocumentType;
 import jakarta.persistence.*;
 import lombok.*;
@@ -34,21 +36,23 @@ public class TickerDocumentSyncStatusEntity {
     @Enumerated(EnumType.STRING)
     private TickerDocumentType documentType;
 
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private SyncStatus status;
 
     @Column(name = "extraction_status")
-    private String extractionStatus;
+    @Enumerated(EnumType.STRING)
+    private SyncExtractionStatus extractionStatus;
 
     private String message;
 
     @Column(name = "last_processed_file_date")
     private LocalDate lastProcessedFileDate;
 
-    @Column(name = "last_refresh_date")
-    private LocalDate lastRefreshDate;
+    @Column(name = "last_refresh_at")
+    private OffsetDateTime lastRefreshAt;
 
-    @Column(name = "last_file_refresh_date")
-    private LocalDate lastFileRefreshDate;
+    @Column(name = "last_file_refresh_at")
+    private OffsetDateTime lastFileRefreshAt;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
