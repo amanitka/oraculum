@@ -1,6 +1,7 @@
 package com.oraculum.load.service.impl;
 
 import com.oraculum.common.config.OraculumProperties;
+import com.oraculum.load.dto.DataFileReadyEvent;
 import com.oraculum.load.dto.LoadParquetDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +42,11 @@ public class PostgresParquetFileLoader {
 
     public static String getStagingTableName(String targetTableName) {
         return "staging_%s_%s".formatted(targetTableName, UUID.randomUUID().toString().replace("-", ""));
+    }
+
+    public String resolveAndValidatePath(DataFileReadyEvent event) {
+        String fullPath = properties.harvester().resolveExchangePath(event.path());
+        return normalizeAndValidate(fullPath);
     }
 
     private String getSecret() {

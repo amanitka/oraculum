@@ -2,15 +2,13 @@ package com.oraculum.load.service.impl;
 
 import com.oraculum.audit.api.LoadLogApi;
 import com.oraculum.audit.api.dto.LoadLogDto;
-import com.oraculum.common.config.OraculumProperties;
-import com.oraculum.load.message.DataFileReadyEvent;
+import com.oraculum.load.dto.DataFileReadyEvent;
 import com.oraculum.load.service.DataFileLoadService;
 import com.oraculum.load.service.ParquetFileLoadService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.nio.file.Path;
 import java.util.Map;
 
 @Service
@@ -20,7 +18,6 @@ public class DataFileLoadServiceImpl implements DataFileLoadService {
 
     private final Map<String, ParquetFileLoadService> fileLoaders;
     private final LoadLogApi loadLogApi;
-    private final OraculumProperties properties;
 
     private LoadLogDto createRunLog(DataFileReadyEvent event) {
         log.info("Starting load for dataset '{}' (run_id={}, records={})", event.dataset(), event.runId(),
@@ -39,15 +36,10 @@ public class DataFileLoadServiceImpl implements DataFileLoadService {
         loadLogApi.failRunLog(runLog);
     }
 
-    private Path resolveEventFilPath(String path) {
-        return Path.of(properties.harvester().exchangeDirectory()).resolve(path).normalize();
-    }
-
     private void processEventByLoader(DataFileReadyEvent event, ParquetFileLoadService loader) {
         LoadLogDto runLog = createRunLog(event);
         try {
-            String resolvedPath = resolveEventFilPath(event.path()).toString();
-            loader.merge(resolvedPath);
+            loader.merge(event);
             completeRunLog(event, runLog);
             log.info("Successfully loaded dataset '{}' (run_id={}, rows={})", event.dataset(),
                     event.runId(), event.recordCount());

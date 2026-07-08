@@ -1,5 +1,6 @@
 package com.oraculum.load.service.impl;
 
+import com.oraculum.load.dto.DataFileReadyEvent;
 import com.oraculum.load.dto.LoadParquetDto;
 import com.oraculum.load.service.ParquetFileLoadService;
 import lombok.RequiredArgsConstructor;
@@ -64,12 +65,12 @@ public class CompanyFileLoadServiceImpl implements ParquetFileLoadService {
     private final PostgresParquetFileLoader postgresParquetFileLoader;
 
     @Override
-    public void merge(String parquetFilePath) {
+    public void merge(DataFileReadyEvent event) {
         var stagingTableName = PostgresParquetFileLoader.getStagingTableName(TARGET_TABLE_NAME);
         var loadParquetDto = LoadParquetDto.builder()
                 .targetTableName(TARGET_TABLE_NAME)
                 .stagingTableName(stagingTableName)
-                .parquetFilePath(PostgresParquetFileLoader.normalizeAndValidate(parquetFilePath))
+                .parquetFilePath(postgresParquetFileLoader.resolveAndValidatePath(event))
                 .loadSql(BULK_UPSERT_SQL.formatted(stagingTableName))
                 .hasStatementData(false)
                 .build();

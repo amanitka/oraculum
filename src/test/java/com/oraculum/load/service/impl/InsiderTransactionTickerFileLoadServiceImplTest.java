@@ -1,5 +1,6 @@
 package com.oraculum.load.service.impl;
 
+import com.oraculum.load.dto.DataFileReadyEvent;
 import com.oraculum.load.dto.LoadParquetDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -10,7 +11,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class InsiderTransactionTickerFileLoadServiceImplTest {
@@ -30,16 +33,17 @@ class InsiderTransactionTickerFileLoadServiceImplTest {
 
     @Test
     void merge_callsPostgresLoader_withCorrectDto() {
-        String testPath = "test-path.parquet";
+        DataFileReadyEvent event = new DataFileReadyEvent("event", "test_dataset", "file.parquet", "template", "variant", 1, "run1", "checksum", 100, null, java.time.ZonedDateTime.now());
+        when(postgresParquetFileLoader.resolveAndValidatePath(any())).thenReturn("test-path.parquet");
 
-        loadService.merge(testPath);
+        loadService.merge(event);
 
         verify(postgresParquetFileLoader).loadParquetIntoTargetTable(dtoCaptor.capture());
         LoadParquetDto capturedDto = dtoCaptor.getValue();
 
         assertThat(capturedDto.targetTableName()).isEqualTo("t_insider_transaction_ticker");
         assertThat(capturedDto.stagingTableName()).startsWith("staging_t_insider_transaction_ticker_");
-        assertThat(capturedDto.parquetFilePath()).isEqualTo("test-path.parquet"); // PostgresParquetFileLoader.normalizeAndValidate does nothing on a simple string but passes it
+        assertThat(capturedDto.parquetFilePath()).isEqualTo("test-path.parquet");
         assertThat(capturedDto.hasStatementData()).isFalse();
         assertThat(capturedDto.loadSql()).contains("INSERT INTO t_insider_transaction_ticker AS dest");
         assertThat(capturedDto.loadSql()).contains("ON CONFLICT (id, filing_date)");

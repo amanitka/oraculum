@@ -2,8 +2,7 @@ package com.oraculum.load.service.impl;
 
 import com.oraculum.audit.api.LoadLogApi;
 import com.oraculum.audit.api.dto.LoadLogDto;
-import com.oraculum.common.config.OraculumProperties;
-import com.oraculum.load.message.DataFileReadyEvent;
+import com.oraculum.load.dto.DataFileReadyEvent;
 import com.oraculum.load.service.ParquetFileLoadService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,46 +24,41 @@ class DataFileLoadServiceImplTest {
     @Mock
     private LoadLogApi loadLogApi;
 
-    @Mock(answer = org.mockito.Answers.RETURNS_DEEP_STUBS)
-    private OraculumProperties properties;
-
     private DataFileLoadServiceImpl dataFileLoadService;
 
     @BeforeEach
     void setUp() {
-        lenient().when(properties.harvester().exchangeDirectory()).thenReturn("/tmp/exchange");
         dataFileLoadService = new DataFileLoadServiceImpl(
                 Map.of("test_dataset", dummyLoader),
-                loadLogApi,
-                properties
+                loadLogApi
         );
     }
 
     @Test
     void processDataFileEvent_whenAlreadyProcessed_skips() {
-        DataFileReadyEvent event = new DataFileReadyEvent("event", "test_dataset", "file.parquet", "template", "variant", 1, "run1", "checksum", 100, java.time.ZonedDateTime.now());
+        DataFileReadyEvent event = new DataFileReadyEvent("event", "test_dataset", "file.parquet", "template", "variant", 1, "run1", "checksum", 100, null, java.time.ZonedDateTime.now());
         when(loadLogApi.isAlreadyProcessed("test_dataset", "run1", "checksum")).thenReturn(true);
 
         dataFileLoadService.processDataFileEvent(event);
 
-        verify(dummyLoader, never()).merge(anyString());
+        verify(dummyLoader, never()).merge(any());
         verify(loadLogApi, never()).startRunLog(anyString(), anyString(), anyString());
     }
 
     @Test
     void processDataFileEvent_whenNoLoaderFound_skips() {
-        DataFileReadyEvent event = new DataFileReadyEvent("event", "unknown_dataset", "file.parquet", "template", "variant", 1, "run1", "checksum", 100, java.time.ZonedDateTime.now());
+        DataFileReadyEvent event = new DataFileReadyEvent("event", "unknown_dataset", "file.parquet", "template", "variant", 1, "run1", "checksum", 100, null, java.time.ZonedDateTime.now());
         when(loadLogApi.isAlreadyProcessed("unknown_dataset", "run1", "checksum")).thenReturn(false);
 
         dataFileLoadService.processDataFileEvent(event);
 
-        verify(dummyLoader, never()).merge(anyString());
+        verify(dummyLoader, never()).merge(any());
         verify(loadLogApi, never()).startRunLog(anyString(), anyString(), anyString());
     }
 
     @Test
     void processDataFileEvent_whenValid_loadsAndCompletesLog() {
-        DataFileReadyEvent event = new DataFileReadyEvent("event", "test_dataset", "file.parquet", "template", "variant", 1, "run1", "checksum", 100, java.time.ZonedDateTime.now());
+        DataFileReadyEvent event = new DataFileReadyEvent("event", "test_dataset", "file.parquet", "template", "variant", 1, "run1", "checksum", 100, null, java.time.ZonedDateTime.now());
         LoadLogDto logDto = new LoadLogDto();
 
         when(loadLogApi.isAlreadyProcessed("test_dataset", "run1", "checksum")).thenReturn(false);
@@ -72,18 +66,18 @@ class DataFileLoadServiceImplTest {
 
         dataFileLoadService.processDataFileEvent(event);
 
-        verify(dummyLoader).merge(contains("file.parquet"));
+        verify(dummyLoader).merge(any(DataFileReadyEvent.class));
         verify(loadLogApi).completeRunLog(logDto);
     }
 
     @Test
     void processDataFileEvent_whenMergeFails_failsLog() {
-        DataFileReadyEvent event = new DataFileReadyEvent("event", "test_dataset", "file.parquet", "template", "variant", 1, "run1", "checksum", 100, java.time.ZonedDateTime.now());
+        DataFileReadyEvent event = new DataFileReadyEvent("event", "test_dataset", "file.parquet", "template", "variant", 1, "run1", "checksum", 100, null, java.time.ZonedDateTime.now());
         LoadLogDto logDto = new LoadLogDto();
 
         when(loadLogApi.isAlreadyProcessed("test_dataset", "run1", "checksum")).thenReturn(false);
         when(loadLogApi.startRunLog("test_dataset", "run1", "checksum")).thenReturn(logDto);
-        doThrow(new RuntimeException("Merge failed")).when(dummyLoader).merge(anyString());
+        doThrow(new RuntimeException("Merge failed")).when(dummyLoader).merge(any(DataFileReadyEvent.class));
 
         dataFileLoadService.processDataFileEvent(event);
 

@@ -1,6 +1,6 @@
 package com.oraculum.load.service;
 
-import com.oraculum.load.message.DataFileReadyEvent;
+import com.oraculum.load.dto.DataFileReadyEvent;
 
 public interface DataFileLoadService {
 

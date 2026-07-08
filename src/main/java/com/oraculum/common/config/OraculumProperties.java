@@ -2,6 +2,8 @@ package com.oraculum.common.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.nio.file.Path;
+
 @ConfigurationProperties(prefix = "oraculum")
 public record OraculumProperties(Data data,
                                  Database database,
@@ -49,6 +51,11 @@ public record OraculumProperties(Data data,
                             ExchangeCleanup exchangeCleanup,
                             AlphaVantage alphaVantage,
                             Fred fred) {
+
+        public String resolveExchangePath(String relativePath) {
+            return Path.of(exchangeDirectory).resolve(relativePath).normalize().toString();
+        }
+
         public record ExchangeCleanup(Boolean enabled,
                                       Integer retentionDays,
                                       String cron) {

@@ -1,8 +1,10 @@
-package com.oraculum.load.message;
+package com.oraculum.load.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.oraculum.load.api.dto.DataFileStatus;
 
 import java.time.ZonedDateTime;
+import java.util.List;
 
 /**
  * Represents a message indicating that a new data file is ready for processing.
@@ -18,6 +20,7 @@ import java.time.ZonedDateTime;
  * @param runId         The unique identifier for the run that generated the file.
  * @param fileChecksum  The checksum of the file for integrity verification.
  * @param recordCount   The number of records in the file.
+ * @param fileStatuses  The status updates for the requested extraction items.
  * @param createdAt     The timestamp when the event was created.
  */
 public record DataFileReadyEvent(@JsonProperty("event_type") String eventType, String dataset, String path,
@@ -25,5 +28,11 @@ public record DataFileReadyEvent(@JsonProperty("event_type") String eventType, S
                                  @JsonProperty("run_id") String runId,
                                  @JsonProperty("file_checksum") String fileChecksum,
                                  @JsonProperty("record_count") int recordCount,
+                                 @JsonProperty("file_statuses") List<DataFileStatus> fileStatuses,
                                  @JsonProperty("created_at") ZonedDateTime createdAt) {
+    public DataFileReadyEvent {
+        if (fileStatuses == null) {
+            fileStatuses = List.of();
+        }
+    }
 }

@@ -1,6 +1,6 @@
 package com.oraculum.load.listener;
 
-import com.oraculum.load.message.DataFileReadyEvent;
+import com.oraculum.load.dto.DataFileReadyEvent;
 import com.oraculum.load.service.DataFileLoadService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
