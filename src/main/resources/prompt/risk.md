@@ -26,7 +26,7 @@ Your task is to:
     *   A share price in a steep, prolonged downtrend relative to moving averages (as identified in `share_price_analysis`).
     *   Fundamental deterioration noted in `fundamentals_analysis`.
     *   Cash generation issues or high capex burdens noted in `cash_flow_analysis`.
-    *   Refinancing risks, bankruptcy risks, or severe demand destruction implied by the `macroeconomic_context`.
+    *   Refinancing risks, bankruptcy risks, or severe demand destruction implied by the `macroeconomic_context`. Use this macroeconomic context strictly as background information; it should not be the primary driver of your risk assessment.
 3.  **Cross-Reference and Reconcile Share Price Momentum (Strategy 4)**: 
     *   Review the `share_price_analysis`.
     *   **CRITICAL (Strategy 1)**: Distinguish between the **current state** (the latest available data point) and **recent historical volatility** (earlier entries in the 30-day array).
