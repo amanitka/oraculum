@@ -1,6 +1,7 @@
 package com.oraculum.harvester.api;
 
 import java.time.LocalDate;
+import java.util.List;
 
 public interface HarvesterBatchApi {
 
@@ -11,6 +12,8 @@ public interface HarvesterBatchApi {
     void refreshCompany();
 
     void refreshFundamentals();
+
+    void refreshUsTickerSecDocuments(List<String> tickers);
 
     void refreshNews();
 

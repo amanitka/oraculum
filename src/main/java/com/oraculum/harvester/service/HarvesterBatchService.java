@@ -28,6 +28,7 @@ public class HarvesterBatchService implements HarvesterBatchApi {
     private final CompanyMetadataApi companyMetadataApi;
     private final CompanyInsiderTransactionApi companyInsiderTransactionApi;
     private final CompanySharePriceApi companySharePriceApi;
+    private final SecDocumentHarvesterService secDocumentHarvesterService;
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final String harvesterRequestTopic;
     private final int sharePriceIncrementalWindowDays;
@@ -36,12 +37,14 @@ public class HarvesterBatchService implements HarvesterBatchApi {
     public HarvesterBatchService(CompanyMetadataApi companyMetadataApi,
                                  CompanyInsiderTransactionApi companyInsiderTransactionApi,
                                  CompanySharePriceApi companySharePriceApi,
+                                 SecDocumentHarvesterService secDocumentHarvesterService,
                                  KafkaTemplate<String, Object> kafkaTemplate,
                                  OraculumProperties properties,
                                  ApplicationEventPublisher eventPublisher) {
         this.companyMetadataApi = companyMetadataApi;
         this.companyInsiderTransactionApi = companyInsiderTransactionApi;
         this.companySharePriceApi = companySharePriceApi;
+        this.secDocumentHarvesterService = secDocumentHarvesterService;
         this.kafkaTemplate = kafkaTemplate;
         this.harvesterRequestTopic = properties.kafka().topics().harvesterRequest();
         this.sharePriceIncrementalWindowDays = properties.data().sharePrice().incrementalWindowDays();
@@ -97,6 +100,13 @@ public class HarvesterBatchService implements HarvesterBatchApi {
                 publishRequest(new FetchCashFlowStatementRequest(market, variant.getValue(), templates));
             }
         }
+    }
+
+    @Override
+    public void refreshUsTickerSecDocuments(List<String> tickers) {
+        log.info("Requesting ticker documents refresh for US market (SEC), tickers: {}", tickers);
+        secDocumentHarvesterService.buildSecDocumentsRequest(tickers)
+                .ifPresent(this::publishRequest);
     }
 
     @Override

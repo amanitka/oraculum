@@ -1,5 +1,7 @@
 package com.oraculum.ui.views;
 
+import com.oraculum.company.api.CompanyMetadataApi;
+import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.database.api.event.RefreshMaterializedViewsEvent;
 import com.oraculum.harvester.api.HarvesterBatchApi;
 import com.oraculum.ui.MainLayout;
@@ -8,17 +10,19 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
+import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
-import org.springframework.context.ApplicationEventPublisher;
 import jakarta.annotation.security.RolesAllowed;
+import org.springframework.context.ApplicationEventPublisher;
 
 @Route(value = "refresh", layout = MainLayout.class)
 @PageTitle("Refresh | Oraculum")
@@ -33,10 +37,12 @@ public class RefreshView extends VerticalLayout {
 
     private final HarvesterBatchApi harvesterBatchApi;
     private final ApplicationEventPublisher eventPublisher;
+    private final CompanyMetadataApi companyMetadataApi;
 
-    public RefreshView(HarvesterBatchApi harvesterBatchApi, ApplicationEventPublisher eventPublisher) {
+    public RefreshView(HarvesterBatchApi harvesterBatchApi, ApplicationEventPublisher eventPublisher, CompanyMetadataApi companyMetadataApi) {
         this.harvesterBatchApi = harvesterBatchApi;
         this.eventPublisher = eventPublisher;
+        this.companyMetadataApi = companyMetadataApi;
 
         setWidthFull();
         getStyle().set("padding-bottom", "2rem");
@@ -94,6 +100,8 @@ public class RefreshView extends VerticalLayout {
         grid.add(createTile("Fundamentals",
                 "Refreshes Income Statements, Balance Sheets, and Cash Flow Statements for all companies.",
                 harvesterBatchApi::refreshFundamentals));
+
+        grid.add(createTickerDocumentTile());
 
         grid.add(createSharePriceTile());
 
@@ -159,6 +167,51 @@ public class RefreshView extends VerticalLayout {
         HorizontalLayout controls = new HorizontalLayout(incremental, fromDate);
         controls.setAlignItems(Alignment.CENTER);
         controls.addClassNames(LumoUtility.Gap.MEDIUM);
+        controls.getStyle().set("margin-top", "var(--lumo-space-m)");
+
+        tile.add(header, desc, controls);
+        return tile;
+    }
+
+    // ── Ticker Document Tile ───────────────────────────────────────────────
+
+    private Component createTickerDocumentTile() {
+        Div tile = new Div();
+        tile.getStyle().set("cssText", TILE_STYLE);
+
+        MultiSelectComboBox<String> tickersField = new MultiSelectComboBox<>("US Tickers (leave empty for all)");
+        tickersField.setWidthFull();
+
+        // Load US tickers
+        java.util.List<String> usTickers = companyMetadataApi.getAllCompanies().stream()
+                .filter(c -> c.market() != null && "US".equalsIgnoreCase(c.market().trim()))
+                .map(CompanyDto::ticker)
+                .sorted()
+                .toList();
+        tickersField.setItems(usTickers);
+        tickersField.setClearButtonVisible(true);
+        tickersField.addSelectionListener(event -> {
+            if (event.getAllSelectedItems().size() > 20) {
+                tickersField.setValue(event.getOldSelection());
+                Notification.show("Maximum limit of 20 US tickers allowed.");
+            }
+        });
+
+        Button btn = createRefreshButton("Ticker Documents", () -> {
+            java.util.Set<String> selected = tickersField.getValue();
+            java.util.List<String> tickers = selected == null || selected.isEmpty() ? null : new java.util.ArrayList<>(selected);
+            harvesterBatchApi.refreshUsTickerSecDocuments(tickers);
+        });
+
+        HorizontalLayout header = tileHeader("Ticker Documents", btn);
+
+        Span desc = new Span("Refreshes SEC filings and other documents for specific US companies or all US companies.");
+        desc.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontSize.SMALL);
+        desc.getStyle().set("margin-top", "var(--lumo-space-s)").set("display", "block");
+
+        HorizontalLayout controls = new HorizontalLayout(tickersField);
+        controls.setAlignItems(Alignment.END); // Align with input field visually
+        controls.setWidthFull();
         controls.getStyle().set("margin-top", "var(--lumo-space-m)");
 
         tile.add(header, desc, controls);
