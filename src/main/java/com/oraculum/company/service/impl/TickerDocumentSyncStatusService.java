@@ -4,9 +4,9 @@ import com.oraculum.company.api.domain.SyncExtractionStatus;
 import com.oraculum.company.api.domain.SyncStatus;
 import com.oraculum.company.api.domain.TickerDocumentType;
 import com.oraculum.company.api.event.TickerDocumentLoadEvent;
+import com.oraculum.company.api.event.TickerDocumentLoadEvent.DocumentStatus;
 import com.oraculum.company.domain.TickerDocumentSyncStatusEntity;
 import com.oraculum.company.repository.TickerDocumentSyncStatusRepository;
-import com.oraculum.load.api.dto.DataFileStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,7 +28,7 @@ public class TickerDocumentSyncStatusService {
         });
     }
 
-    private TickerDocumentSyncStatusEntity.TickerDocumentSyncStatusId getTickerDocumentSyncStatusId(TickerDocumentType documentType, DataFileStatus status) {
+    private TickerDocumentSyncStatusEntity.TickerDocumentSyncStatusId getTickerDocumentSyncStatusId(TickerDocumentType documentType, DocumentStatus status) {
         return new TickerDocumentSyncStatusEntity.TickerDocumentSyncStatusId(status.ticker(), status.market(), status.source(), documentType);
     }
 
@@ -43,7 +43,7 @@ public class TickerDocumentSyncStatusService {
         );
     }
 
-    private void processDataFileStatus(DataFileStatus status, OffsetDateTime processingDate) {
+    private void processDataFileStatus(DocumentStatus status, OffsetDateTime processingDate) {
         var docType = getDocumentType(status.fileType());
         if (docType == null) {
             return;
@@ -66,7 +66,7 @@ public class TickerDocumentSyncStatusService {
 
     public void processDocumentLoadEvent(TickerDocumentLoadEvent event) {
         OffsetDateTime processingDate = OffsetDateTime.now(ZoneOffset.UTC);
-        for (DataFileStatus status : event.fileStatuses()) {
+        for (DocumentStatus status : event.fileStatuses()) {
             processDataFileStatus(status, processingDate);
         }
     }

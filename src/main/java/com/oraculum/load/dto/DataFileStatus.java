@@ -1,4 +1,4 @@
-package com.oraculum.load.api.dto;
+package com.oraculum.load.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

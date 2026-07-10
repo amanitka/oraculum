@@ -1,10 +1,20 @@
 package com.oraculum.company.api.event;
 
-import com.oraculum.load.api.dto.DataFileStatus;
-
+import java.time.LocalDate;
 import java.util.List;
 
 public record TickerDocumentLoadEvent(
-        List<DataFileStatus> fileStatuses
+        List<DocumentStatus> fileStatuses
 ) {
+    public record DocumentStatus(
+            String ticker,
+            String market,
+            String source,
+            String fileType,
+            LocalDate latestProcessedDate,
+            String status,
+            String extractionStatus,
+            String message
+    ) {
+    }
 }

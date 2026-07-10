@@ -2,12 +2,15 @@ package com.oraculum.load.service.impl;
 
 import com.oraculum.company.api.event.TickerDocumentLoadEvent;
 import com.oraculum.load.dto.DataFileReadyEvent;
+import com.oraculum.load.dto.DataFileStatus;
 import com.oraculum.load.dto.LoadParquetDto;
 import com.oraculum.load.service.ParquetFileLoadService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service("ticker_document")
 @RequiredArgsConstructor
@@ -58,6 +61,24 @@ public class TickerDocumentFileLoadServiceImpl implements ParquetFileLoadService
     private final PostgresParquetFileLoader postgresParquetFileLoader;
     private final ApplicationEventPublisher applicationEventPublisher;
 
+    private void publishTickerDocumentLoadEvent(List<DataFileStatus> fileStatuses) {
+        if (fileStatuses != null && !fileStatuses.isEmpty()) {
+            var mappedStatuses = fileStatuses.stream()
+                    .map(status -> new TickerDocumentLoadEvent.DocumentStatus(
+                            status.ticker(),
+                            status.market(),
+                            status.source(),
+                            status.fileType(),
+                            status.latestProcessedDate(),
+                            status.status(),
+                            status.extractionStatus(),
+                            status.message()
+                    ))
+                    .toList();
+            applicationEventPublisher.publishEvent(new TickerDocumentLoadEvent(mappedStatuses));
+        }
+    }
+
     @Override
     public void merge(DataFileReadyEvent event) {
         var stagingTableName = PostgresParquetFileLoader.getStagingTableName(TARGET_TABLE_NAME);
@@ -69,10 +90,7 @@ public class TickerDocumentFileLoadServiceImpl implements ParquetFileLoadService
                 .hasStatementData(false)
                 .build();
         postgresParquetFileLoader.loadParquetIntoTargetTable(loadParquetDto);
-
-        if (event.fileStatuses() != null && !event.fileStatuses().isEmpty()) {
-            applicationEventPublisher.publishEvent(new TickerDocumentLoadEvent(event.fileStatuses()));
-        }
+        publishTickerDocumentLoadEvent(event.fileStatuses());
     }
 
 }

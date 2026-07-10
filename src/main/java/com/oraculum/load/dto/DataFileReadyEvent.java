@@ -1,7 +1,6 @@
 package com.oraculum.load.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.oraculum.load.api.dto.DataFileStatus;
 
 import java.time.ZonedDateTime;
 import java.util.List;

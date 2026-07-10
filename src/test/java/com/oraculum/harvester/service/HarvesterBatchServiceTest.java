@@ -42,6 +42,8 @@ class HarvesterBatchServiceTest {
     private CompanySharePriceApi companySharePriceApi;
     @Mock
     private CompanyInsiderTransactionApi companyInsiderTransactionApi;
+    @Mock
+    private SecDocumentHarvesterService secDocumentHarvesterService;
     private HarvesterBatchService harvesterBatchService;
 
     @BeforeEach
@@ -49,7 +51,7 @@ class HarvesterBatchServiceTest {
         when(properties.kafka().topics().harvesterRequest()).thenReturn(TOPIC);
         when(properties.data().sharePrice().incrementalWindowDays()).thenReturn(5);
 
-        harvesterBatchService = new HarvesterBatchService(companyMetadataApi, companyInsiderTransactionApi, companySharePriceApi, kafkaTemplate, properties, eventPublisher);
+        harvesterBatchService = new HarvesterBatchService(companyMetadataApi, companyInsiderTransactionApi, companySharePriceApi, secDocumentHarvesterService, kafkaTemplate, properties, eventPublisher);
     }
 
     @Test
