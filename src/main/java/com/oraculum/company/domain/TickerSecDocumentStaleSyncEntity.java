@@ -29,6 +29,8 @@ public class TickerSecDocumentStaleSyncEntity {
     @Column(name = "document_type")
     private String documentType;
 
+    private String cik;
+
     @Column(name = "last_processed_file_date")
     private LocalDate lastProcessedFileDate;
 

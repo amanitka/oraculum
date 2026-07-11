@@ -13,6 +13,7 @@ CREATE VIEW v_ticker_sec_document_stale_sync AS
 SELECT
     c.ticker,
     c.market,
+    c.cik,
     dt.document_type,
     tds.last_processed_file_date,
     tds.last_file_refresh_at,

@@ -48,6 +48,17 @@ public class CompanyMetadataServiceImpl implements CompanyMetadataApi {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<CompanyDto> getCompaniesByMarketAndTickers(String market, List<String> tickers) {
+        if (tickers == null || tickers.isEmpty()) {
+            return List.of();
+        }
+        return companyRepository.findByMarketAndTickerIn(market, tickers).stream()
+                .map(CompanyDto::fromEntity)
+                .toList();
+    }
+
+    @Override
     @Transactional
     public void createOrUpdateMarket(MarketDto market) {
         marketRepository.save(market.toEntity());

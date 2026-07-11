@@ -4,6 +4,7 @@ import com.oraculum.company.api.CompanyMetadataApi;
 import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.database.api.event.RefreshMaterializedViewsEvent;
 import com.oraculum.harvester.api.HarvesterBatchApi;
+import com.oraculum.harvester.api.dto.TickerKeyDto;
 import com.oraculum.ui.MainLayout;
 import com.oraculum.ui.ViewHelper;
 import com.vaadin.flow.component.Component;
@@ -179,33 +180,39 @@ public class RefreshView extends VerticalLayout {
         Div tile = new Div();
         tile.getStyle().set("cssText", TILE_STYLE);
 
-        MultiSelectComboBox<String> tickersField = new MultiSelectComboBox<>("US Tickers (leave empty for all)");
+        MultiSelectComboBox<CompanyDto> tickersField = new MultiSelectComboBox<>("US Companies (leave empty for stale refresh)");
         tickersField.setWidthFull();
 
-        // Load US tickers
-        java.util.List<String> usTickers = companyMetadataApi.getAllCompanies().stream()
+        // Load US companies
+        java.util.List<CompanyDto> usCompanies = companyMetadataApi.getAllCompanies().stream()
                 .filter(c -> c.market() != null && "US".equalsIgnoreCase(c.market().trim()))
-                .map(CompanyDto::ticker)
-                .sorted()
+                .sorted(java.util.Comparator.comparing(CompanyDto::ticker))
                 .toList();
-        tickersField.setItems(usTickers);
+        tickersField.setItems(usCompanies);
+        tickersField.setItemLabelGenerator(c -> c.ticker() + " - " + c.companyName());
         tickersField.setClearButtonVisible(true);
         tickersField.addSelectionListener(event -> {
             if (event.getAllSelectedItems().size() > 20) {
                 tickersField.setValue(event.getOldSelection());
-                Notification.show("Maximum limit of 20 US tickers allowed.");
+                Notification.show("Maximum limit of 20 US companies allowed.");
             }
         });
 
         Button btn = createRefreshButton("Ticker Documents", () -> {
-            java.util.Set<String> selected = tickersField.getValue();
-            java.util.List<String> tickers = selected == null || selected.isEmpty() ? null : new java.util.ArrayList<>(selected);
-            harvesterBatchApi.refreshUsTickerSecDocuments(tickers);
+            java.util.Set<CompanyDto> selected = tickersField.getValue();
+            if (selected == null || selected.isEmpty()) {
+                harvesterBatchApi.refreshStaleSecDocuments();
+            } else {
+                java.util.List<TickerKeyDto> tickers = selected.stream()
+                        .map(c -> new TickerKeyDto(c.ticker(), c.market()))
+                        .toList();
+                harvesterBatchApi.refreshSecDocuments(tickers);
+            }
         });
 
         HorizontalLayout header = tileHeader("Ticker Documents", btn);
 
-        Span desc = new Span("Refreshes SEC filings and other documents for specific US companies or all US companies.");
+        Span desc = new Span("Refreshes SEC filings for specific US companies, or checks for and refreshes all stale companies if none are selected.");
         desc.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontSize.SMALL);
         desc.getStyle().set("margin-top", "var(--lumo-space-s)").set("display", "block");
 

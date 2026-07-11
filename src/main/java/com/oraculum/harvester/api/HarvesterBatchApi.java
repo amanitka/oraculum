@@ -1,5 +1,7 @@
 package com.oraculum.harvester.api;
 
+import com.oraculum.harvester.api.dto.TickerKeyDto;
+
 import java.time.LocalDate;
 import java.util.List;
 
@@ -13,7 +15,7 @@ public interface HarvesterBatchApi {
 
     void refreshFundamentals();
 
-    void refreshUsTickerSecDocuments(List<String> tickers);
+    void refreshSecDocuments(List<TickerKeyDto> tickers);
 
     void refreshStaleSecDocuments();
 

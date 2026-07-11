@@ -11,6 +11,7 @@ import java.time.LocalDate;
 public class TickerDocumentSyncStatusDto {
     private final String ticker;
     private final String market;
+    private final String cik;
     private final TickerDocumentType documentType;
     private final LocalDate lastProcessedFileDate;
 }

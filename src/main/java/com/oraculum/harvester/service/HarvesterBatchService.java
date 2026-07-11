@@ -104,7 +104,7 @@ public class HarvesterBatchService implements HarvesterBatchApi {
     }
 
     @Override
-    public void refreshUsTickerSecDocuments(List<String> tickers) {
+    public void refreshSecDocuments(List<TickerKeyDto> tickers) {
         log.info("Requesting ticker documents refresh for US market (SEC), tickers: {}", tickers);
         secDocumentHarvesterService.buildSecDocumentsRequest(tickers)
                 .ifPresent(this::publishRequest);
@@ -112,8 +112,8 @@ public class HarvesterBatchService implements HarvesterBatchApi {
 
     @Override
     public void refreshStaleSecDocuments() {
-        secDocumentHarvesterService.buildStaleSecDocumentsRequest()
-                .ifPresent(this::publishRequest);
+        secDocumentHarvesterService.buildStaleSecDocumentsRequests()
+                .forEach(this::publishRequest);
     }
 
     @Override

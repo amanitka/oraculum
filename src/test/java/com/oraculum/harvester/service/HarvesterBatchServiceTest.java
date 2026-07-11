@@ -148,7 +148,7 @@ class HarvesterBatchServiceTest {
                 ))
                 .build();
 
-        when(secDocumentHarvesterService.buildStaleSecDocumentsRequest()).thenReturn(Optional.of(requestPayload));
+        when(secDocumentHarvesterService.buildStaleSecDocumentsRequests()).thenReturn(List.of(requestPayload));
 
         harvesterBatchService.refreshStaleSecDocuments();
 

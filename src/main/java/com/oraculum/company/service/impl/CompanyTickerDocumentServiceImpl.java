@@ -49,6 +49,7 @@ public class CompanyTickerDocumentServiceImpl implements CompanyTickerDocumentAp
         return TickerDocumentSyncStatusDto.builder()
                 .ticker(entity.getTicker())
                 .market(entity.getMarket())
+                .cik(entity.getCik())
                 .documentType(entity.getDocumentType())
                 .lastProcessedFileDate(entity.getLastProcessedFileDate())
                 .build();

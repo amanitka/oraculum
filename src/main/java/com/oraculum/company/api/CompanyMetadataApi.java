@@ -6,9 +6,14 @@ import java.util.List;
 
 public interface CompanyMetadataApi {
     CompanyDto getCompanyById(int companyId);
+
     List<CompanyDto> getAllCompanies();
+
     List<String> getAllMarketIds();
-    
+
+    List<CompanyDto> getCompaniesByMarketAndTickers(String market, List<String> tickers);
+
     void createOrUpdateMarket(com.oraculum.company.api.dto.MarketDto market);
+
     void createOrUpdateIndustry(com.oraculum.company.api.dto.IndustryDto industry);
 }

@@ -7,6 +7,7 @@ import com.oraculum.company.api.domain.TickerDocumentType;
 import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.company.api.dto.TickerDocumentSyncStatusDto;
 import com.oraculum.harvester.api.dto.FetchSecDocumentsRequest;
+import com.oraculum.harvester.api.dto.TickerKeyDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,39 +24,57 @@ public class SecDocumentHarvesterService {
     private final CompanyMetadataApi companyMetadataApi;
     private final CompanyTickerDocumentApi companyTickerDocumentApi;
 
-    public Optional<FetchSecDocumentsRequest> buildSecDocumentsRequest(List<String> tickers) {
-        List<String> usTickers = resolveUsTickers(tickers);
-
-        if (usTickers.isEmpty()) {
-            log.info("No US tickers found to refresh.");
+    public Optional<FetchSecDocumentsRequest> buildSecDocumentsRequest(List<TickerKeyDto> tickers) {
+        if (tickers == null || tickers.isEmpty()) {
             return Optional.empty();
         }
 
-        List<FetchSecDocumentsRequest.TickerDocumentItem> items = buildDocumentItems(usTickers);
+        List<CompanyDto> companies = resolveRequestedCompanies(tickers);
+
+        if (companies.isEmpty()) {
+            log.info("No matching companies found to refresh.");
+            return Optional.empty();
+        }
+
+        Map<String, String> tickerToCik = companies.stream()
+                .collect(Collectors.toMap(CompanyDto::ticker, c -> c.cik() != null ? c.cik() : "", (existing, _) -> existing));
+
+        List<TickerKeyDto> usTickers = companies.stream()
+                .map(c -> new TickerKeyDto(c.ticker(), c.market()))
+                .toList();
+
+        List<FetchSecDocumentsRequest.TickerDocumentItem> items = buildDocumentItems(usTickers, tickerToCik);
         return Optional.of(FetchSecDocumentsRequest.builder().items(items).build());
     }
 
-    private List<String> resolveUsTickers(List<String> requestedTickers) {
-        List<String> usTickers = companyMetadataApi.getAllCompanies().stream()
-                .filter(c -> c.market() != null && "US".equalsIgnoreCase(c.market().trim()))
-                .map(CompanyDto::ticker)
-                .toList();
-
-        if (requestedTickers != null && !requestedTickers.isEmpty()) {
-            Set<String> requestedUpper = requestedTickers.stream()
-                    .map(String::toUpperCase)
-                    .collect(Collectors.toSet());
-            return usTickers.stream().filter(requestedUpper::contains).toList();
+    private List<CompanyDto> resolveRequestedCompanies(List<TickerKeyDto> requestedTickers) {
+        if (requestedTickers == null || requestedTickers.isEmpty()) {
+            return List.of();
         }
-        return usTickers;
+
+        Map<String, List<TickerKeyDto>> byMarket = requestedTickers.stream()
+                .collect(Collectors.groupingBy(t -> t.market().toUpperCase()));
+
+        List<CompanyDto> result = new ArrayList<>();
+        for (Map.Entry<String, List<TickerKeyDto>> entry : byMarket.entrySet()) {
+            String market = entry.getKey();
+            List<String> tickersInMarket = entry.getValue().stream().map(TickerKeyDto::ticker).toList();
+            result.addAll(companyMetadataApi.getCompaniesByMarketAndTickers(market, tickersInMarket));
+        }
+        return result;
     }
 
-    private List<FetchSecDocumentsRequest.TickerDocumentItem> buildDocumentItems(List<String> tickers) {
-        Map<String, Map<TickerDocumentType, LocalDate>> statuses = fetchAndGroupStatuses(tickers);
+    private List<FetchSecDocumentsRequest.TickerDocumentItem> buildDocumentItems(List<TickerKeyDto> tickers, Map<String, String> tickerToCik) {
+        List<String> tickerStrings = tickers.stream().map(TickerKeyDto::ticker).toList();
+        Map<String, Map<TickerDocumentType, LocalDate>> statuses = fetchAndGroupStatuses(tickerStrings);
         List<TickerDocumentType> secDocTypes = getSecDocumentTypes();
 
         return tickers.stream()
-                .map(ticker -> buildSingleItem(ticker, statuses.getOrDefault(ticker, Map.of()), secDocTypes))
+                .map(t -> {
+                    String cik = tickerToCik.get(t.ticker());
+                    String nonBlankCik = cik != null && !cik.isBlank() ? cik : null;
+                    return buildSingleItem(t.ticker(), t.market(), nonBlankCik, statuses.getOrDefault(t.ticker(), Map.of()), secDocTypes);
+                })
                 .toList();
     }
 
@@ -79,6 +98,8 @@ public class SecDocumentHarvesterService {
 
     private FetchSecDocumentsRequest.TickerDocumentItem buildSingleItem(
             String ticker,
+            String market,
+            String cik,
             Map<TickerDocumentType, LocalDate> tickerStatuses,
             List<TickerDocumentType> secDocTypes) {
 
@@ -91,23 +112,34 @@ public class SecDocumentHarvesterService {
 
         return FetchSecDocumentsRequest.TickerDocumentItem.builder()
                 .ticker(ticker)
-                .market("US")
+                .market(market)
+                .cik(cik)
                 .documentTypes(docRequests)
                 .build();
     }
 
-    private record TickerKey(String ticker, String market) {}
-
-    public Optional<FetchSecDocumentsRequest> buildStaleSecDocumentsRequest() {
+    public List<FetchSecDocumentsRequest> buildStaleSecDocumentsRequests() {
         log.info("Checking for stale SEC documents to refresh...");
         List<TickerDocumentSyncStatusDto> staleDocs = companyTickerDocumentApi.getStaleSecDocuments(200);
         if (staleDocs.isEmpty()) {
             log.info("No stale SEC documents found.");
-            return Optional.empty();
+            return List.of();
         }
 
         List<FetchSecDocumentsRequest.TickerDocumentItem> items = buildStaleDocumentItems(staleDocs);
-        return Optional.of(FetchSecDocumentsRequest.builder().items(items).build());
+        List<List<FetchSecDocumentsRequest.TickerDocumentItem>> batches = chunkList(items);
+
+        return batches.stream()
+                .map(batchItems -> FetchSecDocumentsRequest.builder().items(batchItems).build())
+                .toList();
+    }
+
+    private <T> List<List<T>> chunkList(List<T> list) {
+        List<List<T>> chunks = new ArrayList<>();
+        for (int i = 0; i < list.size(); i += 20) {
+            chunks.add(list.subList(i, Math.min(i + 20, list.size())));
+        }
+        return chunks;
     }
 
     private List<FetchSecDocumentsRequest.TickerDocumentItem> buildStaleDocumentItems(
@@ -123,6 +155,11 @@ public class SecDocumentHarvesterService {
     private FetchSecDocumentsRequest.TickerDocumentItem buildStaleItemForTicker(
             Map.Entry<TickerKey, List<TickerDocumentSyncStatusDto>> entry) {
         TickerKey key = entry.getKey();
+        String cik = entry.getValue().stream()
+                .map(TickerDocumentSyncStatusDto::getCik)
+                .filter(Objects::nonNull)
+                .findFirst().orElse(null);
+
         List<FetchSecDocumentsRequest.DocumentTypeRequest> docRequests = entry.getValue().stream()
                 .map(this::buildDocumentTypeRequest)
                 .toList();
@@ -130,6 +167,7 @@ public class SecDocumentHarvesterService {
         return FetchSecDocumentsRequest.TickerDocumentItem.builder()
                 .ticker(key.ticker())
                 .market(key.market())
+                .cik(cik != null && !cik.isBlank() ? cik : null)
                 .documentTypes(docRequests)
                 .build();
     }
@@ -139,6 +177,9 @@ public class SecDocumentHarvesterService {
                 .documentType(dto.getDocumentType().getCode())
                 .lastProcessedFileDate(dto.getLastProcessedFileDate())
                 .build();
+    }
+
+    private record TickerKey(String ticker, String market) {
     }
 }
 

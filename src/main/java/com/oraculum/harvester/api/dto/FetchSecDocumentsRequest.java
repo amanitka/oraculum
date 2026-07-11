@@ -29,6 +29,9 @@ public class FetchSecDocumentsRequest extends HarvesterRequest {
         @JsonProperty("ticker")
         private final String ticker;
 
+        @JsonProperty("cik")
+        private final String cik;
+
         @Builder.Default
         @JsonProperty("market")
         private final String market = "US";
