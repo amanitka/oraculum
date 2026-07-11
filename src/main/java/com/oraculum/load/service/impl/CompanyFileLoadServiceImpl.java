@@ -1,12 +1,13 @@
 package com.oraculum.load.service.impl;
 
+import com.oraculum.load.domain.Dataset;
 import com.oraculum.load.dto.DataFileReadyEvent;
 import com.oraculum.load.dto.LoadParquetDto;
 import com.oraculum.load.service.ParquetFileLoadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-@Component("company")
+@Component(Dataset.COMPANY)
 @RequiredArgsConstructor
 public class CompanyFileLoadServiceImpl implements ParquetFileLoadService {
 

@@ -1,9 +1,10 @@
 package com.oraculum.load.service.impl;
 
 
+import com.oraculum.load.domain.Dataset;
 import org.springframework.stereotype.Component;
 
-@Component("cash_flow_statement")
+@Component(Dataset.CASH_FLOW_STATEMENT)
 public class CashFlowStatementFileLoadServiceImpl extends AbstractStatementFileLoadService {
 
     public CashFlowStatementFileLoadServiceImpl(PostgresParquetFileLoader postgresParquetFileLoader) {

@@ -1,12 +1,13 @@
 package com.oraculum.load.service.impl;
 
+import com.oraculum.load.domain.Dataset;
 import com.oraculum.load.dto.DataFileReadyEvent;
 import com.oraculum.load.dto.LoadParquetDto;
 import com.oraculum.load.service.ParquetFileLoadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-@Component("share_price")
+@Component(Dataset.SHARE_PRICE)
 @RequiredArgsConstructor
 public class SharePriceFileLoadServiceImpl implements ParquetFileLoadService {
 

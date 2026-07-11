@@ -1,6 +1,7 @@
 package com.oraculum.load.service.impl;
 
 import com.oraculum.company.api.event.TickerDocumentLoadEvent;
+import com.oraculum.load.domain.Dataset;
 import com.oraculum.load.dto.DataFileReadyEvent;
 import com.oraculum.load.dto.DataFileStatus;
 import com.oraculum.load.dto.LoadParquetDto;
@@ -12,7 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-@Service("ticker_document")
+@Service(Dataset.TICKER_DOCUMENT)
 @RequiredArgsConstructor
 @Slf4j
 public class TickerDocumentFileLoadServiceImpl implements ParquetFileLoadService {
@@ -61,7 +62,22 @@ public class TickerDocumentFileLoadServiceImpl implements ParquetFileLoadService
     private final PostgresParquetFileLoader postgresParquetFileLoader;
     private final ApplicationEventPublisher applicationEventPublisher;
 
-    private void publishTickerDocumentLoadEvent(List<DataFileStatus> fileStatuses) {
+    @Override
+    public void merge(DataFileReadyEvent event) {
+        var stagingTableName = PostgresParquetFileLoader.getStagingTableName(TARGET_TABLE_NAME);
+        var loadParquetDto = LoadParquetDto.builder()
+                .targetTableName(TARGET_TABLE_NAME)
+                .stagingTableName(stagingTableName)
+                .parquetFilePath(postgresParquetFileLoader.resolveAndValidatePath(event))
+                .loadSql(BULK_UPSERT_SQL.formatted(TARGET_TABLE_NAME, stagingTableName))
+                .hasStatementData(false)
+                .build();
+        postgresParquetFileLoader.loadParquetIntoTargetTable(loadParquetDto);
+    }
+
+    @Override
+    public void postProcess(DataFileReadyEvent event) {
+        List<DataFileStatus> fileStatuses = event.fileStatuses();
         if (fileStatuses != null && !fileStatuses.isEmpty()) {
             var mappedStatuses = fileStatuses.stream()
                     .map(status -> new TickerDocumentLoadEvent.DocumentStatus(
@@ -77,20 +93,6 @@ public class TickerDocumentFileLoadServiceImpl implements ParquetFileLoadService
                     .toList();
             applicationEventPublisher.publishEvent(new TickerDocumentLoadEvent(mappedStatuses));
         }
-    }
-
-    @Override
-    public void merge(DataFileReadyEvent event) {
-        var stagingTableName = PostgresParquetFileLoader.getStagingTableName(TARGET_TABLE_NAME);
-        var loadParquetDto = LoadParquetDto.builder()
-                .targetTableName(TARGET_TABLE_NAME)
-                .stagingTableName(stagingTableName)
-                .parquetFilePath(postgresParquetFileLoader.resolveAndValidatePath(event))
-                .loadSql(BULK_UPSERT_SQL.formatted(TARGET_TABLE_NAME, stagingTableName))
-                .hasStatementData(false)
-                .build();
-        postgresParquetFileLoader.loadParquetIntoTargetTable(loadParquetDto);
-        publishTickerDocumentLoadEvent(event.fileStatuses());
     }
 
 }

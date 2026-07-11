@@ -1,8 +1,9 @@
 package com.oraculum.load.service.impl;
 
+import com.oraculum.load.domain.Dataset;
 import org.springframework.stereotype.Component;
 
-@Component("income_statement")
+@Component(Dataset.INCOME_STATEMENT)
 public class IncomeStatementFileLoadServiceImpl extends AbstractStatementFileLoadService {
 
     public IncomeStatementFileLoadServiceImpl(PostgresParquetFileLoader postgresParquetFileLoader) {

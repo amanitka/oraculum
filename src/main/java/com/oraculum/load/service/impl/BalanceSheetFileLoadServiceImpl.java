@@ -1,8 +1,9 @@
 package com.oraculum.load.service.impl;
 
+import com.oraculum.load.domain.Dataset;
 import org.springframework.stereotype.Component;
 
-@Component("balance_sheet")
+@Component(Dataset.BALANCE_SHEET)
 public class BalanceSheetFileLoadServiceImpl extends AbstractStatementFileLoadService {
 
     public BalanceSheetFileLoadServiceImpl(PostgresParquetFileLoader postgresParquetFileLoader) {

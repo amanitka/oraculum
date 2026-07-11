@@ -36,10 +36,20 @@ public class DataFileLoadServiceImpl implements DataFileLoadService {
         loadLogApi.failRunLog(runLog);
     }
 
+    private void mergeEventData(DataFileReadyEvent event, ParquetFileLoadService loader) {
+        if (event.recordCount() == 0) {
+            log.info("Received empty dataset event. Skipping parquet load, updating sync statuses.");
+        } else {
+            loader.merge(event);
+        }
+        
+        loader.postProcess(event);
+    }
+
     private void processEventByLoader(DataFileReadyEvent event, ParquetFileLoadService loader) {
         LoadLogDto runLog = createRunLog(event);
         try {
-            loader.merge(event);
+            mergeEventData(event, loader);
             completeRunLog(event, runLog);
             log.info("Successfully loaded dataset '{}' (run_id={}, rows={})", event.dataset(),
                     event.runId(), event.recordCount());
