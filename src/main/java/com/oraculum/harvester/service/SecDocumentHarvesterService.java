@@ -53,7 +53,7 @@ public class SecDocumentHarvesterService {
         }
 
         Map<String, List<TickerKeyDto>> byMarket = requestedTickers.stream()
-                .collect(Collectors.groupingBy(t -> t.market().toUpperCase()));
+                .collect(Collectors.groupingBy(TickerKeyDto::market));
 
         List<CompanyDto> result = new ArrayList<>();
         for (Map.Entry<String, List<TickerKeyDto>> entry : byMarket.entrySet()) {
