@@ -111,6 +111,9 @@ oraculum:
       cron: "0 0 4,16 * * *"
     macroeconomic:
       cron: "0 0 6 * * *"
+    sec-documents:
+      cron: "0 0 * * * *"
+
 
   database:
     host: ${ORACULUM_DATABASE_HOST}

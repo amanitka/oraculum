@@ -95,4 +95,50 @@ public class SecDocumentHarvesterService {
                 .documentTypes(docRequests)
                 .build();
     }
+
+    private record TickerKey(String ticker, String market) {}
+
+    public Optional<FetchSecDocumentsRequest> buildStaleSecDocumentsRequest() {
+        log.info("Checking for stale SEC documents to refresh...");
+        List<TickerDocumentSyncStatusDto> staleDocs = companyTickerDocumentApi.getStaleSecDocuments(200);
+        if (staleDocs.isEmpty()) {
+            log.info("No stale SEC documents found.");
+            return Optional.empty();
+        }
+
+        List<FetchSecDocumentsRequest.TickerDocumentItem> items = buildStaleDocumentItems(staleDocs);
+        return Optional.of(FetchSecDocumentsRequest.builder().items(items).build());
+    }
+
+    private List<FetchSecDocumentsRequest.TickerDocumentItem> buildStaleDocumentItems(
+            List<TickerDocumentSyncStatusDto> staleDocs) {
+        Map<TickerKey, List<TickerDocumentSyncStatusDto>> byTicker = staleDocs.stream()
+                .collect(Collectors.groupingBy(dto -> new TickerKey(dto.getTicker(), dto.getMarket())));
+
+        return byTicker.entrySet().stream()
+                .map(this::buildStaleItemForTicker)
+                .toList();
+    }
+
+    private FetchSecDocumentsRequest.TickerDocumentItem buildStaleItemForTicker(
+            Map.Entry<TickerKey, List<TickerDocumentSyncStatusDto>> entry) {
+        TickerKey key = entry.getKey();
+        List<FetchSecDocumentsRequest.DocumentTypeRequest> docRequests = entry.getValue().stream()
+                .map(this::buildDocumentTypeRequest)
+                .toList();
+
+        return FetchSecDocumentsRequest.TickerDocumentItem.builder()
+                .ticker(key.ticker())
+                .market(key.market())
+                .documentTypes(docRequests)
+                .build();
+    }
+
+    private FetchSecDocumentsRequest.DocumentTypeRequest buildDocumentTypeRequest(TickerDocumentSyncStatusDto dto) {
+        return FetchSecDocumentsRequest.DocumentTypeRequest.builder()
+                .documentType(dto.getDocumentType().getCode())
+                .lastProcessedFileDate(dto.getLastProcessedFileDate())
+                .build();
+    }
 }
+

@@ -10,4 +10,10 @@ public interface CompanyTickerDocumentApi {
      * Get sync statuses for a specific list of tickers within a market.
      */
     List<TickerDocumentSyncStatusDto> getSyncStatusesByTickersAndMarket(List<String> tickers, String market);
+
+    /**
+     * Get stale SEC documents that need to be refreshed.
+     */
+    List<TickerDocumentSyncStatusDto> getStaleSecDocuments(int limit);
 }
+

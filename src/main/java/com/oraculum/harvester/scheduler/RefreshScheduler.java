@@ -89,4 +89,15 @@ public class RefreshScheduler {
             log.error("Scheduled macroeconomic refresh failed", e);
         }
     }
+
+    @Scheduled(cron = "${oraculum.data.sec-documents.cron}")
+    public void refreshStaleSecDocuments() {
+        log.info("Starting scheduled stale SEC documents refresh...");
+        try {
+            refreshService.refreshStaleSecDocuments();
+        } catch (Exception e) {
+            log.error("Scheduled stale SEC documents refresh failed", e);
+        }
+    }
 }
+

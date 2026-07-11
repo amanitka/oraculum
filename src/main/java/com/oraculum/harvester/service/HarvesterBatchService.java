@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Stream;
 
+
 @Service
 @Slf4j
 public class HarvesterBatchService implements HarvesterBatchApi {
@@ -106,6 +107,12 @@ public class HarvesterBatchService implements HarvesterBatchApi {
     public void refreshUsTickerSecDocuments(List<String> tickers) {
         log.info("Requesting ticker documents refresh for US market (SEC), tickers: {}", tickers);
         secDocumentHarvesterService.buildSecDocumentsRequest(tickers)
+                .ifPresent(this::publishRequest);
+    }
+
+    @Override
+    public void refreshStaleSecDocuments() {
+        secDocumentHarvesterService.buildStaleSecDocumentsRequest()
                 .ifPresent(this::publishRequest);
     }
 

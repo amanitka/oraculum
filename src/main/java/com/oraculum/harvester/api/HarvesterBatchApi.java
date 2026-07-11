@@ -15,6 +15,8 @@ public interface HarvesterBatchApi {
 
     void refreshUsTickerSecDocuments(List<String> tickers);
 
+    void refreshStaleSecDocuments();
+
     void refreshNews();
 
     void refreshMacroeconomic();

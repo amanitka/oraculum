@@ -130,4 +130,34 @@ class HarvesterBatchServiceTest {
         harvesterBatchService.refreshMacroeconomic();
         verify(eventPublisher).publishEvent(any(com.oraculum.harvester.event.FetchMacroeconomicRequestEvent.class));
     }
+
+    @Test
+    void refreshStaleSecDocuments_publishesFetchSecDocumentsRequest() {
+        FetchSecDocumentsRequest requestPayload = FetchSecDocumentsRequest.builder()
+                .items(List.of(
+                        FetchSecDocumentsRequest.TickerDocumentItem.builder()
+                                .ticker("AAPL")
+                                .market("US")
+                                .documentTypes(List.of(
+                                        FetchSecDocumentsRequest.DocumentTypeRequest.builder()
+                                                .documentType("8K")
+                                                .lastProcessedFileDate(LocalDate.of(2023, 1, 1))
+                                                .build()
+                                ))
+                                .build()
+                ))
+                .build();
+
+        when(secDocumentHarvesterService.buildStaleSecDocumentsRequest()).thenReturn(Optional.of(requestPayload));
+
+        harvesterBatchService.refreshStaleSecDocuments();
+
+        verify(kafkaTemplate).send(eq(TOPIC), anyString(), requestCaptor.capture());
+        HarvesterRequest request = requestCaptor.getValue();
+        assertThat(request).isInstanceOf(FetchSecDocumentsRequest.class);
+
+        FetchSecDocumentsRequest secRequest = (FetchSecDocumentsRequest) request;
+        assertThat(secRequest.getItems()).hasSize(1);
+        assertThat(secRequest.getItems().getFirst().getTicker()).isEqualTo("AAPL");
+    }
 }
