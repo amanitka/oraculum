@@ -53,7 +53,7 @@ public record OraculumProperties(Data data,
                             Fred fred) {
 
         public String resolveExchangePath(String relativePath) {
-            return Path.of(exchangeDirectory).resolve(relativePath).normalize().toString();
+            return Path.of(exchangeDirectory).resolve(Path.of(relativePath).getFileName()).normalize().toString();
         }
 
         public record ExchangeCleanup(Boolean enabled,
