@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -50,7 +51,7 @@ public class SecDocumentHarvesterService {
     }
 
     private List<FetchSecDocumentsRequest.TickerDocumentItem> buildDocumentItems(List<String> tickers) {
-        Map<String, Map<TickerDocumentType, String>> statuses = fetchAndGroupStatuses(tickers);
+        Map<String, Map<TickerDocumentType, LocalDate>> statuses = fetchAndGroupStatuses(tickers);
         List<TickerDocumentType> secDocTypes = getSecDocumentTypes();
 
         return tickers.stream()
@@ -58,13 +59,13 @@ public class SecDocumentHarvesterService {
                 .toList();
     }
 
-    private Map<String, Map<TickerDocumentType, String>> fetchAndGroupStatuses(List<String> tickers) {
+    private Map<String, Map<TickerDocumentType, LocalDate>> fetchAndGroupStatuses(List<String> tickers) {
         return companyTickerDocumentApi.getSyncStatusesByTickersAndMarket(tickers, "US").stream()
                 .collect(Collectors.groupingBy(
                         TickerDocumentSyncStatusDto::getTicker,
                         Collectors.toMap(
                                 TickerDocumentSyncStatusDto::getDocumentType,
-                                dto -> dto.getLastProcessedFileDate() != null ? dto.getLastProcessedFileDate().toString() : null,
+                                dto -> dto.getLastProcessedFileDate() != null ? dto.getLastProcessedFileDate() : null,
                                 (existing, _) -> existing
                         )
                 ));
@@ -78,7 +79,7 @@ public class SecDocumentHarvesterService {
 
     private FetchSecDocumentsRequest.TickerDocumentItem buildSingleItem(
             String ticker,
-            Map<TickerDocumentType, String> tickerStatuses,
+            Map<TickerDocumentType, LocalDate> tickerStatuses,
             List<TickerDocumentType> secDocTypes) {
 
         List<FetchSecDocumentsRequest.DocumentTypeRequest> docRequests = secDocTypes.stream()

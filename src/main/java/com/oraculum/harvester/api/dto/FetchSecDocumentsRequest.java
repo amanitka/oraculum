@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.jackson.Jacksonized;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Getter
@@ -44,6 +45,6 @@ public class FetchSecDocumentsRequest extends HarvesterRequest {
         private final String documentType;
 
         @JsonProperty("last_processed_file_date")
-        private final String lastProcessedFileDate;
+        private final LocalDate lastProcessedFileDate;
     }
 }

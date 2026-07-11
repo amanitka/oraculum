@@ -29,7 +29,7 @@ public class TickerDocumentSyncStatusService {
     }
 
     private TickerDocumentSyncStatusEntity.TickerDocumentSyncStatusId getTickerDocumentSyncStatusId(TickerDocumentType documentType, DocumentStatus status) {
-        return new TickerDocumentSyncStatusEntity.TickerDocumentSyncStatusId(status.ticker(), status.market(), status.source(), documentType);
+        return new TickerDocumentSyncStatusEntity.TickerDocumentSyncStatusId(status.ticker(), status.market(), status.source(), documentType.getCode());
     }
 
     private TickerDocumentSyncStatusEntity getTickerDocumentSyncStatusEntity(TickerDocumentSyncStatusEntity.TickerDocumentSyncStatusId id) {

@@ -33,8 +33,7 @@ public class TickerDocumentSyncStatusEntity {
 
     @Id
     @Column(name = "document_type")
-    @Enumerated(EnumType.STRING)
-    private TickerDocumentType documentType;
+    private String documentType;
 
     @Enumerated(EnumType.STRING)
     private SyncStatus status;
@@ -62,6 +61,15 @@ public class TickerDocumentSyncStatusEntity {
     @Column(name = "updated_at")
     private OffsetDateTime updatedAt;
 
+    @Transient
+    public TickerDocumentType getDocumentType() {
+        return TickerDocumentType.fromString(this.documentType).orElse(null);
+    }
+
+    public void setDocumentType(TickerDocumentType type) {
+        this.documentType = (type != null) ? type.getCode() : null;
+    }
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
@@ -69,7 +77,7 @@ public class TickerDocumentSyncStatusEntity {
         private String ticker;
         private String market;
         private String source;
-        private TickerDocumentType documentType;
+        private String documentType;
     }
 
 }

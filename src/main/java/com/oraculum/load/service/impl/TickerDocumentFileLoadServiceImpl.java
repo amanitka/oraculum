@@ -19,7 +19,7 @@ public class TickerDocumentFileLoadServiceImpl implements ParquetFileLoadService
 
     private static final String TARGET_TABLE_NAME = "t_ticker_document_raw";
     private static final String BULK_UPSERT_SQL = """
-            INSERT INTO %s dest
+            INSERT INTO %s AS dest
               (id,
                ticker,
                market,
@@ -44,14 +44,14 @@ public class TickerDocumentFileLoadServiceImpl implements ParquetFileLoadService
                document_subtype,
                accession_number,
                source_url,
-               report_period,
-               filing_date,
+               CAST(report_period AS DATE),
+               CAST(filing_date AS DATE),
                content,
                'PENDING',
                CAST(extracted_at AS TIMESTAMP),
                CURRENT_TIMESTAMP,
                CURRENT_TIMESTAMP
-            FROM read_parquet('%s')
+            FROM %s AS src
             ON CONFLICT (id, report_period)
             DO UPDATE SET
                 content = EXCLUDED.content,
