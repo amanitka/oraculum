@@ -1,6 +1,6 @@
 CREATE TABLE t_ticker_document_raw (
     id               VARCHAR(64)  NOT NULL, -- SHA256 Hash
-    ticker           VARCHAR(10)  NOT NULL,
+    ticker           VARCHAR(20)  NOT NULL,
     market           VARCHAR(10)  NOT NULL DEFAULT 'US',
     source           VARCHAR(50)  NOT NULL, -- 'SEC_EDGAR'
     document_type    VARCHAR(20)  NOT NULL, -- '8K', '10K'

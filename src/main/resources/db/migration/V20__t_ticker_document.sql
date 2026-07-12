@@ -2,7 +2,7 @@
 -- =================================================================
 CREATE TABLE public.t_ticker_document (
     id                     VARCHAR(64)  NOT NULL,
-    ticker                 VARCHAR(16)  NOT NULL,
+    ticker                 VARCHAR(20)  NOT NULL,
     market                 VARCHAR(10)  NOT NULL,
     document_type          VARCHAR(20)  NOT NULL,
     document_subtype       VARCHAR(50)  NOT NULL,
