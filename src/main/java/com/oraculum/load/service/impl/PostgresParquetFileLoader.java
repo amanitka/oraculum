@@ -45,7 +45,7 @@ public class PostgresParquetFileLoader {
     }
 
     public String resolveAndValidatePath(DataFileReadyEvent event) {
-        String fullPath = properties.harvester().resolveExchangePath(event.path());
+        String fullPath = properties.harvester().resolveExchangePath(event.fileName());
         return normalizeAndValidate(fullPath);
     }
 

@@ -20,9 +20,9 @@ public class DataFileLoadServiceImpl implements DataFileLoadService {
     private final LoadLogApi loadLogApi;
 
     private LoadLogDto createRunLog(DataFileReadyEvent event) {
-        log.info("Starting load for dataset '{}' (run_id={}, records={})", event.dataset(), event.runId(),
+        log.info("Starting load for dataset '{}' (correlationId={}, records={})", event.dataset(), event.correlationId(),
                 event.recordCount());
-        return loadLogApi.startRunLog(event.dataset(), event.runId(), event.fileChecksum());
+        return loadLogApi.startRunLog(event.dataset(), event.correlationId(), event.fileChecksum());
     }
 
     private void completeRunLog(DataFileReadyEvent event, LoadLogDto runLog) {
@@ -42,7 +42,7 @@ public class DataFileLoadServiceImpl implements DataFileLoadService {
         } else {
             loader.merge(event);
         }
-        
+
         loader.postProcess(event);
     }
 
@@ -51,18 +51,18 @@ public class DataFileLoadServiceImpl implements DataFileLoadService {
         try {
             mergeEventData(event, loader);
             completeRunLog(event, runLog);
-            log.info("Successfully loaded dataset '{}' (run_id={}, rows={})", event.dataset(),
-                    event.runId(), event.recordCount());
+            log.info("Successfully loaded dataset '{}' (correlationId={}, rows={})", event.dataset(),
+                    event.correlationId(), event.recordCount());
         } catch (Exception e) {
             failRunLog(e, runLog);
-            log.error("Failed to load dataset '{}' (run_id={})", event.dataset(), event.runId(), e);
+            log.error("Failed to load dataset '{}' (correlationId={})", event.dataset(), event.correlationId(), e);
         }
     }
 
     @Override
     public void processDataFileEvent(DataFileReadyEvent event) {
-        if (loadLogApi.isAlreadyProcessed(event.dataset(), event.runId(), event.fileChecksum())) {
-            log.info("Skipping already processed event: {} (run_id={})", event.dataset(), event.runId());
+        if (loadLogApi.isAlreadyProcessed(event.dataset(), event.correlationId(), event.fileChecksum())) {
+            log.info("Skipping already processed event: {} (correlationId={})", event.dataset(), event.correlationId());
             return;
         }
         ParquetFileLoadService loader = fileLoaders.get(event.dataset());
