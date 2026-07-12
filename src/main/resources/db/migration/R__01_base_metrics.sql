@@ -6,6 +6,7 @@ DROP VIEW IF EXISTS v_company_financial_ratios CASCADE;
 DROP MATERIALIZED VIEW IF EXISTS mv_share_price_signals_recent CASCADE;
 DROP VIEW IF EXISTS v_share_price_signals CASCADE;
 DROP VIEW IF EXISTS v_industry_financial_ratios CASCADE;
+DROP VIEW IF EXISTS v_ticker_document_pending CASCADE;
 
 -- =================================================================
 -- VIEW: v_company_financial_ratios
@@ -494,4 +495,36 @@ FROM latest_ratios r
 JOIN t_company c ON c.id = r.company_id
 WHERE c.industry_name IS NOT NULL
 GROUP BY c.industry_name, r.variant;
+
+
+-- =================================================================
+-- VIEW: v_ticker_document_pending
+-- Description: Prioritized queue of pending raw SEC documents to process.
+--              Orders documents for largest companies first, then by report period DESC.
+-- =================================================================
+DO $$ BEGIN RAISE NOTICE 'Creating view: v_ticker_document_pending'; END $$;
+
+CREATE VIEW v_ticker_document_pending AS
+SELECT
+    r.id,
+    r.ticker,
+    r.market,
+    r.document_type,
+    r.document_subtype,
+    r.report_period,
+    r.filing_date,
+    r.content,
+    c.company_name,
+    COALESCE(s.market_capitalization, 0) AS market_capitalization,
+    COALESCE(s.company_size, 'MICRO')   AS company_size
+FROM t_ticker_document_raw r
+JOIN t_company c ON c.ticker = r.ticker
+                AND c.market = r.market
+LEFT JOIN mv_share_price_signals_recent s ON s.company_id = c.id
+                                         AND s.trade_date = (SELECT MAX(trade_date) FROM mv_share_price_signals_recent WHERE company_id = c.id)
+WHERE r.status = 'PENDING'
+ORDER BY COALESCE(s.market_capitalization, 0) DESC,
+         r.ticker,
+         r.report_period DESC;
+
 
