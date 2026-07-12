@@ -1,11 +1,14 @@
 package com.oraculum.company.service.impl;
 
 import com.oraculum.company.api.domain.TickerDocumentType;
+import com.oraculum.company.api.dto.TickerDocumentDto;
+import com.oraculum.company.api.dto.TickerDocumentRawDto;
 import com.oraculum.company.api.dto.TickerDocumentSyncStatusDto;
+import com.oraculum.company.domain.TickerDocumentEntity;
+import com.oraculum.company.domain.TickerDocumentPendingEntity;
 import com.oraculum.company.domain.TickerDocumentSyncStatusEntity;
 import com.oraculum.company.domain.TickerSecDocumentStaleSyncEntity;
-import com.oraculum.company.repository.TickerDocumentSyncStatusRepository;
-import com.oraculum.company.repository.TickerSecDocumentStaleSyncRepository;
+import com.oraculum.company.repository.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -27,6 +30,15 @@ class CompanyTickerDocumentServiceImplTest {
 
     @Mock
     private TickerSecDocumentStaleSyncRepository staleSyncRepository;
+
+    @Mock
+    private TickerDocumentPendingRepository pendingRepository;
+
+    @Mock
+    private TickerDocumentRawRepository rawRepository;
+
+    @Mock
+    private TickerDocumentRepository summaryRepository;
 
     @InjectMocks
     private CompanyTickerDocumentServiceImpl service;
@@ -69,5 +81,88 @@ class CompanyTickerDocumentServiceImplTest {
         assertThat(result.getFirst().getMarket()).isEqualTo("US");
         assertThat(result.getFirst().getDocumentType()).isEqualTo(TickerDocumentType.FORM_10K);
         assertThat(result.getFirst().getLastProcessedFileDate()).isEqualTo(LocalDate.of(2023, 6, 1));
+    }
+
+    @Test
+    void getPendingRawDocuments_returnsMappedDtos() {
+        TickerDocumentPendingEntity entity = TickerDocumentPendingEntity.builder()
+                .id("hash123")
+                .ticker("AAPL")
+                .market("US")
+                .documentType("10K")
+                .documentSubtype("ITEM_7")
+                .reportPeriod(LocalDate.of(2023, 12, 31))
+                .filingDate(LocalDate.of(2024, 2, 1))
+                .content("Management discussion content")
+                .companyName("Apple Inc.")
+                .marketCapitalization(3000000000000.0)
+                .companySize("LARGE")
+                .build();
+
+        when(pendingRepository.findPendingDocuments(PageRequest.of(0, 5))).thenReturn(List.of(entity));
+
+        List<TickerDocumentRawDto> result = service.getPendingRawDocuments(5);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().getId()).isEqualTo("hash123");
+        assertThat(result.getFirst().getTicker()).isEqualTo("AAPL");
+        assertThat(result.getFirst().getDocumentSubtype()).isEqualTo("ITEM_7");
+    }
+
+    @Test
+    void createDocumentSummary_savesAndUpdatesRawStatus() {
+        TickerDocumentDto dto = TickerDocumentDto.builder()
+                .id("hash123")
+                .ticker("AAPL")
+                .market("US")
+                .documentType("10K")
+                .documentSubtype("ITEM_7")
+                .reportPeriod(LocalDate.of(2023, 12, 31))
+                .summary("Parsed JSON summary")
+                .sentimentScore(0.8f)
+                .build();
+
+        service.createDocumentSummary(dto);
+
+        org.mockito.ArgumentCaptor<TickerDocumentEntity> entityCaptor = org.mockito.ArgumentCaptor.forClass(TickerDocumentEntity.class);
+        org.mockito.Mockito.verify(summaryRepository).save(entityCaptor.capture());
+        org.mockito.Mockito.verify(rawRepository).updateStatus("hash123", LocalDate.of(2023, 12, 31), "PROCESSED");
+
+        TickerDocumentEntity saved = entityCaptor.getValue();
+        assertThat(saved.getId()).isEqualTo("hash123");
+        assertThat(saved.getSummary()).isEqualTo("Parsed JSON summary");
+        assertThat(saved.getSentimentScore()).isEqualTo(0.8f);
+    }
+
+    @Test
+    void updateRawDocumentStatus_callsRepository() {
+        service.updateRawDocumentStatus("hash123", LocalDate.of(2023, 12, 31), "FAILED");
+
+        org.mockito.Mockito.verify(rawRepository).updateStatus("hash123", LocalDate.of(2023, 12, 31), "FAILED");
+    }
+
+    @Test
+    void getPendingRawDocumentsByTicker_returnsMappedDtos() {
+        TickerDocumentPendingEntity entity = TickerDocumentPendingEntity.builder()
+                .id("hash123")
+                .ticker("AAPL")
+                .market("US")
+                .documentType("10K")
+                .documentSubtype("ITEM_7")
+                .reportPeriod(LocalDate.of(2023, 12, 31))
+                .filingDate(LocalDate.of(2024, 2, 1))
+                .content("Content details")
+                .companyName("Apple Inc.")
+                .marketCapitalization(3000000000000.0)
+                .companySize("LARGE")
+                .build();
+
+        when(pendingRepository.findPendingByTickerAndMarket("AAPL", "US")).thenReturn(List.of(entity));
+
+        List<TickerDocumentRawDto> result = service.getPendingRawDocumentsByTicker("AAPL", "US");
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().getId()).isEqualTo("hash123");
+        assertThat(result.getFirst().getContent()).isEqualTo("Content details");
     }
 }
