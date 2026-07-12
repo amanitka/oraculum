@@ -24,9 +24,9 @@ CROSS JOIN (SELECT '8K' AS document_type
             SELECT '10K' AS document_type
             ) dt
 LEFT JOIN t_ticker_document_sync_status tds ON tds.ticker = c.ticker
-                                           AND tds.market = UPPER(c.market)
+                                           AND tds.market = c.market
                                            AND tds.document_type = dt.document_type
-                                           AND tds.source = 'SEC'
+                                           AND tds.source = 'SEC_EDGAR'
 WHERE c.market = 'us'
   AND (tds.last_refresh_at IS NULL
        OR (tds.last_refresh_at IS NOT NULL
