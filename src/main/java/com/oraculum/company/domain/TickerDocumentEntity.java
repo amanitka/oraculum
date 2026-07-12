@@ -1,5 +1,7 @@
 package com.oraculum.company.domain;
 
+import com.oraculum.company.api.domain.TickerDocumentType;
+import com.oraculum.company.api.domain.TickerDocumentSubtype;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -25,10 +27,12 @@ public class TickerDocumentEntity {
     private String market;
 
     @Column(name = "document_type")
-    private String documentType;
+    @Enumerated(EnumType.STRING)
+    private TickerDocumentType documentType;
 
     @Column(name = "document_subtype")
-    private String documentSubtype;
+    @Enumerated(EnumType.STRING)
+    private TickerDocumentSubtype documentSubtype;
 
     @Id
     @Column(name = "report_period")

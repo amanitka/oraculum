@@ -1,5 +1,6 @@
 package com.oraculum.company.service.impl;
 
+import com.oraculum.company.api.domain.TickerDocumentSubtype;
 import com.oraculum.company.api.domain.TickerDocumentType;
 import com.oraculum.company.api.dto.TickerDocumentDto;
 import com.oraculum.company.api.dto.TickerDocumentRawDto;
@@ -20,7 +21,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class CompanyTickerDocumentServiceImplTest {
@@ -48,7 +49,7 @@ class CompanyTickerDocumentServiceImplTest {
         TickerDocumentSyncStatusEntity entity = TickerDocumentSyncStatusEntity.builder()
                 .ticker("AAPL")
                 .market("US")
-                .documentType("8K")
+                .documentType("SEC_8K")
                 .lastProcessedFileDate(LocalDate.of(2023, 1, 1))
                 .build();
 
@@ -59,7 +60,7 @@ class CompanyTickerDocumentServiceImplTest {
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().getTicker()).isEqualTo("AAPL");
         assertThat(result.getFirst().getMarket()).isEqualTo("US");
-        assertThat(result.getFirst().getDocumentType()).isEqualTo(TickerDocumentType.FORM_8K);
+        assertThat(result.getFirst().getDocumentType()).isEqualTo(TickerDocumentType.SEC_8K);
         assertThat(result.getFirst().getLastProcessedFileDate()).isEqualTo(LocalDate.of(2023, 1, 1));
     }
 
@@ -68,7 +69,7 @@ class CompanyTickerDocumentServiceImplTest {
         TickerSecDocumentStaleSyncEntity entity = TickerSecDocumentStaleSyncEntity.builder()
                 .ticker("MSFT")
                 .market("US")
-                .documentType("10K")
+                .documentType("SEC_10K")
                 .lastProcessedFileDate(LocalDate.of(2023, 6, 1))
                 .build();
 
@@ -79,7 +80,7 @@ class CompanyTickerDocumentServiceImplTest {
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().getTicker()).isEqualTo("MSFT");
         assertThat(result.getFirst().getMarket()).isEqualTo("US");
-        assertThat(result.getFirst().getDocumentType()).isEqualTo(TickerDocumentType.FORM_10K);
+        assertThat(result.getFirst().getDocumentType()).isEqualTo(TickerDocumentType.SEC_10K);
         assertThat(result.getFirst().getLastProcessedFileDate()).isEqualTo(LocalDate.of(2023, 6, 1));
     }
 
@@ -89,8 +90,8 @@ class CompanyTickerDocumentServiceImplTest {
                 .id("hash123")
                 .ticker("AAPL")
                 .market("US")
-                .documentType("10K")
-                .documentSubtype("ITEM_7")
+                .documentType(TickerDocumentType.SEC_10K)
+                .documentSubtype(TickerDocumentSubtype.SEC_MD)
                 .reportPeriod(LocalDate.of(2023, 12, 31))
                 .filingDate(LocalDate.of(2024, 2, 1))
                 .content("Management discussion content")
@@ -106,7 +107,7 @@ class CompanyTickerDocumentServiceImplTest {
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().getId()).isEqualTo("hash123");
         assertThat(result.getFirst().getTicker()).isEqualTo("AAPL");
-        assertThat(result.getFirst().getDocumentSubtype()).isEqualTo("ITEM_7");
+        assertThat(result.getFirst().getDocumentSubtype()).isEqualTo(TickerDocumentSubtype.SEC_MD);
     }
 
     @Test
@@ -115,8 +116,8 @@ class CompanyTickerDocumentServiceImplTest {
                 .id("hash123")
                 .ticker("AAPL")
                 .market("US")
-                .documentType("10K")
-                .documentSubtype("ITEM_7")
+                .documentType(TickerDocumentType.SEC_10K)
+                .documentSubtype(TickerDocumentSubtype.SEC_MD)
                 .reportPeriod(LocalDate.of(2023, 12, 31))
                 .summary("Parsed JSON summary")
                 .sentimentScore(0.8f)
@@ -125,8 +126,8 @@ class CompanyTickerDocumentServiceImplTest {
         service.createDocumentSummary(dto);
 
         org.mockito.ArgumentCaptor<TickerDocumentEntity> entityCaptor = org.mockito.ArgumentCaptor.forClass(TickerDocumentEntity.class);
-        org.mockito.Mockito.verify(summaryRepository).save(entityCaptor.capture());
-        org.mockito.Mockito.verify(rawRepository).updateStatus("hash123", LocalDate.of(2023, 12, 31), "PROCESSED");
+        verify(summaryRepository).save(entityCaptor.capture());
+        verify(rawRepository).updateStatus("hash123", LocalDate.of(2023, 12, 31), "PROCESSED");
 
         TickerDocumentEntity saved = entityCaptor.getValue();
         assertThat(saved.getId()).isEqualTo("hash123");
@@ -138,7 +139,7 @@ class CompanyTickerDocumentServiceImplTest {
     void updateRawDocumentStatus_callsRepository() {
         service.updateRawDocumentStatus("hash123", LocalDate.of(2023, 12, 31), "FAILED");
 
-        org.mockito.Mockito.verify(rawRepository).updateStatus("hash123", LocalDate.of(2023, 12, 31), "FAILED");
+        verify(rawRepository).updateStatus("hash123", LocalDate.of(2023, 12, 31), "FAILED");
     }
 
     @Test
@@ -147,8 +148,8 @@ class CompanyTickerDocumentServiceImplTest {
                 .id("hash123")
                 .ticker("AAPL")
                 .market("US")
-                .documentType("10K")
-                .documentSubtype("ITEM_7")
+                .documentType(TickerDocumentType.SEC_10K)
+                .documentSubtype(TickerDocumentSubtype.SEC_MD)
                 .reportPeriod(LocalDate.of(2023, 12, 31))
                 .filingDate(LocalDate.of(2024, 2, 1))
                 .content("Content details")

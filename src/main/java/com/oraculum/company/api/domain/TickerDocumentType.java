@@ -8,8 +8,8 @@ import java.util.Optional;
 
 @Getter
 public enum TickerDocumentType {
-    FORM_8K("8K", TickerDocumentProvider.SEC),
-    FORM_10K("10K", TickerDocumentProvider.SEC),
+    SEC_8K("SEC_8K", TickerDocumentProvider.SEC),
+    SEC_10K("SEC_10K", TickerDocumentProvider.SEC),
     EARNINGS_CALL("EARNINGS_CALL", TickerDocumentProvider.INTERNAL);
 
     private static final Map<String, TickerDocumentType> CODE_MAP = new HashMap<>();

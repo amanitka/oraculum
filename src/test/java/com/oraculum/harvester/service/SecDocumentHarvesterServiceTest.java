@@ -47,19 +47,19 @@ class SecDocumentHarvesterServiceTest {
                 .ticker("AAPL")
                 .market("US")
                 .cik("0000320193")
-                .documentType(TickerDocumentType.FORM_8K)
+                .documentType(TickerDocumentType.SEC_8K)
                 .lastProcessedFileDate(LocalDate.of(2023, 1, 1))
                 .build();
         TickerDocumentSyncStatusDto dto2 = TickerDocumentSyncStatusDto.builder()
                 .ticker("AAPL")
                 .market("US")
-                .documentType(TickerDocumentType.FORM_10K)
+                .documentType(TickerDocumentType.SEC_10K)
                 .lastProcessedFileDate(LocalDate.of(2023, 1, 10))
                 .build();
         TickerDocumentSyncStatusDto dto3 = TickerDocumentSyncStatusDto.builder()
                 .ticker("MSFT")
                 .market("US")
-                .documentType(TickerDocumentType.FORM_10K)
+                .documentType(TickerDocumentType.SEC_10K)
                 .lastProcessedFileDate(null)
                 .build();
 
@@ -91,7 +91,7 @@ class SecDocumentHarvesterServiceTest {
             staleDocs.add(TickerDocumentSyncStatusDto.builder()
                     .ticker("TICK" + i)
                     .market("US")
-                    .documentType(TickerDocumentType.FORM_8K)
+                    .documentType(TickerDocumentType.SEC_8K)
                     .lastProcessedFileDate(LocalDate.of(2023, 1, 1))
                     .build());
         }
@@ -113,7 +113,7 @@ class SecDocumentHarvesterServiceTest {
         TickerDocumentSyncStatusDto status1 = TickerDocumentSyncStatusDto.builder()
                 .ticker("AAPL")
                 .market("US")
-                .documentType(TickerDocumentType.FORM_8K)
+                .documentType(TickerDocumentType.SEC_8K)
                 .lastProcessedFileDate(LocalDate.of(2023, 1, 1))
                 .build();
         when(companyTickerDocumentApi.getSyncStatusesByTickersAndMarket(List.of("AAPL"), "US"))

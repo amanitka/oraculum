@@ -1,5 +1,6 @@
 package com.oraculum.ui.views;
 
+import com.oraculum.analyst.api.SecDocumentProcessingApi;
 import com.oraculum.company.api.CompanyMetadataApi;
 import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.database.api.event.RefreshMaterializedViewsEvent;
@@ -19,6 +20,7 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
@@ -39,11 +41,16 @@ public class RefreshView extends VerticalLayout {
     private final HarvesterBatchApi harvesterBatchApi;
     private final ApplicationEventPublisher eventPublisher;
     private final CompanyMetadataApi companyMetadataApi;
+    private final SecDocumentProcessingApi secDocumentProcessingApi;
 
-    public RefreshView(HarvesterBatchApi harvesterBatchApi, ApplicationEventPublisher eventPublisher, CompanyMetadataApi companyMetadataApi) {
+    public RefreshView(HarvesterBatchApi harvesterBatchApi,
+                       ApplicationEventPublisher eventPublisher,
+                       CompanyMetadataApi companyMetadataApi,
+                       SecDocumentProcessingApi secDocumentProcessingApi) {
         this.harvesterBatchApi = harvesterBatchApi;
         this.eventPublisher = eventPublisher;
         this.companyMetadataApi = companyMetadataApi;
+        this.secDocumentProcessingApi = secDocumentProcessingApi;
 
         setWidthFull();
         getStyle().set("padding-bottom", "2rem");
@@ -105,6 +112,8 @@ public class RefreshView extends VerticalLayout {
         grid.add(createTickerDocumentTile());
 
         grid.add(createSharePriceTile());
+
+        grid.add(createSecDocumentSummariesTile());
 
         grid.add(createTile("News & Sentiment",
                 "Refreshes recent news articles and sentiment data.",
@@ -219,6 +228,47 @@ public class RefreshView extends VerticalLayout {
         HorizontalLayout controls = new HorizontalLayout(tickersField);
         controls.setAlignItems(Alignment.END); // Align with input field visually
         controls.setWidthFull();
+        controls.getStyle().set("margin-top", "var(--lumo-space-m)");
+
+        tile.add(header, desc, controls);
+        return tile;
+    }
+
+    // ── SEC Document Summaries Tile ────────────────────────────────────────
+
+    private Component createSecDocumentSummariesTile() {
+        Div tile = new Div();
+        tile.getStyle().set("cssText", TILE_STYLE);
+
+        IntegerField limitField = new IntegerField("Batch Limit");
+        limitField.setValue(50);
+        limitField.setMin(1);
+        limitField.setStepButtonsVisible(true);
+
+        Button btn = new Button("Process", VaadinIcon.PLAY.create());
+        btn.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
+        btn.addClickListener(_ -> {
+            int limit = limitField.getValue() != null ? limitField.getValue() : 50;
+            java.util.concurrent.CompletableFuture.runAsync(() -> {
+                try {
+                    secDocumentProcessingApi.processPendingDocuments(limit,
+                            java.util.List.of(com.oraculum.llm.api.dto.LlmProviderType.LMSTUDIO));
+                } catch (Exception ex) {
+                    // Suppressed in async block
+                }
+            });
+            ViewHelper.showSuccess("Started SEC Document processing in the background (Limit: " + limit + ")");
+        });
+
+        HorizontalLayout header = tileHeader("SEC Document Summaries", btn);
+
+        Span desc = new Span("Processes pending raw SEC documents using LLM to generate summaries and extract sentiment.");
+        desc.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontSize.SMALL);
+        desc.getStyle().set("margin-top", "var(--lumo-space-s)").set("display", "block");
+
+        HorizontalLayout controls = new HorizontalLayout(limitField);
+        controls.setAlignItems(Alignment.CENTER);
+        controls.addClassNames(LumoUtility.Gap.MEDIUM);
         controls.getStyle().set("margin-top", "var(--lumo-space-m)");
 
         tile.add(header, desc, controls);

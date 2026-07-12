@@ -1,5 +1,4 @@
 -- Flyway repeatable migration script for sentiment and insider views
-
 DROP VIEW IF EXISTS v_ticker_news_sentiment CASCADE;
 DROP VIEW IF EXISTS v_insider_transaction_summary CASCADE;
 
@@ -12,7 +11,6 @@ CREATE VIEW v_ticker_news_sentiment AS
 WITH sentiment_calc AS (
     SELECT 
         ticker,
-        
         -- 7 Days
         COUNT(CASE WHEN time_published >= NOW() - INTERVAL '7 days' THEN 1 END) as news_count_7d,
         SUM(CASE WHEN time_published >= NOW() - INTERVAL '7 days' THEN ticker_sentiment_score * relevance_score * EXP(-0.231 * (GREATEST(0, EXTRACT(EPOCH FROM (NOW() - time_published)) / 86400.0))) END)

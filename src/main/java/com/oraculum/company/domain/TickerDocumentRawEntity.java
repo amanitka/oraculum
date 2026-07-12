@@ -1,5 +1,7 @@
 package com.oraculum.company.domain;
 
+import com.oraculum.company.api.domain.TickerDocumentType;
+import com.oraculum.company.api.domain.TickerDocumentSubtype;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -27,10 +29,12 @@ public class TickerDocumentRawEntity {
     private String source;
 
     @Column(name = "document_type")
-    private String documentType;
+    @Enumerated(EnumType.STRING)
+    private TickerDocumentType documentType;
 
     @Column(name = "document_subtype")
-    private String documentSubtype;
+    @Enumerated(EnumType.STRING)
+    private TickerDocumentSubtype documentSubtype;
 
     @Column(name = "accession_number")
     private String accessionNumber;

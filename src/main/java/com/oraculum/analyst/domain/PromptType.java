@@ -14,7 +14,10 @@ public enum PromptType {
     FUNDAMENTALS("/prompt/fundamentals.md"),
     EARNINGS_ESTIMATES("/prompt/earnings_estimates.md"),
     INSIDER_TRANSACTION("/prompt/insider_transaction.md"),
-    MACROECONOMIC("/prompt/macroeconomic.md");
+    MACROECONOMIC("/prompt/macroeconomic.md"),
+    SEC_MD("/prompt/sec_md.md"),
+    SEC_RF("/prompt/sec_rf.md"),
+    SEC_EX99_1("/prompt/sec_ex99_1.md");
 
     private final String path;
 

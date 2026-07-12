@@ -4,9 +4,9 @@ import lombok.Getter;
 
 @Getter
 public enum TickerDocumentSubtype {
-    RF("RF"),
-    MD("MD"),
-    EX99_1("EX99_1"),
+    SEC_RF("SEC_RF"),
+    SEC_MD("SEC_MD"),
+    SEC_EX99_1("SEC_EX99_1"),
     TRANSCRIPT("TRANSCRIPT");
 
     private final String code;
@@ -14,5 +14,4 @@ public enum TickerDocumentSubtype {
     TickerDocumentSubtype(String code) {
         this.code = code;
     }
-
 }

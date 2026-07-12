@@ -19,9 +19,9 @@ SELECT
     tds.last_file_refresh_at,
     tds.last_refresh_at
 FROM t_company c
-CROSS JOIN (SELECT '8K' AS document_type
+CROSS JOIN (SELECT 'SEC_8K' AS document_type
             UNION ALL
-            SELECT '10K' AS document_type
+            SELECT 'SEC_10K' AS document_type
             ) dt
 LEFT JOIN t_ticker_document_sync_status tds ON tds.ticker = c.ticker
                                            AND tds.market = c.market

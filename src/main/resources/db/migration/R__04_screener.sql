@@ -1,6 +1,5 @@
 -- Flyway repeatable migration script for screener views
 -- MUST RUN LAST. Depends on core views and alternative data.
-
 DROP VIEW IF EXISTS v_screener_master CASCADE;
 DROP VIEW IF EXISTS v_screener_news_sentiment CASCADE;
 DROP VIEW IF EXISTS v_screener_undervalued CASCADE;
@@ -19,7 +18,6 @@ SELECT s.*,
        n.news_sentiment_30d as news_sentiment_score,
        n.news_sentiment_label_30d as news_sentiment_label,
        n.news_count_30d,
-
        RANK() OVER (ORDER BY s.quality_score DESC NULLS LAST) AS quality_rank,
        RANK() OVER (ORDER BY s.earnings_yield DESC NULLS LAST) AS value_rank,
        RANK() OVER (ORDER BY s.financial_trend_score DESC NULLS LAST) AS fscore_rank
@@ -39,12 +37,10 @@ SELECT s.*,
        n.news_sentiment_7d,
        n.avg_relevance_7d,
        n.news_sentiment_label_7d,
-       
        n.news_count_14d,
        n.news_sentiment_14d,
        n.avg_relevance_14d,
        n.news_sentiment_label_14d,
-       
        n.news_count_30d,
        n.news_sentiment_30d,
        n.avg_relevance_30d,

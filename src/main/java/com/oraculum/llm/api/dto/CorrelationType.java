@@ -4,5 +4,6 @@ public enum CorrelationType {
     COMPANY_ANALYSIS,
     NEWS_HARVESTER,
     PORTFOLIO_OPTIMIZATION,
-    USER_CHAT
+    USER_CHAT,
+    SEC_DOCUMENT_SUMMARY
 }
