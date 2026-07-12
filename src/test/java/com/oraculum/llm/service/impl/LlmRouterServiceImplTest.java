@@ -1,10 +1,10 @@
 package com.oraculum.llm.service.impl;
 
 import com.oraculum.llm.api.LlmCallRequest;
+import com.oraculum.llm.api.dto.LlmProviderType;
 import com.oraculum.llm.api.dto.LlmResponse;
 import com.oraculum.llm.api.dto.LlmTierType;
 import com.oraculum.llm.config.LlmProperties;
-import com.oraculum.llm.api.dto.LlmProviderType;
 import com.oraculum.llm.service.LlmExecutionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -87,8 +87,7 @@ class LlmRouterServiceImplTest {
         String prompt = "Test prompt";
         String expectedResult = "Test response";
 
-        when(health.isBlocked(LlmProviderType.OPENAI)).thenReturn(false);
-        when(health.isBlocked(LlmProviderType.GEMINI)).thenReturn(false);
+        when(health.isBlocked(any())).thenReturn(false);
 
         // First provider fails
         when(executionService.executeCall(argThat(req -> req != null && req.client() == openaiClient))).thenReturn(CompletableFuture.failedFuture(new RuntimeException("API Error")));
@@ -103,7 +102,7 @@ class LlmRouterServiceImplTest {
 
         // Assert
         assertEquals(expectedResult, result.result());
-        verify(health).markFailure(LlmProviderType.OPENAI, 30_000);
+        verify(health).markFailure(LlmProviderType.OPENAI);
         verify(health).markSuccess(LlmProviderType.GEMINI);
     }
 
@@ -139,8 +138,8 @@ class LlmRouterServiceImplTest {
                 () -> routerService.executeCall(LlmCallRequest.of(LlmTierType.STANDARD, "prompt", String.class)));
 
         assertEquals("All providers failed", exception.getMessage());
-        verify(health, times(1)).markFailure(LlmProviderType.OPENAI, 30_000);
-        verify(health, times(1)).markFailure(LlmProviderType.GEMINI, 30_000);
+        verify(health, times(1)).markFailure(LlmProviderType.OPENAI);
+        verify(health, times(1)).markFailure(LlmProviderType.GEMINI);
     }
 
     @Test
@@ -162,5 +161,67 @@ class LlmRouterServiceImplTest {
                 () -> routerService.executeCall(LlmCallRequest.of(LlmTierType.STANDARD, "prompt", String.class)));
 
         assertTrue(exception.getMessage().contains("Configuration missing for tier: STANDARD"));
+    }
+
+    @Test
+    void testFallbackOverrideRespectsRequestedOrder() {
+        // Arrange
+        String prompt = "Test prompt";
+        String expectedResult = "Test response";
+
+        when(health.isBlocked(any())).thenReturn(false);
+        when(executionService.executeCall(any())).thenReturn(CompletableFuture.completedFuture(new LlmResponse<>(expectedResult, null)));
+
+        LlmCallRequest<String> request = LlmCallRequest.withFallbackOverride(
+                LlmTierType.STANDARD, prompt, String.class,
+                null, null, null,
+                List.of(LlmProviderType.GEMINI, LlmProviderType.OPENAI)
+        );
+
+        // Act
+        LlmResponse<String> result = routerService.executeCall(request);
+
+        // Assert
+        assertEquals(expectedResult, result.result());
+        verify(executionService).executeCall(argThat(req -> req != null && req.client() == geminiClient));
+        verify(executionService, never()).executeCall(argThat(req -> req != null && req.client() == openaiClient));
+    }
+
+    @Test
+    void testProviderSkippedOnNullModel() {
+        // Arrange
+        String prompt = "Test prompt";
+        String expectedResult = "Test response";
+
+        // Setup properties where OPENAI model is null, but GEMINI model is set
+        Map<LlmTierType, Map<LlmProviderType, String>> models = Map.of(LlmTierType.STANDARD,
+                new java.util.HashMap<>() {{
+                    put(LlmProviderType.OPENAI, null); // Skip this
+                    put(LlmProviderType.GEMINI, "gemini-1.5-pro");
+                }});
+
+        LlmProperties propertiesWithNullModel = new LlmProperties(new LlmProperties.Common(0.7,
+                1000,
+                List.of(LlmProviderType.OPENAI, LlmProviderType.GEMINI),
+                60, 3, 1000L), Map.of(), models);
+
+        routerService = new LlmRouterServiceImpl(
+                Map.of(LlmProviderType.OPENAI, openaiClient, LlmProviderType.GEMINI, geminiClient),
+                executionService,
+                health,
+                propertiesWithNullModel,
+                eventPublisher
+        );
+
+        when(health.isBlocked(any())).thenReturn(false);
+        when(executionService.executeCall(any())).thenReturn(CompletableFuture.completedFuture(new LlmResponse<>(expectedResult, null)));
+
+        // Act
+        LlmResponse<String> result = routerService.executeCall(LlmCallRequest.of(LlmTierType.STANDARD, prompt, String.class));
+
+        // Assert
+        assertEquals(expectedResult, result.result());
+        verify(executionService, never()).executeCall(argThat(req -> req != null && req.client() == openaiClient));
+        verify(executionService).executeCall(argThat(req -> req != null && req.client() == geminiClient));
     }
 }

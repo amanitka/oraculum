@@ -15,6 +15,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -30,51 +31,76 @@ public class LlmRouterServiceImpl implements LlmRouterService {
 
     @Override
     public <T> LlmResponse<T> executeCall(LlmCallRequest<T> request) {
+        List<LlmProviderType> fallbackOrder = resolveFallbackOrder(request);
         Exception last = null;
-        for (LlmProviderType provider : properties.common().providerFallbackOrder()) {
-            if (health.isBlocked(provider)) {
-                continue;
-            }
-            ChatClient client = chatClients.get(provider);
-            if (client == null) {
-                continue;
-            }
-            String model = resolveModel(request.tier(), provider);
+        for (LlmProviderType provider : fallbackOrder) {
             try {
-                var result = executionService.executeCall(new LlmRequest<>(client,
-                        request.prompt(),
-                        provider,
-                        model,
-                        properties.common().temperature(),
-                        properties.common().maxCompletionTokens(),
-                        request.responseType())).join();
-                health.markSuccess(provider);
-                
-                try {
-                    eventPublisher.publishEvent(new LlmExecutionEvent(
-                            request.correlationId(),
-                            request.correlationType(),
-                            request.source(),
-                            result.metrics(),
-                            request.prompt(),
-                            result.result()
-                    ));
-                } catch (Exception ex) {
-                    log.warn("Failed to publish LLM execution event", ex);
+                LlmResponse<T> result = tryExecuteProvider(provider, request);
+                if (result != null) {
+                    return result;
                 }
-
-                return result;
+            } catch (IllegalArgumentException e) {
+                throw e;
             } catch (Exception e) {
-                log.warn("LLM call failed for provider: {} [model: {}]. Error: {}. Falling back to next available provider.",
-                        provider,
-                        model,
-                        e.getMessage());
                 last = e;
-                health.markFailure(provider, 30_000);
             }
         }
-
         throw new RuntimeException("All providers failed", last);
+    }
+
+    private List<LlmProviderType> resolveFallbackOrder(LlmCallRequest<?> request) {
+        return (request.providerFallbackOrderOverride() != null
+                && !request.providerFallbackOrderOverride().isEmpty())
+                ? request.providerFallbackOrderOverride()
+                : properties.common().providerFallbackOrder();
+    }
+
+    private <T> LlmResponse<T> tryExecuteProvider(LlmProviderType provider, LlmCallRequest<T> request) {
+        if (health.isBlocked(provider)) {
+            return null;
+        }
+        ChatClient client = chatClients.get(provider);
+        if (client == null) {
+            return null;
+        }
+        String model = resolveModel(request.tier(), provider);
+        if (model == null) {
+            return null;
+        }
+        try {
+            LlmResponse<T> result = executionService.executeCall(new LlmRequest<>(
+                    client,
+                    request.prompt(),
+                    provider,
+                    model,
+                    properties.common().temperature(),
+                    properties.common().maxCompletionTokens(),
+                    request.responseType()
+            )).join();
+            health.markSuccess(provider);
+            publishEvent(request, result);
+            return result;
+        } catch (Exception e) {
+            log.warn("LLM call failed for provider: {} [model: {}]. Error: {}. Falling back to next available provider.",
+                    provider, model, e.getMessage());
+            health.markFailure(provider);
+            throw e;
+        }
+    }
+
+    private <T> void publishEvent(LlmCallRequest<T> request, LlmResponse<T> result) {
+        try {
+            eventPublisher.publishEvent(new LlmExecutionEvent(
+                    request.correlationId(),
+                    request.correlationType(),
+                    request.source(),
+                    result.metrics(),
+                    request.prompt(),
+                    result.result()
+            ));
+        } catch (Exception ex) {
+            log.warn("Failed to publish LLM execution event", ex);
+        }
     }
 
     private String resolveModel(LlmTierType tier, LlmProviderType provider) {
@@ -84,12 +110,6 @@ public class LlmRouterServiceImpl implements LlmRouterService {
             log.error(message);
             throw new IllegalArgumentException(message);
         }
-        String model = providerMap.get(provider);
-        if (model == null) {
-            String message = String.format("Model configuration missing for tier: %s and provider: %s", tier, provider);
-            log.error(message);
-            throw new IllegalArgumentException(message);
-        }
-        return model;
+        return providerMap.get(provider);
     }
 }

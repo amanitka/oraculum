@@ -177,11 +177,16 @@ oraculum:
       temperature: 0.0
       max-completion-tokens: 8192
       provider-fallback-order:
+        - lmstudio
         - gemini
         - openai
         - groq
 
     providers:
+      lmstudio:
+        base-url: "http://localhost:1234/v1"
+        api-key: "lmstudio"
+
       gemini:
         base-url: "https://generativelanguage.googleapis.com/v1beta/openai/"
         api-key: ${ORACULUM_GEMINI_API_KEY}
@@ -196,6 +201,7 @@ oraculum:
 
     models:
       mini:
+        lmstudio: "gemma-4-12b"
         gemini: "gemini-3.1-flash-lite"
         groq: "llama-3.1-8b-instant"
         openai: "gpt-5.4-nano"
