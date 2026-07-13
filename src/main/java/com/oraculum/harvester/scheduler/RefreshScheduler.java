@@ -90,7 +90,7 @@ public class RefreshScheduler {
         }
     }
 
-    @Scheduled(cron = "${oraculum.data.sec-documents.cron}")
+    //@Scheduled(cron = "${oraculum.data.sec-documents.cron}")
     public void refreshStaleSecDocuments() {
         log.info("Starting scheduled stale SEC documents refresh...");
         try {
