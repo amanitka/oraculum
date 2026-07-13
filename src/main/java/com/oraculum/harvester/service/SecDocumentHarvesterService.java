@@ -120,7 +120,7 @@ public class SecDocumentHarvesterService {
 
     public List<FetchSecDocumentsRequest> buildStaleSecDocumentsRequests() {
         log.info("Checking for stale SEC documents to refresh...");
-        List<TickerDocumentSyncStatusDto> staleDocs = companyTickerDocumentApi.getStaleSecDocuments(200);
+        List<TickerDocumentSyncStatusDto> staleDocs = companyTickerDocumentApi.getStaleSecDocuments(100);
         if (staleDocs.isEmpty()) {
             log.info("No stale SEC documents found.");
             return List.of();
