@@ -25,7 +25,7 @@ public class LlmClientConfig {
         }
         Duration timeout = properties.common().timeout() != null
                 ? Duration.ofSeconds(properties.common().timeout())
-                : Duration.ofSeconds(60);
+                : Duration.ofSeconds(300);
         OpenAIClient openAiClient = OpenAIOkHttpClient.builder()
                 .apiKey(provider.apiKey())
                 .baseUrl(provider.baseUrl())

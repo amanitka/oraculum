@@ -224,4 +224,26 @@ class LlmRouterServiceImplTest {
         verify(executionService, never()).executeCall(argThat(req -> req != null && req.client() == openaiClient));
         verify(executionService).executeCall(argThat(req -> req != null && req.client() == geminiClient));
     }
+
+    @Test
+    void testSingleProviderBypassesHealthCheck() {
+        // Arrange
+        String prompt = "Test prompt";
+
+        LlmCallRequest<String> request = LlmCallRequest.withFallbackOverride(
+                LlmTierType.STANDARD, prompt, String.class,
+                null, null, null,
+                List.of(LlmProviderType.OPENAI) // Single provider
+        );
+
+        when(executionService.executeCall(any())).thenReturn(CompletableFuture.failedFuture(new RuntimeException("API Error")));
+
+        // Act & Assert
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> routerService.executeCall(request));
+
+        assertEquals("All providers failed", exception.getMessage());
+        verify(health, never()).isBlocked(any());
+        verify(health, never()).markFailure(any());
+        verify(health, never()).markSuccess(any());
+    }
 }

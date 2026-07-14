@@ -75,7 +75,7 @@ resilience4j:
     time-limiter-aspect-order: 400
     instances:
       llm:
-        timeout-duration: 120s
+        timeout-duration: 300s
         cancel-running-future: true
 
 vaadin:

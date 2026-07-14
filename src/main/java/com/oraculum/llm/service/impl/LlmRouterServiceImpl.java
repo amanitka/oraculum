@@ -1,12 +1,15 @@
 package com.oraculum.llm.service.impl;
 
-import com.oraculum.llm.api.dto.LlmResponse;
-import com.oraculum.llm.api.dto.LlmTierType;
-import com.oraculum.llm.config.LlmProperties;
 import com.oraculum.llm.api.LlmCallRequest;
 import com.oraculum.llm.api.LlmExecutionEvent;
 import com.oraculum.llm.api.dto.LlmProviderType;
+import com.oraculum.llm.api.dto.LlmResponse;
+import com.oraculum.llm.api.dto.LlmTierType;
+import com.oraculum.llm.config.LlmProperties;
+import com.oraculum.llm.domain.LlmExecutionContext;
 import com.oraculum.llm.domain.LlmRequest;
+import com.oraculum.llm.exception.LlmExecuteException;
+import com.oraculum.llm.exception.LlmMissingTierConfigurationException;
 import com.oraculum.llm.service.LlmExecutionService;
 import com.oraculum.llm.service.LlmRouterService;
 import lombok.RequiredArgsConstructor;
@@ -32,83 +35,85 @@ public class LlmRouterServiceImpl implements LlmRouterService {
     @Override
     public <T> LlmResponse<T> executeCall(LlmCallRequest<T> request) {
         List<LlmProviderType> fallbackOrder = resolveFallbackOrder(request);
-        Exception last = null;
+        boolean isSingle = fallbackOrder.size() == 1;
+        Exception lastException = null;
+
         for (LlmProviderType provider : fallbackOrder) {
+            String model = resolveModel(request.tier(), provider);
+            if (model == null) {
+                continue;
+            }
+            LlmExecutionContext<T> ctx = new LlmExecutionContext<>(request, provider, model, !isSingle);
+
             try {
-                LlmResponse<T> result = tryExecuteProvider(provider, request);
-                if (result != null) {
-                    return result;
-                }
-            } catch (IllegalArgumentException e) {
+                return tryExecute(ctx);
+            } catch (LlmMissingTierConfigurationException e) {
                 throw e;
             } catch (Exception e) {
-                last = e;
+                lastException = e;
+                handleFailure(ctx, e);
             }
         }
-        throw new RuntimeException("All providers failed", last);
+        throw new LlmExecuteException("All providers failed", lastException);
     }
 
-    private List<LlmProviderType> resolveFallbackOrder(LlmCallRequest<?> request) {
-        return (request.providerFallbackOrderOverride() != null
-                && !request.providerFallbackOrderOverride().isEmpty())
-                ? request.providerFallbackOrderOverride()
-                : properties.common().providerFallbackOrder();
+    private <T> LlmResponse<T> tryExecute(LlmExecutionContext<T> ctx) {
+        if (ctx.useHealthCheck() && health.isBlocked(ctx.provider())) {
+            return null;
+        }
+
+        LlmResponse<T> result = executionService.executeCall(new LlmRequest<>(
+                chatClients.get(ctx.provider()),
+                ctx.request().prompt(),
+                ctx.provider(),
+                ctx.model(),
+                properties.common().temperature(),
+                properties.common().maxCompletionTokens(),
+                ctx.request().responseType()
+        )).join();
+
+        if (ctx.useHealthCheck()) {
+            health.markSuccess(ctx.provider());
+        }
+
+        publishEvent(ctx.request(), result);
+        return result;
     }
 
-    private <T> LlmResponse<T> tryExecuteProvider(LlmProviderType provider, LlmCallRequest<T> request) {
-        if (health.isBlocked(provider)) {
-            return null;
-        }
-        ChatClient client = chatClients.get(provider);
-        if (client == null) {
-            return null;
-        }
-        String model = resolveModel(request.tier(), provider);
-        if (model == null) {
-            return null;
-        }
-        try {
-            LlmResponse<T> result = executionService.executeCall(new LlmRequest<>(
-                    client,
-                    request.prompt(),
-                    provider,
-                    model,
-                    properties.common().temperature(),
-                    properties.common().maxCompletionTokens(),
-                    request.responseType()
-            )).join();
-            health.markSuccess(provider);
-            publishEvent(request, result);
-            return result;
-        } catch (Exception e) {
-            log.warn("LLM call failed for provider: {} [model: {}]. Error: {}. Falling back to next available provider.",
-                    provider, model, e.getMessage());
-            health.markFailure(provider);
-            throw e;
+    private <T> void handleFailure(LlmExecutionContext<T> ctx, Exception e) {
+        if (ctx.useHealthCheck()) {
+            log.warn("LLM call failed for provider: {} [model: {}]. Error: {}. Falling back.",
+                    ctx.provider(), ctx.model(), e.getMessage());
+            health.markFailure(ctx.provider());
+        } else {
+            log.warn("LLM call failed for single provider: {} [model: {}]. Error: {}",
+                    ctx.provider(), ctx.model(), e.getMessage());
         }
     }
 
     private <T> void publishEvent(LlmCallRequest<T> request, LlmResponse<T> result) {
-        try {
-            eventPublisher.publishEvent(new LlmExecutionEvent(
-                    request.correlationId(),
-                    request.correlationType(),
-                    request.source(),
-                    result.metrics(),
-                    request.prompt(),
-                    result.result()
-            ));
-        } catch (Exception ex) {
-            log.warn("Failed to publish LLM execution event", ex);
-        }
+        eventPublisher.publishEvent(new LlmExecutionEvent(
+                request.correlationId(),
+                request.correlationType(),
+                request.source(),
+                result.metrics(),
+                request.prompt(),
+                result.result()
+        ));
+    }
+
+    private List<LlmProviderType> resolveFallbackOrder(LlmCallRequest<?> request) {
+        return (request.providerFallbackOrderOverride() != null && !request.providerFallbackOrderOverride().isEmpty())
+                ? request.providerFallbackOrderOverride()
+                : properties.common().providerFallbackOrder();
     }
 
     private String resolveModel(LlmTierType tier, LlmProviderType provider) {
         Map<LlmProviderType, String> providerMap = properties.models().get(tier);
         if (providerMap == null) {
             String message = String.format("Configuration missing for tier: %s", tier);
-            log.error(message);
-            throw new IllegalArgumentException(message);
+            log.warn(message);
+            throw new LlmMissingTierConfigurationException(message);
         }
         return providerMap.get(provider);
     }
