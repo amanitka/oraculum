@@ -33,4 +33,9 @@ You MUST respond with valid JSON matching exactly this schema:
   "sentiment_score": 0.0
 }
 ```
-Ensure you return only the raw JSON. Do not include markdown code block formatting in your response.
+CRITICAL JSON FORMATTING RULES:
+- Return ONLY the raw JSON object.
+- Do NOT wrap it in ```json ... ``` markdown blocks.
+- Do NOT add any conversational text.
+- Ensure the JSON is strictly valid.
+- ABSOLUTELY NO TRAILING COMMAS are allowed in arrays or objects.
