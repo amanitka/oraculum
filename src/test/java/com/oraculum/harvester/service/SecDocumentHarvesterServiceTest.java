@@ -34,7 +34,7 @@ class SecDocumentHarvesterServiceTest {
 
     @Test
     void buildStaleSecDocumentsRequests_emptyStaleDocs_returnsEmptyList() {
-        when(companyTickerDocumentApi.getStaleSecDocuments(200)).thenReturn(List.of());
+        when(companyTickerDocumentApi.getStaleSecDocuments(100)).thenReturn(List.of());
 
         List<FetchSecDocumentsRequest> requests = service.buildStaleSecDocumentsRequests();
 
@@ -63,7 +63,7 @@ class SecDocumentHarvesterServiceTest {
                 .lastProcessedFileDate(null)
                 .build();
 
-        when(companyTickerDocumentApi.getStaleSecDocuments(200)).thenReturn(List.of(dto1, dto2, dto3));
+        when(companyTickerDocumentApi.getStaleSecDocuments(100)).thenReturn(List.of(dto1, dto2, dto3));
 
         List<FetchSecDocumentsRequest> requests = service.buildStaleSecDocumentsRequests();
 
@@ -96,7 +96,7 @@ class SecDocumentHarvesterServiceTest {
                     .build());
         }
 
-        when(companyTickerDocumentApi.getStaleSecDocuments(200)).thenReturn(staleDocs);
+        when(companyTickerDocumentApi.getStaleSecDocuments(100)).thenReturn(staleDocs);
 
         List<FetchSecDocumentsRequest> requests = service.buildStaleSecDocumentsRequests();
 

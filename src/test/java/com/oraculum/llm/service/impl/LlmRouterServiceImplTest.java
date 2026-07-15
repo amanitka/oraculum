@@ -5,6 +5,7 @@ import com.oraculum.llm.api.dto.LlmProviderType;
 import com.oraculum.llm.api.dto.LlmResponse;
 import com.oraculum.llm.api.dto.LlmTierType;
 import com.oraculum.llm.config.LlmProperties;
+import com.oraculum.llm.exception.LlmMissingTierConfigurationException;
 import com.oraculum.llm.service.LlmExecutionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -157,7 +158,7 @@ class LlmRouterServiceImplTest {
                 eventPublisher);
 
         // Act & Assert
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+        LlmMissingTierConfigurationException exception = assertThrows(LlmMissingTierConfigurationException.class,
                 () -> routerService.executeCall(LlmCallRequest.of(LlmTierType.STANDARD, "prompt", String.class)));
 
         assertTrue(exception.getMessage().contains("Configuration missing for tier: STANDARD"));

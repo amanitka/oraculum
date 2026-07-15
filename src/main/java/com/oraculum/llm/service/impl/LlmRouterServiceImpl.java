@@ -46,7 +46,10 @@ public class LlmRouterServiceImpl implements LlmRouterService {
             LlmExecutionContext<T> ctx = new LlmExecutionContext<>(request, provider, model, !isSingle);
 
             try {
-                return tryExecute(ctx);
+                LlmResponse<T> result = tryExecute(ctx);
+                if (result != null) {
+                    return result;
+                }
             } catch (LlmMissingTierConfigurationException e) {
                 throw e;
             } catch (Exception e) {
