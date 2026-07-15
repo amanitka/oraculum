@@ -1,5 +1,6 @@
 package com.oraculum.company.repository;
 
+import com.oraculum.company.api.domain.TickerDocumentProcessingStatus;
 import com.oraculum.company.domain.TickerDocumentRawEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -12,5 +13,5 @@ public interface TickerDocumentRawRepository extends JpaRepository<TickerDocumen
 
     @Modifying
     @Query("UPDATE TickerDocumentRawEntity e SET e.status = :status, e.updatedAt = CURRENT_TIMESTAMP WHERE e.id = :id AND e.reportPeriod = :reportPeriod")
-    int updateStatus(@Param("id") String id, @Param("reportPeriod") LocalDate reportPeriod, @Param("status") String status);
+    void updateStatus(@Param("id") String id, @Param("reportPeriod") LocalDate reportPeriod, @Param("status") TickerDocumentProcessingStatus status);
 }

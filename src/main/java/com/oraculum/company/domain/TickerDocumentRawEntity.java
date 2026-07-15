@@ -1,6 +1,7 @@
 package com.oraculum.company.domain;
 
 import com.oraculum.company.api.domain.TickerDocumentType;
+import com.oraculum.company.api.domain.TickerDocumentProcessingStatus;
 import com.oraculum.company.api.domain.TickerDocumentSubtype;
 import jakarta.persistence.*;
 import lombok.*;
@@ -51,7 +52,8 @@ public class TickerDocumentRawEntity {
 
     private String content;
 
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private TickerDocumentProcessingStatus status;
 
     @Column(name = "extracted_at")
     private Instant extractedAt;

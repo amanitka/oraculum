@@ -1,10 +1,12 @@
 package com.oraculum.company.service.impl;
 
+import com.oraculum.company.api.domain.TickerDocumentProcessingStatus;
 import com.oraculum.company.api.domain.TickerDocumentSubtype;
 import com.oraculum.company.api.domain.TickerDocumentType;
 import com.oraculum.company.api.dto.TickerDocumentDto;
 import com.oraculum.company.api.dto.TickerDocumentPendingDto;
 import com.oraculum.company.api.dto.TickerDocumentSyncStatusDto;
+import com.oraculum.company.api.dto.TickerKeyDto;
 import com.oraculum.company.domain.TickerDocumentEntity;
 import com.oraculum.company.domain.TickerDocumentPendingEntity;
 import com.oraculum.company.domain.TickerDocumentSyncStatusEntity;
@@ -100,9 +102,9 @@ class CompanyTickerDocumentServiceImplTest {
                 .companySize("LARGE")
                 .build();
 
-        when(pendingRepository.findPendingDocuments(PageRequest.of(0, 5))).thenReturn(List.of(entity));
+        when(pendingRepository.findPendingDocuments(3, PageRequest.of(0, 5))).thenReturn(List.of(entity));
 
-        List<TickerDocumentPendingDto> result = service.getPendingRawDocuments(5);
+        List<TickerDocumentPendingDto> result = service.getPendingRawDocuments(5, 3);
 
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().getId()).isEqualTo("hash123");
@@ -127,7 +129,7 @@ class CompanyTickerDocumentServiceImplTest {
 
         org.mockito.ArgumentCaptor<TickerDocumentEntity> entityCaptor = org.mockito.ArgumentCaptor.forClass(TickerDocumentEntity.class);
         verify(summaryRepository).save(entityCaptor.capture());
-        verify(rawRepository).updateStatus("hash123", LocalDate.of(2023, 12, 31), "PROCESSED");
+        verify(rawRepository).updateStatus("hash123", LocalDate.of(2023, 12, 31), TickerDocumentProcessingStatus.PROCESSED);
 
         TickerDocumentEntity saved = entityCaptor.getValue();
         assertThat(saved.getId()).isEqualTo("hash123");
@@ -137,9 +139,9 @@ class CompanyTickerDocumentServiceImplTest {
 
     @Test
     void updateRawDocumentStatus_callsRepository() {
-        service.updateRawDocumentStatus("hash123", LocalDate.of(2023, 12, 31), "FAILED");
+        service.updateRawDocumentStatus("hash123", LocalDate.of(2023, 12, 31), TickerDocumentProcessingStatus.FAILED);
 
-        verify(rawRepository).updateStatus("hash123", LocalDate.of(2023, 12, 31), "FAILED");
+        verify(rawRepository).updateStatus("hash123", LocalDate.of(2023, 12, 31), TickerDocumentProcessingStatus.FAILED);
     }
 
     @Test
@@ -158,9 +160,9 @@ class CompanyTickerDocumentServiceImplTest {
                 .companySize("LARGE")
                 .build();
 
-        when(pendingRepository.findPendingByTickerAndMarket("AAPL", "US")).thenReturn(List.of(entity));
+        when(pendingRepository.findByTickerAndMarketAndDocumentPriorityLessThanEqual("AAPL", "US", 1)).thenReturn(List.of(entity));
 
-        List<TickerDocumentPendingDto> result = service.getPendingRawDocumentsByTicker("AAPL", "US");
+        List<TickerDocumentPendingDto> result = service.getPendingRawDocumentsByTicker(new TickerKeyDto("AAPL", "US"), 1);
 
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().getId()).isEqualTo("hash123");

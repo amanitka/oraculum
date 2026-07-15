@@ -7,8 +7,10 @@ import com.oraculum.analyst.api.SecDocumentProcessingApi;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.PromptType;
 import com.oraculum.company.api.CompanyTickerDocumentApi;
+import com.oraculum.company.api.domain.TickerDocumentProcessingStatus;
 import com.oraculum.company.api.dto.TickerDocumentDto;
-import com.oraculum.company.api.dto.TickerDocumentRawDto;
+import com.oraculum.company.api.dto.TickerDocumentPendingDto;
+import com.oraculum.company.api.dto.TickerKeyDto;
 import com.oraculum.llm.api.LlmCallRequest;
 import com.oraculum.llm.api.LlmRouterApi;
 import com.oraculum.llm.api.dto.CorrelationType;
@@ -33,12 +35,23 @@ public class SecDocumentProcessingAgent implements SecDocumentProcessingApi {
     private final JsonMapper jsonMapper;
 
     @Override
-    public int processPendingDocuments(int limit, List<LlmProviderType> providerFallbackOrder) {
-        log.info("Starting processing of up to {} pending SEC documents.", limit);
-        List<TickerDocumentRawDto> pendingDocs = companyTickerDocumentApi.getPendingRawDocuments(limit);
+    public int processPendingDocuments(int limit, int maxPriority) {
+        log.info("Starting processing of up to {} pending SEC documents (maxPriority={}).", limit, maxPriority);
+        List<TickerDocumentPendingDto> pendingDocs = companyTickerDocumentApi.getPendingRawDocuments(limit, maxPriority);
+        return processBatch(pendingDocs, List.of(LlmProviderType.LMSTUDIO));
+    }
+
+    @Override
+    public int processMissingDocumentsForTicker(TickerKeyDto tickerKey, int maxPriority) {
+        log.info("Starting JIT processing of missing SEC documents for ticker {} (maxPriority={}).", tickerKey.ticker(), maxPriority);
+        List<TickerDocumentPendingDto> pendingDocs = companyTickerDocumentApi.getPendingRawDocumentsByTicker(tickerKey, maxPriority);
+        return processBatch(pendingDocs, List.of());
+    }
+
+    private int processBatch(List<TickerDocumentPendingDto> pendingDocs, List<LlmProviderType> providerFallbackOrder) {
         int successCount = 0;
 
-        for (TickerDocumentRawDto doc : pendingDocs) {
+        for (TickerDocumentPendingDto doc : pendingDocs) {
             try {
                 processDocument(doc, providerFallbackOrder);
                 successCount++;
@@ -46,7 +59,7 @@ public class SecDocumentProcessingAgent implements SecDocumentProcessingApi {
                 log.error("Failed to process SEC document ID: {}, ticker: {}, period: {}. Error: {}",
                         doc.getId(), doc.getTicker(), doc.getReportPeriod(), e.getMessage(), e);
                 try {
-                    companyTickerDocumentApi.updateRawDocumentStatus(doc.getId(), doc.getReportPeriod(), "FAILED");
+                    companyTickerDocumentApi.updateRawDocumentStatus(doc.getId(), doc.getReportPeriod(), TickerDocumentProcessingStatus.FAILED);
                 } catch (Exception ex) {
                     log.error("Failed to mark SEC document {} status as FAILED. Error: {}", doc.getId(), ex.getMessage(), ex);
                 }
@@ -57,7 +70,7 @@ public class SecDocumentProcessingAgent implements SecDocumentProcessingApi {
         return successCount;
     }
 
-    private void processDocument(TickerDocumentRawDto doc, List<LlmProviderType> providerFallbackOrder) throws Exception {
+    private void processDocument(TickerDocumentPendingDto doc, List<LlmProviderType> providerFallbackOrder) {
         String prompt = renderPrompt(doc);
         UUID correlationId = UUID.randomUUID();
         LlmResult result = executeLlmCall(doc, prompt, correlationId, providerFallbackOrder);
@@ -78,14 +91,14 @@ public class SecDocumentProcessingAgent implements SecDocumentProcessingApi {
                 doc.getId(), doc.getTicker(), doc.getDocumentSubtype(), result.sentimentScore());
     }
 
-    private String renderPrompt(TickerDocumentRawDto doc) {
+    private String renderPrompt(TickerDocumentPendingDto doc) {
         PromptType promptType = PromptType.valueOf(doc.getDocumentSubtype().name());
         return promptRegistry.getPrompt(promptType)
                 .replace("{{ content }}", doc.getContent() != null ? doc.getContent() : "")
                 .replace("{{ ticker }}", doc.getTicker());
     }
 
-    private LlmResult executeLlmCall(TickerDocumentRawDto doc, String prompt, UUID correlationId,
+    private LlmResult executeLlmCall(TickerDocumentPendingDto doc, String prompt, UUID correlationId,
                                      List<LlmProviderType> providerFallbackOrder) {
         return switch (doc.getDocumentSubtype()) {
             case SEC_MD -> executeMdCall(prompt, correlationId, providerFallbackOrder);

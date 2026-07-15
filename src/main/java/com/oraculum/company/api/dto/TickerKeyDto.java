@@ -1,4 +1,4 @@
-package com.oraculum.harvester.api.dto;
+package com.oraculum.company.api.dto;
 
 public record TickerKeyDto(String ticker, String market) {
 }

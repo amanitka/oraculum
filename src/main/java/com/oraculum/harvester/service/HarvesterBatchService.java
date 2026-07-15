@@ -8,6 +8,7 @@ import com.oraculum.company.api.domain.StatementTemplate;
 import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.harvester.api.HarvesterBatchApi;
 import com.oraculum.harvester.api.dto.*;
+import com.oraculum.company.api.dto.TickerKeyDto;
 import com.oraculum.harvester.event.FetchMacroeconomicRequestEvent;
 import com.oraculum.harvester.event.FetchNewsRequestEvent;
 import com.oraculum.util.DateTimeUtil;

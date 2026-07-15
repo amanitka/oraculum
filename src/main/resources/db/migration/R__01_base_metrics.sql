@@ -514,6 +514,7 @@ SELECT
     r.report_period,
     r.filing_date,
     r.content,
+    r.status,
     c.company_name,
     COALESCE(s.market_capitalization, 0) AS market_capitalization,
     COALESCE(s.company_size, 'MICRO')   AS company_size,
@@ -526,9 +527,6 @@ JOIN t_company c ON c.ticker = r.ticker
                 AND c.market = r.market
 LEFT JOIN mv_share_price_signals_recent s ON s.company_id = c.id
                                          AND s.trade_date = (SELECT MAX(trade_date) FROM mv_share_price_signals_recent WHERE company_id = c.id)
-WHERE r.status = 'PENDING'
 ORDER BY COALESCE(s.market_capitalization, 0) DESC,
          r.ticker,
          r.report_period DESC;
-
-

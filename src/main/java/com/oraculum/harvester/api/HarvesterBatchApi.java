@@ -1,6 +1,6 @@
 package com.oraculum.harvester.api;
 
-import com.oraculum.harvester.api.dto.TickerKeyDto;
+import com.oraculum.company.api.dto.TickerKeyDto;
 
 import java.time.LocalDate;
 import java.util.List;

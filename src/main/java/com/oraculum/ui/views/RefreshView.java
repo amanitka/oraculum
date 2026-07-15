@@ -3,9 +3,9 @@ package com.oraculum.ui.views;
 import com.oraculum.analyst.api.SecDocumentProcessingApi;
 import com.oraculum.company.api.CompanyMetadataApi;
 import com.oraculum.company.api.dto.CompanyDto;
+import com.oraculum.company.api.dto.TickerKeyDto;
 import com.oraculum.database.api.event.RefreshMaterializedViewsEvent;
 import com.oraculum.harvester.api.HarvesterBatchApi;
-import com.oraculum.harvester.api.dto.TickerKeyDto;
 import com.oraculum.ui.MainLayout;
 import com.oraculum.ui.ViewHelper;
 import com.vaadin.flow.component.Component;
@@ -245,14 +245,19 @@ public class RefreshView extends VerticalLayout {
         limitField.setMin(1);
         limitField.setStepButtonsVisible(true);
 
+        IntegerField priorityField = new IntegerField("Max Priority");
+        priorityField.setValue(3);
+        priorityField.setMin(1);
+        priorityField.setStepButtonsVisible(true);
+
         Button btn = new Button("Process", VaadinIcon.PLAY.create());
         btn.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
         btn.addClickListener(_ -> {
             int limit = limitField.getValue() != null ? limitField.getValue() : 50;
+            int priority = priorityField.getValue() != null ? priorityField.getValue() : 3;
             java.util.concurrent.CompletableFuture.runAsync(() -> {
                 try {
-                    secDocumentProcessingApi.processPendingDocuments(limit,
-                            java.util.List.of(com.oraculum.llm.api.dto.LlmProviderType.LMSTUDIO));
+                    secDocumentProcessingApi.processPendingDocuments(limit, priority);
                 } catch (Exception ex) {
                     // Suppressed in async block
                 }
@@ -266,7 +271,7 @@ public class RefreshView extends VerticalLayout {
         desc.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontSize.SMALL);
         desc.getStyle().set("margin-top", "var(--lumo-space-s)").set("display", "block");
 
-        HorizontalLayout controls = new HorizontalLayout(limitField);
+        HorizontalLayout controls = new HorizontalLayout(limitField, priorityField);
         controls.setAlignItems(Alignment.CENTER);
         controls.addClassNames(LumoUtility.Gap.MEDIUM);
         controls.getStyle().set("margin-top", "var(--lumo-space-m)");

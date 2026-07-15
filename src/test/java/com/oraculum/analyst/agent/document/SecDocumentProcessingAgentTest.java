@@ -5,13 +5,13 @@ import com.oraculum.analyst.agent.document.service.SecDocumentProcessingAgent;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.PromptType;
 import com.oraculum.company.api.CompanyTickerDocumentApi;
+import com.oraculum.company.api.domain.TickerDocumentProcessingStatus;
 import com.oraculum.company.api.domain.TickerDocumentSubtype;
 import com.oraculum.company.api.domain.TickerDocumentType;
 import com.oraculum.company.api.dto.TickerDocumentDto;
 import com.oraculum.company.api.dto.TickerDocumentPendingDto;
 import com.oraculum.llm.api.LlmCallRequest;
 import com.oraculum.llm.api.LlmRouterApi;
-import com.oraculum.llm.api.dto.LlmProviderType;
 import com.oraculum.llm.api.dto.LlmResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -67,7 +67,7 @@ class SecDocumentProcessingAgentTest {
     @Test
     void processPendingDocuments_success() {
         // Arrange
-        when(companyTickerDocumentApi.getPendingRawDocuments(1)).thenReturn(List.of(rawDto));
+        when(companyTickerDocumentApi.getPendingRawDocuments(1, 3)).thenReturn(List.of(rawDto));
         when(promptRegistry.getPrompt(PromptType.SEC_MD)).thenReturn("Review: {{ content }} for {{ ticker }}");
 
         SecMdResponse mdResponse = new SecMdResponse(
@@ -88,7 +88,7 @@ class SecDocumentProcessingAgentTest {
         when(jsonMapper.writeValueAsString(mdResponse)).thenReturn(expectedJson);
 
         // Act
-        int result = service.processPendingDocuments(1, List.of(LlmProviderType.LMSTUDIO));
+        int result = service.processPendingDocuments(1, 3);
 
         // Assert
         assertThat(result).isEqualTo(1);
@@ -108,16 +108,16 @@ class SecDocumentProcessingAgentTest {
     @Test
     void processPendingDocuments_llmFailure_marksAsFailed() {
         // Arrange
-        when(companyTickerDocumentApi.getPendingRawDocuments(1)).thenReturn(List.of(rawDto));
+        when(companyTickerDocumentApi.getPendingRawDocuments(1, 3)).thenReturn(List.of(rawDto));
         when(promptRegistry.getPrompt(PromptType.SEC_MD)).thenReturn("Review: {{ content }}");
         when(llmRouterApi.executeCall(any(LlmCallRequest.class))).thenThrow(new RuntimeException("LLM down"));
 
         // Act
-        int result = service.processPendingDocuments(1, List.of(LlmProviderType.LMSTUDIO));
+        int result = service.processPendingDocuments(1, 3);
 
         // Assert
         assertThat(result).isEqualTo(0);
-        verify(companyTickerDocumentApi).updateRawDocumentStatus("hash123", LocalDate.of(2023, 12, 31), "FAILED");
+        verify(companyTickerDocumentApi).updateRawDocumentStatus("hash123", LocalDate.of(2023, 12, 31), TickerDocumentProcessingStatus.FAILED);
         verify(companyTickerDocumentApi, never()).createDocumentSummary(any());
     }
 }

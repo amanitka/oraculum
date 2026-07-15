@@ -6,7 +6,7 @@ import com.oraculum.company.api.domain.TickerDocumentType;
 import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.company.api.dto.TickerDocumentSyncStatusDto;
 import com.oraculum.harvester.api.dto.FetchSecDocumentsRequest;
-import com.oraculum.harvester.api.dto.TickerKeyDto;
+import com.oraculum.company.api.dto.TickerKeyDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

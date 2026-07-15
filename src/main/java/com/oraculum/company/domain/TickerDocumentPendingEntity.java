@@ -1,6 +1,7 @@
 package com.oraculum.company.domain;
 
 import com.oraculum.company.api.domain.TickerDocumentType;
+import com.oraculum.company.api.domain.TickerDocumentProcessingStatus;
 import com.oraculum.company.api.domain.TickerDocumentSubtype;
 import jakarta.persistence.*;
 import lombok.*;
@@ -42,6 +43,9 @@ public class TickerDocumentPendingEntity {
     private LocalDate filingDate;
 
     private String content;
+
+    @Enumerated(EnumType.STRING)
+    private TickerDocumentProcessingStatus status;
 
     @Column(name = "company_name")
     private String companyName;

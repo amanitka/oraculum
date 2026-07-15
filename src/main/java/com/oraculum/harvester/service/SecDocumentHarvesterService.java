@@ -7,7 +7,7 @@ import com.oraculum.company.api.domain.TickerDocumentType;
 import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.company.api.dto.TickerDocumentSyncStatusDto;
 import com.oraculum.harvester.api.dto.FetchSecDocumentsRequest;
-import com.oraculum.harvester.api.dto.TickerKeyDto;
+import com.oraculum.company.api.dto.TickerKeyDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

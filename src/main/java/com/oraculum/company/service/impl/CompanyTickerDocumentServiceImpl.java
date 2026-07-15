@@ -1,9 +1,11 @@
 package com.oraculum.company.service.impl;
 
 import com.oraculum.company.api.CompanyTickerDocumentApi;
+import com.oraculum.company.api.domain.TickerDocumentProcessingStatus;
 import com.oraculum.company.api.dto.TickerDocumentDto;
 import com.oraculum.company.api.dto.TickerDocumentPendingDto;
 import com.oraculum.company.api.dto.TickerDocumentSyncStatusDto;
+import com.oraculum.company.api.dto.TickerKeyDto;
 import com.oraculum.company.domain.TickerDocumentEntity;
 import com.oraculum.company.domain.TickerDocumentPendingEntity;
 import com.oraculum.company.domain.TickerDocumentSyncStatusEntity;
@@ -65,8 +67,8 @@ public class CompanyTickerDocumentServiceImpl implements CompanyTickerDocumentAp
 
     @Override
     @Transactional(readOnly = true)
-    public List<TickerDocumentPendingDto> getPendingRawDocuments(int limit) {
-        return pendingRepository.findPendingDocuments(PageRequest.of(0, limit)).stream()
+    public List<TickerDocumentPendingDto> getPendingRawDocuments(int limit, int maxPriority) {
+        return pendingRepository.findPendingDocuments(maxPriority, PageRequest.of(0, limit)).stream()
                 .map(this::mapPendingToDto)
                 .toList();
     }
@@ -86,19 +88,19 @@ public class CompanyTickerDocumentServiceImpl implements CompanyTickerDocumentAp
                 .build();
         summaryRepository.save(entity);
 
-        rawRepository.updateStatus(summary.getId(), summary.getReportPeriod(), "PROCESSED");
+        rawRepository.updateStatus(summary.getId(), summary.getReportPeriod(), TickerDocumentProcessingStatus.PROCESSED);
     }
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void updateRawDocumentStatus(String id, LocalDate reportPeriod, String status) {
+    public void updateRawDocumentStatus(String id, LocalDate reportPeriod, TickerDocumentProcessingStatus status) {
         rawRepository.updateStatus(id, reportPeriod, status);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<TickerDocumentPendingDto> getPendingRawDocumentsByTicker(String ticker, String market) {
-        return pendingRepository.findPendingByTickerAndMarket(ticker, market).stream()
+    public List<TickerDocumentPendingDto> getPendingRawDocumentsByTicker(TickerKeyDto tickerKey, int maxPriority) {
+        return pendingRepository.findByTickerAndMarketAndDocumentPriorityLessThanEqual(tickerKey.ticker(), tickerKey.market(), maxPriority).stream()
                 .map(this::mapPendingToDto)
                 .toList();
     }
