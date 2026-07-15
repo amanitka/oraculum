@@ -3,7 +3,7 @@ package com.oraculum.company.service.impl;
 import com.oraculum.company.api.domain.TickerDocumentSubtype;
 import com.oraculum.company.api.domain.TickerDocumentType;
 import com.oraculum.company.api.dto.TickerDocumentDto;
-import com.oraculum.company.api.dto.TickerDocumentRawDto;
+import com.oraculum.company.api.dto.TickerDocumentPendingDto;
 import com.oraculum.company.api.dto.TickerDocumentSyncStatusDto;
 import com.oraculum.company.domain.TickerDocumentEntity;
 import com.oraculum.company.domain.TickerDocumentPendingEntity;
@@ -102,7 +102,7 @@ class CompanyTickerDocumentServiceImplTest {
 
         when(pendingRepository.findPendingDocuments(PageRequest.of(0, 5))).thenReturn(List.of(entity));
 
-        List<TickerDocumentRawDto> result = service.getPendingRawDocuments(5);
+        List<TickerDocumentPendingDto> result = service.getPendingRawDocuments(5);
 
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().getId()).isEqualTo("hash123");
@@ -160,7 +160,7 @@ class CompanyTickerDocumentServiceImplTest {
 
         when(pendingRepository.findPendingByTickerAndMarket("AAPL", "US")).thenReturn(List.of(entity));
 
-        List<TickerDocumentRawDto> result = service.getPendingRawDocumentsByTicker("AAPL", "US");
+        List<TickerDocumentPendingDto> result = service.getPendingRawDocumentsByTicker("AAPL", "US");
 
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().getId()).isEqualTo("hash123");

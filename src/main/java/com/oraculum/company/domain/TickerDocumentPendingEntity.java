@@ -52,6 +52,9 @@ public class TickerDocumentPendingEntity {
     @Column(name = "company_size")
     private String companySize;
 
+    @Column(name = "document_priority")
+    private Integer documentPriority;
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor

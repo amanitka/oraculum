@@ -8,7 +8,7 @@ import com.oraculum.company.api.CompanyTickerDocumentApi;
 import com.oraculum.company.api.domain.TickerDocumentSubtype;
 import com.oraculum.company.api.domain.TickerDocumentType;
 import com.oraculum.company.api.dto.TickerDocumentDto;
-import com.oraculum.company.api.dto.TickerDocumentRawDto;
+import com.oraculum.company.api.dto.TickerDocumentPendingDto;
 import com.oraculum.llm.api.LlmCallRequest;
 import com.oraculum.llm.api.LlmRouterApi;
 import com.oraculum.llm.api.dto.LlmProviderType;
@@ -48,11 +48,11 @@ class SecDocumentProcessingAgentTest {
     @InjectMocks
     private SecDocumentProcessingAgent service;
 
-    private TickerDocumentRawDto rawDto;
+    private TickerDocumentPendingDto rawDto;
 
     @BeforeEach
     void setUp() {
-        rawDto = TickerDocumentRawDto.builder()
+        rawDto = TickerDocumentPendingDto.builder()
                 .id("hash123")
                 .ticker("AAPL")
                 .market("US")

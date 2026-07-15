@@ -2,7 +2,7 @@ package com.oraculum.company.service.impl;
 
 import com.oraculum.company.api.CompanyTickerDocumentApi;
 import com.oraculum.company.api.dto.TickerDocumentDto;
-import com.oraculum.company.api.dto.TickerDocumentRawDto;
+import com.oraculum.company.api.dto.TickerDocumentPendingDto;
 import com.oraculum.company.api.dto.TickerDocumentSyncStatusDto;
 import com.oraculum.company.domain.TickerDocumentEntity;
 import com.oraculum.company.domain.TickerDocumentPendingEntity;
@@ -65,7 +65,7 @@ public class CompanyTickerDocumentServiceImpl implements CompanyTickerDocumentAp
 
     @Override
     @Transactional(readOnly = true)
-    public List<TickerDocumentRawDto> getPendingRawDocuments(int limit) {
+    public List<TickerDocumentPendingDto> getPendingRawDocuments(int limit) {
         return pendingRepository.findPendingDocuments(PageRequest.of(0, limit)).stream()
                 .map(this::mapPendingToDto)
                 .toList();
@@ -97,14 +97,14 @@ public class CompanyTickerDocumentServiceImpl implements CompanyTickerDocumentAp
 
     @Override
     @Transactional(readOnly = true)
-    public List<TickerDocumentRawDto> getPendingRawDocumentsByTicker(String ticker, String market) {
+    public List<TickerDocumentPendingDto> getPendingRawDocumentsByTicker(String ticker, String market) {
         return pendingRepository.findPendingByTickerAndMarket(ticker, market).stream()
                 .map(this::mapPendingToDto)
                 .toList();
     }
 
-    private TickerDocumentRawDto mapPendingToDto(TickerDocumentPendingEntity entity) {
-        return TickerDocumentRawDto.builder()
+    private TickerDocumentPendingDto mapPendingToDto(TickerDocumentPendingEntity entity) {
+        return TickerDocumentPendingDto.builder()
                 .id(entity.getId())
                 .ticker(entity.getTicker())
                 .market(entity.getMarket())
@@ -113,6 +113,7 @@ public class CompanyTickerDocumentServiceImpl implements CompanyTickerDocumentAp
                 .reportPeriod(entity.getReportPeriod())
                 .filingDate(entity.getFilingDate())
                 .content(entity.getContent())
+                .documentPriority(entity.getDocumentPriority())
                 .build();
     }
 }

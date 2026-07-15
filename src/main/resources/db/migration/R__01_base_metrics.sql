@@ -516,7 +516,11 @@ SELECT
     r.content,
     c.company_name,
     COALESCE(s.market_capitalization, 0) AS market_capitalization,
-    COALESCE(s.company_size, 'MICRO')   AS company_size
+    COALESCE(s.company_size, 'MICRO')   AS company_size,
+    ROW_NUMBER() OVER (
+        PARTITION BY r.ticker, r.market, r.document_type, r.document_subtype 
+        ORDER BY r.report_period DESC, r.filing_date DESC
+    ) AS document_priority
 FROM t_ticker_document_raw r
 JOIN t_company c ON c.ticker = r.ticker
                 AND c.market = r.market

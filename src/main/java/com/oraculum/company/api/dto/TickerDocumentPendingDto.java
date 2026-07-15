@@ -9,7 +9,7 @@ import java.time.LocalDate;
 
 @Getter
 @Builder
-public class TickerDocumentRawDto {
+public class TickerDocumentPendingDto {
     private final String id;
     private final String ticker;
     private final String market;
@@ -18,4 +18,5 @@ public class TickerDocumentRawDto {
     private final LocalDate reportPeriod;
     private final LocalDate filingDate;
     private final String content;
+    private final Integer documentPriority;
 }
