@@ -88,10 +88,7 @@ class SecDocumentProcessingAgentTest {
         when(jsonMapper.writeValueAsString(mdResponse)).thenReturn(expectedJson);
 
         // Act
-        int result = service.processPendingDocuments(1, 3);
-
-        // Assert
-        assertThat(result).isEqualTo(1);
+        service.processPendingDocuments(1, 3);
 
         ArgumentCaptor<TickerDocumentDto> summaryCaptor = ArgumentCaptor.forClass(TickerDocumentDto.class);
         verify(companyTickerDocumentApi).createDocumentSummary(summaryCaptor.capture());
@@ -113,10 +110,9 @@ class SecDocumentProcessingAgentTest {
         when(llmRouterApi.executeCall(any(LlmCallRequest.class))).thenThrow(new RuntimeException("LLM down"));
 
         // Act
-        int result = service.processPendingDocuments(1, 3);
+        service.processPendingDocuments(1, 3);
 
         // Assert
-        assertThat(result).isEqualTo(0);
         verify(companyTickerDocumentApi).updateRawDocumentStatus("hash123", LocalDate.of(2023, 12, 31), TickerDocumentProcessingStatus.FAILED);
         verify(companyTickerDocumentApi, never()).createDocumentSummary(any());
     }

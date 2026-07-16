@@ -5,6 +5,7 @@ import com.oraculum.analyst.api.dto.CompanyAnalysisRequestEvent;
 import com.oraculum.analyst.api.event.CompanyAnalysisProgressEvent;
 import com.oraculum.analyst.domain.CompanyAnalysisEntity;
 import com.oraculum.analyst.dto.CompanyAnalysisResult;
+import com.oraculum.company.api.dto.TickerKeyDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,8 +48,7 @@ class CompanyAnalysisOrchestrationServiceTest {
         request = new CompanyAnalysisRequestEvent(
                 correlationId,
                 1,
-                "AAPL",
-                "US",
+                new TickerKeyDto("AAPL", "US"),
                 LocalDate.now(),
                 "focus",
                 null

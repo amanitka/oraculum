@@ -8,6 +8,7 @@ import com.oraculum.analyst.api.dto.CompanyAnalysisRequestEvent;
 import com.oraculum.analyst.api.event.CompanyAnalysisProgressEvent;
 import com.oraculum.analyst.config.AnalystProperties;
 import com.oraculum.analyst.dto.CompanyAnalysisResult;
+import com.oraculum.analyst.agent.document.service.SecDocumentProcessingAgent;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
 import com.oraculum.company.api.CompanyMetadataApi;
 import com.oraculum.company.api.dto.CompanyDto;
@@ -33,6 +34,7 @@ public class CompanyAnalysisWorkflowService {
     private final CompanyMetadataApi companyMetadataApi;
     private final AnalystProperties analystProperties;
     private final CompanyFactSheetDataService companyFactSheetDataService;
+    private final SecDocumentProcessingAgent secDocumentProcessingAgent;
     private final Map<AgentType, Agent<?>> agents;
     private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
@@ -41,10 +43,10 @@ public class CompanyAnalysisWorkflowService {
         long startMs = System.currentTimeMillis();
         ZonedDateTime now = ZonedDateTime.now();
 
-        log.info("Starting analysis workflow for ticker {}", request.ticker());
+        log.info("Starting analysis workflow for ticker {}", request.ticker().ticker());
         try {
+            processPendingCompanyDocuments(request);
             AgentContext ctx = initializeContext(request);
-
             runSpecialistPhase(request, ctx);
             runCriticCorrectionLoop(request, ctx);
             SynthesizerAgentOutput finalOutput = runSynthesizerPhase(request, ctx);
@@ -57,12 +59,17 @@ public class CompanyAnalysisWorkflowService {
         }
     }
 
+    private void processPendingCompanyDocuments(CompanyAnalysisRequestEvent request) {
+        log.info("JIT document processing for ticker {} started", request.ticker().ticker());
+        secDocumentProcessingAgent.processPendingDocumentsForTicker(request.ticker(), 1);
+        log.info("JIT document processing completed");
+    }
+
     private AgentContext initializeContext(CompanyAnalysisRequestEvent request) {
         CompanyDto company = companyMetadataApi.getCompanyById(request.companyId());
         if (company == null) {
-            throw new IllegalArgumentException("Company not found for ticker: " + request.ticker());
+            throw new IllegalArgumentException("Company not found for ticker: " + request.ticker().ticker());
         }
-
         AgentWorkflowState state = new AgentWorkflowState();
         String focus = request.analysisFocus();
         if (focus == null || focus.isBlank()) {
@@ -179,8 +186,8 @@ public class CompanyAnalysisWorkflowService {
 
         return CompanyAnalysisResult.builder()
                 .correlationId(req.correlationId())
-                .ticker(req.ticker())
-                .market(req.market())
+                .ticker(req.ticker().ticker())
+                .market(req.ticker().market())
                 .analysisDate(ctx.analysisDate())
                 .status(AnalysisStatus.COMPLETED)
                 .reportMd(finalOut.reportMd())
@@ -219,8 +226,8 @@ public class CompanyAnalysisWorkflowService {
     private CompanyAnalysisResult createFailureResult(CompanyAnalysisRequestEvent req, LocalDate analysisDate, Exception e, ZonedDateTime now) {
         return CompanyAnalysisResult.builder()
                 .correlationId(req.correlationId())
-                .ticker(req.ticker())
-                .market(req.market())
+                .ticker(req.ticker().ticker())
+                .market(req.ticker().market())
                 .analysisDate(analysisDate)
                 .status(AnalysisStatus.FAILED)
                 .error(e.getMessage())

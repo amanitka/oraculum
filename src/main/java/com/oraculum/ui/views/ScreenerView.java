@@ -8,6 +8,7 @@ import com.oraculum.company.api.CompanyNewsApi;
 import com.oraculum.company.api.CompanyInsiderTransactionApi;
 import com.oraculum.company.api.CompanyScreenerApi;
 import com.oraculum.company.api.domain.CompanySize;
+import com.oraculum.company.api.dto.TickerKeyDto;
 import com.oraculum.company.api.dto.*;
 import com.oraculum.ui.MainLayout;
 import com.oraculum.ui.ViewHelper;
@@ -174,7 +175,7 @@ public class ScreenerView extends VerticalLayout {
     private void triggerAnalysisMaster(Set<ScreenerMasterDto> selectedItems, Grid<ScreenerMasterDto> grid) {
         if (!validateBatchSelection(selectedItems.size())) return;
         for (ScreenerMasterDto item : selectedItems) {
-            CompanyAnalysisRequest requestDto = new CompanyAnalysisRequest(UUID.randomUUID(), item.companyId(), item.ticker(), item.market(), LocalDate.now(), null);
+            CompanyAnalysisRequest requestDto = new CompanyAnalysisRequest(UUID.randomUUID(), item.companyId(), new TickerKeyDto(item.ticker(), item.market()), LocalDate.now(), null);
             analysisRequestService.requestAnalysis(requestDto);
         }
         ViewHelper.showSuccess("Triggered analysis for " + selectedItems.size() + " companies.");
@@ -184,7 +185,7 @@ public class ScreenerView extends VerticalLayout {
     private void triggerAnalysisNewsSentiment(Set<ScreenerNewsSentimentDto> selectedItems, Grid<ScreenerNewsSentimentDto> grid) {
         if (!validateBatchSelection(selectedItems.size())) return;
         for (ScreenerNewsSentimentDto item : selectedItems) {
-            CompanyAnalysisRequest requestDto = new CompanyAnalysisRequest(UUID.randomUUID(), item.companyId(), item.ticker(), item.market(), LocalDate.now(), null);
+            CompanyAnalysisRequest requestDto = new CompanyAnalysisRequest(UUID.randomUUID(), item.companyId(), new TickerKeyDto(item.ticker(), item.market()), LocalDate.now(), null);
             analysisRequestService.requestAnalysis(requestDto);
         }
         ViewHelper.showSuccess("Triggered analysis for " + selectedItems.size() + " companies.");
@@ -194,7 +195,7 @@ public class ScreenerView extends VerticalLayout {
     private void triggerAnalysisInsider(Set<ScreenerInsiderDto> selectedItems, Grid<ScreenerInsiderDto> grid) {
         if (!validateBatchSelection(selectedItems.size())) return;
         for (ScreenerInsiderDto item : selectedItems) {
-            CompanyAnalysisRequest requestDto = new CompanyAnalysisRequest(UUID.randomUUID(), item.companyId().intValue(), item.ticker(), item.market(), LocalDate.now(), null);
+            CompanyAnalysisRequest requestDto = new CompanyAnalysisRequest(UUID.randomUUID(), item.companyId().intValue(), new TickerKeyDto(item.ticker(), item.market()), LocalDate.now(), null);
             analysisRequestService.requestAnalysis(requestDto);
         }
         ViewHelper.showSuccess("Triggered analysis for " + selectedItems.size() + " companies.");
@@ -204,7 +205,7 @@ public class ScreenerView extends VerticalLayout {
     private void triggerAnalysisStandard(Set<ScreenerDto> selectedItems, Grid<ScreenerDto> grid) {
         if (!validateBatchSelection(selectedItems.size())) return;
         for (ScreenerDto item : selectedItems) {
-            CompanyAnalysisRequest requestDto = new CompanyAnalysisRequest(UUID.randomUUID(), item.companyId(), item.ticker(), item.market(), LocalDate.now(), null);
+            CompanyAnalysisRequest requestDto = new CompanyAnalysisRequest(UUID.randomUUID(), item.companyId(), new TickerKeyDto(item.ticker(), item.market()), LocalDate.now(), null);
             analysisRequestService.requestAnalysis(requestDto);
         }
         ViewHelper.showSuccess("Triggered analysis for " + selectedItems.size() + " companies.");

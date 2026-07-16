@@ -3,7 +3,6 @@ package com.oraculum.analyst.agent.document.service;
 import com.oraculum.analyst.agent.document.dto.SecEx991Response;
 import com.oraculum.analyst.agent.document.dto.SecMdResponse;
 import com.oraculum.analyst.agent.document.dto.SecRfResponse;
-import com.oraculum.analyst.api.SecDocumentProcessingApi;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.PromptType;
 import com.oraculum.company.api.CompanyTickerDocumentApi;
@@ -27,31 +26,29 @@ import java.util.UUID;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class SecDocumentProcessingAgent implements SecDocumentProcessingApi {
+public class SecDocumentProcessingAgent {
 
     private final CompanyTickerDocumentApi companyTickerDocumentApi;
     private final LlmRouterApi llmRouterApi;
     private final PromptRegistry promptRegistry;
     private final JsonMapper jsonMapper;
 
-    @Override
-    public int processPendingDocuments(int limit, int maxPriority) {
+    public void processPendingDocuments(int limit, int maxPriority) {
         log.info("Starting processing of up to {} pending SEC documents (maxPriority={}).", limit, maxPriority);
         List<TickerDocumentPendingDto> pendingDocs = companyTickerDocumentApi.getPendingRawDocuments(limit, maxPriority);
-        return processBatch(pendingDocs, List.of(LlmProviderType.LMSTUDIO));
+        processDocuments(pendingDocs, List.of(LlmProviderType.LMSTUDIO));
     }
 
-    @Override
-    public int processMissingDocumentsForTicker(TickerKeyDto tickerKey, int maxPriority) {
-        log.info("Starting JIT processing of missing SEC documents for ticker {} (maxPriority={}).", tickerKey.ticker(), maxPriority);
+    public void processPendingDocumentsForTicker(TickerKeyDto tickerKey, int maxPriority) {
+        log.info("Starting JIT processing of pending SEC documents for ticker {} (maxPriority={}).", tickerKey.ticker(), maxPriority);
         List<TickerDocumentPendingDto> pendingDocs = companyTickerDocumentApi.getPendingRawDocumentsByTicker(tickerKey, maxPriority);
-        return processBatch(pendingDocs, List.of());
+        processDocuments(pendingDocs, List.of());
     }
 
-    private int processBatch(List<TickerDocumentPendingDto> pendingDocs, List<LlmProviderType> providerFallbackOrder) {
+    private void processDocuments(List<TickerDocumentPendingDto> documents, List<LlmProviderType> providerFallbackOrder) {
         int successCount = 0;
-
-        for (TickerDocumentPendingDto doc : pendingDocs) {
+        for (TickerDocumentPendingDto doc : documents) {
+            log.info("Processing {} {} document for ticker {} (period: {})", doc.getDocumentType(), doc.getDocumentSubtype(), doc.getTicker(), doc.getReportPeriod());
             try {
                 processDocument(doc, providerFallbackOrder);
                 successCount++;
@@ -65,9 +62,7 @@ public class SecDocumentProcessingAgent implements SecDocumentProcessingApi {
                 }
             }
         }
-
-        log.info("Finished processing batch. Successfully processed {}/{} documents.", successCount, pendingDocs.size());
-        return successCount;
+        log.info("Finished processing documents. Successfully processed {}/{} documents.", successCount, documents.size());
     }
 
     private void processDocument(TickerDocumentPendingDto doc, List<LlmProviderType> providerFallbackOrder) {

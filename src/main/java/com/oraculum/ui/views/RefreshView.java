@@ -1,10 +1,10 @@
 package com.oraculum.ui.views;
 
-import com.oraculum.analyst.api.SecDocumentProcessingApi;
 import com.oraculum.company.api.CompanyMetadataApi;
 import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.company.api.dto.TickerKeyDto;
 import com.oraculum.database.api.event.RefreshMaterializedViewsEvent;
+import com.oraculum.analyst.api.event.ProcessPendingSecDocumentsEvent;
 import com.oraculum.harvester.api.HarvesterBatchApi;
 import com.oraculum.ui.MainLayout;
 import com.oraculum.ui.ViewHelper;
@@ -41,16 +41,13 @@ public class RefreshView extends VerticalLayout {
     private final HarvesterBatchApi harvesterBatchApi;
     private final ApplicationEventPublisher eventPublisher;
     private final CompanyMetadataApi companyMetadataApi;
-    private final SecDocumentProcessingApi secDocumentProcessingApi;
 
     public RefreshView(HarvesterBatchApi harvesterBatchApi,
                        ApplicationEventPublisher eventPublisher,
-                       CompanyMetadataApi companyMetadataApi,
-                       SecDocumentProcessingApi secDocumentProcessingApi) {
+                       CompanyMetadataApi companyMetadataApi) {
         this.harvesterBatchApi = harvesterBatchApi;
         this.eventPublisher = eventPublisher;
         this.companyMetadataApi = companyMetadataApi;
-        this.secDocumentProcessingApi = secDocumentProcessingApi;
 
         setWidthFull();
         getStyle().set("padding-bottom", "2rem");
@@ -255,13 +252,7 @@ public class RefreshView extends VerticalLayout {
         btn.addClickListener(_ -> {
             int limit = limitField.getValue() != null ? limitField.getValue() : 50;
             int priority = priorityField.getValue() != null ? priorityField.getValue() : 3;
-            java.util.concurrent.CompletableFuture.runAsync(() -> {
-                try {
-                    secDocumentProcessingApi.processPendingDocuments(limit, priority);
-                } catch (Exception ex) {
-                    // Suppressed in async block
-                }
-            });
+            eventPublisher.publishEvent(new ProcessPendingSecDocumentsEvent(limit, priority));
             ViewHelper.showSuccess("Started SEC Document processing in the background (Limit: " + limit + ")");
         });
 

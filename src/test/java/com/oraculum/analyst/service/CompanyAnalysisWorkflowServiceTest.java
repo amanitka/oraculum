@@ -14,6 +14,7 @@ import com.oraculum.analyst.dto.CompanyAnalysisResult;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
 import com.oraculum.company.api.CompanyMetadataApi;
 import com.oraculum.company.api.dto.CompanyDto;
+import com.oraculum.company.api.dto.TickerKeyDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -64,13 +65,13 @@ class CompanyAnalysisWorkflowServiceTest {
     @BeforeEach
     void setUp() {
         when(objectMapper.writeValueAsString(any())).thenReturn("[]");
+        UUID correlationId = UUID.randomUUID();
         request = new CompanyAnalysisRequestEvent(
-                UUID.randomUUID(),
+                correlationId,
                 1,
-                "AAPL",
-                "US",
+                new TickerKeyDto("AAPL", "US"),
                 LocalDate.now(),
-                "focus",
+                "test focus",
                 null
         );
     }
@@ -85,6 +86,7 @@ class CompanyAnalysisWorkflowServiceTest {
         assertNotNull(result.error());
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void run_successfulAnalysis_noReruns() {
         CompanyDto companyDto = mock(CompanyDto.class);

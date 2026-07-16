@@ -6,6 +6,7 @@ import com.oraculum.analyst.api.dto.CompanyAnalysisRequest;
 import com.oraculum.analyst.api.dto.CompanyAnalysisDto;
 import com.oraculum.company.api.*;
 import com.oraculum.company.api.dto.CompanyDto;
+import com.oraculum.company.api.dto.TickerKeyDto;
 import com.oraculum.ui.MainLayout;
 import com.oraculum.ui.ViewHelper;
 import com.oraculum.ui.api.CompanyAnalysisProgressBroadcasterService;
@@ -160,7 +161,7 @@ public class AnalysisView extends VerticalLayout {
             gridData.addFirst(transientDto);
             grid.getDataProvider().refreshAll();
 
-            CompanyAnalysisRequest requestDto = new CompanyAnalysisRequest(correlationId, company.id(), company.ticker(), company.market(), LocalDate.now(), analysisFocusInput.getValue());
+            CompanyAnalysisRequest requestDto = new CompanyAnalysisRequest(correlationId, company.id(), new TickerKeyDto(company.ticker(), company.market()), LocalDate.now(), analysisFocusInput.getValue());
             analysisRequestService.requestAnalysis(requestDto);
             ViewHelper.showSuccess("Analysis triggered for " + company.ticker());
         } catch (Exception e) {

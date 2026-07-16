@@ -23,7 +23,6 @@ public class AnalysisRequestService {
                 request.correlationId(),
                 request.companyId(),
                 request.ticker(),
-                request.market(),
                 request.analysisDate(),
                 request.analysisFocus(),
                 userId

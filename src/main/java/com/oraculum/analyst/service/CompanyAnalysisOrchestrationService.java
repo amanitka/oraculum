@@ -24,9 +24,9 @@ public class CompanyAnalysisOrchestrationService {
     private final ApplicationEventPublisher eventPublisher;
 
     public void executeAnalysis(CompanyAnalysisRequestEvent request) {
-        log.info("Handling orchestrated company analysis request for {}", request.ticker());
+        log.info("Handling orchestrated company analysis request for {}", request.ticker().ticker());
         if (companyAnalysisService.isAnalysisCompleted(request.correlationId())) {
-            log.info("Analysis already completed for ticker {}, correlation id {}", request.ticker(), request.correlationId());
+            log.info("Analysis already completed for ticker {}, correlation id {}", request.ticker().ticker(), request.correlationId());
             return;
         }
         CompanyAnalysisEntity companyAnalysis = initAnalysis(request);
@@ -34,11 +34,11 @@ public class CompanyAnalysisOrchestrationService {
             markAsRunning(companyAnalysis);
             CompanyAnalysisResult analysisResult = workflow.run(request);
             completeAnalysis(companyAnalysis, analysisResult);
-            log.info("Successfully completed analysis for ticker {} in market {}", request.ticker(), request.market());
+            log.info("Successfully completed analysis for ticker {} in market {}", request.ticker().ticker(), request.ticker().market());
         } catch (Exception e) {
             log.error("Analysis failed for ticker {} in market {}: {}",
-                    request.ticker(),
-                    request.market(),
+                    request.ticker().ticker(),
+                    request.ticker().market(),
                     e.getMessage(),
                     e);
             markAsFailed(companyAnalysis, e.getMessage());
@@ -49,8 +49,8 @@ public class CompanyAnalysisOrchestrationService {
         CompanyAnalysisEntity entity = new CompanyAnalysisEntity();
         entity.setId(request.correlationId());
         entity.setCompanyId(request.companyId());
-        entity.setTicker(request.ticker());
-        entity.setMarket(request.market());
+        entity.setTicker(request.ticker().ticker());
+        entity.setMarket(request.ticker().market());
         entity.setAnalysisDate(request.analysisDate() != null ? request.analysisDate() : LocalDate.now());
         entity.setStatus(AnalysisStatus.PENDING);
         entity.setRequestedBy(request.requestedBy());
