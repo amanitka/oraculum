@@ -17,7 +17,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 
 @Slf4j
 @Component
@@ -32,41 +31,50 @@ public class NewsAgent implements Agent<NewsAgentOutput> {
         return AgentType.NEWS;
     }
 
-
-
     @Override
     public AgentOutput<NewsAgentOutput> run(AgentContext ctx) {
         log.info("NewsAgent starting analysis for ticker: {}", ctx.ticker());
-        String newsMarkdown = ctx.factSheetData().getRecentNews();
-        List<NewsTickerDto> newsList = ctx.factSheetData().getRecentNewsList();
+        String news = ctx.factSheetData().getRecentNews();
+        String secEx991Summary = ctx.factSheetData().getRecentSecEx991Summaries();
 
-        if (newsMarkdown == null || "[]".equals(newsMarkdown) || newsMarkdown.isBlank() || newsList == null || newsList.isEmpty()) {
-            log.warn("No recent news found for ticker: {}", ctx.ticker());
-            return new AgentOutput<>(new NewsAgentOutput("No significant recent news found for this ticker."), 0);
+        if (hasNoData(news) && hasNoData(secEx991Summary)) {
+            log.warn("No recent news or 8-K documents found for ticker: {}", ctx.ticker());
+            return new AgentOutput<>(new NewsAgentOutput("No significant recent news or material events found for this ticker."), 0);
         }
 
-        // Extract definitions from the first news item dynamically to prevent hardcoding
-        NewsTickerDto firstNews = newsList.getFirst();
-        String relevanceDef = firstNews.relevanceScoreDefinition() != null ? firstNews.relevanceScoreDefinition() : "No definition " +
-                                                                                                                    "provided";
-        String sentimentDef = firstNews.sentimentScoreDefinition() != null ? firstNews.sentimentScoreDefinition() : "No definition " +
-                                                                                                                    "provided";
+        String fullPrompt = buildFullPrompt(ctx, news, secEx991Summary);
+        LlmResponse<NewsAgentOutput> response = llmRouterApi.executeCall(
+                LlmCallRequest.of(LlmTierType.STANDARD, fullPrompt, NewsAgentOutput.class, ctx.correlationId(), CorrelationType.COMPANY_ANALYSIS, getName().name()));
+
+        log.info("NewsAgent successfully generated summary for ticker: {}", ctx.ticker());
+        return new AgentOutput<>(response.result(), response.metrics().totalTokens());
+    }
+
+    private boolean hasNoData(String markdown) {
+        return markdown == null || markdown.isBlank() || "[]".equals(markdown);
+    }
+
+    private String buildFullPrompt(AgentContext ctx, String news, String secEx991) {
+        String relevanceDef = "No definition provided";
+        String sentimentDef = "No definition provided";
+        var newsList = ctx.factSheetData().getRecentNewsList();
+
+        if (!newsList.isEmpty()) {
+            NewsTickerDto firstNews = newsList.getFirst();
+            relevanceDef = firstNews.relevanceScoreDefinition() != null ? firstNews.relevanceScoreDefinition() : relevanceDef;
+            sentimentDef = firstNews.sentimentScoreDefinition() != null ? firstNews.sentimentScoreDefinition() : sentimentDef;
+        }
 
         String systemPrompt = promptRegistry.getPrompt(PromptType.NEWS)
                 .replace("{{ analysis_focus }}", ctx.analysisFocus() != null ? ctx.analysisFocus() : "Standard comprehensive analysis.")
                 .replace("{{ relevance_score_definition }}", relevanceDef)
                 .replace("{{ sentiment_score_definition }}", sentimentDef)
                 .replace("{{ news_sentiment_aggregate }}", ctx.factSheetData().getNewsSentimentAggregate())
-                .replace("{{ recent_news }}", newsMarkdown)
+                .replace("{{ recent_news }}", news)
+                .replace("{{ sec_ex99_1_summaries }}", secEx991)
                 .replace("{{ ticker }}", ctx.ticker())
                 .replace("{{ analysis_date }}", ctx.analysisDate().toString());
 
-        String fullPrompt = appendCriticFeedbackIfPresent(systemPrompt, ctx);
-
-        LlmResponse<NewsAgentOutput> response = llmRouterApi.executeCall(
-                LlmCallRequest.of(LlmTierType.STANDARD, fullPrompt, NewsAgentOutput.class, ctx.correlationId(), CorrelationType.COMPANY_ANALYSIS, getName().name()));
-
-        log.info("NewsAgent successfully generated summary for ticker: {}", ctx.ticker());
-        return new AgentOutput<>(response.result(), response.metrics().totalTokens());
+        return appendCriticFeedbackIfPresent(systemPrompt, ctx);
     }
 }

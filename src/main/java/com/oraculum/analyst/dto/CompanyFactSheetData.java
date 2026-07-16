@@ -2,6 +2,8 @@ package com.oraculum.analyst.dto;
 
 import com.oraculum.analyst.util.JsonUtils;
 import com.oraculum.company.api.domain.StatementVariant;
+import com.oraculum.company.api.domain.TickerDocumentSubtype;
+import com.oraculum.company.api.domain.TickerDocumentType;
 import com.oraculum.company.api.dto.*;
 import com.oraculum.economy.api.dto.MacroSummaryDto;
 import com.oraculum.harvester.api.dto.EarningsEstimateDto;
@@ -45,6 +47,7 @@ public class CompanyFactSheetData {
     private final List<InsiderTransactionTickerDto> recentInsiderTransactions;
     private final List<EarningsEstimateDto> earningsEstimates;
     private final List<MacroSummaryDto> macroeconomicSummary;
+    private final Map<TickerDocumentType, Map<TickerDocumentSubtype, List<TickerDocumentDto>>> recentSecDocuments;
 
     private String wrapWithCitation(Class<?> clazz, Object uniqueId, Object dto) {
         if (dto == null) return "{}";
@@ -238,6 +241,31 @@ public class CompanyFactSheetData {
         return "[" + macroeconomicSummary.stream()
                 .map(dto -> wrapWithCitation(MacroSummaryDto.class, dto.indicator(), dto))
                 .collect(Collectors.joining(",")) + "]";
+    }
+
+    private String getSecDocumentSummaries(TickerDocumentType type, TickerDocumentSubtype subtype) {
+        if (recentSecDocuments == null) return "[]";
+        Map<TickerDocumentSubtype, List<TickerDocumentDto>> subMap = recentSecDocuments.get(type);
+        if (subMap == null) return "[]";
+        List<TickerDocumentDto> docs = subMap.get(subtype);
+        if (docs == null || docs.isEmpty()) {
+            return "[]";
+        }
+        return "[" + docs.stream()
+                .map(dto -> wrapWithCitation(TickerDocumentDto.class, dto.getId(), dto))
+                .collect(Collectors.joining(",")) + "]";
+    }
+
+    public String getRecentSecMdSummaries() {
+        return getSecDocumentSummaries(TickerDocumentType.SEC_10K, TickerDocumentSubtype.SEC_MD);
+    }
+
+    public String getRecentSecRfSummaries() {
+        return getSecDocumentSummaries(TickerDocumentType.SEC_10K, TickerDocumentSubtype.SEC_RF);
+    }
+
+    public String getRecentSecEx991Summaries() {
+        return getSecDocumentSummaries(TickerDocumentType.SEC_8K, TickerDocumentSubtype.SEC_EX99_1);
     }
 
     private String namespaceJsonMetrics(String jsonStr, StatementVariant variant, String citationId) {

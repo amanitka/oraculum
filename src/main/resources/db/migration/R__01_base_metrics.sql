@@ -513,6 +513,8 @@ SELECT
     r.document_subtype,
     r.report_period,
     r.filing_date,
+    r.source_url,
+    r.accession_number,
     r.content,
     r.status,
     c.company_name,

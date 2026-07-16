@@ -57,6 +57,7 @@ public class RiskAgent implements Agent<RiskAgentOutput> {
                 .replace("{{ fundamentals_analysis }}", fundamentalsJson)
                 .replace("{{ cash_flow_analysis }}", cashFlowJson)
                 .replace("{{ macroeconomic_context }}", ctx.state().getMacroeconomicAgentOutput())
+                .replace("{{ sec_rf_summaries }}", factSheet.getRecentSecRfSummaries())
                 .replace("{{ ticker }}", ctx.ticker())
                 .replace("{{ analysis_date }}", ctx.analysisDate().toString());
 

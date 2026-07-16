@@ -71,9 +71,29 @@ public class SecDocumentHarvesterService {
 
         return tickers.stream()
                 .map(t -> {
-                    String cik = tickerToCik.get(t.ticker());
-                    String nonBlankCik = cik != null && !cik.isBlank() ? cik : null;
-                    return buildSingleItem(t.ticker(), t.market(), nonBlankCik, statuses.getOrDefault(t.ticker(), Map.of()), secDocTypes);
+                    var docRequests = buildDocumentRequests(statuses.getOrDefault(t.ticker(), Map.of()), secDocTypes);
+                    return FetchSecDocumentsRequest.TickerDocumentItem.builder()
+                            .ticker(t.ticker())
+                            .market(t.market())
+                            .cik(tickerToCik.get(t.ticker()))
+                            .documentTypes(docRequests)
+                            .build();
+                })
+                .toList();
+    }
+
+    private List<FetchSecDocumentsRequest.DocumentTypeRequest> buildDocumentRequests(Map<TickerDocumentType, LocalDate> tickerStatuses,
+                                                                                     List<TickerDocumentType> secDocTypes) {
+        return secDocTypes.stream()
+                .map(docType -> {
+                    LocalDate lastDate = tickerStatuses.get(docType);
+                    if (lastDate == null) {
+                        lastDate = LocalDate.now().minusYears(1);
+                    }
+                    return FetchSecDocumentsRequest.DocumentTypeRequest.builder()
+                            .documentType(docType.getCode())
+                            .lastProcessedFileDate(lastDate)
+                            .build();
                 })
                 .toList();
     }
@@ -94,28 +114,6 @@ public class SecDocumentHarvesterService {
         return Arrays.stream(TickerDocumentType.values())
                 .filter(type -> TickerDocumentProvider.SEC == type.getProvider())
                 .toList();
-    }
-
-    private FetchSecDocumentsRequest.TickerDocumentItem buildSingleItem(
-            String ticker,
-            String market,
-            String cik,
-            Map<TickerDocumentType, LocalDate> tickerStatuses,
-            List<TickerDocumentType> secDocTypes) {
-
-        List<FetchSecDocumentsRequest.DocumentTypeRequest> docRequests = secDocTypes.stream()
-                .map(docType -> FetchSecDocumentsRequest.DocumentTypeRequest.builder()
-                        .documentType(docType.getCode())
-                        .lastProcessedFileDate(tickerStatuses.get(docType))
-                        .build())
-                .toList();
-
-        return FetchSecDocumentsRequest.TickerDocumentItem.builder()
-                .ticker(ticker)
-                .market(market)
-                .cik(cik)
-                .documentTypes(docRequests)
-                .build();
     }
 
     public List<FetchSecDocumentsRequest> buildStaleSecDocumentsRequests() {
@@ -173,9 +171,13 @@ public class SecDocumentHarvesterService {
     }
 
     private FetchSecDocumentsRequest.DocumentTypeRequest buildDocumentTypeRequest(TickerDocumentSyncStatusDto dto) {
+        LocalDate lastDate = dto.getLastProcessedFileDate();
+        if (lastDate == null) {
+            lastDate = LocalDate.now().minusYears(1);
+        }
         return FetchSecDocumentsRequest.DocumentTypeRequest.builder()
                 .documentType(dto.getDocumentType().getCode())
-                .lastProcessedFileDate(dto.getLastProcessedFileDate())
+                .lastProcessedFileDate(lastDate)
                 .build();
     }
 

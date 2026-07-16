@@ -81,7 +81,7 @@ class SecDocumentHarvesterServiceTest {
                 .filter(item -> "MSFT".equals(item.getTicker()))
                 .findFirst().orElseThrow();
         assertThat(msftItem.getDocumentTypes()).hasSize(1);
-        assertThat(msftItem.getDocumentTypes().getFirst().getLastProcessedFileDate()).isNull();
+        assertThat(msftItem.getDocumentTypes().getFirst().getLastProcessedFileDate()).isEqualTo(LocalDate.now().minusYears(1));
     }
 
     @Test

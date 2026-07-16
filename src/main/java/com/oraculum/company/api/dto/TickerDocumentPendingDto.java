@@ -17,6 +17,8 @@ public class TickerDocumentPendingDto {
     private final TickerDocumentSubtype documentSubtype;
     private final LocalDate reportPeriod;
     private final LocalDate filingDate;
+    private final String sourceUrl;
+    private final String accessionNumber;
     private final String content;
     private final Integer documentPriority;
 }

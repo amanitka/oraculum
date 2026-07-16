@@ -6,8 +6,9 @@ You will be provided with two complementary views of the company's financials:
 - **Quarterly data** (`_q` suffix): Point-in-time quarterly snapshots for analyzing recent sequential trends.
 - **Annual data** (`_a` suffix): Last 5 fiscal years of income statements and financial ratios for multi-year trend analysis. Balance sheet is quarterly-only since it already captures the current structure and recent changes.
 - **Industry ratios** (`industry_ratios` array): TRAILING-TWELVE-MONTHS median financial ratios for the company's industry.
+- **SEC MD&A Summaries** (`sec_mda_summaries`): Recent processed summaries of management discussion and analysis from SEC filings (10-K) for qualitative business analysis.
 
-Use all views together. Use quarterly data to identify recent momentum and sequential changes. Use annual data to assess long-term growth quality, normalized profitability, and business cycle trends. Use industry ratios to benchmark the company's profitability and efficiency against its peers.
+Use all views together. Use quarterly data to identify recent momentum and sequential changes. Use annual data to assess long-term growth quality, normalized profitability, and business cycle trends. Use industry ratios to benchmark the company's profitability and efficiency against its peers. Integrate the SEC MD&A summaries to capture qualitative explanations of the company's performance, growth drivers, and strategic adjustments.
 
 ### CORE ANALYSIS FOCUS
 Pay special attention to this thesis requested by the user:
@@ -21,13 +22,14 @@ Pay special attention to this thesis requested by the user:
 ### CRITICAL: DATA INTERPRETATION RULES
 - **Quarterly (`_q`) data**: Each entry represents a single fiscal quarter (3 months). Do NOT annualize. Do NOT compare quarterly figures directly to annual figures.
 - **Annual (`_a`) data**: Each entry represents a full fiscal year. Use for multi-year trends, normalized profitability, and long-term context. Cite as "In FY2025, according to the annual income statement...".
+- **SEC MD&A Summaries**: Use these to explain the "why" behind the numbers (e.g. why did gross margins drop, why did a specific segment grow). Focus on the latest available filing.
 - **Both views**: Use both to build a complete picture. For example, quarterly data may show a recent margin dip while annual data confirms the longer-term margin expansion trend is intact. This is expected and not a contradiction.
 
 Your task is to:
 1. **Analyze Growth**: Use annual data for multi-year revenue/earnings trajectory. Use quarterly data for recent sequential momentum. Is growth accelerating, decelerating, or stable?
 2. **Analyze Profitability & Efficiency**: Assess margins and return metrics (like ROE) from historical views and benchmark them against the `industry_ratios`. Is the company becoming more or less profitable on a sustained basis? Is its ROE or margin profile significantly higher or lower than the industry median?
 3. **Formulate Summaries**:
-    * Write a `growth_analysis` paragraph detailing the company's top-line and bottom-line growth trends (cite both annual and quarterly sources).
+    * Write a `growth_analysis` paragraph detailing the company's top-line and bottom-line growth trends (cite both annual and quarterly sources, plus SEC MD&A).
     * Write a `profitability_analysis` paragraph assessing profitability and efficiency across timeframes.
     * Write a `quality_signals` paragraph interpreting specific quality markers like `financial_trend_score`, `margin_expansion_signal`, and `positive_earnings_streak`.
     * Provide a final one-sentence `summary` of the company's overall fundamental health.
@@ -57,7 +59,8 @@ Rules:
   "company_financial_ratios_q": {{ company_financial_ratios_q }},
   "income_statement_history_a": {{ income_statement_history_a }},
   "company_financial_ratios_a": {{ company_financial_ratios_a }},
-  "industry_ratios": {{ industry_ratios }}
+  "industry_ratios": {{ industry_ratios }},
+  "sec_mda_summaries": {{ sec_mda_summaries }}
 }
 ```
 

@@ -77,6 +77,9 @@ public class SecDocumentProcessingAgent {
                 .documentType(doc.getDocumentType())
                 .documentSubtype(doc.getDocumentSubtype())
                 .reportPeriod(doc.getReportPeriod())
+                .filingDate(doc.getFilingDate())
+                .sourceUrl(doc.getSourceUrl())
+                .accessionNumber(doc.getAccessionNumber())
                 .summary(result.json())
                 .sentimentScore(result.sentimentScore())
                 .build();

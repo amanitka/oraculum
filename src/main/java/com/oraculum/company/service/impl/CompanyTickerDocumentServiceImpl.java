@@ -29,6 +29,7 @@ public class CompanyTickerDocumentServiceImpl implements CompanyTickerDocumentAp
     private final TickerDocumentPendingRepository pendingRepository;
     private final TickerDocumentRawRepository rawRepository;
     private final TickerDocumentRepository summaryRepository;
+    private final TickerDocumentViewRepository latestSummaryRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -83,6 +84,9 @@ public class CompanyTickerDocumentServiceImpl implements CompanyTickerDocumentAp
                 .documentType(summary.getDocumentType())
                 .documentSubtype(summary.getDocumentSubtype())
                 .reportPeriod(summary.getReportPeriod())
+                .filingDate(summary.getFilingDate())
+                .sourceUrl(summary.getSourceUrl())
+                .accessionNumber(summary.getAccessionNumber())
                 .summary(summary.getSummary())
                 .sentimentScore(summary.getSentimentScore())
                 .build();
@@ -114,8 +118,34 @@ public class CompanyTickerDocumentServiceImpl implements CompanyTickerDocumentAp
                 .documentSubtype(entity.getDocumentSubtype())
                 .reportPeriod(entity.getReportPeriod())
                 .filingDate(entity.getFilingDate())
+                .sourceUrl(entity.getSourceUrl())
+                .accessionNumber(entity.getAccessionNumber())
                 .content(entity.getContent())
                 .documentPriority(entity.getDocumentPriority())
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TickerDocumentDto> getDocumentsByTicker(TickerKeyDto tickerKey) {
+        return latestSummaryRepository.findByTickerAndMarket(tickerKey.ticker(), tickerKey.market()).stream()
+                .map(this::mapLatestSummaryToDto)
+                .toList();
+    }
+
+    private TickerDocumentDto mapLatestSummaryToDto(com.oraculum.company.domain.TickerDocumentViewEntity entity) {
+        return TickerDocumentDto.builder()
+                .id(entity.getId())
+                .ticker(entity.getTicker())
+                .market(entity.getMarket())
+                .documentType(entity.getDocumentType())
+                .documentSubtype(entity.getDocumentSubtype())
+                .reportPeriod(entity.getReportPeriod())
+                .filingDate(entity.getFilingDate())
+                .sourceUrl(entity.getSourceUrl())
+                .accessionNumber(entity.getAccessionNumber())
+                .summary(entity.getSummary())
+                .sentimentScore(entity.getSentimentScore())
                 .build();
     }
 }

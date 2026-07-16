@@ -70,6 +70,7 @@ class FundamentalsAgentTest {
         when(factSheetData.getIncomeStatementHistory(any(), anyInt())).thenReturn("IS_DATA_A");
         when(factSheetData.getCompanyFinancialRatios(any(), anyInt())).thenReturn("RATIO_DATA_A");
         when(factSheetData.getLatestIndustryRatios(any())).thenReturn("IND_RATIO");
+        when(factSheetData.getRecentSecMdSummaries()).thenReturn("[]");
 
         FundamentalsAgentOutput outputData = mock(FundamentalsAgentOutput.class);
         LlmResponse<FundamentalsAgentOutput> llmResponse = new LlmResponse<>(outputData, new LlmMetrics(null, null, 100, 50, 150, 100L));

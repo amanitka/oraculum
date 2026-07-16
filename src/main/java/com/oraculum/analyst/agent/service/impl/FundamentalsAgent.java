@@ -45,6 +45,7 @@ public class FundamentalsAgent implements Agent<FundamentalsAgentOutput> {
                 .replace("{{ income_statement_history_a }}", factSheet.getIncomeStatementHistory(StatementVariant.ANNUAL, profile.periodLimit(StatementVariant.ANNUAL)))
                 .replace("{{ company_financial_ratios_a }}", factSheet.getCompanyFinancialRatios(StatementVariant.ANNUAL, profile.periodLimit(StatementVariant.ANNUAL)))
                 .replace("{{ industry_ratios }}", factSheet.getLatestIndustryRatios(StatementVariant.TTM))
+                .replace("{{ sec_mda_summaries }}", factSheet.getRecentSecMdSummaries())
                 .replace("{{ ticker }}", ctx.ticker())
                 .replace("{{ analysis_date }}", ctx.analysisDate().toString());
 

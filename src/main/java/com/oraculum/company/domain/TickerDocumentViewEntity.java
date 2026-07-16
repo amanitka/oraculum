@@ -12,14 +12,13 @@ import java.time.Instant;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "t_ticker_document")
-@IdClass(TickerDocumentEntity.TickerDocumentId.class)
+@Table(name = "v_ticker_document")
+@IdClass(TickerDocumentViewEntity.TickerDocumentViewId.class)
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class TickerDocumentEntity {
+public class TickerDocumentViewEntity {
 
     @Id
     private String id;
@@ -56,16 +55,16 @@ public class TickerDocumentEntity {
     @Column(name = "sentiment_score")
     private Float sentimentScore;
 
-    @Column(name = "created_at", insertable = false, updatable = false)
+    @Column(name = "created_at")
     private Instant createdAt;
 
-    @Column(name = "updated_at", insertable = false, updatable = false)
+    @Column(name = "updated_at")
     private Instant updatedAt;
 
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class TickerDocumentId implements Serializable {
+    public static class TickerDocumentViewId implements Serializable {
         private String id;
         private LocalDate reportPeriod;
     }

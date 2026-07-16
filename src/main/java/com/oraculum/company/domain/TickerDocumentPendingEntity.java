@@ -42,6 +42,12 @@ public class TickerDocumentPendingEntity {
     @Column(name = "filing_date")
     private LocalDate filingDate;
 
+    @Column(name = "source_url")
+    private String sourceUrl;
+
+    @Column(name = "accession_number")
+    private String accessionNumber;
+
     private String content;
 
     @Enumerated(EnumType.STRING)

@@ -21,4 +21,6 @@ public interface CompanyTickerDocumentApi {
     void updateRawDocumentStatus(String id, LocalDate reportPeriod, TickerDocumentProcessingStatus status);
 
     List<TickerDocumentPendingDto> getPendingRawDocumentsByTicker(TickerKeyDto tickerKey, int maxPriority);
+
+    List<TickerDocumentDto> getDocumentsByTicker(TickerKeyDto tickerKey);
 }

@@ -68,6 +68,7 @@ class RiskAgentTest {
         when(factSheetData.getBalanceSheetHistory(any(), anyInt())).thenReturn("BS_DATA");
         when(factSheetData.getCompanyFinancialRatios(any(), anyInt())).thenReturn("RATIO_DATA");
         when(factSheetData.getLatestIndustryRatios(any())).thenReturn("IND_RATIO");
+        when(factSheetData.getRecentSecRfSummaries()).thenReturn("[]");
 
         RiskAgentOutput outputData = mock(RiskAgentOutput.class);
         LlmResponse<RiskAgentOutput> llmResponse = new LlmResponse<>(outputData, new LlmMetrics(null, null, 100, 50, 150, 100L));

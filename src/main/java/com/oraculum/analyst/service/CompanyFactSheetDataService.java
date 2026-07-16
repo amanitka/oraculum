@@ -7,7 +7,10 @@ import com.oraculum.company.api.CompanyFinancialDataApi;
 import com.oraculum.company.api.CompanyInsiderTransactionApi;
 import com.oraculum.company.api.CompanyNewsApi;
 import com.oraculum.company.api.CompanySharePriceApi;
+import com.oraculum.company.api.CompanyTickerDocumentApi;
 import com.oraculum.company.api.domain.StatementVariant;
+import com.oraculum.company.api.domain.TickerDocumentSubtype;
+import com.oraculum.company.api.domain.TickerDocumentType;
 import com.oraculum.company.api.dto.*;
 import com.oraculum.economy.api.EconomyDataApi;
 import com.oraculum.harvester.api.HarvesterLiveApi;
@@ -31,6 +34,7 @@ public class CompanyFactSheetDataService {
     private final CompanyInsiderTransactionApi companyInsiderTransactionApi;
     private final HarvesterLiveApi harvesterLiveApi;
     private final EconomyDataApi economyDataApi;
+    private final CompanyTickerDocumentApi companyTickerDocumentApi;
     private final JsonMapper jsonMapper;
     private final AnalystProperties analystProperties;
 
@@ -105,6 +109,39 @@ public class CompanyFactSheetDataService {
         return companyInsiderTransactionApi.getInsiderTransactionsByTicker(company.ticker(), after);
     }
 
+    private Map<TickerDocumentType, Map<TickerDocumentSubtype, List<TickerDocumentDto>>> getRecentSecDocuments(CompanyDto company) {
+        TickerKeyDto key = new TickerKeyDto(company.ticker(), company.market());
+        List<TickerDocumentDto> documents = companyTickerDocumentApi.getDocumentsByTicker(key);
+        List<TickerDocumentDto> sortedDocs = documents.stream()
+                .sorted(Comparator.comparing(TickerDocumentDto::getReportPeriod).reversed())
+                .toList();
+
+        Map<TickerDocumentType, Map<TickerDocumentSubtype, List<TickerDocumentDto>>> result = new java.util.EnumMap<>(TickerDocumentType.class);
+        for (TickerDocumentDto doc : sortedDocs) {
+            TickerDocumentType type = doc.getDocumentType();
+            TickerDocumentSubtype subtype = doc.getDocumentSubtype();
+
+            int limit = getLimitForSecDocument(type, subtype);
+            if (limit == 0) continue;
+
+            Map<TickerDocumentSubtype, List<TickerDocumentDto>> subMap =
+                    result.computeIfAbsent(type, _ -> new java.util.EnumMap<>(TickerDocumentSubtype.class));
+            List<TickerDocumentDto> list = subMap.computeIfAbsent(subtype, _ -> new java.util.ArrayList<>());
+            if (list.size() < limit) {
+                list.add(doc);
+            }
+        }
+        return result;
+    }
+
+    private int getLimitForSecDocument(TickerDocumentType type, TickerDocumentSubtype subtype) {
+        if (type == TickerDocumentType.SEC_10K) {
+            if (subtype == TickerDocumentSubtype.SEC_MD || subtype == TickerDocumentSubtype.SEC_RF) return 1;
+        }
+        if (type == TickerDocumentType.SEC_8K && subtype == TickerDocumentSubtype.SEC_EX99_1) return 4;
+        return 0;
+    }
+
     public CompanyFactSheetData create(CompanyDto company, CitationRegistry citationRegistry) {
         LocalDate annualAfter = analystProperties.factSheet().getAnnualFactSheetHistoryDate();
         LocalDate quarterlyAfter = analystProperties.factSheet().getQuarterlyFactSheetHistoryDate();
@@ -128,6 +165,7 @@ public class CompanyFactSheetDataService {
                 .recentInsiderTransactions(getRecentInsiderTransactions(company, analystProperties.insider().getTransactionHistoryDate()))
                 .earningsEstimates(harvesterLiveApi.fetchEarningsEstimates(company.ticker()).orElse(List.of()))
                 .macroeconomicSummary(economyDataApi.getMacroeconomicSummary())
+                .recentSecDocuments(getRecentSecDocuments(company))
                 .build();
     }
 }

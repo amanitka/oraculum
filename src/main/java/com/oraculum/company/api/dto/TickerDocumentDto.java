@@ -16,6 +16,9 @@ public class TickerDocumentDto {
     private final TickerDocumentType documentType;
     private final TickerDocumentSubtype documentSubtype;
     private final LocalDate reportPeriod;
+    private final LocalDate filingDate;
+    private final String sourceUrl;
+    private final String accessionNumber;
     private final String summary;
     private final Float sentimentScore;
 }
