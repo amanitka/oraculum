@@ -4,5 +4,6 @@ public enum LlmProviderType {
     OPENAI,
     GEMINI,
     GROQ,
+    DEEPSEEK,
     LMSTUDIO
 }

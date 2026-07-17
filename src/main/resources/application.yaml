@@ -179,8 +179,8 @@ oraculum:
       provider-fallback-order:
         - lmstudio
         - gemini
+        - deepseek
         - openai
-        - groq
 
     providers:
       lmstudio:
@@ -190,6 +190,10 @@ oraculum:
       gemini:
         base-url: "https://generativelanguage.googleapis.com/v1beta/openai/"
         api-key: ${ORACULUM_GEMINI_API_KEY}
+
+      deepseek:
+        base-url: "https://api.deepseek.com"
+        api-key: ${ORACULUM_DEEPSEEK_API_KEY}
 
       groq:
         base-url: "https://api.groq.com/openai/v1"
@@ -203,15 +207,18 @@ oraculum:
       mini:
         lmstudio: "gemma-4-12b"
         gemini: "gemini-3.1-flash-lite"
+        deepseek: "deepseek-v4-flash"
         groq: "llama-3.1-8b-instant"
         openai: "gpt-5.4-nano"
 
       standard:
         gemini: "gemini-3.5-flash"
         groq: "llama-3.1-70b-versatile"
+        deepseek: "deepseek-v4-flash"
         openai: "gpt-5.4-mini"
 
       pro:
         gemini: "gemini-3.1-pro-preview"
         groq: "llama-3.3-70b"
+        deepseek: "deepseek-v4-pro"
         openai: "gpt-5.4"
