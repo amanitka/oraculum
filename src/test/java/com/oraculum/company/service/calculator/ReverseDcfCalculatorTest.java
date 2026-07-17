@@ -1,8 +1,8 @@
-package com.oraculum.analyst.service.calculator;
+package com.oraculum.company.service.calculator;
 
-import com.oraculum.analyst.dto.ReverseDcfResult;
 import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.dto.CompanyFinancialRatiosDto;
+import com.oraculum.company.api.dto.ReverseDcfDto;
 import com.oraculum.company.api.dto.SharePriceSignalDto;
 import org.junit.jupiter.api.Test;
 
@@ -36,7 +36,7 @@ class ReverseDcfCalculatorTest {
                 StatementVariant.ANNUAL, List.of()
         );
 
-        ReverseDcfResult result = calculator.calculate(List.of(latestDaily), ratios);
+        ReverseDcfDto result = calculator.calculate(List.of(latestDaily), ratios);
 
         assertThat(result).isNotNull();
         assertThat(result.currentMarketCap()).isEqualTo(10_000_000_000f);
@@ -45,7 +45,7 @@ class ReverseDcfCalculatorTest {
         assertThat(result.discountRatePct()).isEqualTo(10.0f);
         assertThat(result.projectionYears()).isEqualTo(10);
         assertThat(result.terminalGrowthRatePct()).isEqualTo(3.0f);
-        
+
         assertThat(result.impliedFcfGrowthRatePct()).isNotNull();
         assertThat(result.impliedFcfGrowthRatePct()).isBetween(-50f, 80f);
         assertThat(result.interpretation()).contains("At the current market capitalization of $10.00B");
@@ -73,7 +73,7 @@ class ReverseDcfCalculatorTest {
                 StatementVariant.ANNUAL, List.of(ratio2, ratio1)
         );
 
-        ReverseDcfResult result = calculator.calculate(List.of(latestDaily), ratios);
+        ReverseDcfDto result = calculator.calculate(List.of(latestDaily), ratios);
 
         assertThat(result).isNotNull();
         assertThat(result.historicalFcfCagrPct()).isCloseTo(20.0f, org.assertj.core.api.Assertions.within(0.1f));

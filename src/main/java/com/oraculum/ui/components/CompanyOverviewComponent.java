@@ -9,10 +9,7 @@ import com.github.appreciated.apexcharts.config.stroke.Curve;
 import com.github.appreciated.apexcharts.config.xaxis.XAxisType;
 import com.github.appreciated.apexcharts.config.yaxis.builder.LabelsBuilder;
 import com.github.appreciated.apexcharts.helper.Series;
-import com.oraculum.company.api.CompanyFinancialDataApi;
-import com.oraculum.company.api.CompanyInsiderTransactionApi;
-import com.oraculum.company.api.CompanyNewsApi;
-import com.oraculum.company.api.CompanySharePriceApi;
+import com.oraculum.company.api.*;
 import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.dto.*;
 import com.oraculum.ui.ViewHelper;
@@ -45,6 +42,7 @@ public class CompanyOverviewComponent extends VerticalLayout {
     private final CompanySharePriceApi companySharePriceApi;
     private final CompanyNewsApi companyNewsApi;
     private final CompanyInsiderTransactionApi companyInsiderTransactionApi;
+    private final CompanyValuationApi companyValuationApi;
     private final CompanyDto company;
     private final ObjectMapper objectMapper;
     private final Div chartPlaceholder;
@@ -54,11 +52,13 @@ public class CompanyOverviewComponent extends VerticalLayout {
                                     CompanySharePriceApi companySharePriceApi,
                                     CompanyNewsApi companyNewsApi,
                                     CompanyInsiderTransactionApi companyInsiderTransactionApi,
+                                    CompanyValuationApi companyValuationApi,
                                     CompanyDto company, ObjectMapper objectMapper) {
         this.companyFinancialDataApi = companyFinancialDataApi;
         this.companySharePriceApi = companySharePriceApi;
         this.companyNewsApi = companyNewsApi;
         this.companyInsiderTransactionApi = companyInsiderTransactionApi;
+        this.companyValuationApi = companyValuationApi;
         this.company = company;
         this.objectMapper = objectMapper;
 
@@ -81,22 +81,25 @@ public class CompanyOverviewComponent extends VerticalLayout {
         chartPlaceholder.setHeight("400px");
         mainTabSheet.add("Overview", createOverviewLayout());
 
-        // 2. Financial Ratios Tab
+        // 2. Valuation Tab
+        mainTabSheet.add("Valuation", createValuationLayout());
+
+        // 3. Financial Ratios Tab
         mainTabSheet.add("Ratios", createRatiosLayout());
 
-        // 3. Income Statement Tab
+        // 4. Income Statement Tab
         mainTabSheet.add("Income Statement", createIncomeStatementLayout());
 
-        // 4. Balance Sheet Tab
+        // 5. Balance Sheet Tab
         mainTabSheet.add("Balance Sheet", createBalanceSheetLayout());
 
-        // 5. Cash Flow Tab
+        // 6. Cash Flow Tab
         mainTabSheet.add("Cash Flow", createCashFlowLayout());
 
-        // 6. News Tab
+        // 7. News Tab
         mainTabSheet.add("News", createNewsLayout());
 
-        // 7. Insider Tab
+        // 8. Insider Tab
         mainTabSheet.add("Insider", createInsiderLayout());
 
         add(mainTabSheet);
@@ -496,5 +499,122 @@ public class CompanyOverviewComponent extends VerticalLayout {
                         "setTimeout(() => window.dispatchEvent(new Event('resize')), 350); " +
                         "setTimeout(() => window.dispatchEvent(new Event('resize')), 600);")
         );
+    }
+
+    private Component createValuationLayout() {
+        VerticalLayout layout = new VerticalLayout();
+        layout.setWidthFull();
+        layout.setPadding(true);
+        layout.setSpacing(true);
+
+        int companyId = company.id();
+
+        // 1. Reverse DCF Section
+        ReverseDcfDto dcfDto = companyValuationApi.calculateReverseDcf(companyId);
+        if (dcfDto != null) {
+            H3 dcfHeader = new H3("Reverse Discounted Cash Flow (implied growth)");
+            dcfHeader.getStyle().set("margin-top", "0.5rem");
+
+            HorizontalLayout dcfCards = new HorizontalLayout();
+            dcfCards.setWidthFull();
+            dcfCards.setSpacing(true);
+
+            dcfCards.add(createMetricCard("Current Market Cap", String.format(java.util.Locale.US, "$%,.2fB", dcfDto.currentMarketCap() / 1_000_000_000f)));
+            dcfCards.add(createMetricCard("TTM Free Cash Flow", String.format(java.util.Locale.US, "$%,.2fB", dcfDto.currentFcf() / 1_000_000_000f)));
+            dcfCards.add(createMetricCard("Free Cash Flow Yield", String.format(java.util.Locale.US, "%.2f%%", dcfDto.fcfYieldPct())));
+            dcfCards.add(createMetricCard("Implied 10Y FCF Growth Rate", String.format(java.util.Locale.US, "%.2f%%", dcfDto.impliedFcfGrowthRatePct())));
+
+            Div interpretationCard = new Div();
+            interpretationCard.setWidthFull();
+            interpretationCard.getStyle()
+                    .set("background-color", "var(--lumo-contrast-5pct)")
+                    .set("border-left", "4px solid var(--lumo-primary-color)")
+                    .set("padding", "1rem")
+                    .set("border-radius", "0 4px 4px 0")
+                    .set("margin-top", "0.5rem");
+
+            Span interpLabel = new Span("Analysis interpretation: ");
+            interpLabel.getStyle().set("font-weight", "bold");
+            Span interpText = new Span(dcfDto.interpretation());
+
+            interpretationCard.add(interpLabel, interpText);
+
+            layout.add(dcfHeader, dcfCards, interpretationCard);
+        }
+
+        // 2. Historical Valuation Percentiles Section
+        List<HistoricalValuationSummaryDto> summaries = companyValuationApi.calculateHistoricalValuationPercentiles(companyId);
+        if (summaries != null && !summaries.isEmpty()) {
+            H3 histHeader = new H3("Historical Valuation Multiples & 10-Year Percentiles");
+            histHeader.getStyle().set("margin-top", "1.5rem");
+
+            Grid<HistoricalValuationSummaryDto> grid = new Grid<>(HistoricalValuationSummaryDto.class, false);
+            grid.addThemeVariants(GridVariant.LUMO_NO_BORDER, GridVariant.LUMO_ROW_STRIPES);
+
+            grid.addColumn(HistoricalValuationSummaryDto::metric).setHeader("Metric").setAutoWidth(true);
+            grid.addColumn(item -> formatFloat(item.current())).setHeader("Current Multiple").setAutoWidth(true);
+            grid.addColumn(item -> formatFloat(item.avg5y())).setHeader("5Y Average").setAutoWidth(true);
+            grid.addColumn(item -> formatFloat(item.avg10y())).setHeader("10Y Average").setAutoWidth(true);
+
+            grid.addColumn(new ComponentRenderer<>(item -> {
+                Span badge = new Span(String.format("%d%%", item.percentile10y()));
+                if (item.percentile10y() != null) {
+                    if (item.percentile10y() > 80) {
+                        badge.getElement().getThemeList().addAll(List.of("badge", "error"));
+                    } else if (item.percentile10y() < 30) {
+                        badge.getElement().getThemeList().addAll(List.of("badge", "success"));
+                    } else {
+                        badge.getElement().getThemeList().addAll(List.of("badge", "contrast"));
+                    }
+                }
+                return badge;
+            })).setHeader("10Y Percentile Rank").setAutoWidth(true);
+
+            grid.addColumn(item -> formatFloat(item.min10y())).setHeader("10Y Min").setAutoWidth(true);
+            grid.addColumn(item -> formatFloat(item.max10y())).setHeader("10Y Max").setAutoWidth(true);
+
+            grid.setItems(summaries);
+            grid.setWidthFull();
+            grid.setAllRowsVisible(true);
+
+            layout.add(histHeader, grid);
+        }
+
+        return layout;
+    }
+
+    private Component createMetricCard(String label, String value) {
+        VerticalLayout card = new VerticalLayout();
+        card.setPadding(true);
+        card.setSpacing(false);
+        card.getStyle()
+                .set("background-color", "var(--lumo-base-color)")
+                .set("border", "1px solid var(--lumo-contrast-10pct)")
+                .set("border-radius", "8px")
+                .set("box-shadow", "var(--lumo-box-shadow-xs)");
+
+        Span lblSpan = new Span(label);
+        lblSpan.getStyle()
+                .set("font-size", "var(--lumo-font-size-xs)")
+                .set("color", "var(--lumo-secondary-text-color)")
+                .set("text-transform", "uppercase")
+                .set("letter-spacing", "0.05em");
+
+        Span valSpan = new Span(value);
+        valSpan.getStyle()
+                .set("font-size", "var(--lumo-font-size-xl)")
+                .set("font-weight", "bold")
+                .set("color", "var(--lumo-header-text-color)");
+
+        card.add(lblSpan, valSpan);
+        return card;
+    }
+
+    private String formatFloat(Float f) {
+        if (f == null) return "-";
+        if (Math.abs(f) < 1.0f && f != 0) {
+            return String.format(java.util.Locale.US, "%.4f", f);
+        }
+        return String.format(java.util.Locale.US, "%.2f", f);
     }
 }

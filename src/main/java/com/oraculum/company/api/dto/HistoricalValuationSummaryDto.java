@@ -1,8 +1,8 @@
-package com.oraculum.analyst.dto;
+package com.oraculum.company.api.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public record HistoricalValuationSummary(
+public record HistoricalValuationSummaryDto(
         @JsonProperty("metric") String metric,
         @JsonProperty("current") Float current,
         @JsonProperty("avg_5y") Float avg5y,

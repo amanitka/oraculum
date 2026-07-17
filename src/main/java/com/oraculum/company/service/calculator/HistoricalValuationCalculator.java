@@ -1,6 +1,6 @@
-package com.oraculum.analyst.service.calculator;
+package com.oraculum.company.service.calculator;
 
-import com.oraculum.analyst.dto.HistoricalValuationSummary;
+import com.oraculum.company.api.dto.HistoricalValuationSummaryDto;
 import com.oraculum.company.api.dto.SharePriceSignalDto;
 import org.springframework.stereotype.Component;
 
@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 @Component
 public class HistoricalValuationCalculator {
 
-    public List<HistoricalValuationSummary> calculate(List<SharePriceSignalDto> dailySignals, List<SharePriceSignalDto> monthlySignals) {
+    public List<HistoricalValuationSummaryDto> calculate(List<SharePriceSignalDto> dailySignals, List<SharePriceSignalDto> monthlySignals) {
         if (dailySignals == null || dailySignals.isEmpty() || monthlySignals == null || monthlySignals.isEmpty()) {
             return List.of();
         }
@@ -24,7 +24,7 @@ public class HistoricalValuationCalculator {
         if (maxDate == null) return List.of();
 
         List<SharePriceSignalDto> list5y = filterSignals5Y(monthlySignals, maxDate);
-        List<HistoricalValuationSummary> summaries = new ArrayList<>();
+        List<HistoricalValuationSummaryDto> summaries = new ArrayList<>();
 
         addMetric(summaries, "P/E", latest.peRatio(), monthlySignals, list5y, SharePriceSignalDto::peRatio);
         addMetric(summaries, "EV/EBITDA", latest.enterpriseValueToEbitda(), monthlySignals, list5y, SharePriceSignalDto::enterpriseValueToEbitda);
@@ -41,7 +41,7 @@ public class HistoricalValuationCalculator {
                 .collect(Collectors.toList());
     }
 
-    private void addMetric(List<HistoricalValuationSummary> list, String name, Float current,
+    private void addMetric(List<HistoricalValuationSummaryDto> list, String name, Float current,
                            List<SharePriceSignalDto> history10y, List<SharePriceSignalDto> history5y,
                            Function<SharePriceSignalDto, Float> mapper) {
         if (current == null) return;
@@ -59,7 +59,7 @@ public class HistoricalValuationCalculator {
                 .collect(Collectors.toList());
     }
 
-    private HistoricalValuationSummary computeSummary(String name, float current, List<Float> valid10y, List<Float> valid5y) {
+    private HistoricalValuationSummaryDto computeSummary(String name, float current, List<Float> valid10y, List<Float> valid5y) {
         double sum10y = 0;
         float min10y = Float.MAX_VALUE;
         float max10y = -Float.MAX_VALUE;
@@ -74,7 +74,7 @@ public class HistoricalValuationCalculator {
         int percentile10y = (int) Math.round((double) countBelow / valid10y.size() * 100);
         float avg5y = computeAverage(valid5y, avg10y);
 
-        return new HistoricalValuationSummary(name, current, avg5y, avg10y, percentile10y, min10y, max10y);
+        return new HistoricalValuationSummaryDto(name, current, avg5y, avg10y, percentile10y, min10y, max10y);
     }
 
     private float computeAverage(List<Float> values, float fallback) {

@@ -1,8 +1,8 @@
-package com.oraculum.analyst.dto;
+package com.oraculum.company.api.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public record ReverseDcfResult(
+public record ReverseDcfDto(
         @JsonProperty("current_market_cap") Float currentMarketCap,
         @JsonProperty("current_fcf") Float currentFcf,
         @JsonProperty("fcf_yield_pct") Float fcfYieldPct,

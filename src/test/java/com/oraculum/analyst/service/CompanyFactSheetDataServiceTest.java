@@ -4,6 +4,7 @@ import com.oraculum.analyst.config.AnalystProperties;
 import com.oraculum.analyst.dto.CitationRegistry;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
 import com.oraculum.company.api.CompanyFinancialDataApi;
+import com.oraculum.company.api.CompanyValuationApi;
 import com.oraculum.company.api.CompanyInsiderTransactionApi;
 import com.oraculum.company.api.CompanyNewsApi;
 import com.oraculum.company.api.CompanySharePriceApi;

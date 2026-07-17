@@ -29,6 +29,7 @@ public class CompanyView extends VerticalLayout {
     private final CompanySharePriceApi companySharePriceApi;
     private final CompanyNewsApi companyNewsApi;
     private final CompanyInsiderTransactionApi companyInsiderTransactionApi;
+    private final CompanyValuationApi companyValuationApi;
     private final ObjectMapper objectMapper;
     private final Div contentArea;
     private ComboBox<CompanyDto> companyComboBox;
@@ -38,12 +39,14 @@ public class CompanyView extends VerticalLayout {
                        CompanySharePriceApi companySharePriceApi,
                        CompanyNewsApi companyNewsApi,
                        CompanyInsiderTransactionApi companyInsiderTransactionApi,
+                       CompanyValuationApi companyValuationApi,
                        ObjectMapper objectMapper) {
         this.companyMetadataApi = companyMetadataApi;
         this.companyFinancialDataApi = companyFinancialDataApi;
         this.companySharePriceApi = companySharePriceApi;
         this.companyNewsApi = companyNewsApi;
         this.companyInsiderTransactionApi = companyInsiderTransactionApi;
+        this.companyValuationApi = companyValuationApi;
         this.objectMapper = objectMapper;
 
         setWidthFull();
@@ -101,7 +104,9 @@ public class CompanyView extends VerticalLayout {
             return;
         }
 
-        CompanyOverviewComponent overview = new CompanyOverviewComponent(companyFinancialDataApi, companySharePriceApi, companyNewsApi, companyInsiderTransactionApi, selectedCompany, objectMapper);
+        CompanyOverviewComponent overview = new CompanyOverviewComponent(
+                companyFinancialDataApi, companySharePriceApi, companyNewsApi, 
+                companyInsiderTransactionApi, companyValuationApi, selectedCompany, objectMapper);
         contentArea.add(overview);
     }
 

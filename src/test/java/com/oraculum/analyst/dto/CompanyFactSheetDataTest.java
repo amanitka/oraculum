@@ -1,6 +1,8 @@
 package com.oraculum.analyst.dto;
 
 import com.oraculum.company.api.dto.CompanyDto;
+import com.oraculum.company.api.dto.ReverseDcfDto;
+import com.oraculum.company.api.dto.HistoricalValuationSummaryDto;
 import tools.jackson.databind.json.JsonMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,7 +29,7 @@ class CompanyFactSheetDataTest {
 
     @Test
     void getReverseDcfAnalysis_returnsSerializedResult() {
-        ReverseDcfResult reverseDcfResult = new ReverseDcfResult(
+        ReverseDcfDto reverseDcfResult = new ReverseDcfDto(
                 10_000_000_000f, 500_000_000f, 5.0f, 10.0f, 10, 3.0f, 12.5f, 15.0f, "Test Interpretation"
         );
 
@@ -46,7 +48,7 @@ class CompanyFactSheetDataTest {
 
     @Test
     void getHistoricalValuationPercentiles_returnsSerializedList() {
-        HistoricalValuationSummary summary = new HistoricalValuationSummary(
+        HistoricalValuationSummaryDto summary = new HistoricalValuationSummaryDto(
                 "P/E", 20.0f, 18.0f, 15.0f, 60, 10.0f, 25.0f
         );
 

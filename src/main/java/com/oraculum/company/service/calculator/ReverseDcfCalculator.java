@@ -1,8 +1,8 @@
-package com.oraculum.analyst.service.calculator;
+package com.oraculum.company.service.calculator;
 
-import com.oraculum.analyst.dto.ReverseDcfResult;
 import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.dto.CompanyFinancialRatiosDto;
+import com.oraculum.company.api.dto.ReverseDcfDto;
 import com.oraculum.company.api.dto.SharePriceSignalDto;
 import org.springframework.stereotype.Component;
 
@@ -19,7 +19,7 @@ public class ReverseDcfCalculator {
     private static final float DEFAULT_TERMINAL_GROWTH = 0.03f;
     private static final int DEFAULT_PROJECTION_YEARS = 10;
 
-    public ReverseDcfResult calculate(List<SharePriceSignalDto> dailySignals, Map<StatementVariant, List<CompanyFinancialRatiosDto>> ratios) {
+    public ReverseDcfDto calculate(List<SharePriceSignalDto> dailySignals, Map<StatementVariant, List<CompanyFinancialRatiosDto>> ratios) {
         if (dailySignals == null || dailySignals.isEmpty() || ratios == null || ratios.isEmpty()) {
             return null;
         }
@@ -38,7 +38,7 @@ public class ReverseDcfCalculator {
 
         String interpretation = buildInterpretation(impliedG, historicalCagr, marketCap, currentFcf);
 
-        return new ReverseDcfResult(
+        return new ReverseDcfDto(
                 marketCap,
                 currentFcf,
                 fcfYield * 100,

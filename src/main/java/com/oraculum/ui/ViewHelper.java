@@ -4,6 +4,7 @@ import com.oraculum.analyst.api.domain.AnalysisOutlook;
 import com.oraculum.analyst.api.domain.AnalysisRecommendation;
 import com.oraculum.analyst.api.domain.AnalysisStatus;
 
+import com.oraculum.company.api.*;
 import com.oraculum.company.api.domain.CompanySize;
 import com.oraculum.company.api.domain.NewsSentimentLabel;
 import com.oraculum.company.api.domain.ScreenerSignal;
@@ -244,7 +245,7 @@ public final class ViewHelper {
      *
      * @param showText if true, shows "View" text; if false, shows icon-only button with tooltip
      */
-    public static Button createCompanyDetailsButton(com.oraculum.company.api.CompanyMetadataApi companyMetadataApi, com.oraculum.company.api.CompanyFinancialDataApi companyFinancialDataApi, com.oraculum.company.api.CompanySharePriceApi companySharePriceApi, com.oraculum.company.api.CompanyNewsApi companyNewsApi, com.oraculum.company.api.CompanyInsiderTransactionApi companyInsiderTransactionApi, ObjectMapper objectMapper, int companyId, boolean showText) {
+    public static Button createCompanyDetailsButton(CompanyMetadataApi companyMetadataApi, CompanyFinancialDataApi companyFinancialDataApi, CompanySharePriceApi companySharePriceApi, CompanyNewsApi companyNewsApi, CompanyInsiderTransactionApi companyInsiderTransactionApi, CompanyValuationApi companyValuationApi, ObjectMapper objectMapper, int companyId, boolean showText) {
         Button btn;
         if (showText) {
             btn = new Button("View", VaadinIcon.CHART_LINE.create());
@@ -261,7 +262,7 @@ public final class ViewHelper {
                 Dialog dialog = new Dialog();
                 dialog.setWidth("90vw");
                 dialog.setHeight("90vh");
-                dialog.add(new CompanyOverviewComponent(companyFinancialDataApi, companySharePriceApi, companyNewsApi, companyInsiderTransactionApi, company, objectMapper));
+                dialog.add(new CompanyOverviewComponent(companyFinancialDataApi, companySharePriceApi, companyNewsApi, companyInsiderTransactionApi, companyValuationApi, company, objectMapper));
 
                 Button closeBtn = new Button("Close", _ -> dialog.close());
                 closeBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);

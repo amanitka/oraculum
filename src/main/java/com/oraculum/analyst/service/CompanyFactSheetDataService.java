@@ -3,9 +3,8 @@ package com.oraculum.analyst.service;
 import com.oraculum.analyst.config.AnalystProperties;
 import com.oraculum.analyst.dto.CitationRegistry;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
-import com.oraculum.analyst.service.calculator.HistoricalValuationCalculator;
-import com.oraculum.analyst.service.calculator.ReverseDcfCalculator;
 import com.oraculum.company.api.CompanyFinancialDataApi;
+import com.oraculum.company.api.CompanyValuationApi;
 import com.oraculum.company.api.CompanyInsiderTransactionApi;
 import com.oraculum.company.api.CompanyNewsApi;
 import com.oraculum.company.api.CompanySharePriceApi;
@@ -39,8 +38,7 @@ public class CompanyFactSheetDataService {
     private final CompanyTickerDocumentApi companyTickerDocumentApi;
     private final JsonMapper jsonMapper;
     private final AnalystProperties analystProperties;
-    private final ReverseDcfCalculator reverseDcfCalculator;
-    private final HistoricalValuationCalculator historicalValuationCalculator;
+    private final CompanyValuationApi companyValuationApi;
 
     private Map<StatementVariant, List<IncomeStatementDto>> getIncomeStatements(CompanyDto company, LocalDate annualAfter, LocalDate quarterlyAfter) {
         return companyFinancialDataApi.getIncomeStatementsByCompanyId(company.id(), annualAfter)
@@ -146,18 +144,11 @@ public class CompanyFactSheetDataService {
         return 0;
     }
 
-    private List<SharePriceSignalDto> getLimitedMonthlySharePriceSignals(List<SharePriceSignalDto> monthlySignals) {
-        LocalDate cutoffDate = analystProperties.sharePrice().getMonthlySharePriceHistoryDate();
-        return monthlySignals.stream()
-                .filter(s -> s.tradeDate() != null && !s.tradeDate().isBefore(cutoffDate))
-                .collect(Collectors.toList());
-    }
-
     public CompanyFactSheetData create(CompanyDto company, CitationRegistry citationRegistry) {
         LocalDate annualAfter = analystProperties.factSheet().getAnnualFactSheetHistoryDate();
         LocalDate quarterlyAfter = analystProperties.factSheet().getQuarterlyFactSheetHistoryDate();
         List<SharePriceSignalDto> dailySignals = getDailySharePriceSignals(company, analystProperties.sharePrice().getSharePriceHistoryDate());
-        List<SharePriceSignalDto> monthlySignals = getMonthlySharePriceSignals(company, LocalDate.now().minusDays(3650));
+        List<SharePriceSignalDto> monthlySignals = getMonthlySharePriceSignals(company, analystProperties.sharePrice().getMonthlySharePriceHistoryDate());
         Map<StatementVariant, List<CompanyFinancialRatiosDto>> ratios = getCompanyFinancialRatios(company, annualAfter, quarterlyAfter);
 
         return CompanyFactSheetData.builder()
@@ -170,7 +161,7 @@ public class CompanyFactSheetDataService {
                 .companyFinancialRatios(ratios)
                 .industryFinancialRatios(getIndustryFinancialRatios(company))
                 .dailySharePriceSignals(dailySignals)
-                .monthlySharePriceSignals(getLimitedMonthlySharePriceSignals(monthlySignals))
+                .monthlySharePriceSignals(monthlySignals)
                 .recentNews(getNews(company, analystProperties.news().getNewsHistoryDate(), analystProperties.news().articleLimit()))
                 .newsSentimentAggregate(getNewsSentiment(company))
                 .insiderTransactionSummary(getInsiderTransactionSummary(company))
@@ -178,8 +169,8 @@ public class CompanyFactSheetDataService {
                 .earningsEstimates(harvesterLiveApi.fetchEarningsEstimates(company.ticker()).orElse(List.of()))
                 .macroeconomicSummary(economyDataApi.getMacroeconomicSummary())
                 .recentSecDocuments(getRecentSecDocuments(company))
-                .reverseDcfResult(reverseDcfCalculator.calculate(dailySignals, ratios))
-                .historicalValuationPercentiles(historicalValuationCalculator.calculate(dailySignals, monthlySignals))
+                .reverseDcfResult(companyValuationApi.calculateReverseDcf(company.id()))
+                .historicalValuationPercentiles(companyValuationApi.calculateHistoricalValuationPercentiles(company.id()))
                 .build();
     }
 

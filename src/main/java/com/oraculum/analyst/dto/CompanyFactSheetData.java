@@ -49,8 +49,8 @@ public class CompanyFactSheetData {
     private final List<EarningsEstimateDto> earningsEstimates;
     private final List<MacroSummaryDto> macroeconomicSummary;
     private final Map<TickerDocumentType, Map<TickerDocumentSubtype, List<TickerDocumentDto>>> recentSecDocuments;
-    private final ReverseDcfResult reverseDcfResult;
-    private final List<HistoricalValuationSummary> historicalValuationPercentiles;
+    private final ReverseDcfDto reverseDcfResult;
+    private final List<HistoricalValuationSummaryDto> historicalValuationPercentiles;
 
     private String wrapWithCitation(Class<?> clazz, Object uniqueId, Object dto) {
         if (dto == null) return "{}";
@@ -373,7 +373,7 @@ public class CompanyFactSheetData {
     }
 
     public String getReverseDcfAnalysis() {
-        return wrapWithCitation(ReverseDcfResult.class, company.ticker() + "_reverse_dcf", reverseDcfResult);
+        return wrapWithCitation(ReverseDcfDto.class, company.ticker() + "_reverse_dcf", reverseDcfResult);
     }
 
     public String getHistoricalValuationPercentiles() {
@@ -381,7 +381,7 @@ public class CompanyFactSheetData {
             return "[]";
         }
         return "[" + historicalValuationPercentiles.stream()
-                .map(summary -> wrapWithCitation(HistoricalValuationSummary.class, company.ticker() + "_" + summary.metric(), summary))
+                .map(summary -> wrapWithCitation(HistoricalValuationSummaryDto.class, company.ticker() + "_" + summary.metric(), summary))
                 .collect(Collectors.joining(",")) + "]";
     }
 }

@@ -7,6 +7,7 @@ import com.oraculum.company.api.CompanySharePriceApi;
 import com.oraculum.company.api.CompanyNewsApi;
 import com.oraculum.company.api.CompanyInsiderTransactionApi;
 import com.oraculum.company.api.CompanyScreenerApi;
+import com.oraculum.company.api.CompanyValuationApi;
 import com.oraculum.company.api.domain.CompanySize;
 import com.oraculum.company.api.dto.TickerKeyDto;
 import com.oraculum.company.api.dto.*;
@@ -54,6 +55,7 @@ public class ScreenerView extends VerticalLayout {
     private final CompanySharePriceApi companySharePriceApi;
     private final CompanyNewsApi companyNewsApi;
     private final CompanyInsiderTransactionApi companyInsiderTransactionApi;
+    private final CompanyValuationApi companyValuationApi;
     private final AnalysisRequestService analysisRequestService;
     private final ObjectMapper objectMapper;
     private final VerticalLayout gridContainer;
@@ -64,6 +66,7 @@ public class ScreenerView extends VerticalLayout {
                         CompanySharePriceApi companySharePriceApi,
                         CompanyNewsApi companyNewsApi,
                         CompanyInsiderTransactionApi companyInsiderTransactionApi,
+                        CompanyValuationApi companyValuationApi,
                         AnalysisRequestService analysisRequestService,
                         ObjectMapper objectMapper) {
         this.companyScreenerApi = companyScreenerApi;
@@ -72,6 +75,7 @@ public class ScreenerView extends VerticalLayout {
         this.companySharePriceApi = companySharePriceApi;
         this.companyNewsApi = companyNewsApi;
         this.companyInsiderTransactionApi = companyInsiderTransactionApi;
+        this.companyValuationApi = companyValuationApi;
         this.analysisRequestService = analysisRequestService;
         this.objectMapper = objectMapper;
         setPadding(true);
@@ -499,7 +503,7 @@ public class ScreenerView extends VerticalLayout {
     }
 
     private Button createCompanyDetailsButton(int companyId) {
-        return ViewHelper.createCompanyDetailsButton(companyMetadataApi, companyFinancialDataApi, companySharePriceApi, companyNewsApi, companyInsiderTransactionApi, objectMapper, companyId, true);
+        return ViewHelper.createCompanyDetailsButton(companyMetadataApi, companyFinancialDataApi, companySharePriceApi, companyNewsApi, companyInsiderTransactionApi, companyValuationApi, objectMapper, companyId, true);
     }
 
     /**

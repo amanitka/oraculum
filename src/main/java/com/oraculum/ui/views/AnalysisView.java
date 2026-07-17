@@ -52,6 +52,7 @@ public class AnalysisView extends VerticalLayout {
     private final CompanyNewsApi companyNewsApi;
     private final CompanyInsiderTransactionApi companyInsiderTransactionApi;
     private final CompanyAnalysisApi companyAnalysisApi;
+    private final CompanyValuationApi companyValuationApi;
     private final AnalysisRequestService analysisRequestService;
     private final ObjectMapper objectMapper;
     private final CompanyAnalysisProgressBroadcasterService broadcaster;
@@ -67,6 +68,7 @@ public class AnalysisView extends VerticalLayout {
                         CompanyNewsApi companyNewsApi,
                         CompanyInsiderTransactionApi companyInsiderTransactionApi,
                         CompanyAnalysisApi companyAnalysisApi,
+                        CompanyValuationApi companyValuationApi,
                         AnalysisRequestService analysisRequestService,
                         ObjectMapper objectMapper,
                         CompanyAnalysisProgressBroadcasterService broadcaster,
@@ -77,6 +79,7 @@ public class AnalysisView extends VerticalLayout {
         this.companyNewsApi = companyNewsApi;
         this.companyInsiderTransactionApi = companyInsiderTransactionApi;
         this.companyAnalysisApi = companyAnalysisApi;
+        this.companyValuationApi = companyValuationApi;
         this.analysisRequestService = analysisRequestService;
         this.objectMapper = objectMapper;
         this.broadcaster = broadcaster;
@@ -232,7 +235,7 @@ public class AnalysisView extends VerticalLayout {
             reportBtn.setTooltipText("View report");
             reportBtn.addClickListener(_ -> showAnalysisDetails(a));
 
-            Button companyBtn = ViewHelper.createCompanyDetailsButton(companyMetadataApi, companyFinancialDataApi, companySharePriceApi, companyNewsApi, companyInsiderTransactionApi, objectMapper, a.getCompanyId(), false);
+            Button companyBtn = ViewHelper.createCompanyDetailsButton(companyMetadataApi, companyFinancialDataApi, companySharePriceApi, companyNewsApi, companyInsiderTransactionApi, companyValuationApi, objectMapper, a.getCompanyId(), false);
 
             HorizontalLayout actions = new HorizontalLayout(reportBtn, companyBtn);
             actions.setSpacing(true);

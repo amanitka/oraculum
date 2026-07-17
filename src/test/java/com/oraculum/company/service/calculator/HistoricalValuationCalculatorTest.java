@@ -1,6 +1,6 @@
-package com.oraculum.analyst.service.calculator;
+package com.oraculum.company.service.calculator;
 
-import com.oraculum.analyst.dto.HistoricalValuationSummary;
+import com.oraculum.company.api.dto.HistoricalValuationSummaryDto;
 import com.oraculum.company.api.dto.SharePriceSignalDto;
 import org.junit.jupiter.api.Test;
 
@@ -44,11 +44,11 @@ class HistoricalValuationCalculatorTest {
         when(m2.fcfYield()).thenReturn(2.0f);
         when(m2.priceToSales()).thenReturn(4.5f);
 
-        List<HistoricalValuationSummary> results = calculator.calculate(List.of(latestDaily), List.of(m1, m2));
+        List<HistoricalValuationSummaryDto> results = calculator.calculate(List.of(latestDaily), List.of(m1, m2));
 
         assertThat(results).hasSize(4);
 
-        HistoricalValuationSummary pe = results.stream().filter(r -> r.metric().equals("P/E")).findFirst().orElseThrow();
+        HistoricalValuationSummaryDto pe = results.stream().filter(r -> r.metric().equals("P/E")).findFirst().orElseThrow();
         assertThat(pe.current()).isEqualTo(20.0f);
         assertThat(pe.avg10y()).isEqualTo(20.0f);
         assertThat(pe.percentile10y()).isEqualTo(50);
