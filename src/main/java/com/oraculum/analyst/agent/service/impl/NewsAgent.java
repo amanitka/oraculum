@@ -71,7 +71,7 @@ public class NewsAgent implements Agent<NewsAgentOutput> {
                 .replace("{{ sentiment_score_definition }}", sentimentDef)
                 .replace("{{ news_sentiment_aggregate }}", ctx.factSheetData().getNewsSentimentAggregate())
                 .replace("{{ recent_news }}", news)
-                .replace("{{ sec_ex99_1_summaries }}", secEx991)
+                .replace("{{ recent_sec_ex99_1_summaries }}", secEx991)
                 .replace("{{ ticker }}", ctx.ticker())
                 .replace("{{ analysis_date }}", ctx.analysisDate().toString());
 

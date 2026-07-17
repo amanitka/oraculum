@@ -15,6 +15,7 @@ import com.oraculum.analyst.dto.CompanyFactSheetData;
 import com.oraculum.company.api.CompanyMetadataApi;
 import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.company.api.dto.TickerKeyDto;
+import com.oraculum.analyst.agent.document.service.SecDocumentProcessingAgent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,6 +48,9 @@ class CompanyAnalysisWorkflowServiceTest {
 
     @Mock
     private CompanyFactSheetDataService companyFactSheetDataService;
+
+    @Mock
+    private SecDocumentProcessingAgent secDocumentProcessingAgent;
 
     @Mock
     private Map<AgentType, Agent<?>> agents;

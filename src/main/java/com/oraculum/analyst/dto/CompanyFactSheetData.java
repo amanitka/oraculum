@@ -20,6 +20,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Builder
@@ -244,16 +245,23 @@ public class CompanyFactSheetData {
     }
 
     private String getSecDocumentSummaries(TickerDocumentType type, TickerDocumentSubtype subtype) {
-        if (recentSecDocuments == null) return "[]";
-        Map<TickerDocumentSubtype, List<TickerDocumentDto>> subMap = recentSecDocuments.get(type);
-        if (subMap == null) return "[]";
-        List<TickerDocumentDto> docs = subMap.get(subtype);
-        if (docs == null || docs.isEmpty()) {
+        List<TickerDocumentDto> docs = Optional.ofNullable(recentSecDocuments)
+                .map(m -> m.get(type))
+                .map(m -> m.get(subtype))
+                .orElse(List.of());
+
+        if (docs.isEmpty()) {
             return "[]";
         }
-        return "[" + docs.stream()
-                .map(dto -> wrapWithCitation(TickerDocumentDto.class, dto.getId(), dto))
-                .collect(Collectors.joining(",")) + "]";
+
+        List<TickerDocumentSlim> slim = docs.stream()
+                .map(dto -> {
+                    String citationId = citationRegistry.getOrAssignCitationId(TickerDocumentDto.class, dto.getId(), dto);
+                    return TickerDocumentSlim.from(dto, citationId, jsonMapper);
+                })
+                .collect(Collectors.toList());
+
+        return JsonUtils.toJson(jsonMapper, slim, "[]");
     }
 
     public String getRecentSecMdSummaries() {
