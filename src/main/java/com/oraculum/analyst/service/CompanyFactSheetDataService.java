@@ -3,6 +3,10 @@ package com.oraculum.analyst.service;
 import com.oraculum.analyst.config.AnalystProperties;
 import com.oraculum.analyst.dto.CitationRegistry;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
+import com.oraculum.analyst.dto.HistoricalValuationSummary;
+import com.oraculum.analyst.dto.ReverseDcfResult;
+import com.oraculum.analyst.service.calculator.HistoricalValuationCalculator;
+import com.oraculum.analyst.service.calculator.ReverseDcfCalculator;
 import com.oraculum.company.api.CompanyFinancialDataApi;
 import com.oraculum.company.api.CompanyInsiderTransactionApi;
 import com.oraculum.company.api.CompanyNewsApi;
@@ -37,6 +41,8 @@ public class CompanyFactSheetDataService {
     private final CompanyTickerDocumentApi companyTickerDocumentApi;
     private final JsonMapper jsonMapper;
     private final AnalystProperties analystProperties;
+    private final ReverseDcfCalculator reverseDcfCalculator;
+    private final HistoricalValuationCalculator historicalValuationCalculator;
 
     private Map<StatementVariant, List<IncomeStatementDto>> getIncomeStatements(CompanyDto company, LocalDate annualAfter, LocalDate quarterlyAfter) {
         return companyFinancialDataApi.getIncomeStatementsByCompanyId(company.id(), annualAfter)
@@ -142,9 +148,19 @@ public class CompanyFactSheetDataService {
         return 0;
     }
 
+    private List<SharePriceSignalDto> getLimitedMonthlySharePriceSignals(List<SharePriceSignalDto> monthlySignals) {
+        LocalDate cutoffDate = analystProperties.sharePrice().getMonthlySharePriceHistoryDate();
+        return monthlySignals.stream()
+                .filter(s -> s.tradeDate() != null && !s.tradeDate().isBefore(cutoffDate))
+                .collect(Collectors.toList());
+    }
+
     public CompanyFactSheetData create(CompanyDto company, CitationRegistry citationRegistry) {
         LocalDate annualAfter = analystProperties.factSheet().getAnnualFactSheetHistoryDate();
         LocalDate quarterlyAfter = analystProperties.factSheet().getQuarterlyFactSheetHistoryDate();
+        List<SharePriceSignalDto> dailySignals = getDailySharePriceSignals(company, analystProperties.sharePrice().getSharePriceHistoryDate());
+        List<SharePriceSignalDto> monthlySignals = getMonthlySharePriceSignals(company, LocalDate.now().minusDays(3650));
+        Map<StatementVariant, List<CompanyFinancialRatiosDto>> ratios = getCompanyFinancialRatios(company, annualAfter, quarterlyAfter);
 
         return CompanyFactSheetData.builder()
                 .jsonMapper(jsonMapper)
@@ -153,12 +169,10 @@ public class CompanyFactSheetDataService {
                 .incomeStatements(getIncomeStatements(company, annualAfter, quarterlyAfter))
                 .balanceSheets(getBalanceSheets(company, annualAfter, quarterlyAfter))
                 .cashFlowStatements(getCashFlowStatements(company, annualAfter, quarterlyAfter))
-                .companyFinancialRatios(getCompanyFinancialRatios(company, annualAfter, quarterlyAfter))
+                .companyFinancialRatios(ratios)
                 .industryFinancialRatios(getIndustryFinancialRatios(company))
-                .dailySharePriceSignals(getDailySharePriceSignals(company,
-                        analystProperties.sharePrice().getSharePriceHistoryDate()))
-                .monthlySharePriceSignals(getMonthlySharePriceSignals(company,
-                        analystProperties.sharePrice().getMonthlySharePriceHistoryDate()))
+                .dailySharePriceSignals(dailySignals)
+                .monthlySharePriceSignals(getLimitedMonthlySharePriceSignals(monthlySignals))
                 .recentNews(getNews(company, analystProperties.news().getNewsHistoryDate(), analystProperties.news().articleLimit()))
                 .newsSentimentAggregate(getNewsSentiment(company))
                 .insiderTransactionSummary(getInsiderTransactionSummary(company))
@@ -166,6 +180,9 @@ public class CompanyFactSheetDataService {
                 .earningsEstimates(harvesterLiveApi.fetchEarningsEstimates(company.ticker()).orElse(List.of()))
                 .macroeconomicSummary(economyDataApi.getMacroeconomicSummary())
                 .recentSecDocuments(getRecentSecDocuments(company))
+                .reverseDcfResult(reverseDcfCalculator.calculate(dailySignals, ratios))
+                .historicalValuationPercentiles(historicalValuationCalculator.calculate(dailySignals, monthlySignals))
                 .build();
     }
+
 }

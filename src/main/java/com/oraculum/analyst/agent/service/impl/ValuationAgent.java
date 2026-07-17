@@ -44,6 +44,8 @@ public class ValuationAgent implements Agent<ValuationAgentOutput> {
                 .replace("{{ industry_ratios }}", factSheet.getLatestIndustryRatios(StatementVariant.TTM))
                 .replace("{{ daily_share_price_signals }}", recentDailyJson)
                 .replace("{{ macroeconomic_context }}", ctx.state().getMacroeconomicAgentOutput())
+                .replace("{{ historical_valuation_percentiles }}", factSheet.getHistoricalValuationPercentiles())
+                .replace("{{ reverse_dcf }}", factSheet.getReverseDcfAnalysis())
                 .replace("{{ ticker }}", ctx.ticker())
                 .replace("{{ analysis_date }}", ctx.analysisDate().toString());
 

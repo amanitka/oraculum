@@ -21,6 +21,10 @@ public record SharePriceSignalSlim(
         @JsonProperty("return_on_equity") Float returnOnEquity,
         @JsonProperty("revenue_yoy_growth") Float revenueYoyGrowth,
         @JsonProperty("financial_trend_score") Integer financialTrendScore,
+        @JsonProperty("market_capitalization") Float marketCapitalization,
+        @JsonProperty("enterprise_value") Float enterpriseValue,
+        @JsonProperty("enterprise_value_to_revenue") Float enterpriseValueToRevenue,
+        @JsonProperty("enterprise_value_to_fcf") Float enterpriseValueToFreeCashFlow,
         @JsonProperty("citation_id") String citationId
 ) {
     public static SharePriceSignalSlim from(SharePriceSignalDto dto, String citationId) {
@@ -41,6 +45,10 @@ public record SharePriceSignalSlim(
                 dto.returnOnEquity(),
                 dto.revenueYoyGrowth(),
                 dto.financialTrendScore(),
+                dto.marketCapitalization(),
+                dto.enterpriseValue(),
+                dto.enterpriseValueToRevenue(),
+                dto.enterpriseValueToFreeCashFlow(),
                 citationId
         );
     }

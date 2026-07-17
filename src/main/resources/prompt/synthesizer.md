@@ -23,14 +23,18 @@ Pay special attention to this thesis requested by the user, and determine if the
    Resolve any contradictions highlighted by the Critic Agent. Reconcile any divergence between the organic agent consensus and the `company_profile` context. Does strong growth justify a high valuation? Does recent negative news contradict a strong balance sheet?
 2. **Structure the Report**: Generate a Markdown report (`report_md`) with the following sections:
     * **Executive Summary**: A concise overview of the investment case.
-    * **Macroeconomic Context**: Write just a short summary of the findings from the Macroeconomic agent (if even needed), discussing how the current economic regime impacts the company.
+    * **Macroeconomic Context**: A very brief summary (2-3 sentences only) of findings from the Macroeconomic agent. Mention ONLY macro factors that directly and materially impact this specific company's valuation (e.g. interest rates, export controls). Omit general macro indicators unless the company has direct exposure.
     * **Fundamental Health**: Combine insights from the Fundamentals and Cash Flow agents.
-    * **Valuation & Momentum**: Combine insights from the Valuation and Share Price agents.
+    * **Valuation & Intrinsic Value**: Combine insights from the Valuation and Share Price agents. Focus heavily on what growth rates the market is pricing in (implied FCF growth from reverse DCF), historical valuation multiples vs current levels, and fair value ranges. De-emphasize technical momentum signals.
     * **Recent News & Sentiment**: Summarize the findings from the News agent, discussing how recent events support or
       contradict the financial data.
     * **Management Sentiment & Insider Activity**: Summarize the findings from the Insider Transaction agent, highlighting C-Suite conviction and cluster buying patterns.
     * **Earnings Estimates & Analyst Consensus**: Summarize the forward-looking EPS and revenue estimates from the EarningsEstimates agent. If the data was unavailable (API quota exhausted), explicitly state so and note the analysis is based on historical data only.
     * **Risks & Critic's Reconciliation**: Summarize the Risk agent's findings AND explicitly address how any conflicts, contradictions, or red flags flagged by the Critic Agent are resolved.
+    * **Investment Thesis**:
+      - **Why Buy**: 3-5 bullet points of key bullish arguments.
+      - **Why Not Buy**: 3-5 bullet points of key bearish arguments.
+      - **What Would Change My Mind**: 3-5 specific, measurable triggers (e.g., "Data center growth <20%", "Gross margin falls below 48%", etc.).
 3. **Determine Verdict**: Produce a structured verdict including an `outlook`, `recommendation`, and a `conviction`
    score (1-5).
 4. **Extract Key Points**: List the main bullish drivers and bearish risks.
@@ -46,6 +50,7 @@ You MUST respond with valid JSON using exactly this schema:
 }
 
 Rules:
+- **Writing Style**: Use neutral, understated professional equity research language. Never use superlatives (exceptional, explosive, massive, outstanding, robust). Prefer quantitative descriptors: "above industry median", "34% YoY growth". Every qualitative claim must be backed by a specific number. Instead of "valuation is stretched", write "P/E of 180x implies 28% FCF CAGR for 10 years".
 - CRITICAL CITATIONS: Every time you state a fact, metric, event, margin, or financial number derived from the data, you MUST cite the `citation_id` of the exact source immediately after the claim using brackets. Example: "Revenue grew by 20% to $1.44B [2]." Do not cite data that does not have a `citation_id`. Do not hallucinate citations. Preserve any `[id]` citations provided by the specialist agents.
 - ALWAYS explicitly cite the specific year or timeframe and the exact source of your information (e.g., 'In 2023, according to the income statement...').
 
