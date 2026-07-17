@@ -1,12 +1,10 @@
 package com.oraculum.analyst.dto;
 
 import com.oraculum.company.api.dto.CompanyDto;
-import com.oraculum.company.api.dto.SharePriceSignalDto;
 import tools.jackson.databind.json.JsonMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;

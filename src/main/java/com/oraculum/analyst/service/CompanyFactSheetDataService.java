@@ -3,8 +3,6 @@ package com.oraculum.analyst.service;
 import com.oraculum.analyst.config.AnalystProperties;
 import com.oraculum.analyst.dto.CitationRegistry;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
-import com.oraculum.analyst.dto.HistoricalValuationSummary;
-import com.oraculum.analyst.dto.ReverseDcfResult;
 import com.oraculum.analyst.service.calculator.HistoricalValuationCalculator;
 import com.oraculum.analyst.service.calculator.ReverseDcfCalculator;
 import com.oraculum.company.api.CompanyFinancialDataApi;
