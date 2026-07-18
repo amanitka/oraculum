@@ -52,6 +52,8 @@ class CompanyFactSheetDataServiceTest {
     @Mock
     private CompanyTickerDocumentApi companyTickerDocumentApi;
     @Mock
+    private CompanyValuationApi companyValuationApi;
+    @Mock
     private tools.jackson.databind.json.JsonMapper jsonMapper;
     @Mock(answer = org.mockito.Answers.RETURNS_DEEP_STUBS)
     private AnalystProperties analystProperties;
@@ -131,6 +133,12 @@ class CompanyFactSheetDataServiceTest {
 
         when(harvesterLiveApi.fetchEarningsEstimates(anyString())).thenReturn(Optional.empty());
         when(companyTickerDocumentApi.getDocumentsByTicker(any())).thenReturn(List.of());
+
+        ReverseDcfDto reverseDcf = mock(ReverseDcfDto.class);
+        when(companyValuationApi.calculateReverseDcf(anyInt())).thenReturn(reverseDcf);
+
+        HistoricalValuationSummaryDto histSummary = mock(HistoricalValuationSummaryDto.class);
+        when(companyValuationApi.calculateHistoricalValuationPercentiles(anyInt())).thenReturn(List.of(histSummary));
 
         CompanyFactSheetData data = service.create(company, new CitationRegistry());
 

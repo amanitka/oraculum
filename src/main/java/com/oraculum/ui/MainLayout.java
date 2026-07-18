@@ -3,7 +3,6 @@ package com.oraculum.ui;
 import com.oraculum.ui.views.AnalysisView;
 import com.oraculum.ui.views.CompanyView;
 import com.oraculum.ui.views.EconomyView;
-import com.oraculum.ui.views.RefreshView;
 import com.oraculum.ui.views.ScreenerView;
 import com.oraculum.user.api.CurrentUserApi;
 import com.vaadin.flow.component.Component;
@@ -26,21 +25,41 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 import com.oraculum.analyst.api.AnalysisUsageApi;
 import com.oraculum.analyst.api.dto.UserAnalysisUsage;
 import com.vaadin.flow.component.html.Span;
-
+import com.oraculum.user.api.UserManagementApi;
+import com.oraculum.harvester.api.HarvesterBatchApi;
+import com.oraculum.company.api.CompanyMetadataApi;
+import com.oraculum.ui.components.UserProfilePopover;
+import com.vaadin.flow.component.shared.Tooltip;
+import org.springframework.context.ApplicationEventPublisher;
+import java.util.Map;
+import java.util.HashMap;
 
 import jakarta.annotation.security.PermitAll;
 
 @PermitAll
 public class MainLayout extends AppLayout implements RouterLayout, AfterNavigationObserver {
 
-    private final java.util.Map<Class<?>, Tab> tabMap = new java.util.HashMap<>();
+    private final Map<Class<?>, Tab> tabMap = new HashMap<>();
     private Tabs tabs;
     private final AnalysisUsageApi analysisUsageApi;
     private final CurrentUserApi currentUserApi;
+    private final UserManagementApi userManagementApi;
+    private final HarvesterBatchApi harvesterBatchApi;
+    private final ApplicationEventPublisher eventPublisher;
+    private final CompanyMetadataApi companyMetadataApi;
 
-    public MainLayout(AnalysisUsageApi analysisUsageApi, CurrentUserApi currentUserApi) {
+    public MainLayout(AnalysisUsageApi analysisUsageApi,
+                      CurrentUserApi currentUserApi,
+                      UserManagementApi userManagementApi,
+                      HarvesterBatchApi harvesterBatchApi,
+                      ApplicationEventPublisher eventPublisher,
+                      CompanyMetadataApi companyMetadataApi) {
         this.analysisUsageApi = analysisUsageApi;
         this.currentUserApi = currentUserApi;
+        this.userManagementApi = userManagementApi;
+        this.harvesterBatchApi = harvesterBatchApi;
+        this.eventPublisher = eventPublisher;
+        this.companyMetadataApi = companyMetadataApi;
         setPrimarySection(Section.NAVBAR);
         setDrawerOpened(false);
         addHeaderContent();
@@ -94,27 +113,23 @@ public class MainLayout extends AppLayout implements RouterLayout, AfterNavigati
         RouterLink analysisLink = new RouterLink("Analysis", AnalysisView.class);
         RouterLink companyLink = new RouterLink("Company", CompanyView.class);
         RouterLink economyLink = new RouterLink("Economy", EconomyView.class);
-        RouterLink refreshLink = new RouterLink("Refresh", RefreshView.class);
 
         screenerLink.getStyle().set("text-decoration", "none");
         analysisLink.getStyle().set("text-decoration", "none");
         companyLink.getStyle().set("text-decoration", "none");
         economyLink.getStyle().set("text-decoration", "none");
-        refreshLink.getStyle().set("text-decoration", "none");
 
         Tab tabScreener = new Tab(screenerLink);
         Tab tabAnalysis = new Tab(analysisLink);
         Tab tabCompany = new Tab(companyLink);
         Tab tabEconomy = new Tab(economyLink);
-        Tab tabRefresh = new Tab(refreshLink);
 
         tabMap.put(ScreenerView.class, tabScreener);
         tabMap.put(AnalysisView.class, tabAnalysis);
         tabMap.put(CompanyView.class, tabCompany);
         tabMap.put(EconomyView.class, tabEconomy);
-        tabMap.put(RefreshView.class, tabRefresh);
 
-        tabs = new Tabs(tabScreener, tabAnalysis, tabCompany, tabEconomy, tabRefresh);
+        tabs = new Tabs(tabScreener, tabAnalysis, tabCompany, tabEconomy);
         tabs.getStyle().set("--lumo-font-size-m", "var(--lumo-font-size-xl)");
         tabs.getStyle().set("--lumo-secondary-text-color", "var(--lumo-body-text-color)");
 
@@ -124,42 +139,43 @@ public class MainLayout extends AppLayout implements RouterLayout, AfterNavigati
     private HorizontalLayout createUserProfileGroup() {
         HorizontalLayout rightGroup = new HorizontalLayout();
         rightGroup.setAlignItems(Alignment.CENTER);
-        rightGroup.setSpacing(true);
 
         currentUserApi.getCurrentUser().ifPresent(userDetails -> {
             String displayName = userDetails.getDisplayName();
-            String role = userDetails.getRole();
             UserAnalysisUsage usage = analysisUsageApi.getUsage(userDetails.getId(), userDetails.getLimit());
 
             Avatar avatar = new Avatar(displayName);
-            rightGroup.add(avatar);
+            avatar.getStyle().set("cursor", "pointer");
 
+            // Apply limit outline if exceeded
+            if (usage != null && usage.isExceeded()) {
+                avatar.getStyle().set("outline", "2px solid var(--lumo-error-color)");
+                avatar.getStyle().set("outline-offset", "1px");
+            }
+
+            // Wrap in Span to add tooltip and popover
+            Span avatarWrapper = new Span(avatar);
+            avatarWrapper.getStyle().set("display", "inline-flex");
+            avatarWrapper.getStyle().set("align-items", "center");
+            avatarWrapper.getStyle().set("justify-content", "center");
+            avatarWrapper.getStyle().set("cursor", "pointer");
+
+            // Add tooltip with usage stats
+            String tooltipText;
             if (usage != null && usage.isLimited()) {
-                Span usageBadge = new Span("Analyses: " + usage.usedAnalyses() + " / " + usage.limitCount());
-                usageBadge.getElement().getThemeList().addAll(java.util.List.of("badge", usage.isExceeded() ? "error" : "success"));
-                rightGroup.add(usageBadge);
-            } else if (usage != null) {
-                Span unlimitedBadge = new Span("Analyses: Unlimited");
-                unlimitedBadge.getElement().getThemeList().addAll(java.util.List.of("badge", "success"));
-                rightGroup.add(unlimitedBadge);
+                tooltipText = "Analyses: " + usage.usedAnalyses() + " / " + usage.limitCount();
+            } else {
+                tooltipText = "Analyses: Unlimited";
             }
+            Tooltip.forComponent(avatarWrapper).setText(tooltipText);
 
-            if ("ADMIN".equals(role)) {
-                RouterLink adminLink = new RouterLink("Admin", com.oraculum.ui.views.UserManagementView.class);
-                adminLink.getStyle().set("text-decoration", "none");
-                adminLink.getStyle().set("margin-right", "10px");
-                rightGroup.add(adminLink);
-            }
+            // Create popover anchored to the wrapper
+            new UserProfilePopover(
+                    avatarWrapper, userDetails, usage,
+                    userManagementApi, harvesterBatchApi, eventPublisher, companyMetadataApi);
 
-            Span userName = new Span(displayName);
-            userName.addClassNames(LumoUtility.FontWeight.BOLD, LumoUtility.Margin.Right.SMALL);
-            rightGroup.add(userName);
+            rightGroup.add(avatarWrapper);
         });
-
-        com.vaadin.flow.component.html.Anchor logoutLink = new com.vaadin.flow.component.html.Anchor("/logout", "Logout");
-        logoutLink.getStyle().set("text-decoration", "none");
-        logoutLink.getStyle().set("color", "var(--lumo-error-text-color)");
-        rightGroup.add(logoutLink);
 
         return rightGroup;
     }

@@ -1,12 +1,14 @@
-package com.oraculum.ui.views;
+package com.oraculum.ui.components;
 
 import com.oraculum.user.api.UserManagementApi;
 import com.oraculum.user.api.domain.Role;
 import com.oraculum.user.api.dto.UserDto;
-import com.oraculum.ui.MainLayout;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
+import java.time.format.DateTimeFormatter;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -15,19 +17,13 @@ import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.textfield.EmailField;
-import com.vaadin.flow.router.PageTitle;
-import com.vaadin.flow.router.Route;
-import jakarta.annotation.security.RolesAllowed;
 
-@Route(value = "users", layout = MainLayout.class)
-@PageTitle("User Management | Oraculum")
-@RolesAllowed("ADMIN")
-public class UserManagementView extends VerticalLayout {
+public class UserManagementComponent extends VerticalLayout {
 
     private final UserManagementApi userManagementApi;
     private final Grid<UserDto> grid;
 
-    public UserManagementView(UserManagementApi userManagementApi) {
+    public UserManagementComponent(UserManagementApi userManagementApi) {
         this.userManagementApi = userManagementApi;
 
         setSpacing(true);
@@ -36,25 +32,43 @@ public class UserManagementView extends VerticalLayout {
         H2 title = new H2("User Management");
 
         Button addUserButton = new Button("Add User", _ -> openUserDialog(null));
+        addUserButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SUCCESS);
         
         HorizontalLayout headerLayout = new HorizontalLayout(title, addUserButton);
         headerLayout.setWidthFull();
         headerLayout.setAlignItems(Alignment.CENTER);
         headerLayout.setJustifyContentMode(JustifyContentMode.BETWEEN);
 
+        setSizeFull();
+
         grid = new Grid<>(UserDto.class, false);
-        grid.addColumn(UserDto::email).setHeader("Email");
-        grid.addColumn(UserDto::displayName).setHeader("Name");
-        grid.addColumn(UserDto::provider).setHeader("Provider");
-        grid.addColumn(UserDto::role).setHeader("Role");
-        grid.addColumn(UserDto::analysisLimit).setHeader("Limit");
-        grid.addColumn(UserDto::enabled).setHeader("Enabled");
-        grid.addColumn(UserDto::lastLoginAt).setHeader("Last Login");
+        grid.setSizeFull();
+        grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
+        grid.addClassName("screener-grid");
+
+        grid.addColumn(UserDto::email).setHeader("Email").setAutoWidth(true).setSortable(true);
+        grid.addColumn(UserDto::displayName).setHeader("Name").setAutoWidth(true).setSortable(true);
+        grid.addColumn(UserDto::provider).setHeader("Provider").setAutoWidth(true).setSortable(true);
+        grid.addColumn(UserDto::role).setHeader("Role").setAutoWidth(true).setSortable(true);
+        grid.addColumn(UserDto::analysisLimit).setHeader("Limit").setAutoWidth(true).setSortable(true);
+        
+        grid.addComponentColumn(user -> {
+            Checkbox cb = new Checkbox();
+            cb.setValue(user.enabled());
+            cb.setReadOnly(true);
+            return cb;
+        }).setHeader("Enabled").setAutoWidth(true).setSortable(true);
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        grid.addColumn(user -> user.lastLoginAt() != null ? user.lastLoginAt().format(formatter) : "-")
+                .setHeader("Last Login").setAutoWidth(true).setSortable(true);
+
         grid.addComponentColumn(user -> {
             Button editButton = new Button("Edit", _ -> openUserDialog(user));
             editButton.getStyle().set("cursor", "pointer");
+            editButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
             return editButton;
-        }).setHeader("Actions");
+        }).setHeader("Action").setAutoWidth(true);
 
         add(headerLayout, grid);
 
