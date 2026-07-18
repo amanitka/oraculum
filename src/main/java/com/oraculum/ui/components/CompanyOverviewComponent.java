@@ -190,7 +190,7 @@ public class CompanyOverviewComponent extends VerticalLayout {
             return "-";
         }).setHeader("Date").setSortable(true).setAutoWidth(true).setComparator(Comparator.comparing(NewsTickerDto::timePublished, Comparator.nullsLast(Comparator.naturalOrder())));
 
-        grid.addColumn(NewsTickerDto::title).setHeader("Title").setAutoWidth(true).setFlexGrow(1);
+        grid.addColumn(NewsTickerDto::title).setHeader("Title").setWidth("450px").setFlexGrow(1);
         grid.addColumn(NewsTickerDto::source).setHeader("Publisher").setAutoWidth(true);
         grid.addColumn(item -> item.relevanceScore() != null ? String.format(java.util.Locale.US, "%.0f%%", item.relevanceScore() * 100) : "-")
                 .setHeader("Relevance").setAutoWidth(true);
@@ -211,7 +211,7 @@ public class CompanyOverviewComponent extends VerticalLayout {
         grid.setDetailsVisibleOnClick(true);
 
         grid.setWidthFull();
-        grid.setAllRowsVisible(true);
+        grid.setHeight("600px");
         layout.add(grid);
         return layout;
     }
@@ -271,7 +271,7 @@ public class CompanyOverviewComponent extends VerticalLayout {
 
         grid.setItems(transactions.stream().sorted(Comparator.comparing(InsiderTransactionTickerDto::tradeDate, Comparator.nullsFirst(Comparator.naturalOrder())).reversed()).collect(Collectors.toList()));
         grid.setWidthFull();
-        grid.setAllRowsVisible(true);
+        grid.setHeight("600px");
 
         layout.add(grid);
         return layout;
@@ -414,7 +414,7 @@ public class CompanyOverviewComponent extends VerticalLayout {
 
     private <T> Component createGridContainer(List<T> items, java.util.function.Function<List<T>, Component> gridCreator) {
         VerticalLayout layout = new VerticalLayout();
-        layout.setWidthFull(); // Allow height to grow based on content
+        layout.setWidthFull(); 
         layout.setPadding(true);
         if (items.isEmpty()) {
             layout.add(new Span("No records found for this timeframe."));
@@ -422,7 +422,7 @@ public class CompanyOverviewComponent extends VerticalLayout {
             Component grid = gridCreator.apply(items);
             if (grid instanceof Grid) {
                 ((Grid<?>) grid).setWidthFull();
-                ((Grid<?>) grid).setAllRowsVisible(true); // Force grid to show all rows so it doesn't collapse in a scrolling layout
+                ((Grid<?>) grid).setHeight("600px");
             }
             layout.add(grid);
         }
@@ -527,9 +527,10 @@ public class CompanyOverviewComponent extends VerticalLayout {
             Div interpretationCard = new Div();
             interpretationCard.setWidthFull();
             interpretationCard.getStyle()
+                    .set("box-sizing", "border-box")
                     .set("background-color", "var(--lumo-contrast-5pct)")
                     .set("border-left", "4px solid var(--lumo-primary-color)")
-                    .set("padding", "1rem")
+                    .set("padding", "1rem 1.5rem")
                     .set("border-radius", "0 4px 4px 0")
                     .set("margin-top", "0.5rem");
 
@@ -549,7 +550,7 @@ public class CompanyOverviewComponent extends VerticalLayout {
             histHeader.getStyle().set("margin-top", "1.5rem");
 
             Grid<HistoricalValuationSummaryDto> grid = new Grid<>(HistoricalValuationSummaryDto.class, false);
-            grid.addThemeVariants(GridVariant.LUMO_NO_BORDER, GridVariant.LUMO_ROW_STRIPES);
+            grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
 
             grid.addColumn(HistoricalValuationSummaryDto::metric).setHeader("Metric").setAutoWidth(true);
             grid.addColumn(item -> formatFloat(item.current())).setHeader("Current Multiple").setAutoWidth(true);

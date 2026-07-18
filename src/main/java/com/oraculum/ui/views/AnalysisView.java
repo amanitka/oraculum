@@ -92,7 +92,7 @@ public class AnalysisView extends VerticalLayout {
         setDefaultHorizontalComponentAlignment(Alignment.CENTER);
 
         VerticalLayout content = new VerticalLayout();
-        content.setWidthFull();
+        content.setSizeFull();
         content.setPadding(false);
         content.setSpacing(false);
 
