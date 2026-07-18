@@ -586,13 +586,9 @@ public class CompanyOverviewComponent extends VerticalLayout {
 
     private Component createMetricCard(String label, String value) {
         VerticalLayout card = new VerticalLayout();
+        card.addClassName("metric-card");
         card.setPadding(true);
         card.setSpacing(false);
-        card.getStyle()
-                .set("background-color", "var(--lumo-base-color)")
-                .set("border", "1px solid var(--lumo-contrast-10pct)")
-                .set("border-radius", "8px")
-                .set("box-shadow", "var(--lumo-box-shadow-xs)");
 
         Span lblSpan = new Span(label);
         lblSpan.getStyle()

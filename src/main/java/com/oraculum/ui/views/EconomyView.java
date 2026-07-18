@@ -98,21 +98,9 @@ public class EconomyView extends VerticalLayout {
 
     private Div createSummaryCard(MacroSummaryDto summary) {
         Div card = new Div();
+        card.addClassName("macro-card");
         card.getStyle().set("padding", "var(--lumo-space-m)");
-        card.getStyle().set("border-radius", "var(--lumo-border-radius-l)");
-        card.getStyle().set("background-color", "var(--lumo-base-color)");
-        card.getStyle().set("border", "1px solid var(--lumo-contrast-20pct)");
-        card.getStyle().set("box-shadow", "var(--lumo-box-shadow-xs)");
         card.getStyle().set("cursor", "pointer");
-        card.getStyle().set("transition", "box-shadow 0.2s, transform 0.2s");
-        card.getElement().addEventListener("mouseover", _ -> {
-            card.getStyle().set("box-shadow", "var(--lumo-box-shadow-m)");
-            card.getStyle().set("transform", "translateY(-2px)");
-        });
-        card.getElement().addEventListener("mouseout", _ -> {
-            card.getStyle().set("box-shadow", "var(--lumo-box-shadow-xs)");
-            card.getStyle().set("transform", "none");
-        });
 
         H4 name = new H4(summary.indicatorTitle() != null ? summary.indicatorTitle() : summary.indicator().name());
         name.addClassNames(LumoUtility.Margin.NONE, LumoUtility.FontSize.MEDIUM);

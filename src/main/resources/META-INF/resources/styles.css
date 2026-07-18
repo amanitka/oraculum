@@ -160,3 +160,74 @@ body .apexcharts-tooltip.apexcharts-theme-light {
     box-shadow: 0 0 0 1px var(--lumo-primary-color-50pct) !important;
     border-color: var(--lumo-primary-color-50pct) !important;
 }
+
+/* Standalone Dashboard Card Styles (Solid base color matching the application theme) */
+.macro-card {
+    background: var(--lumo-base-color) !important;
+    border: 1px solid var(--lumo-contrast-20pct) !important;
+    border-radius: var(--lumo-border-radius-l);
+    box-shadow: var(--lumo-box-shadow-xs) !important;
+    transition: all 0.2s ease-in-out !important;
+}
+
+.macro-card:hover {
+    box-shadow: var(--lumo-box-shadow-m) !important;
+    transform: translateY(-2px) !important;
+    border-color: var(--lumo-contrast-30pct) !important;
+}
+
+.metric-card {
+    background: var(--lumo-base-color) !important;
+    border: 1px solid var(--lumo-contrast-10pct) !important;
+    border-radius: 8px;
+    box-shadow: var(--lumo-box-shadow-xs) !important;
+}
+
+/* Economy View Selected Card */
+.selected-card.macro-card {
+    background-color: var(--lumo-primary-color-10pct) !important;
+    box-shadow: 0 0 0 1px var(--lumo-primary-color-50pct) !important;
+    border-color: var(--lumo-primary-color-50pct) !important;
+}
+
+/* Custom styled Tooltips (Vaadin Web Components Overlay part styling) */
+vaadin-tooltip-overlay::part(overlay) {
+    background-color: #0b0f19 !important; /* Matches main slate background */
+    border: 1px solid rgba(32, 165, 214, 0.3) !important; /* Subtle Cyan border */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5), 0 0 8px rgba(32, 165, 214, 0.1) !important;
+    border-radius: 6px;
+}
+
+vaadin-tooltip-overlay::part(content) {
+    color: var(--lumo-body-text-color) !important;
+    font-size: var(--lumo-font-size-xs) !important;
+    font-family: var(--lumo-font-family) !important;
+    font-weight: 500 !important;
+    padding: 0.3rem 0.6rem !important;
+}
+
+/* Premium Slim Scrollbars (Standard inherited properties pierce Shadow DOM boundary for Vaadin Grids) */
+* {
+    scrollbar-width: thin !important;
+    scrollbar-color: rgba(255, 255, 255, 0.15) transparent !important;
+}
+
+/* Webkit vendor support fallback */
+*::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 4px;
+    transition: background 0.3s ease;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background: var(--lumo-primary-color);
+}
