@@ -17,10 +17,7 @@ import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ObjectNode;
 
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Builder
@@ -252,6 +249,22 @@ public class CompanyFactSheetData {
                 .map(m -> m.get(subtype))
                 .orElse(List.of());
 
+        return convertDocsToJson(docs);
+    }
+
+    private String getCombinedSecDocumentSummaries(TickerDocumentSubtype subtype) {
+        List<TickerDocumentDto> docs = new ArrayList<>();
+        Optional.ofNullable(recentSecDocuments).ifPresent(m -> {
+            Optional.ofNullable(m.get(TickerDocumentType.SEC_10K)).map(sub -> sub.get(subtype)).ifPresent(docs::addAll);
+            Optional.ofNullable(m.get(TickerDocumentType.SEC_10Q)).map(sub -> sub.get(subtype)).ifPresent(docs::addAll);
+        });
+
+        docs.sort(Comparator.comparing(TickerDocumentDto::getReportPeriod).reversed());
+
+        return convertDocsToJson(docs);
+    }
+
+    private String convertDocsToJson(List<TickerDocumentDto> docs) {
         if (docs.isEmpty()) {
             return "[]";
         }
@@ -267,11 +280,11 @@ public class CompanyFactSheetData {
     }
 
     public String getRecentSecMdSummaries() {
-        return getSecDocumentSummaries(TickerDocumentType.SEC_10K, TickerDocumentSubtype.SEC_MD);
+        return getCombinedSecDocumentSummaries(TickerDocumentSubtype.SEC_MD);
     }
 
     public String getRecentSecRfSummaries() {
-        return getSecDocumentSummaries(TickerDocumentType.SEC_10K, TickerDocumentSubtype.SEC_RF);
+        return getCombinedSecDocumentSummaries(TickerDocumentSubtype.SEC_RF);
     }
 
     public String getRecentSecEx991Summaries() {

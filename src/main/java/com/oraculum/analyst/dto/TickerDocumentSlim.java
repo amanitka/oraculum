@@ -4,11 +4,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.oraculum.company.api.dto.TickerDocumentDto;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
+import com.oraculum.company.api.domain.TickerDocumentType;
 
 import java.time.LocalDate;
 
 public record TickerDocumentSlim(
         @JsonProperty("citation_id") String citationId,
+        @JsonProperty("document_type") TickerDocumentType documentType,
         @JsonProperty("report_period") LocalDate reportPeriod,
         @JsonProperty("filing_date") LocalDate filingDate,
         @JsonProperty("sentiment_score") Float sentimentScore,
@@ -26,6 +28,7 @@ public record TickerDocumentSlim(
         }
         return new TickerDocumentSlim(
                 citationId,
+                dto.getDocumentType(),
                 dto.getReportPeriod(),
                 dto.getFilingDate(),
                 dto.getSentimentScore(),

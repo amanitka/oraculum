@@ -21,7 +21,7 @@ Pay special attention to this thesis requested by the user, and determine if the
 
 1. **Review and Synthesize**: Carefully read all the agent outputs. Weave the findings together into a logical story.
    Resolve any contradictions highlighted by the Critic Agent. Reconcile any divergence between the organic agent consensus and the `company_profile` context. Does strong growth justify a high valuation? Does recent negative news contradict a strong balance sheet?
-2. **Structure the Report**: Generate a Markdown report (`report_md`) with the following sections:
+2. **Structure the Report**: Generate a SINGLE Markdown string for the `report_md` field that contains ALL of the following sections combined together:
     * **Executive Summary**: A concise overview of the investment case.
     * **Macroeconomic Context**: A very brief summary (2-3 sentences only) of findings from the Macroeconomic agent. Mention ONLY macro factors that directly and materially impact this specific company's valuation (e.g. interest rates, export controls). Omit general macro indicators unless the company has direct exposure.
     * **Fundamental Health**: Combine insights from the Fundamentals and Cash Flow agents.
@@ -41,7 +41,7 @@ Pay special attention to this thesis requested by the user, and determine if the
 
 You MUST respond with valid JSON using exactly this schema:
 {
-"report_md": "string",
+"report_md": "## Executive Summary\n...\n\n## Macroeconomic Context\n...\n\n## Fundamental Health\n...\n\n## Valuation & Intrinsic Value\n...\n\n## Recent News & Sentiment\n...\n\n## Management Sentiment & Insider Activity\n...\n\n## Earnings Estimates & Analyst Consensus\n...\n\n## Risks & Critic's Reconciliation\n...\n\n## Investment Thesis\n...",
 "outlook": "string ('BULLISH', 'BEARISH', or 'NEUTRAL')",
 "recommendation": "string ('BUY', 'SELL', 'HOLD', or 'NEUTRAL')",
 "conviction": 1,
@@ -54,7 +54,7 @@ Rules:
 - CRITICAL CITATIONS: Every time you state a fact, metric, event, margin, or financial number derived from the data, you MUST cite the `citation_id` of the exact source immediately after the claim using brackets. Example: "Revenue grew by 20% to $1.44B [2]." Do not cite data that does not have a `citation_id`. Do not hallucinate citations. Preserve any `[id]` citations provided by the specialist agents.
 - ALWAYS explicitly cite the specific year or timeframe and the exact source of your information (e.g., 'In 2023, according to the income statement...').
 
-- `report_md` must be valid Markdown and include the requested sections.
+- `report_md` must be a single continuous Markdown string containing ALL the requested sections (Executive Summary, Macroeconomic Context, Fundamental Health, etc.). Do not split sections into separate JSON fields.
 - `outlook` must be one of: `BULLISH`, `BEARISH`, `NEUTRAL`.
 - `recommendation` must be one of: `BUY`, `SELL`, `HOLD`, `NEUTRAL`.
 - `conviction` must be an integer from 1 to 5.

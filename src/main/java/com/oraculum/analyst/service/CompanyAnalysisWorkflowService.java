@@ -1,5 +1,6 @@
 package com.oraculum.analyst.service;
 
+import com.oraculum.analyst.agent.document.service.SecDocumentProcessingAgent;
 import com.oraculum.analyst.agent.dto.*;
 import com.oraculum.analyst.agent.service.Agent;
 import com.oraculum.analyst.api.domain.AgentType;
@@ -8,7 +9,6 @@ import com.oraculum.analyst.api.dto.CompanyAnalysisRequestEvent;
 import com.oraculum.analyst.api.event.CompanyAnalysisProgressEvent;
 import com.oraculum.analyst.config.AnalystProperties;
 import com.oraculum.analyst.dto.CompanyAnalysisResult;
-import com.oraculum.analyst.agent.document.service.SecDocumentProcessingAgent;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
 import com.oraculum.company.api.CompanyMetadataApi;
 import com.oraculum.company.api.dto.CompanyDto;
@@ -61,7 +61,7 @@ public class CompanyAnalysisWorkflowService {
 
     private void processPendingCompanyDocuments(CompanyAnalysisRequestEvent request) {
         log.info("JIT document processing for ticker {} started", request.ticker().ticker());
-        secDocumentProcessingAgent.processPendingDocumentsForTicker(request.ticker(), 1);
+        secDocumentProcessingAgent.processPendingDocumentsForTicker(request.ticker());
         log.info("JIT document processing completed");
     }
 
@@ -165,7 +165,6 @@ public class CompanyAnalysisWorkflowService {
     private SynthesizerAgentOutput runSynthesizerPhase(CompanyAnalysisRequestEvent request, AgentContext ctx) {
         log.info("Starting Synthesizer phase");
         eventPublisher.publishEvent(new CompanyAnalysisProgressEvent(request.correlationId(), AgentType.SYNTHESIZER, false));
-        @SuppressWarnings("unchecked")
         Agent<SynthesizerAgentOutput> synthesizer = (Agent<SynthesizerAgentOutput>) agents.get(AgentType.SYNTHESIZER);
         var output = synthesizer.run(ctx);
         recordTraceAndTokens(ctx, AgentType.SYNTHESIZER.name(), output);

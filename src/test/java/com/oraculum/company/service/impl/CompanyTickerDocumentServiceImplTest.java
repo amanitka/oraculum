@@ -94,17 +94,18 @@ class CompanyTickerDocumentServiceImplTest {
                 .market("US")
                 .documentType(TickerDocumentType.SEC_10K)
                 .documentSubtype(TickerDocumentSubtype.SEC_MD)
-                .reportPeriod(LocalDate.of(2023, 12, 31))
-                .filingDate(LocalDate.of(2024, 2, 1))
+                .reportPeriod(LocalDate.now().minusDays(10))
+                .filingDate(LocalDate.now().minusDays(5))
                 .content("Management discussion content")
                 .companyName("Apple Inc.")
                 .marketCapitalization(3000000000000.0)
                 .companySize("LARGE")
+                .documentPriority(1)
                 .build();
 
-        when(pendingRepository.findPendingDocuments(3, PageRequest.of(0, 5))).thenReturn(List.of(entity));
+        when(pendingRepository.findPendingDocuments(anyInt(), any(LocalDate.class), any(PageRequest.class))).thenReturn(List.of(entity));
 
-        List<TickerDocumentPendingDto> result = service.getPendingRawDocuments(5, 3);
+        List<TickerDocumentPendingDto> result = service.getPendingRawDocuments(5);
 
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().getId()).isEqualTo("hash123");
@@ -152,17 +153,18 @@ class CompanyTickerDocumentServiceImplTest {
                 .market("US")
                 .documentType(TickerDocumentType.SEC_10K)
                 .documentSubtype(TickerDocumentSubtype.SEC_MD)
-                .reportPeriod(LocalDate.of(2023, 12, 31))
-                .filingDate(LocalDate.of(2024, 2, 1))
+                .reportPeriod(LocalDate.now().minusDays(10))
+                .filingDate(LocalDate.now().minusDays(5))
                 .content("Content details")
                 .companyName("Apple Inc.")
                 .marketCapitalization(3000000000000.0)
                 .companySize("LARGE")
+                .documentPriority(1)
                 .build();
 
-        when(pendingRepository.findByTickerAndMarketAndDocumentPriorityLessThanEqual("AAPL", "US", 1)).thenReturn(List.of(entity));
+        when(pendingRepository.findPendingDocumentsByTickerAndMarket(eq("AAPL"), eq("US"), anyInt(), any(LocalDate.class))).thenReturn(List.of(entity));
 
-        List<TickerDocumentPendingDto> result = service.getPendingRawDocumentsByTicker(new TickerKeyDto("AAPL", "US"), 1);
+        List<TickerDocumentPendingDto> result = service.getPendingRawDocumentsByTicker(new TickerKeyDto("AAPL", "US"));
 
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().getId()).isEqualTo("hash123");

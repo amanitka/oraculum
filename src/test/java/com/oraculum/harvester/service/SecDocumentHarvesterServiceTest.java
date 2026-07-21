@@ -129,6 +129,6 @@ class SecDocumentHarvesterServiceTest {
         assertThat(secRequest.getItems().getFirst().getTicker()).isEqualTo("AAPL");
         assertThat(secRequest.getItems().getFirst().getMarket()).isEqualTo("US");
         assertThat(secRequest.getItems().getFirst().getCik()).isEqualTo("0000320193");
-        assertThat(secRequest.getItems().getFirst().getDocumentTypes()).hasSize(2);
+        assertThat(secRequest.getItems().getFirst().getDocumentTypes()).hasSize(3);
     }
 }

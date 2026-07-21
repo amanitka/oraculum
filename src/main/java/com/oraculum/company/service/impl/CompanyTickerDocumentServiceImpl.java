@@ -2,14 +2,12 @@ package com.oraculum.company.service.impl;
 
 import com.oraculum.company.api.CompanyTickerDocumentApi;
 import com.oraculum.company.api.domain.TickerDocumentProcessingStatus;
+import com.oraculum.company.api.domain.TickerDocumentSubtype;
 import com.oraculum.company.api.dto.TickerDocumentDto;
 import com.oraculum.company.api.dto.TickerDocumentPendingDto;
 import com.oraculum.company.api.dto.TickerDocumentSyncStatusDto;
 import com.oraculum.company.api.dto.TickerKeyDto;
-import com.oraculum.company.domain.TickerDocumentEntity;
-import com.oraculum.company.domain.TickerDocumentPendingEntity;
-import com.oraculum.company.domain.TickerDocumentSyncStatusEntity;
-import com.oraculum.company.domain.TickerSecDocumentStaleSyncEntity;
+import com.oraculum.company.domain.*;
 import com.oraculum.company.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -18,6 +16,8 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.Period;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -68,8 +68,10 @@ public class CompanyTickerDocumentServiceImpl implements CompanyTickerDocumentAp
 
     @Override
     @Transactional(readOnly = true)
-    public List<TickerDocumentPendingDto> getPendingRawDocuments(int limit, int maxPriority) {
-        return pendingRepository.findPendingDocuments(maxPriority, PageRequest.of(0, limit)).stream()
+    public List<TickerDocumentPendingDto> getPendingRawDocuments(int limit) {
+        var rawDocuments = pendingRepository.findPendingDocuments(TickerDocumentSubtype.getMaxProcessingLimit(), LocalDate.now().minus(TickerDocumentSubtype.getMaxProcessingPeriod()), PageRequest.of(0, limit));
+        return rawDocuments.stream()
+                .filter(doc -> isDocumentRelevant(doc.getDocumentSubtype(), doc.getDocumentPriority(), doc.getReportPeriod()))
                 .map(this::mapPendingToDto)
                 .toList();
     }
@@ -103,10 +105,30 @@ public class CompanyTickerDocumentServiceImpl implements CompanyTickerDocumentAp
 
     @Override
     @Transactional(readOnly = true)
-    public List<TickerDocumentPendingDto> getPendingRawDocumentsByTicker(TickerKeyDto tickerKey, int maxPriority) {
-        return pendingRepository.findByTickerAndMarketAndDocumentPriorityLessThanEqual(tickerKey.ticker(), tickerKey.market(), maxPriority).stream()
+    public List<TickerDocumentPendingDto> getPendingRawDocumentsByTicker(TickerKeyDto tickerKey) {
+        var rawDocuments = pendingRepository.findPendingDocumentsByTickerAndMarket(tickerKey.ticker(), tickerKey.market(), TickerDocumentSubtype.getMaxProcessingLimit(), LocalDate.now().minus(TickerDocumentSubtype.getMaxProcessingPeriod()));
+        return rawDocuments.stream()
+                .filter(doc -> isDocumentRelevant(doc.getDocumentSubtype(), doc.getDocumentPriority(), doc.getReportPeriod()))
                 .map(this::mapPendingToDto)
                 .toList();
+    }
+
+    private boolean isDocumentRelevant(TickerDocumentSubtype subtype, Integer documentPriority, LocalDate dateToCheck) {
+        if (subtype == null) {
+            return false;
+        }
+
+        int minProcessingLimit = subtype.getProcessingLimit();
+        if (documentPriority == null || documentPriority > minProcessingLimit) {
+            return false;
+        }
+
+        Period minProcessingPeriod = subtype.getProcessingPeriod() != null ? subtype.getProcessingPeriod() : TickerDocumentSubtype.getMaxProcessingPeriod();
+        LocalDate minReportingPeriodDate = LocalDate.now().minus(minProcessingPeriod);
+        if (dateToCheck == null) {
+            return false;
+        }
+        return !dateToCheck.isBefore(minReportingPeriodDate);
     }
 
     private TickerDocumentPendingDto mapPendingToDto(TickerDocumentPendingEntity entity) {
@@ -127,13 +149,15 @@ public class CompanyTickerDocumentServiceImpl implements CompanyTickerDocumentAp
 
     @Override
     @Transactional(readOnly = true)
-    public List<TickerDocumentDto> getDocumentsByTicker(TickerKeyDto tickerKey) {
+    public List<TickerDocumentDto> getDocumentsForAnalysisByTicker(TickerKeyDto tickerKey) {
         return latestSummaryRepository.findByTickerAndMarket(tickerKey.ticker(), tickerKey.market()).stream()
+                .filter(doc -> isDocumentRelevant(doc.getDocumentSubtype(), doc.getDocumentPriority(), doc.getReportPeriod()))
                 .map(this::mapLatestSummaryToDto)
+                .sorted(Comparator.comparing(TickerDocumentDto::getReportPeriod).reversed())
                 .toList();
     }
 
-    private TickerDocumentDto mapLatestSummaryToDto(com.oraculum.company.domain.TickerDocumentViewEntity entity) {
+    private TickerDocumentDto mapLatestSummaryToDto(TickerDocumentViewEntity entity) {
         return TickerDocumentDto.builder()
                 .id(entity.getId())
                 .ticker(entity.getTicker())

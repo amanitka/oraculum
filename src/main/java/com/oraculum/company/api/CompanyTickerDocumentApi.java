@@ -14,13 +14,13 @@ public interface CompanyTickerDocumentApi {
 
     List<TickerDocumentSyncStatusDto> getStaleSecDocuments(int limit);
 
-    List<TickerDocumentPendingDto> getPendingRawDocuments(int limit, int maxPriority);
-
     void createDocumentSummary(TickerDocumentDto summary);
 
     void updateRawDocumentStatus(String id, LocalDate reportPeriod, TickerDocumentProcessingStatus status);
 
-    List<TickerDocumentPendingDto> getPendingRawDocumentsByTicker(TickerKeyDto tickerKey, int maxPriority);
+    List<TickerDocumentPendingDto> getPendingRawDocuments(int limit);
 
-    List<TickerDocumentDto> getDocumentsByTicker(TickerKeyDto tickerKey);
+    List<TickerDocumentPendingDto> getPendingRawDocumentsByTicker(TickerKeyDto tickerKey);
+
+    List<TickerDocumentDto> getDocumentsForAnalysisByTicker(TickerKeyDto tickerKey);
 }

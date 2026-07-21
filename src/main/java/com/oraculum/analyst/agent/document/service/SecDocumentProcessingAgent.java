@@ -33,15 +33,15 @@ public class SecDocumentProcessingAgent {
     private final PromptRegistry promptRegistry;
     private final JsonMapper jsonMapper;
 
-    public void processPendingDocuments(int limit, int maxPriority) {
-        log.info("Starting processing of up to {} pending SEC documents (maxPriority={}).", limit, maxPriority);
-        List<TickerDocumentPendingDto> pendingDocs = companyTickerDocumentApi.getPendingRawDocuments(limit, maxPriority);
+    public void processPendingDocuments(int limit) {
+        log.info("Starting processing of up to {} pending SEC documents (using enum defaults).", limit);
+        List<TickerDocumentPendingDto> pendingDocs = companyTickerDocumentApi.getPendingRawDocuments(limit);
         processDocuments(pendingDocs, List.of(LlmProviderType.LMSTUDIO));
     }
 
-    public void processPendingDocumentsForTicker(TickerKeyDto tickerKey, int maxPriority) {
-        log.info("Starting JIT processing of pending SEC documents for ticker {} (maxPriority={}).", tickerKey.ticker(), maxPriority);
-        List<TickerDocumentPendingDto> pendingDocs = companyTickerDocumentApi.getPendingRawDocumentsByTicker(tickerKey, maxPriority);
+    public void processPendingDocumentsForTicker(TickerKeyDto tickerKey) {
+        log.info("Starting JIT processing of pending SEC documents for ticker {} (using enum defaults).", tickerKey.ticker());
+        List<TickerDocumentPendingDto> pendingDocs = companyTickerDocumentApi.getPendingRawDocumentsByTicker(tickerKey);
         processDocuments(pendingDocs, List.of());
     }
 

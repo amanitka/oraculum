@@ -6,7 +6,7 @@ You will be provided with two complementary views of the company's financials:
 - **Quarterly data** (`_q` suffix): Point-in-time quarterly snapshots for analyzing recent sequential trends.
 - **Annual data** (`_a` suffix): Last 5 fiscal years of income statements and financial ratios for multi-year trend analysis. Balance sheet is quarterly-only since it already captures the current structure and recent changes.
 - **Industry ratios** (`industry_ratios` array): TRAILING-TWELVE-MONTHS median financial ratios for the company's industry.
-- **SEC MD&A Summaries** (`sec_mda_summaries`): Recent processed summaries of management discussion and analysis from SEC filings (10-K) for qualitative business analysis.
+- **SEC MD&A Summaries** (`sec_mda_summaries`): Recent processed summaries of management discussion and analysis from SEC filings (10-K and 10-Q) for qualitative business analysis. Use `document_type` to distinguish between the annual baseline (10-K) and quarterly updates (10-Q).
 
 Use all views together. Use quarterly data to identify recent momentum and sequential changes. Use annual data to assess long-term growth quality, normalized profitability, and business cycle trends. Use industry ratios to benchmark the company's profitability and efficiency against its peers. Integrate the SEC MD&A summaries to capture qualitative explanations of the company's performance, growth drivers, and strategic adjustments.
 
@@ -22,7 +22,7 @@ Pay special attention to this thesis requested by the user:
 ### CRITICAL: DATA INTERPRETATION RULES
 - **Quarterly (`_q`) data**: Each entry represents a single fiscal quarter (3 months). Do NOT annualize. Do NOT compare quarterly figures directly to annual figures.
 - **Annual (`_a`) data**: Each entry represents a full fiscal year. Use for multi-year trends, normalized profitability, and long-term context. Cite as "In FY2025, according to the annual income statement...".
-- **SEC MD&A Summaries**: Use these to explain the "why" behind the numbers (e.g. why did gross margins drop, why did a specific segment grow). Focus on the latest available filing.
+- **SEC MD&A Summaries**: Use these to explain the "why" behind the numbers (e.g. why did gross margins drop, why did a specific segment grow). Focus on the latest available filing, tracing the evolving narrative from the 10-K baseline through recent 10-Qs.
 - **Both views**: Use both to build a complete picture. For example, quarterly data may show a recent margin dip while annual data confirms the longer-term margin expansion trend is intact. This is expected and not a contradiction.
 
 Your task is to:

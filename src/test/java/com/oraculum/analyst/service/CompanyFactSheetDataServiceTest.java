@@ -132,7 +132,7 @@ class CompanyFactSheetDataServiceTest {
         when(economyDataApi.getMacroeconomicSummary()).thenReturn(List.of(macroSummary));
 
         when(harvesterLiveApi.fetchEarningsEstimates(anyString())).thenReturn(Optional.empty());
-        when(companyTickerDocumentApi.getDocumentsByTicker(any())).thenReturn(List.of());
+        when(companyTickerDocumentApi.getDocumentsForAnalysisByTicker(any())).thenReturn(List.of());
 
         ReverseDcfDto reverseDcf = mock(ReverseDcfDto.class);
         when(companyValuationApi.calculateReverseDcf(anyInt())).thenReturn(reverseDcf);

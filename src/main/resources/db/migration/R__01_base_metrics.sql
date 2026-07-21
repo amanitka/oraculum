@@ -521,7 +521,7 @@ SELECT
     COALESCE(s.market_capitalization, 0) AS market_capitalization,
     COALESCE(s.company_size, 'MICRO')   AS company_size,
     ROW_NUMBER() OVER (
-        PARTITION BY r.ticker, r.market, r.document_type, r.document_subtype 
+        PARTITION BY r.ticker, r.market, CASE WHEN r.document_type IN ('SEC_10K', 'SEC_10Q') THEN 'SEC_10X' ELSE r.document_type END, r.document_subtype
         ORDER BY r.report_period DESC, r.filing_date DESC
     ) AS document_priority
 FROM t_ticker_document_raw r

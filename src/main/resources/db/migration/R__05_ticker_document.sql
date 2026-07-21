@@ -22,6 +22,8 @@ FROM public.t_company c
 CROSS JOIN (SELECT 'SEC_8K' AS document_type
             UNION ALL
             SELECT 'SEC_10K' AS document_type
+            UNION ALL
+            SELECT 'SEC_10Q' AS document_type
             ) dt
 LEFT JOIN public.t_ticker_document_sync_status tds ON tds.ticker = c.ticker
                                                  AND tds.market = c.market
@@ -49,7 +51,7 @@ DROP VIEW IF EXISTS public.v_ticker_document CASCADE;
 DO $$ BEGIN RAISE NOTICE 'Creating view: v_ticker_document'; END $$;
 
 CREATE VIEW public.v_ticker_document AS
-WITH DeduplicatedDocs AS (
+WITH deduplicated_documents AS (
     SELECT 
         d.id,
         d.ticker,
@@ -67,7 +69,7 @@ WITH DeduplicatedDocs AS (
         ROW_NUMBER() OVER (
             PARTITION BY d.ticker, d.market, d.document_type, d.document_subtype, d.report_period
             ORDER BY d.filing_date DESC, d.created_at DESC
-        ) as period_rn
+        ) AS period_rn
     FROM public.t_ticker_document d
     WHERE d.report_period >= CURRENT_DATE - CASE 
         WHEN d.document_type = 'SEC_8K' THEN INTERVAL '1 year'
@@ -87,6 +89,10 @@ SELECT
     summary,
     sentiment_score,
     created_at,
-    updated_at
-FROM DeduplicatedDocs
+    updated_at,
+    ROW_NUMBER() OVER (
+        PARTITION BY ticker, market, CASE WHEN document_type IN ('SEC_10K', 'SEC_10Q') THEN 'SEC_10X' ELSE document_type END, document_subtype 
+        ORDER BY report_period DESC, filing_date DESC
+    ) AS document_priority
+FROM deduplicated_documents
 WHERE period_rn = 1;

@@ -20,7 +20,7 @@ public class SecDocumentProcessingListener {
     public void onProcessPendingSecDocumentsEvent(ProcessPendingSecDocumentsEvent event) {
         log.info("Received event to process pending SEC documents (limit={}, maxPriority={})", event.limit(), event.maxPriority());
         try {
-            secDocumentProcessingAgent.processPendingDocuments(event.limit(), event.maxPriority());
+            secDocumentProcessingAgent.processPendingDocuments(event.limit());
         } catch (Exception e) {
             log.error("Failed to execute SEC document processing asynchronously: {}", e.getMessage(), e);
         }

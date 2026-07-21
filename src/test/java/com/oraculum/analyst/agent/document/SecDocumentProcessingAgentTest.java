@@ -67,7 +67,7 @@ class SecDocumentProcessingAgentTest {
     @Test
     void processPendingDocuments_success() {
         // Arrange
-        when(companyTickerDocumentApi.getPendingRawDocuments(1, 3)).thenReturn(List.of(rawDto));
+        when(companyTickerDocumentApi.getPendingRawDocuments(1)).thenReturn(List.of(rawDto));
         when(promptRegistry.getPrompt(PromptType.SEC_MD)).thenReturn("Review: {{ content }} for {{ ticker }}");
 
         SecMdResponse mdResponse = new SecMdResponse(
@@ -88,7 +88,7 @@ class SecDocumentProcessingAgentTest {
         when(jsonMapper.writeValueAsString(mdResponse)).thenReturn(expectedJson);
 
         // Act
-        service.processPendingDocuments(1, 3);
+        service.processPendingDocuments(1);
 
         ArgumentCaptor<TickerDocumentDto> summaryCaptor = ArgumentCaptor.forClass(TickerDocumentDto.class);
         verify(companyTickerDocumentApi).createDocumentSummary(summaryCaptor.capture());
@@ -105,12 +105,12 @@ class SecDocumentProcessingAgentTest {
     @Test
     void processPendingDocuments_llmFailure_marksAsFailed() {
         // Arrange
-        when(companyTickerDocumentApi.getPendingRawDocuments(1, 3)).thenReturn(List.of(rawDto));
+        when(companyTickerDocumentApi.getPendingRawDocuments(1)).thenReturn(List.of(rawDto));
         when(promptRegistry.getPrompt(PromptType.SEC_MD)).thenReturn("Review: {{ content }}");
         when(llmRouterApi.executeCall(any(LlmCallRequest.class))).thenThrow(new RuntimeException("LLM down"));
 
         // Act
-        service.processPendingDocuments(1, 3);
+        service.processPendingDocuments(1);
 
         // Assert
         verify(companyTickerDocumentApi).updateRawDocumentStatus("hash123", LocalDate.of(2023, 12, 31), TickerDocumentProcessingStatus.FAILED);

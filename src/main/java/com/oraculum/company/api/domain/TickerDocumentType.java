@@ -10,7 +10,7 @@ import java.util.Optional;
 public enum TickerDocumentType {
     SEC_8K("SEC_8K", TickerDocumentProvider.SEC),
     SEC_10K("SEC_10K", TickerDocumentProvider.SEC),
-    EARNINGS_CALL("EARNINGS_CALL", TickerDocumentProvider.INTERNAL);
+    SEC_10Q("SEC_10Q", TickerDocumentProvider.SEC);
 
     private static final Map<String, TickerDocumentType> CODE_MAP = new HashMap<>();
 

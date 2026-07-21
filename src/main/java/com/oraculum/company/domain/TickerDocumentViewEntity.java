@@ -61,6 +61,9 @@ public class TickerDocumentViewEntity {
     @Column(name = "updated_at")
     private Instant updatedAt;
 
+    @Column(name = "document_priority")
+    private Integer documentPriority;
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor

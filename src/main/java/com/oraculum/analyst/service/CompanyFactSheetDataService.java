@@ -3,12 +3,7 @@ package com.oraculum.analyst.service;
 import com.oraculum.analyst.config.AnalystProperties;
 import com.oraculum.analyst.dto.CitationRegistry;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
-import com.oraculum.company.api.CompanyFinancialDataApi;
-import com.oraculum.company.api.CompanyValuationApi;
-import com.oraculum.company.api.CompanyInsiderTransactionApi;
-import com.oraculum.company.api.CompanyNewsApi;
-import com.oraculum.company.api.CompanySharePriceApi;
-import com.oraculum.company.api.CompanyTickerDocumentApi;
+import com.oraculum.company.api.*;
 import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.domain.TickerDocumentSubtype;
 import com.oraculum.company.api.domain.TickerDocumentType;
@@ -20,9 +15,7 @@ import org.springframework.stereotype.Service;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDate;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -92,10 +85,10 @@ public class CompanyFactSheetDataService {
         if (news == null || news.isEmpty()) return news;
 
         return news.stream()
-                .sorted(Comparator.comparing(NewsTickerDto::relevanceScore, java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder()))
-                        .thenComparing(NewsTickerDto::timePublished, java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder())))
+                .sorted(Comparator.comparing(NewsTickerDto::relevanceScore, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(NewsTickerDto::timePublished, Comparator.nullsLast(Comparator.reverseOrder())))
                 .limit(limit > 0 ? limit : 50)
-                .sorted(Comparator.comparing(NewsTickerDto::timePublished, java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder())))
+                .sorted(Comparator.comparing(NewsTickerDto::timePublished, Comparator.nullsLast(Comparator.reverseOrder())))
                 .collect(Collectors.toList());
     }
 
@@ -113,35 +106,19 @@ public class CompanyFactSheetDataService {
 
     private Map<TickerDocumentType, Map<TickerDocumentSubtype, List<TickerDocumentDto>>> getRecentSecDocuments(CompanyDto company) {
         TickerKeyDto key = new TickerKeyDto(company.ticker(), company.market());
-        List<TickerDocumentDto> documents = companyTickerDocumentApi.getDocumentsByTicker(key);
-        List<TickerDocumentDto> sortedDocs = documents.stream()
-                .sorted(Comparator.comparing(TickerDocumentDto::getReportPeriod).reversed())
-                .toList();
+        List<TickerDocumentDto> documents = companyTickerDocumentApi.getDocumentsForAnalysisByTicker(key);
+        Map<TickerDocumentType, Map<TickerDocumentSubtype, List<TickerDocumentDto>>> result = new EnumMap<>(TickerDocumentType.class);
 
-        Map<TickerDocumentType, Map<TickerDocumentSubtype, List<TickerDocumentDto>>> result = new java.util.EnumMap<>(TickerDocumentType.class);
-        for (TickerDocumentDto doc : sortedDocs) {
+        for (TickerDocumentDto doc : documents) {
             TickerDocumentType type = doc.getDocumentType();
             TickerDocumentSubtype subtype = doc.getDocumentSubtype();
+            if (subtype == null) continue;
 
-            int limit = getLimitForSecDocument(type, subtype);
-            if (limit == 0) continue;
-
-            Map<TickerDocumentSubtype, List<TickerDocumentDto>> subMap =
-                    result.computeIfAbsent(type, _ -> new java.util.EnumMap<>(TickerDocumentSubtype.class));
-            List<TickerDocumentDto> list = subMap.computeIfAbsent(subtype, _ -> new java.util.ArrayList<>());
-            if (list.size() < limit) {
-                list.add(doc);
-            }
+            Map<TickerDocumentSubtype, List<TickerDocumentDto>> subMap = result.computeIfAbsent(type, _ -> new EnumMap<>(TickerDocumentSubtype.class));
+            List<TickerDocumentDto> list = subMap.computeIfAbsent(subtype, _ -> new ArrayList<>());
+            list.add(doc);
         }
         return result;
-    }
-
-    private int getLimitForSecDocument(TickerDocumentType type, TickerDocumentSubtype subtype) {
-        if (type == TickerDocumentType.SEC_10K) {
-            if (subtype == TickerDocumentSubtype.SEC_MD || subtype == TickerDocumentSubtype.SEC_RF) return 1;
-        }
-        if (type == TickerDocumentType.SEC_8K && subtype == TickerDocumentSubtype.SEC_EX99_1) return 4;
-        return 0;
     }
 
     public CompanyFactSheetData create(CompanyDto company, CitationRegistry citationRegistry) {
