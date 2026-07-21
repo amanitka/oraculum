@@ -149,16 +149,8 @@ public class DataRefreshComponent extends VerticalLayout {
         limitField.setWidth("100px");
         limitField.setTooltipText("Batch Limit");
 
-        IntegerField priorityField = new IntegerField();
-        priorityField.setValue(3);
-        priorityField.setMin(1);
-        priorityField.setStepButtonsVisible(true);
-        priorityField.setWidth("100px");
-        priorityField.setTooltipText("Max Priority");
-
         HorizontalLayout secParams = new HorizontalLayout(
-                new Span("Limit:"), limitField,
-                new Span("Priority:"), priorityField
+                new Span("Limit:"), limitField
         );
         secParams.setAlignItems(Alignment.CENTER);
         secParams.setSpacing(true);
@@ -167,8 +159,7 @@ public class DataRefreshComponent extends VerticalLayout {
         btnProcessSec.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
         btnProcessSec.addClickListener(_ -> {
             int limit = limitField.getValue() != null ? limitField.getValue() : 50;
-            int priority = priorityField.getValue() != null ? priorityField.getValue() : 3;
-            eventPublisher.publishEvent(new ProcessPendingSecDocumentsEvent(limit, priority));
+            eventPublisher.publishEvent(new ProcessPendingSecDocumentsEvent(limit));
             ViewHelper.showSuccess("Started SEC Document processing in the background (Limit: " + limit + ")");
         });
 

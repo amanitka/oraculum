@@ -18,7 +18,7 @@ public class SecDocumentProcessingListener {
     @Async
     @EventListener
     public void onProcessPendingSecDocumentsEvent(ProcessPendingSecDocumentsEvent event) {
-        log.info("Received event to process pending SEC documents (limit={}, maxPriority={})", event.limit(), event.maxPriority());
+        log.info("Received event to process pending SEC documents (limit={})", event.limit());
         try {
             secDocumentProcessingAgent.processPendingDocuments(event.limit());
         } catch (Exception e) {
