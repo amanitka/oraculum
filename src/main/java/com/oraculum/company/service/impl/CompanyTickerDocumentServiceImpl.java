@@ -51,7 +51,7 @@ public class CompanyTickerDocumentServiceImpl implements CompanyTickerDocumentAp
         return TickerDocumentSyncStatusDto.builder()
                 .ticker(entity.getTicker())
                 .market(entity.getMarket())
-                .documentType(entity.getDocumentType())
+                .documentType(entity.getDocumentTypeEnum())
                 .lastProcessedFileDate(entity.getLastProcessedFileDate())
                 .build();
     }
@@ -61,7 +61,7 @@ public class CompanyTickerDocumentServiceImpl implements CompanyTickerDocumentAp
                 .ticker(entity.getTicker())
                 .market(entity.getMarket())
                 .cik(entity.getCik())
-                .documentType(entity.getDocumentType())
+                .documentType(entity.getDocumentTypeEnum())
                 .lastProcessedFileDate(entity.getLastProcessedFileDate())
                 .build();
     }

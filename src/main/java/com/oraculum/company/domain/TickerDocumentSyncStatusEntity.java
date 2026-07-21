@@ -62,12 +62,8 @@ public class TickerDocumentSyncStatusEntity {
     private OffsetDateTime updatedAt;
 
     @Transient
-    public TickerDocumentType getDocumentType() {
-        return TickerDocumentType.fromString(this.documentType).orElse(null);
-    }
-
-    public void setDocumentType(TickerDocumentType type) {
-        this.documentType = (type != null) ? type.getCode() : null;
+    public TickerDocumentType getDocumentTypeEnum() {
+        return TickerDocumentType.fromString(getDocumentType()).orElse(null);
     }
 
     @Data

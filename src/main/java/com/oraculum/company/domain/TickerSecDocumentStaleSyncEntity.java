@@ -41,8 +41,8 @@ public class TickerSecDocumentStaleSyncEntity {
     private OffsetDateTime lastRefreshAt;
 
     @Transient
-    public TickerDocumentType getDocumentType() {
-        return TickerDocumentType.fromString(this.documentType).orElse(null);
+    public TickerDocumentType getDocumentTypeEnum() {
+        return TickerDocumentType.fromString(getDocumentType()).orElse(null);
     }
 
     @Data
