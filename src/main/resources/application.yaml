@@ -51,12 +51,14 @@ resilience4j:
     retry-aspect-order: 399
     instances:
       llm:
-        max-attempts: 2
-        wait-duration: 1s
+        max-attempts: 4
+        wait-duration: 2s
+        enable-exponential-backoff: true
         retry-exceptions:
-          - java.io.IOException
-          - java.net.SocketTimeoutException
-          - java.util.concurrent.TimeoutException
+          - java.lang.Exception
+        ignore-exceptions:
+          - org.springframework.web.client.HttpClientErrorException.TooManyRequests
+          - org.springframework.web.reactive.function.client.WebClientResponseException.TooManyRequests
       fredApi:
         max-attempts: 3
         wait-duration: 2s
