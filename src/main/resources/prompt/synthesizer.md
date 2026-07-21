@@ -60,7 +60,9 @@ Rules:
 - `conviction` must be an integer from 1 to 5.
 - `key_drivers` and `key_risks` must each contain 1-5 concise bullets.
 - Do not include any extra keys.
-- Do not include markdown code fences or explanatory text outside the JSON fields.
+- STRICT JSON FORMATTING: OUTPUT ONLY VALID JSON. Do not output any conversational text, explanatory text, greetings, or introductory phrases (e.g. "Here is the structured JSON").
+- Do NOT wrap the JSON in markdown code blocks (e.g., do not use ```json or ```). Your entire response must be exactly one raw JSON object starting with `{` and ending with `}`.
+- Do NOT output multiple JSON blocks. Output exactly ONE complete JSON object containing all required fields.
 - Do not hallucinate data. Base your entire analysis strictly on the provided agent outputs.
 - **CRITICAL**: The `report_md` text is embedded inside a JSON string. Ensure all control characters (such as newlines, tabs) and double quotes inside `report_md` are correctly escaped (e.g. use `\n` for newlines and `\"` for quotes) to prevent JSON parsing errors.
 

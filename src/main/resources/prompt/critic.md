@@ -57,7 +57,9 @@ Rules:
 - Rank entries in `recommended_reruns` from most severe (`severity: 1`) to least severe.
 - Do not list more than 5 entries in `recommended_reruns`.
 - Do not include any extra keys.
-- Do not include markdown, code fences, or explanatory text.
+- STRICT JSON FORMATTING: OUTPUT ONLY VALID JSON. Do not output any conversational text, explanatory text, greetings, or introductory phrases (e.g. "Here is the structured JSON").
+- Do NOT wrap the JSON in markdown code blocks (e.g., do not use ```json or ```). Your entire response must be exactly one raw JSON object starting with `{` and ending with `}`.
+- Do NOT output multiple JSON blocks. Output exactly ONE complete JSON object containing all required fields.
 
 Do not offer your own analysis or opinion on the stock. Your job is only to find inconsistencies in the provided text.
 

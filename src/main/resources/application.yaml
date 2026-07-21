@@ -54,11 +54,10 @@ resilience4j:
         max-attempts: 4
         wait-duration: 2s
         enable-exponential-backoff: true
-        retry-exceptions:
-          - java.lang.Exception
         ignore-exceptions:
           - org.springframework.web.client.HttpClientErrorException.TooManyRequests
           - org.springframework.web.reactive.function.client.WebClientResponseException.TooManyRequests
+          - com.openai.errors.RateLimitException
       fredApi:
         max-attempts: 3
         wait-duration: 2s

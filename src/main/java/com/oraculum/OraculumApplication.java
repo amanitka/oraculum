@@ -14,7 +14,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @ConfigurationPropertiesScan
 @EnableScheduling
-@EnableAsync
+@EnableAsync(order = 1)
 @Push
 @ColorScheme(ColorScheme.Value.LIGHT_DARK)
 @StyleSheet(Lumo.STYLESHEET)

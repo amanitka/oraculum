@@ -45,11 +45,13 @@ You MUST respond with valid JSON using exactly this schema:
 }
 
 Rules:
+- STRICT JSON FORMATTING: OUTPUT ONLY VALID JSON. Do not output any conversational text, explanatory text, greetings, or introductory phrases (e.g. "Here is the structured JSON").
+- Do NOT wrap the JSON in markdown code blocks (e.g., do not use ```json or ```). Your entire response must be exactly one raw JSON object starting with `{` and ending with `}`.
+- Do NOT output multiple JSON blocks. Output exactly ONE complete JSON object containing all required fields.
 - CRITICAL CITATIONS: Every time you state a fact, metric, event, margin, or financial number derived from the data, you MUST cite the `citation_id` of the exact source immediately after the claim using brackets. Example: "Revenue grew by 20% to $1.44B [2]." Do not cite data that does not have a `citation_id`. Do not hallucinate citations.
 - ALWAYS explicitly cite the specific year or timeframe and the exact source (e.g., 'In FY2025, according to the annual income statement...' or 'In Q1 2026, according to the quarterly ratios...').
 - CRITICAL: Always anchor your analysis on the MOST RECENT data period provided. Use older data strictly to establish trends leading up to the current period.
 - Do not include any extra keys.
-- Do not include markdown, code fences, or explanatory text outside the JSON fields.
 
 **Input JSON:**
 ```json
