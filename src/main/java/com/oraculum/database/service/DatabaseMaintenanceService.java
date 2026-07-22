@@ -54,17 +54,19 @@ public class DatabaseMaintenanceService {
     public void refreshMaterializedViews() {
         log.info("Starting refresh of materialized views from event...");
         try {
-            log.info("Refreshing materialized view mv_company_financial_ratios");
-            jdbcTemplate.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY mv_company_financial_ratios");
-            log.info("Updating statistics for materialized view mv_company_financial_ratios");
-            jdbcTemplate.execute("ANALYZE mv_company_financial_ratios");
-            log.info("Refreshing materialized view mv_share_price_signals_recent");
-            jdbcTemplate.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY mv_share_price_signals_recent");
-            log.info("Updating statistics for materialized view mv_share_price_signals_recent");
-            jdbcTemplate.execute("ANALYZE mv_share_price_signals_recent");
+            refreshAndAnalyze("mv_company_financial_ratios");
+            refreshAndAnalyze("mv_share_price_signals_recent");
+            refreshAndAnalyze("mv_company_overview");
             log.info("Materialized views refresh & statistics update completed successfully.");
         } catch (Exception e) {
             log.error("Materialized views refresh failed", e);
         }
+    }
+
+    private void refreshAndAnalyze(String viewName) {
+        log.info("Refreshing materialized view {}", viewName);
+        jdbcTemplate.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY " + viewName);
+        log.info("Updating statistics for materialized view {}", viewName);
+        jdbcTemplate.execute("ANALYZE " + viewName);
     }
 }

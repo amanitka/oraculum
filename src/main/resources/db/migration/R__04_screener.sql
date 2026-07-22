@@ -46,6 +46,8 @@ WHERE s.market_capitalization IS NOT NULL;
 CREATE UNIQUE INDEX idx_mv_company_overview_company_id 
 ON mv_company_overview (company_id);
 
+ANALYZE mv_company_overview;
+
 -- =================================================================
 -- VIEW: v_screener_news_sentiment
 -- Description: Detailed news sentiment screener view

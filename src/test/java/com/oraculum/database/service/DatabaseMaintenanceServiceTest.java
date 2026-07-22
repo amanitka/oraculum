@@ -1,6 +1,5 @@
 package com.oraculum.database.service;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -54,5 +53,7 @@ class DatabaseMaintenanceServiceTest {
         verify(jdbcTemplate).execute("ANALYZE mv_company_financial_ratios");
         verify(jdbcTemplate).execute("REFRESH MATERIALIZED VIEW CONCURRENTLY mv_share_price_signals_recent");
         verify(jdbcTemplate).execute("ANALYZE mv_share_price_signals_recent");
+        verify(jdbcTemplate).execute("REFRESH MATERIALIZED VIEW CONCURRENTLY mv_company_overview");
+        verify(jdbcTemplate).execute("ANALYZE mv_company_overview");
     }
 }

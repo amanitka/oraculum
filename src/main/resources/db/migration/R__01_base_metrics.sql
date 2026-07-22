@@ -282,6 +282,8 @@ ON mv_company_financial_ratios (company_id, variant, fiscal_year, fiscal_period)
 
 CREATE INDEX idx_mv_cfr_company_id ON mv_company_financial_ratios (company_id);
 
+ANALYZE mv_company_financial_ratios;
+
 
 -- =================================================================
 -- VIEW: v_share_price_signals
@@ -466,6 +468,8 @@ CREATE UNIQUE INDEX idx_mv_sps_company_trade_date
 ON mv_share_price_signals_recent (company_id, trade_date);
 
 CREATE INDEX idx_mv_sps_company_id ON mv_share_price_signals_recent (company_id);
+
+ANALYZE mv_share_price_signals_recent;
 
 -- =================================================================
 -- VIEW: v_industry_financial_ratios
