@@ -3,6 +3,7 @@ package com.oraculum.ui;
 import com.oraculum.ui.views.AnalysisView;
 import com.oraculum.ui.views.CompanyView;
 import com.oraculum.ui.views.EconomyView;
+import com.oraculum.ui.views.MarketMapView;
 import com.oraculum.ui.views.ScreenerView;
 import com.oraculum.user.api.CurrentUserApi;
 import com.vaadin.flow.component.Component;
@@ -110,26 +111,30 @@ public class MainLayout extends AppLayout implements RouterLayout, AfterNavigati
 
     private Tabs createNavigationTabs() {
         RouterLink screenerLink = new RouterLink("Screener", ScreenerView.class);
+        RouterLink marketMapLink = new RouterLink("Market Map", MarketMapView.class);
         RouterLink analysisLink = new RouterLink("Analysis", AnalysisView.class);
         RouterLink companyLink = new RouterLink("Company", CompanyView.class);
         RouterLink economyLink = new RouterLink("Economy", EconomyView.class);
 
         screenerLink.getStyle().set("text-decoration", "none");
+        marketMapLink.getStyle().set("text-decoration", "none");
         analysisLink.getStyle().set("text-decoration", "none");
         companyLink.getStyle().set("text-decoration", "none");
         economyLink.getStyle().set("text-decoration", "none");
 
         Tab tabScreener = new Tab(screenerLink);
+        Tab tabMarketMap = new Tab(marketMapLink);
         Tab tabAnalysis = new Tab(analysisLink);
         Tab tabCompany = new Tab(companyLink);
         Tab tabEconomy = new Tab(economyLink);
 
         tabMap.put(ScreenerView.class, tabScreener);
+        tabMap.put(MarketMapView.class, tabMarketMap);
         tabMap.put(AnalysisView.class, tabAnalysis);
         tabMap.put(CompanyView.class, tabCompany);
         tabMap.put(EconomyView.class, tabEconomy);
 
-        tabs = new Tabs(tabScreener, tabAnalysis, tabCompany, tabEconomy);
+        tabs = new Tabs(tabScreener, tabMarketMap, tabAnalysis, tabCompany, tabEconomy);
         tabs.getStyle().set("--lumo-font-size-m", "var(--lumo-font-size-xl)");
         tabs.getStyle().set("--lumo-secondary-text-color", "var(--lumo-body-text-color)");
 

@@ -7,5 +7,5 @@ import org.hibernate.annotations.Immutable;
 @Entity
 @Immutable
 @Table(name = "v_screener_quality_compounders")
-public class ScreenerQualityCompoundersEntity extends BaseScreenerEntity {
+public class ScreenerQualityCompoundersEntity extends CompanyOverviewBaseEntity {
 }

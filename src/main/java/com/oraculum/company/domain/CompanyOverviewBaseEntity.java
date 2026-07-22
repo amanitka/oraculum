@@ -17,12 +17,12 @@ import java.time.LocalDate;
 import java.util.Objects;
 
 @MappedSuperclass
-@IdClass(BaseScreenerEntity.ScreenerId.class)
+@IdClass(CompanyOverviewBaseEntity.ScreenerId.class)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public abstract class BaseScreenerEntity {
+public abstract class CompanyOverviewBaseEntity {
 
     @Id
     @Column(name = "trade_date")
@@ -65,6 +65,15 @@ public abstract class BaseScreenerEntity {
 
     @Column(name = "volume_velocity")
     private Float volumeVelocity;
+
+    @Column(name = "price_change_1d")
+    private Float priceChange1d;
+
+    @Column(name = "price_change_1w")
+    private Float priceChange1w;
+
+    @Column(name = "price_change_1m")
+    private Float priceChange1m;
 
     @Column(name = "pe_ratio")
     private Float peRatio;

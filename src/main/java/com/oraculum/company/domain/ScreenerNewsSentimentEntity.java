@@ -12,7 +12,7 @@ import org.hibernate.annotations.Immutable;
 @Table(name = "v_screener_news_sentiment")
 @Getter
 @Setter
-public class ScreenerNewsSentimentEntity extends BaseScreenerEntity {
+public class ScreenerNewsSentimentEntity extends CompanyOverviewBaseEntity {
 
     // News Sentiment 7d
     @Column(name = "news_count_7d")

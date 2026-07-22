@@ -6,7 +6,6 @@ DROP VIEW IF EXISTS v_company_financial_ratios CASCADE;
 DROP MATERIALIZED VIEW IF EXISTS mv_share_price_signals_recent CASCADE;
 DROP VIEW IF EXISTS v_share_price_signals CASCADE;
 DROP VIEW IF EXISTS v_industry_financial_ratios CASCADE;
-DROP VIEW IF EXISTS v_ticker_document_pending CASCADE;
 
 -- =================================================================
 -- VIEW: v_company_financial_ratios
@@ -260,7 +259,7 @@ SELECT
     (CASE WHEN free_cash_flow > 0 AND fcf_margin > 0.08 AND is_cash_earnings = 1 THEN 10
           WHEN free_cash_flow > 0 THEN 5
           ELSE 0 END) * 2.0 +
-    (CASE WHEN debt_to_equity < 0.5 AND current_ratio > 2.0 AND interest_coverage_ratio > 10 THEN 10
+    (CASE WHEN debt_to_equity < 0.5 AND current_ratio > 2.0 AND (interest_coverage_ratio > 10 OR interest_coverage_ratio IS NULL) THEN 10
           WHEN debt_to_equity < 1.5 AND current_ratio > 1.2 THEN 5
           ELSE 0 END) * 2.0 +
     (CASE WHEN COALESCE(revenue_yoy_growth, 0) > 0.10
@@ -446,22 +445,22 @@ SELECT
     *,
     CASE
        WHEN quality_score >= 70
-            AND (earnings_yield > 0.06 OR fcf_yield > 0.06)
+            AND (earnings_yield > 0.06 OR fcf_yield > 0.06 OR COALESCE(revenue_yoy_growth, 0) > 0.30)
             AND financial_trend_score >= 7        THEN 'STRONG_BUY'
        WHEN quality_score >= 50
-            AND (earnings_yield > 0.04 OR fcf_yield > 0.04)
+            AND (earnings_yield > 0.04 OR fcf_yield > 0.04 OR COALESCE(revenue_yoy_growth, 0) > 0.20)
             AND financial_trend_score >= 5        THEN 'BUY'
        WHEN financial_trend_score <= 2
             OR quality_score < 30               THEN 'AVOID'
        ELSE 'HOLD'
-       END                                                         AS composite_signal
+       END AS composite_signal
 FROM signals_base;
 
 -- MATERIALIZE Recent Share Price Signals
-DO $$ BEGIN RAISE NOTICE 'Materializing view: mv_share_price_signals_recent (Caching last 30 days...)'; END $$;
+DO $$ BEGIN RAISE NOTICE 'Materializing view: mv_share_price_signals_recent (Caching last 45 days...)'; END $$;
 CREATE MATERIALIZED VIEW mv_share_price_signals_recent AS 
 SELECT * FROM v_share_price_signals 
-WHERE trade_date >= CURRENT_DATE - INTERVAL '30 days';
+WHERE trade_date >= CURRENT_DATE - INTERVAL '45 days';
 
 CREATE UNIQUE INDEX idx_mv_sps_company_trade_date 
 ON mv_share_price_signals_recent (company_id, trade_date);
@@ -497,38 +496,4 @@ WHERE c.industry_name IS NOT NULL
 GROUP BY c.industry_name, r.variant;
 
 
--- =================================================================
--- VIEW: v_ticker_document_pending
--- Description: Prioritized queue of pending raw SEC documents to process.
---              Orders documents for largest companies first, then by report period DESC.
--- =================================================================
-DO $$ BEGIN RAISE NOTICE 'Creating view: v_ticker_document_pending'; END $$;
 
-CREATE VIEW v_ticker_document_pending AS
-SELECT
-    r.id,
-    r.ticker,
-    r.market,
-    r.document_type,
-    r.document_subtype,
-    r.report_period,
-    r.filing_date,
-    r.source_url,
-    r.accession_number,
-    r.content,
-    r.status,
-    c.company_name,
-    COALESCE(s.market_capitalization, 0) AS market_capitalization,
-    COALESCE(s.company_size, 'MICRO')   AS company_size,
-    ROW_NUMBER() OVER (
-        PARTITION BY r.ticker, r.market, CASE WHEN r.document_type IN ('SEC_10K', 'SEC_10Q') THEN 'SEC_10X' ELSE r.document_type END, r.document_subtype
-        ORDER BY r.report_period DESC, r.filing_date DESC
-    ) AS document_priority
-FROM t_ticker_document_raw r
-JOIN t_company c ON c.ticker = r.ticker
-                AND c.market = r.market
-LEFT JOIN mv_share_price_signals_recent s ON s.company_id = c.id
-                                         AND s.trade_date = (SELECT MAX(trade_date) FROM mv_share_price_signals_recent WHERE company_id = c.id)
-ORDER BY COALESCE(s.market_capitalization, 0) DESC,
-         r.ticker,
-         r.report_period DESC;

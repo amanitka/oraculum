@@ -121,9 +121,9 @@ public class ScreenerView extends VerticalLayout {
 
         switch (tabLabel) {
             case "Master Ranks" -> {
-                Grid<ScreenerMasterDto> grid = createMasterGrid();
-                GridListDataView<ScreenerMasterDto> dataView = grid.setItems(companyScreenerApi.getMasterScreener());
-                setupFilters(grid, dataView, ScreenerMasterDto.class);
+                Grid<CompanyOverviewDto> grid = createMasterGrid();
+                GridListDataView<CompanyOverviewDto> dataView = grid.setItems(companyScreenerApi.getCompanyOverview());
+                setupFilters(grid, dataView, CompanyOverviewDto.class);
                 runAnalysisBtn.addClickListener(_ -> triggerAnalysisMaster(grid.getSelectedItems(), grid));
                 gridContainer.add(toolbar, ViewHelper.wrapInCard(grid));
             }
@@ -176,9 +176,9 @@ public class ScreenerView extends VerticalLayout {
         return toolbar;
     }
 
-    private void triggerAnalysisMaster(Set<ScreenerMasterDto> selectedItems, Grid<ScreenerMasterDto> grid) {
+    private void triggerAnalysisMaster(Set<CompanyOverviewDto> selectedItems, Grid<CompanyOverviewDto> grid) {
         if (!validateBatchSelection(selectedItems.size())) return;
-        for (ScreenerMasterDto item : selectedItems) {
+        for (CompanyOverviewDto item : selectedItems) {
             CompanyAnalysisRequest requestDto = new CompanyAnalysisRequest(UUID.randomUUID(), item.companyId(), new TickerKeyDto(item.ticker(), item.market()), LocalDate.now(), null);
             analysisRequestService.requestAnalysis(requestDto);
         }
@@ -229,49 +229,49 @@ public class ScreenerView extends VerticalLayout {
     }
 
 
-    private Grid<ScreenerMasterDto> createMasterGrid() {
-        Grid<ScreenerMasterDto> grid = new Grid<>(ScreenerMasterDto.class, false);
+    private Grid<CompanyOverviewDto> createMasterGrid() {
+        Grid<CompanyOverviewDto> grid = new Grid<>(CompanyOverviewDto.class, false);
         grid.setSizeFull();
         grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
         grid.addClassName("screener-grid");
         grid.setSelectionMode(Grid.SelectionMode.MULTI);
-        if (grid.getSelectionModel() instanceof GridMultiSelectionModel<ScreenerMasterDto> multiModel) {
+        if (grid.getSelectionModel() instanceof GridMultiSelectionModel<CompanyOverviewDto> multiModel) {
             multiModel.setSelectionColumnFrozen(true);
         }
 
-        grid.addColumn(ScreenerMasterDto::ticker).setHeader("Ticker").setAutoWidth(true).setFrozen(true).setKey("ticker").setSortable(true);
+        grid.addColumn(CompanyOverviewDto::ticker).setHeader("Ticker").setAutoWidth(true).setFrozen(true).setKey("ticker").setSortable(true);
 
-        Grid.Column<ScreenerMasterDto> nameCol = grid.addColumn(ScreenerMasterDto::companyName)
+        Grid.Column<CompanyOverviewDto> nameCol = grid.addColumn(CompanyOverviewDto::companyName)
                 .setHeader("Company").setAutoWidth(true).setFrozen(true).setKey("companyName").setSortable(true);
-        nameCol.setTooltipGenerator(ScreenerMasterDto::description);
+        nameCol.setTooltipGenerator(CompanyOverviewDto::description);
 
-        grid.addColumn(ScreenerMasterDto::sectorName).setHeader("Sector").setAutoWidth(true).setKey("sector").setSortable(true);
+        grid.addColumn(CompanyOverviewDto::sectorName).setHeader("Sector").setAutoWidth(true).setKey("sector").setSortable(true);
         grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.sizeBadge(item.companySize())))
                 .setHeader("Size").setAutoWidth(true).setKey("size")
-                .setComparator(Comparator.comparing(ScreenerMasterDto::companySize, Comparator.nullsLast(CompanySize::compareTo)));
+                .setComparator(Comparator.comparing(CompanyOverviewDto::companySize, Comparator.nullsLast(CompanySize::compareTo)));
 
         grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.signalBadge(item.compositeSignal()))).setHeader("Signal").setAutoWidth(true).setKey("signal")
-                .setComparator(Comparator.comparing(ScreenerMasterDto::compositeSignal, Comparator.nullsLast(String::compareTo)));
+                .setComparator(Comparator.comparing(CompanyOverviewDto::compositeSignal, Comparator.nullsLast(String::compareTo)));
         grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.qualitySpan(item.qualityScore()))).setHeader("Quality").setAutoWidth(true).setKey("quality")
-                .setComparator(Comparator.comparing(ScreenerMasterDto::qualityScore, Comparator.nullsLast(Float::compareTo)));
+                .setComparator(Comparator.comparing(CompanyOverviewDto::qualityScore, Comparator.nullsLast(Float::compareTo)));
 
         grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.newsSentimentBadge(item.newsSentimentLabel(), item.newsSentimentScore())))
                 .setHeader("News Sentiment (30D)").setAutoWidth(true)
-                .setComparator(Comparator.comparing(ScreenerMasterDto::newsSentimentScore, Comparator.nullsLast(Float::compareTo)));
+                .setComparator(Comparator.comparing(CompanyOverviewDto::newsSentimentScore, Comparator.nullsLast(Float::compareTo)));
 
         grid.addColumn(item -> item.newsCount30d() != null ? String.format("%d articles", item.newsCount30d()) : "-")
                 .setHeader("Coverage (30D)").setAutoWidth(true).setSortable(true)
-                .setComparator(Comparator.comparing(ScreenerMasterDto::newsCount30d, Comparator.nullsFirst(Integer::compareTo)));
+                .setComparator(Comparator.comparing(CompanyOverviewDto::newsCount30d, Comparator.nullsFirst(Integer::compareTo)));
 
-        grid.addColumn(ScreenerMasterDto::financialTrendScore).setHeader("Trend Score").setAutoWidth(true).setSortable(true);
-        grid.addColumn(new NumberRenderer<>(ScreenerMasterDto::sharePrice, NumberFormat.getCurrencyInstance(Locale.US)))
+        grid.addColumn(CompanyOverviewDto::financialTrendScore).setHeader("Trend Score").setAutoWidth(true).setSortable(true);
+        grid.addColumn(new NumberRenderer<>(CompanyOverviewDto::sharePrice, NumberFormat.getCurrencyInstance(Locale.US)))
                 .setHeader("Price").setAutoWidth(true).setSortable(true)
-                .setComparator(Comparator.comparing(ScreenerMasterDto::sharePrice, Comparator.nullsLast(Float::compareTo)));
-        grid.addColumn(ScreenerMasterDto::peRatio).setHeader("P/E").setAutoWidth(true).setSortable(true);
+                .setComparator(Comparator.comparing(CompanyOverviewDto::sharePrice, Comparator.nullsLast(Float::compareTo)));
+        grid.addColumn(CompanyOverviewDto::peRatio).setHeader("P/E").setAutoWidth(true).setSortable(true);
 
-        grid.addColumn(ScreenerMasterDto::qualityRank).setHeader("Q-Rank").setAutoWidth(true).setSortable(true);
-        grid.addColumn(ScreenerMasterDto::valueRank).setHeader("V-Rank").setAutoWidth(true).setSortable(true);
-        grid.addColumn(ScreenerMasterDto::fscoreRank).setHeader("F-Rank").setAutoWidth(true).setSortable(true);
+        grid.addColumn(CompanyOverviewDto::qualityRank).setHeader("Q-Rank").setAutoWidth(true).setSortable(true);
+        grid.addColumn(CompanyOverviewDto::valueRank).setHeader("V-Rank").setAutoWidth(true).setSortable(true);
+        grid.addColumn(CompanyOverviewDto::fscoreRank).setHeader("F-Rank").setAutoWidth(true).setSortable(true);
 
         grid.addComponentColumn(item -> createCompanyDetailsButton(item.companyId())).setHeader("Details").setAutoWidth(true);
 
@@ -518,12 +518,12 @@ public class ScreenerView extends VerticalLayout {
         String ticker = "", companyName = "", sector = "", size = "";
 
         ScreenerFilter(Class<T> type) {
-            if (type == ScreenerMasterDto.class) {
-                tickerFn = t -> ((ScreenerMasterDto) t).ticker();
-                nameFn = t -> ((ScreenerMasterDto) t).companyName();
-                sectorFn = t -> ((ScreenerMasterDto) t).sectorName();
+            if (type == CompanyOverviewDto.class) {
+                tickerFn = t -> ((CompanyOverviewDto) t).ticker();
+                nameFn = t -> ((CompanyOverviewDto) t).companyName();
+                sectorFn = t -> ((CompanyOverviewDto) t).sectorName();
                 sizeFn = t -> {
-                    CompanySize size = ((ScreenerMasterDto) t).companySize();
+                    CompanySize size = ((CompanyOverviewDto) t).companySize();
                     return size != null ? size.getDisplayName() : "";
                 };
             } else if (type == ScreenerNewsSentimentDto.class) {

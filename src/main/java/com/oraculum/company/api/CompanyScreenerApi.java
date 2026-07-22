@@ -5,7 +5,7 @@ import com.oraculum.company.api.dto.*;
 import java.util.List;
 
 public interface CompanyScreenerApi {
-    List<ScreenerMasterDto> getMasterScreener();
+    List<CompanyOverviewDto> getCompanyOverview();
     List<ScreenerNewsSentimentDto> getNewsSentimentScreener();
     List<ScreenerDto> getUndervaluedScreener();
     List<ScreenerDto> getQualityCompoundersScreener();

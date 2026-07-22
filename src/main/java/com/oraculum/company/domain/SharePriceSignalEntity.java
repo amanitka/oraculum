@@ -56,6 +56,15 @@ public class SharePriceSignalEntity {
     @Column(name = "volume_velocity")
     private Float volumeVelocity;
 
+    @Column(name = "price_change_1d")
+    private Float priceChange1d;
+
+    @Column(name = "price_change_1w")
+    private Float priceChange1w;
+
+    @Column(name = "price_change_1m")
+    private Float priceChange1m;
+
     @Column(name = "active_fiscal_year")
     private Integer activeFiscalYear;
 

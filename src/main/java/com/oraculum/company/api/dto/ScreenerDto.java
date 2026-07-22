@@ -1,7 +1,7 @@
 package com.oraculum.company.api.dto;
 
 import com.oraculum.company.api.domain.CompanySize;
-import com.oraculum.company.domain.BaseScreenerEntity;
+import com.oraculum.company.domain.CompanyOverviewBaseEntity;
 
 import java.time.LocalDate;
 
@@ -25,7 +25,7 @@ public record ScreenerDto(
         Float qualityScore,
         String compositeSignal
 ) {
-    public static ScreenerDto fromEntity(BaseScreenerEntity entity) {
+    public static ScreenerDto fromEntity(CompanyOverviewBaseEntity entity) {
         if (entity == null) return null;
         return new ScreenerDto(
                 entity.getTradeDate(),

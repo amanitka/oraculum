@@ -9,10 +9,10 @@ import org.hibernate.annotations.Immutable;
 
 @Entity
 @Immutable
-@Table(name = "v_screener_master")
+@Table(name = "mv_company_overview")
 @Getter
 @Setter
-public class ScreenerMasterEntity extends BaseScreenerEntity {
+public class CompanyOverviewEntity extends CompanyOverviewBaseEntity {
 
     @Column(name = "quality_rank")
     private Long qualityRank;

@@ -12,7 +12,7 @@ import org.hibernate.annotations.Immutable;
 @Table(name = "v_screener_insider_activity")
 @Getter
 @Setter
-public class ScreenerInsiderEntity extends BaseScreenerEntity {
+public class ScreenerInsiderEntity extends CompanyOverviewBaseEntity {
 
     // 3 Month
     @Column(name = "buys_value_3m")

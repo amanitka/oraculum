@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CompanyScreenerServiceImpl implements CompanyScreenerApi {
 
-    private final ScreenerMasterRepository screenerMasterRepository;
+    private final CompanyOverviewRepository companyOverviewRepository;
     private final ScreenerNewsSentimentRepository screenerNewsSentimentRepository;
     private final ScreenerUndervaluedRepository screenerUndervaluedRepository;
     private final ScreenerQualityCompoundersRepository screenerQualityCompoundersRepository;
@@ -25,11 +25,11 @@ public class CompanyScreenerServiceImpl implements CompanyScreenerApi {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ScreenerMasterDto> getMasterScreener() {
-        return screenerMasterRepository.findAll()
+    public List<CompanyOverviewDto> getCompanyOverview() {
+        return companyOverviewRepository.findAll()
                 .stream()
-                .map(ScreenerMasterDto::fromEntity)
-                .sorted(Comparator.comparing(ScreenerMasterDto::qualityRank, Comparator.nullsLast(Comparator.naturalOrder())))
+                .map(CompanyOverviewDto::fromEntity)
+                .sorted(Comparator.comparing(CompanyOverviewDto::qualityRank, Comparator.nullsLast(Comparator.naturalOrder())))
                 .collect(Collectors.toList());
     }
 

@@ -1,11 +1,11 @@
 package com.oraculum.company.api.dto;
 
 import com.oraculum.company.api.domain.CompanySize;
-import com.oraculum.company.domain.ScreenerMasterEntity;
+import com.oraculum.company.domain.CompanyOverviewEntity;
 
 import java.time.LocalDate;
 
-public record ScreenerMasterDto(
+public record CompanyOverviewDto(
         LocalDate tradeDate,
         int companyId,
         String ticker,
@@ -19,6 +19,9 @@ public record ScreenerMasterDto(
         Float marketCapitalization,
         Float sharePrice,
         Float volumeVelocity,
+        Float priceChange1d,
+        Float priceChange1w,
+        Float priceChange1m,
         Float peRatio,
         Float earningsYield,
         Integer financialTrendScore,
@@ -31,9 +34,9 @@ public record ScreenerMasterDto(
         String newsSentimentLabel,
         Integer newsCount30d
 ) {
-    public static ScreenerMasterDto fromEntity(ScreenerMasterEntity entity) {
+    public static CompanyOverviewDto fromEntity(CompanyOverviewEntity entity) {
         if (entity == null) return null;
-        return new ScreenerMasterDto(
+        return new CompanyOverviewDto(
                 entity.getTradeDate(),
                 entity.getCompanyId(),
                 entity.getTicker(),
@@ -47,6 +50,9 @@ public record ScreenerMasterDto(
                 entity.getMarketCapitalization(),
                 entity.getSharePrice(),
                 entity.getVolumeVelocity(),
+                entity.getPriceChange1d(),
+                entity.getPriceChange1w(),
+                entity.getPriceChange1m(),
                 entity.getPeRatio(),
                 entity.getEarningsYield(),
                 entity.getFinancialTrendScore(),
