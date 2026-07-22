@@ -19,7 +19,8 @@ WITH recent_with_lags AS (
     SELECT *,
            LAG(share_price, 1) OVER (PARTITION BY company_id ORDER BY trade_date) as close_1d_ago,
            LAG(share_price, 5) OVER (PARTITION BY company_id ORDER BY trade_date) as close_1w_ago,
-           LAG(share_price, 21) OVER (PARTITION BY company_id ORDER BY trade_date) as close_1m_ago
+           LAG(share_price, 21) OVER (PARTITION BY company_id ORDER BY trade_date) as close_1m_ago,
+           MAX(trade_date) OVER (PARTITION BY company_id) as max_trade_date
     FROM mv_share_price_signals_recent
 ),
 latest_signals AS (
@@ -28,7 +29,7 @@ latest_signals AS (
            ROUND(((share_price - close_1w_ago) / NULLIF(close_1w_ago, 0) * 100)::numeric, 2) AS price_change_1w,
            ROUND(((share_price - close_1m_ago) / NULLIF(close_1m_ago, 0) * 100)::numeric, 2) AS price_change_1m
     FROM recent_with_lags
-    WHERE trade_date = (SELECT MAX(trade_date) FROM recent_with_lags r2 WHERE r2.company_id = recent_with_lags.company_id)
+    WHERE trade_date = max_trade_date
 )
 SELECT s.*,
        n.news_count_7d, n.news_sentiment_7d, n.avg_relevance_7d, n.news_sentiment_label_7d,
