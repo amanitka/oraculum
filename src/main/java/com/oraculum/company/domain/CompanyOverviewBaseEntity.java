@@ -66,6 +66,12 @@ public abstract class CompanyOverviewBaseEntity {
     @Column(name = "volume_velocity")
     private Float volumeVelocity;
 
+    @Column(name = "pct_from_50d_ma")
+    private Float pctFrom50dMa;
+
+    @Column(name = "pct_from_200d_ma")
+    private Float pctFrom200dMa;
+
     @Column(name = "price_change_1d")
     private Float priceChange1d;
 

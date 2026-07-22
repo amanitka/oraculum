@@ -15,20 +15,14 @@ DROP VIEW IF EXISTS v_ticker_document_pending CASCADE;
 -- =================================================================
 DO $$ BEGIN RAISE NOTICE 'Creating materialized view: mv_company_overview...'; END $$;
 CREATE MATERIALIZED VIEW mv_company_overview AS
-WITH recent_with_lags AS (
+WITH recent_per_company AS (
     SELECT *,
-           LAG(share_price, 1) OVER (PARTITION BY company_id ORDER BY trade_date) as close_1d_ago,
-           LAG(share_price, 5) OVER (PARTITION BY company_id ORDER BY trade_date) as close_1w_ago,
-           LAG(share_price, 21) OVER (PARTITION BY company_id ORDER BY trade_date) as close_1m_ago,
            MAX(trade_date) OVER (PARTITION BY company_id) as max_trade_date
     FROM mv_share_price_signals_recent
 ),
 latest_signals AS (
-    SELECT *,
-           ROUND(((share_price - close_1d_ago) / NULLIF(close_1d_ago, 0) * 100)::numeric, 2) AS price_change_1d,
-           ROUND(((share_price - close_1w_ago) / NULLIF(close_1w_ago, 0) * 100)::numeric, 2) AS price_change_1w,
-           ROUND(((share_price - close_1m_ago) / NULLIF(close_1m_ago, 0) * 100)::numeric, 2) AS price_change_1m
-    FROM recent_with_lags
+    SELECT *
+    FROM recent_per_company
     WHERE trade_date = max_trade_date
 )
 SELECT s.*,

@@ -339,7 +339,10 @@ WITH fundamental_timeline AS (SELECT
                         p.*,
                         AVG(p.close) OVER (PARTITION BY p.company_id ORDER BY p.trade_date ROWS BETWEEN 49 PRECEDING AND CURRENT ROW) AS ma_50,
                         AVG(p.close) OVER (PARTITION BY p.company_id ORDER BY p.trade_date ROWS BETWEEN 199 PRECEDING AND CURRENT ROW) AS ma_200,
-                        AVG(p.volume) OVER (PARTITION BY p.company_id ORDER BY p.trade_date ROWS BETWEEN 29 PRECEDING AND CURRENT ROW) AS vol_30
+                        AVG(p.volume) OVER (PARTITION BY p.company_id ORDER BY p.trade_date ROWS BETWEEN 29 PRECEDING AND CURRENT ROW) AS vol_30,
+                        LAG(p.close, 1) OVER (PARTITION BY p.company_id ORDER BY p.trade_date) as close_1d_ago,
+                        LAG(p.close, 5) OVER (PARTITION BY p.company_id ORDER BY p.trade_date) as close_1w_ago,
+                        LAG(p.close, 21) OVER (PARTITION BY p.company_id ORDER BY p.trade_date) as close_1m_ago
                      FROM public.t_share_price p
                      ),
                      signals_base AS (SELECT
@@ -363,6 +366,9 @@ WITH fundamental_timeline AS (SELECT
                          ROUND(((p.close - p.ma_200) / NULLIF(p.ma_200, 0) * 100):: numeric,
                                2)                                                        AS pct_from_200d_ma,
                          ROUND((p.volume / NULLIF(p.vol_30, 0)):: numeric, 2)            AS volume_velocity,
+                         ROUND(((p.close - p.close_1d_ago) / NULLIF(p.close_1d_ago, 0) * 100):: numeric, 2) AS price_change_1d,
+                         ROUND(((p.close - p.close_1w_ago) / NULLIF(p.close_1w_ago, 0) * 100):: numeric, 2) AS price_change_1w,
+                         ROUND(((p.close - p.close_1m_ago) / NULLIF(p.close_1m_ago, 0) * 100):: numeric, 2) AS price_change_1m,
                          f.fiscal_year                                                   AS active_fiscal_year,
                          f.fiscal_period                                                 AS active_fiscal_period,
                          f.valid_from                                                    AS active_report_publish_date,

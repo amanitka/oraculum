@@ -246,27 +246,44 @@ public class ScreenerView extends VerticalLayout {
         nameCol.setTooltipGenerator(CompanyOverviewDto::description);
 
         grid.addColumn(CompanyOverviewDto::sectorName).setHeader("Sector").setAutoWidth(true).setKey("sector").setSortable(true);
+        grid.addColumn(CompanyOverviewDto::industryName).setHeader("Industry").setAutoWidth(true).setKey("industry").setSortable(true);
         grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.sizeBadge(item.companySize())))
                 .setHeader("Size").setAutoWidth(true).setKey("size")
                 .setComparator(Comparator.comparing(CompanyOverviewDto::companySize, Comparator.nullsLast(CompanySize::compareTo)));
 
         grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.signalBadge(item.compositeSignal()))).setHeader("Signal").setAutoWidth(true).setKey("signal")
-                .setComparator(Comparator.comparing(CompanyOverviewDto::compositeSignal, Comparator.nullsLast(String::compareTo)));
+                .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::compositeSignal));
         grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.qualitySpan(item.qualityScore()))).setHeader("Quality").setAutoWidth(true).setKey("quality")
-                .setComparator(Comparator.comparing(CompanyOverviewDto::qualityScore, Comparator.nullsLast(Float::compareTo)));
+                .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::qualityScore));
+
+        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.priceChange1d()))).setHeader("1D %").setAutoWidth(true).setSortable(true)
+                .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::priceChange1d));
+        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.priceChange1w()))).setHeader("1W %").setAutoWidth(true).setSortable(true)
+                .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::priceChange1w));
+        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.priceChange1m()))).setHeader("1M %").setAutoWidth(true).setSortable(true)
+                .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::priceChange1m));
+
+        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.pctFrom50dMa()))).setHeader("vs 50D MA").setAutoWidth(true).setSortable(true)
+                .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::pctFrom50dMa));
+        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.pctFrom200dMa()))).setHeader("vs 200D MA").setAutoWidth(true).setSortable(true)
+                .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::pctFrom200dMa));
+
+        grid.addColumn(item -> item.volumeVelocity() != null ? String.format(Locale.US, "%.2fx", item.volumeVelocity()) : "-")
+                .setHeader("Vol Velocity").setAutoWidth(true).setSortable(true)
+                .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::volumeVelocity));
 
         grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.newsSentimentBadge(item.newsSentimentLabel(), item.newsSentimentScore())))
                 .setHeader("News Sentiment (30D)").setAutoWidth(true)
-                .setComparator(Comparator.comparing(CompanyOverviewDto::newsSentimentScore, Comparator.nullsLast(Float::compareTo)));
+                .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::newsSentimentScore));
 
         grid.addColumn(item -> item.newsCount30d() != null ? String.format("%d articles", item.newsCount30d()) : "-")
                 .setHeader("Coverage (30D)").setAutoWidth(true).setSortable(true)
-                .setComparator(Comparator.comparing(CompanyOverviewDto::newsCount30d, Comparator.nullsFirst(Integer::compareTo)));
+                .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::newsCount30d));
 
         grid.addColumn(CompanyOverviewDto::financialTrendScore).setHeader("Trend Score").setAutoWidth(true).setSortable(true);
         grid.addColumn(new NumberRenderer<>(CompanyOverviewDto::sharePrice, NumberFormat.getCurrencyInstance(Locale.US)))
                 .setHeader("Price").setAutoWidth(true).setSortable(true)
-                .setComparator(Comparator.comparing(CompanyOverviewDto::sharePrice, Comparator.nullsLast(Float::compareTo)));
+                .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::sharePrice));
         grid.addColumn(CompanyOverviewDto::peRatio).setHeader("P/E").setAutoWidth(true).setSortable(true);
 
         grid.addColumn(CompanyOverviewDto::qualityRank).setHeader("Q-Rank").setAutoWidth(true).setSortable(true);

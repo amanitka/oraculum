@@ -26,6 +26,9 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.textfield.TextFieldVariant;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.theme.lumo.LumoUtility;
+import java.util.Comparator;
+import java.util.function.Function;
+
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.Locale;
@@ -203,6 +206,33 @@ public final class ViewHelper {
         }
         span.addClassName(LumoUtility.FontWeight.BOLD);
         return span;
+    }
+
+    /**
+     * Creates a color-coded price change percentage Span (+2.5% green, -1.2% red).
+     */
+    public static Span priceChangeSpan(Float changePct) {
+        if (changePct == null) {
+            return new Span("-");
+        }
+        Span span = new Span(String.format(Locale.US, "%+.2f%%", changePct));
+        if (changePct > 0) {
+            span.addClassName(LumoUtility.TextColor.SUCCESS);
+        } else if (changePct < 0) {
+            span.addClassName(LumoUtility.TextColor.ERROR);
+        } else {
+            span.addClassName(LumoUtility.TextColor.SECONDARY);
+        }
+        span.addClassName(LumoUtility.FontWeight.MEDIUM);
+        return span;
+    }
+
+    /**
+     * Returns a comparator that extracts a key with nullsFirst natural order, so that when Vaadin
+     * reverses the comparator for Descending sort (largest to smallest), nulls are placed at the very bottom.
+     */
+    public static <T, U extends Comparable<? super U>> Comparator<T> nullsAlwaysLast(Function<T, U> keyExtractor) {
+        return Comparator.comparing(keyExtractor, Comparator.nullsFirst(Comparator.naturalOrder()));
     }
 
     // ── Common Layout ──────────────────────────────────────────────────────
