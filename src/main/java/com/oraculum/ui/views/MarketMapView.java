@@ -10,19 +10,20 @@ import com.github.appreciated.apexcharts.config.chart.Type;
 import com.github.appreciated.apexcharts.config.chart.builder.EventsBuilder;
 import com.github.appreciated.apexcharts.config.plotoptions.builder.TreemapBuilder;
 import com.github.appreciated.apexcharts.helper.Series;
+import com.oraculum.analyst.api.dto.CompanyAnalysisRequest;
 import com.oraculum.company.api.*;
 import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.company.api.dto.CompanyOverviewDto;
-import com.oraculum.analyst.api.dto.CompanyAnalysisRequest;
 import com.oraculum.company.api.dto.TickerKeyDto;
-import com.oraculum.ui.service.AnalysisRequestService;
 import com.oraculum.ui.MainLayout;
 import com.oraculum.ui.ViewHelper;
 import com.oraculum.ui.components.CompanyOverviewComponent;
+import com.oraculum.ui.service.AnalysisRequestService;
 import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
@@ -30,18 +31,19 @@ import com.vaadin.flow.component.grid.HeaderRow;
 import com.vaadin.flow.component.grid.dataview.GridListDataView;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Paragraph;
+import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
-import com.vaadin.flow.data.renderer.NumberRenderer;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import tools.jackson.databind.ObjectMapper;
 
-import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -91,14 +93,14 @@ public class MarketMapView extends VerticalLayout {
         H3 title = new H3("Market Map");
         title.addClassNames(LumoUtility.Margin.Bottom.NONE);
         title.getStyle().set("margin-top", "2rem");
-        
+
         List<CompanyOverviewDto> companies = companyScreenerApi.getCompanyOverview();
         LocalDate maxTradeDate = companies != null ? companies.stream()
                 .map(CompanyOverviewDto::tradeDate)
                 .filter(Objects::nonNull)
                 .max(LocalDate::compareTo)
                 .orElse(null) : null;
-                
+
         String asOfText = maxTradeDate != null ? " (Data as of " + maxTradeDate + ")" : "";
         Paragraph description = new Paragraph("Interactive treemap and sortable table view visualizing market capitalization, sector division, growth trends, moving averages, and volume velocity." + asOfText);
         description.addClassNames(LumoUtility.TextColor.SECONDARY);
@@ -106,41 +108,59 @@ public class MarketMapView extends VerticalLayout {
         Tab treemapTab = new Tab("Treemap View");
         Tab tableTab = new Tab("Table View");
         Tabs tabs = new Tabs(treemapTab, tableTab);
-        tabs.setWidthFull();
+
+        List<String> availableMarkets = getAvailableMarkets(companies);
+        String defaultMarket = availableMarkets.contains("US") ? "US" : (availableMarkets.isEmpty() ? "US" : availableMarkets.get(0));
+
+        ComboBox<String> marketSelect = new ComboBox<>();
+        marketSelect.setPlaceholder("Market");
+        marketSelect.setItems(availableMarkets);
+        marketSelect.setValue(defaultMarket);
+        marketSelect.setClearButtonVisible(false);
+
+        HorizontalLayout controlsLayout = new HorizontalLayout(tabs, marketSelect);
+        controlsLayout.setWidthFull();
+        controlsLayout.setAlignItems(FlexComponent.Alignment.CENTER);
+        controlsLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
 
         VerticalLayout contentArea = new VerticalLayout();
         contentArea.setSizeFull();
         contentArea.setPadding(false);
 
-        tabs.addSelectedChangeListener(event -> {
+        java.util.function.Consumer<Tab> updateView = selectedTab -> {
             contentArea.removeAll();
-            if (event.getSelectedTab().equals(treemapTab)) {
-                ApexCharts treemap = createTreemap(companies);
+            String selectedMarket = marketSelect.getValue();
+            List<CompanyOverviewDto> filtered = filterByMarket(companies, selectedMarket);
+
+            if (selectedTab.equals(treemapTab)) {
+                ApexCharts treemap = createTreemap(filtered);
                 contentArea.add(Objects.requireNonNullElseGet(treemap, () -> new Paragraph("Not enough data to display the market map.")));
             } else {
-                Grid<CompanyOverviewDto> grid = createMarketGrid(companies != null ? companies : List.of());
-                
-                com.vaadin.flow.component.orderedlayout.HorizontalLayout toolbar = new com.vaadin.flow.component.orderedlayout.HorizontalLayout();
+                Grid<CompanyOverviewDto> grid = createMarketGrid(filtered != null ? filtered : List.of());
+
+                HorizontalLayout toolbar = new HorizontalLayout();
                 toolbar.setWidthFull();
-                toolbar.setJustifyContentMode(com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode.END);
+                toolbar.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
                 toolbar.addClassNames(LumoUtility.Padding.Bottom.SMALL);
 
-                Button runAnalysisBtn = new Button("Run Analysis", com.vaadin.flow.component.icon.VaadinIcon.PLAY.create());
+                Button runAnalysisBtn = new Button("Run Analysis", VaadinIcon.PLAY.create());
                 runAnalysisBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
                 toolbar.add(runAnalysisBtn);
                 toolbar.getStyle().set("margin-top", "1rem");
                 toolbar.getStyle().set("margin-bottom", "0.5rem");
-                
+
                 runAnalysisBtn.addClickListener(_ -> triggerAnalysis(grid.getSelectedItems(), grid));
-                
+
                 contentArea.add(toolbar, grid);
             }
-        });
+        };
 
-        ApexCharts treemap = createTreemap(companies);
-        contentArea.add(Objects.requireNonNullElseGet(treemap, () -> new Paragraph("Not enough data to display the market map.")));
+        tabs.addSelectedChangeListener(event -> updateView.accept(event.getSelectedTab()));
+        marketSelect.addValueChangeListener(_ -> updateView.accept(tabs.getSelectedTab()));
 
-        add(title, description, tabs, ViewHelper.wrapInCard(contentArea));
+        updateView.accept(treemapTab);
+
+        add(title, description, controlsLayout, ViewHelper.wrapInCard(contentArea));
         setFlexGrow(1, contentArea);
 
         attachClientClickListener();
@@ -165,38 +185,38 @@ public class MarketMapView extends VerticalLayout {
         grid.addColumn(CompanyOverviewDto::sectorName).setHeader("Sector").setAutoWidth(true).setKey("sector").setSortable(true);
         grid.addColumn(CompanyOverviewDto::industryName).setHeader("Industry").setAutoWidth(true).setKey("industry").setSortable(true);
 
-        grid.addColumn(new NumberRenderer<>(c -> c.marketCapitalization() != null ? c.marketCapitalization() / 1_000_000_000f : null, "$%.2fB"))
-                .setHeader("Market Cap").setAutoWidth(true).setSortable(true)
+        grid.addColumn(c -> c.marketCapitalization() != null ? String.format(Locale.US, "%s%.2fB", ViewHelper.getCurrencySymbol(c.currency(), c.market()), c.marketCapitalization() / 1_000_000_000f) : "-")
+                .setHeader("Market Cap").setWidth("130px").setFlexGrow(0).setSortable(true)
                 .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::marketCapitalization));
 
-        grid.addColumn(new NumberRenderer<>(CompanyOverviewDto::sharePrice, NumberFormat.getCurrencyInstance(Locale.US)))
-                .setHeader("Price").setAutoWidth(true).setSortable(true)
+        grid.addColumn(c -> c.sharePrice() != null ? String.format(Locale.US, "%s%.2f", ViewHelper.getCurrencySymbol(c.currency(), c.market()), c.sharePrice()) : "-")
+                .setHeader("Price").setWidth("110px").setFlexGrow(0).setSortable(true)
                 .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::sharePrice));
 
-        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.priceChange1d()))).setHeader("1D %").setAutoWidth(true).setSortable(true)
+        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.priceChange1d()))).setHeader("1D %").setWidth("120px").setFlexGrow(0).setSortable(true)
                 .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::priceChange1d));
-        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.priceChange1w()))).setHeader("1W %").setAutoWidth(true).setSortable(true)
+        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.priceChange1w()))).setHeader("1W %").setWidth("120px").setFlexGrow(0).setSortable(true)
                 .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::priceChange1w));
-        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.priceChange1m()))).setHeader("1M %").setAutoWidth(true).setSortable(true)
+        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.priceChange1m()))).setHeader("1M %").setWidth("120px").setFlexGrow(0).setSortable(true)
                 .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::priceChange1m));
-        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.priceChange6m()))).setHeader("6M %").setAutoWidth(true).setSortable(true)
+        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.priceChange6m()))).setHeader("6M %").setWidth("120px").setFlexGrow(0).setSortable(true)
                 .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::priceChange6m));
-        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.priceChange1y()))).setHeader("1Y %").setAutoWidth(true).setSortable(true)
+        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.priceChange1y()))).setHeader("1Y %").setWidth("120px").setFlexGrow(0).setSortable(true)
                 .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::priceChange1y));
 
-        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.pctFrom50dMa()))).setHeader("vs 50D MA").setAutoWidth(true).setSortable(true)
+        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.pctFrom50dMa()))).setHeader("vs 50D MA").setWidth("130px").setFlexGrow(0).setSortable(true)
                 .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::pctFrom50dMa));
-        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.pctFrom200dMa()))).setHeader("vs 200D MA").setAutoWidth(true).setSortable(true)
+        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.pctFrom200dMa()))).setHeader("vs 200D MA").setWidth("130px").setFlexGrow(0).setSortable(true)
                 .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::pctFrom200dMa));
 
         grid.addColumn(item -> item.volumeVelocity() != null ? String.format(Locale.US, "%.2fx", item.volumeVelocity()) : "-")
-                .setHeader("Vol Velocity").setAutoWidth(true).setSortable(true)
+                .setHeader("Vol Velocity").setWidth("120px").setFlexGrow(0).setSortable(true)
                 .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::volumeVelocity));
 
-        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.qualitySpan(item.qualityScore()))).setHeader("Quality").setAutoWidth(true).setSortable(true)
+        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.qualitySpan(item.qualityScore()))).setHeader("Quality").setWidth("110px").setFlexGrow(0).setSortable(true)
                 .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::qualityScore));
 
-        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.signalBadge(item.compositeSignal()))).setHeader("Signal").setAutoWidth(true).setSortable(true)
+        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.signalBadge(item.compositeSignal()))).setHeader("Signal").setWidth("130px").setFlexGrow(0).setSortable(true)
                 .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::compositeSignal));
 
         grid.addComponentColumn(item -> createCompanyDetailsButton(item.companyId())).setHeader("Details").setAutoWidth(true);
@@ -246,13 +266,13 @@ public class MarketMapView extends VerticalLayout {
 
     private void attachClientClickListener() {
         getElement().executeJs("""
-            var el = $0;
-            window.oraculumMarketMapClick = function(companyId) {
-                if (companyId && el && el.$server) {
-                    el.$server.onCompanySelected(companyId);
-                }
-            };
-        """, getElement());
+                    var el = $0;
+                    window.oraculumMarketMapClick = function(companyId) {
+                        if (companyId && el && el.$server) {
+                            el.$server.onCompanySelected(companyId);
+                        }
+                    };
+                """, getElement());
     }
 
     private void triggerAnalysis(Set<CompanyOverviewDto> selectedItems, Grid<CompanyOverviewDto> grid) {
@@ -354,60 +374,62 @@ public class MarketMapView extends VerticalLayout {
                 c.pctFrom50dMa(),
                 c.pctFrom200dMa(),
                 c.volumeVelocity(),
-                c.tradeDate() != null ? c.tradeDate().toString() : "N/A"
+                c.tradeDate() != null ? c.tradeDate().toString() : "N/A",
+                ViewHelper.getCurrencySymbol(c.currency(), c.market())
         );
     }
 
     private ApexCharts buildApexCharts(List<Series<CustomData>> seriesList) {
         String tooltipCustomJs = """
-            function({ series, seriesIndex, dataPointIndex, w }) {
-                var item = w.config.series[seriesIndex].data[dataPointIndex];
-                if (!item) return '';
-            
-                var name = item.companyName || item.x;
-                var ticker = item.x;
-                var cap = item.y ? '$' + (item.y / 1000000000).toFixed(2) + 'B' : 'N/A';
-            
-                var formatPct = function(val) {
-                    if (val === null || val === undefined) return '<span style="color:#aaa;">N/A</span>';
-                    var color = val >= 0 ? '#4caf50' : '#f44336';
-                    var sign = val >= 0 ? '+' : '';
-                    return '<span style="color:' + color + '; font-weight:600;">' + sign + val.toFixed(2) + '%</span>';
-                };
-            
-                var formatVel = function(val) {
-                    if (val === null || val === undefined) return '<span style="color:#aaa;">N/A</span>';
-                    return '<span style="color:#60a5fa; font-weight:600;">' + val.toFixed(2) + 'x</span>';
-                };
-            
-                return '<div style="padding: 12px 16px; background: rgba(18, 24, 38, 0.95); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: #fff; font-family: var(--lumo-font-family, sans-serif); box-shadow: 0 4px 16px rgba(0,0,0,0.4); min-width: 200px;">' +
-                       '<div style="font-size: 14px; font-weight: 700; margin-bottom: 4px; color: #f0f4f8;">' + name + ' <span style="color:#8a99ad; font-size:12px; font-weight:400;">(' + ticker + ')</span></div>' +
-                       '<div style="font-size: 12px; margin-bottom: 2px; color: #cbd5e1;">Market Cap: <strong style="color:#fff;">' + cap + '</strong></div>' +
-                       '<div style="font-size: 12px; margin-bottom: 8px; color: #cbd5e1;">Last Trade: <strong style="color:#fff;">' + (item.tradeDate || 'N/A') + '</strong></div>' +
-                       '<hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 6px 0;"/>' +
-                       '<div style="font-size: 12px; display: grid; grid-template-columns: 90px 1fr; gap: 4px;">' +
-                       '<span style="color:#94a3b8;">Prev Close:</span>' + formatPct(item.priceChange1d) +
-                       '<span style="color:#94a3b8;">1-Week:</span>' + formatPct(item.priceChange1w) +
-                       '<span style="color:#94a3b8;">1-Month:</span>' + formatPct(item.priceChange1m) +
-                       '<span style="color:#94a3b8;">6-Month:</span>' + formatPct(item.priceChange6m) +
-                       '<span style="color:#94a3b8;">1-Year:</span>' + formatPct(item.priceChange1y) +
-                       '<span style="color:#94a3b8;">vs 50D MA:</span>' + formatPct(item.pctFrom50dMa) +
-                       '<span style="color:#94a3b8;">vs 200D MA:</span>' + formatPct(item.pctFrom200dMa) +
-                       '<span style="color:#94a3b8;">Vol Velocity:</span>' + formatVel(item.volumeVelocity) +
-                       '</div></div>';
-            }
-            """;
+                function({ series, seriesIndex, dataPointIndex, w }) {
+                    var item = w.config.series[seriesIndex].data[dataPointIndex];
+                    if (!item) return '';
+                
+                    var name = item.companyName || item.x;
+                    var ticker = item.x;
+                    var symbol = item.currencySymbol || '$';
+                    var cap = item.y ? symbol + (item.y / 1000000000).toFixed(2) + 'B' : 'N/A';
+                
+                    var formatPct = function(val) {
+                        if (val === null || val === undefined) return '<span style="color:#aaa;">N/A</span>';
+                        var color = val >= 0 ? '#4caf50' : '#f44336';
+                        var sign = val >= 0 ? '+' : '';
+                        return '<span style="color:' + color + '; font-weight:600;">' + sign + val.toFixed(2) + '%</span>';
+                    };
+                
+                    var formatVel = function(val) {
+                        if (val === null || val === undefined) return '<span style="color:#aaa;">N/A</span>';
+                        return '<span style="color:#60a5fa; font-weight:600;">' + val.toFixed(2) + 'x</span>';
+                    };
+                
+                    return '<div style="padding: 12px 16px; background: rgba(18, 24, 38, 0.95); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: #fff; font-family: var(--lumo-font-family, sans-serif); box-shadow: 0 4px 16px rgba(0,0,0,0.4); min-width: 200px;">' +
+                           '<div style="font-size: 14px; font-weight: 700; margin-bottom: 4px; color: #f0f4f8;">' + name + ' <span style="color:#8a99ad; font-size:12px; font-weight:400;">(' + ticker + ')</span></div>' +
+                           '<div style="font-size: 12px; margin-bottom: 2px; color: #cbd5e1;">Market Cap: <strong style="color:#fff;">' + cap + '</strong></div>' +
+                           '<div style="font-size: 12px; margin-bottom: 8px; color: #cbd5e1;">Last Trade: <strong style="color:#fff;">' + (item.tradeDate || 'N/A') + '</strong></div>' +
+                           '<hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 6px 0;"/>' +
+                           '<div style="font-size: 12px; display: grid; grid-template-columns: 90px 1fr; gap: 4px;">' +
+                           '<span style="color:#94a3b8;">Prev Close:</span>' + formatPct(item.priceChange1d) +
+                           '<span style="color:#94a3b8;">1-Week:</span>' + formatPct(item.priceChange1w) +
+                           '<span style="color:#94a3b8;">1-Month:</span>' + formatPct(item.priceChange1m) +
+                           '<span style="color:#94a3b8;">6-Month:</span>' + formatPct(item.priceChange6m) +
+                           '<span style="color:#94a3b8;">1-Year:</span>' + formatPct(item.priceChange1y) +
+                           '<span style="color:#94a3b8;">vs 50D MA:</span>' + formatPct(item.pctFrom50dMa) +
+                           '<span style="color:#94a3b8;">vs 200D MA:</span>' + formatPct(item.pctFrom200dMa) +
+                           '<span style="color:#94a3b8;">Vol Velocity:</span>' + formatVel(item.volumeVelocity) +
+                           '</div></div>';
+                }
+                """;
 
         String clickEventJs = """
-            function(event, chartContext, config) {
-                if (config && config.w && config.seriesIndex !== undefined && config.dataPointIndex !== undefined) {
-                    var item = config.w.config.series[config.seriesIndex].data[config.dataPointIndex];
-                    if (item && item.companyId && window.oraculumMarketMapClick) {
-                        window.oraculumMarketMapClick(item.companyId);
+                function(event, chartContext, config) {
+                    if (config && config.w && config.seriesIndex !== undefined && config.dataPointIndex !== undefined) {
+                        var item = config.w.config.series[config.seriesIndex].data[config.dataPointIndex];
+                        if (item && item.companyId && window.oraculumMarketMapClick) {
+                            window.oraculumMarketMapClick(item.companyId);
+                        }
                     }
                 }
-            }
-            """;
+                """;
 
         return ApexChartsBuilder.get()
                 .withChart(ChartBuilder.get()
@@ -444,6 +466,30 @@ public class MarketMapView extends VerticalLayout {
         return "#334155";
     }
 
+    private List<String> getAvailableMarkets(List<CompanyOverviewDto> companies) {
+        if (companies == null) return List.of("US");
+        List<String> distinct = companies.stream()
+                .map(CompanyOverviewDto::market)
+                .filter(Objects::nonNull)
+                .map(String::toUpperCase)
+                .distinct()
+                .sorted()
+                .collect(Collectors.toList());
+        if (distinct.contains("US")) {
+            distinct.remove("US");
+            distinct.add(0, "US");
+        }
+        return distinct.isEmpty() ? List.of("US") : distinct;
+    }
+
+    private List<CompanyOverviewDto> filterByMarket(List<CompanyOverviewDto> companies, String market) {
+        if (companies == null) return List.of();
+        if (market == null || market.isBlank()) return companies;
+        return companies.stream()
+                .filter(c -> c.market() != null && c.market().equalsIgnoreCase(market))
+                .toList();
+    }
+
     private static class MarketMapFilter {
         String ticker = "", companyName = "", sector = "", industry = "";
 
@@ -470,11 +516,12 @@ public class MarketMapView extends VerticalLayout {
         public Float pctFrom200dMa;
         public Float volumeVelocity;
         public String tradeDate;
+        public String currencySymbol;
 
         public CustomData(String x, Float y, String fillColor, String companyName, int companyId,
                           Float priceChange1d, Float priceChange1w, Float priceChange1m,
                           Float priceChange6m, Float priceChange1y,
-                          Float pctFrom50dMa, Float pctFrom200dMa, Float volumeVelocity, String tradeDate) {
+                          Float pctFrom50dMa, Float pctFrom200dMa, Float volumeVelocity, String tradeDate, String currencySymbol) {
             this.x = x;
             this.y = y;
             this.fillColor = fillColor;
@@ -489,6 +536,7 @@ public class MarketMapView extends VerticalLayout {
             this.pctFrom200dMa = pctFrom200dMa;
             this.volumeVelocity = volumeVelocity;
             this.tradeDate = tradeDate;
+            this.currencySymbol = currencySymbol;
         }
     }
 }

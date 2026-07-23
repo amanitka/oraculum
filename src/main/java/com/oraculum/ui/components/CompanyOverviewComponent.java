@@ -358,12 +358,18 @@ public class CompanyOverviewComponent extends VerticalLayout {
         grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
         grid.addColumn(CompanyFinancialRatiosDto::reportDate).setHeader("Report Date").setSortable(true).setAutoWidth(true);
         grid.addColumn(CompanyFinancialRatiosDto::financialTrendScore).setHeader("Trend Score").setSortable(true).setAutoWidth(true);
-        grid.addColumn(CompanyFinancialRatiosDto::qualityScore).setHeader("Quality").setSortable(true).setAutoWidth(true);
-        grid.addColumn(CompanyFinancialRatiosDto::returnOnEquity).setHeader("ROE").setSortable(true).setAutoWidth(true);
-        grid.addColumn(CompanyFinancialRatiosDto::grossMargin).setHeader("Gross Margin").setSortable(true).setAutoWidth(true);
-        grid.addColumn(CompanyFinancialRatiosDto::netMargin).setHeader("Net Margin").setSortable(true).setAutoWidth(true);
-        grid.addColumn(CompanyFinancialRatiosDto::revenueYoyGrowth).setHeader("Rev Growth (YoY)").setSortable(true).setAutoWidth(true);
-        grid.addColumn(CompanyFinancialRatiosDto::quickRatio).setHeader("Quick Ratio").setSortable(true).setAutoWidth(true);
+        grid.addColumn(new com.vaadin.flow.data.renderer.ComponentRenderer<>(item -> ViewHelper.qualitySpan(item.qualityScore()))).setHeader("Quality").setSortable(true).setAutoWidth(true);
+        
+        grid.addColumn(item -> item.returnOnEquity() != null ? String.format(java.util.Locale.US, "%.2f%%", item.returnOnEquity() * 100) : "-")
+                .setHeader("ROE").setSortable(true).setAutoWidth(true);
+        grid.addColumn(item -> item.grossMargin() != null ? String.format(java.util.Locale.US, "%.2f%%", item.grossMargin() * 100) : "-")
+                .setHeader("Gross Margin").setSortable(true).setAutoWidth(true);
+        grid.addColumn(item -> item.netMargin() != null ? String.format(java.util.Locale.US, "%.2f%%", item.netMargin() * 100) : "-")
+                .setHeader("Net Margin").setSortable(true).setAutoWidth(true);
+        grid.addColumn(item -> item.revenueYoyGrowth() != null ? String.format(java.util.Locale.US, "%.2f%%", item.revenueYoyGrowth() * 100) : "-")
+                .setHeader("Rev Growth (YoY)").setSortable(true).setAutoWidth(true);
+        grid.addColumn(item -> item.quickRatio() != null ? String.format(java.util.Locale.US, "%.2fx", item.quickRatio()) : "-")
+                .setHeader("Quick Ratio").setSortable(true).setAutoWidth(true);
 
         grid.setItems(items.stream().sorted(Comparator.comparing(CompanyFinancialRatiosDto::reportDate).reversed()).collect(Collectors.toList()));
         return grid;

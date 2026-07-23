@@ -6,24 +6,23 @@ Item 7 text content:
 ```
 
 **Instructions:**
-1. **Summarize key performance**: Write a concise narrative summary of the company's operating performance, key achievements, and challenges.
-2. **Identify revenue drivers**: List the main drivers of revenue growth or decline (e.g. volume increases, price changes, new product lines).
-3. **Analyze margin trends**: Describe margin changes (gross, operating, net margins) and what drove those changes.
-4. **Detail segment highlights**: Extract key performance statistics and descriptions for geographic or product/business segments.
-5. **Determine guidance signal**: Set the guidance signal as RAISED, LOWERED, MAINTAINED, or NONE based on management's forward-looking indications.
-6. **Capture capital allocation**: Summarize decisions on stock buybacks, dividends, mergers/acquisitions, and capex.
-7. **Extract key metrics**: Extract specific quantitative metrics stated in the text (e.g. revenue growth YoY%, gross margin%, segment growth%).
-8. **Assess Sentiment**: Assign a universal sentiment score between -1.0 (highly bearish/negative) and 1.0 (highly bullish/positive) to the overall tone and outlook of the MD&A.
+1. **Summarize key performance**: Write a concise summary (2-4 SENTENCES, UNDER 100 WORDS) of key operating performance.
+2. **Identify revenue drivers**: List top 2-3 main drivers of revenue.
+3. **Analyze margin trends**: Describe margin changes in 1-2 brief sentences.
+4. **Detail segment highlights**: Extract up to 3 key segment highlights (short phrases).
+5. **Determine guidance signal**: Set guidance signal as RAISED, LOWERED, MAINTAINED, or NONE.
+6. **Capture capital allocation**: Summarize capital allocation in 1-2 short sentences.
+7. **Extract key metrics**: Extract specific quantitative metrics stated in the text.
+8. **Assess Sentiment**: Assign a universal sentiment score between -1.0 and 1.0.
 
-You MUST respond with valid JSON matching exactly this schema:
-```json
+You MUST respond with valid JSON using exactly this schema:
 {
-  "summary": "Concise narrative of key operational performance and outlook...",
+  "summary": "Concise 2-4 sentence summary under 100 words...",
   "primary_revenue_drivers": ["driver 1", "driver 2"],
-  "margin_trends": "Description of margin expansion/contraction and drivers",
+  "margin_trends": "Brief 1-sentence description of margin trend",
   "segment_highlights": ["segment info 1", "segment info 2"],
   "guidance_signal": "RAISED | LOWERED | MAINTAINED | NONE",
-  "management_outlook": "Forward-looking management commentary",
+  "management_outlook": "Brief 1-sentence management commentary",
   "capital_allocation": ["allocation info 1", "allocation info 2"],
   "key_metrics": {
     "revenue_growth_yoy_pct": 0.0,
@@ -31,10 +30,11 @@ You MUST respond with valid JSON matching exactly this schema:
   },
   "sentiment_score": 0.0
 }
-```
-CRITICAL JSON FORMATTING RULES:
-- Return ONLY the raw JSON object.
-- Do NOT wrap it in ```json ... ``` markdown blocks.
-- Do NOT add any conversational text.
-- Ensure the JSON is strictly valid.
-- ABSOLUTELY NO TRAILING COMMAS are allowed in arrays or objects.
+
+Rules:
+- STRICT JSON FORMATTING: OUTPUT ONLY VALID JSON. Do not output any conversational text, explanatory text, greetings, or introductory phrases (e.g. "Here is the structured JSON").
+- Do NOT wrap the JSON in markdown code blocks (e.g., do not use ```json or ```). Your entire response must be exactly one raw JSON object starting with `{` and ending with `}`.
+- Do NOT output multiple JSON blocks. Output exactly ONE complete JSON object containing all required fields.
+- Keep all narrative text fields EXTREMELY CONCISE (e.g., summary under 50 words) to prevent token truncation.
+- Ensure the JSON is strictly valid with no trailing commas.
+- Do not include any extra keys.

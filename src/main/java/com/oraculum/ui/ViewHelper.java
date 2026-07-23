@@ -312,4 +312,52 @@ public final class ViewHelper {
         });
         return btn;
     }
+
+    /**
+     * Resolves the proper currency symbol based on currency code and market context.
+     */
+    public static String getCurrencySymbol(String currencyCode, String market) {
+        if (currencyCode != null && !currencyCode.isBlank()) {
+            String upper = currencyCode.toUpperCase();
+            switch (upper) {
+                case "EUR" -> {
+                    return "€";
+                }
+                case "CAD" -> {
+                    return "CA$";
+                }
+                case "CNY", "RMB", "HKD", "JPY" -> {
+                    return "¥";
+                }
+                case "GBP" -> {
+                    return "£";
+                }
+            }
+            if (!upper.equals("USD")) return upper + " ";
+        }
+
+        if (market != null) {
+            String upperMkt = market.toUpperCase();
+            switch (upperMkt) {
+                case "DE", "EU" -> {
+                    return "€";
+                }
+                case "CA" -> {
+                    return "CA$";
+                }
+                case "CN", "HK", "JP" -> {
+                    return "¥";
+                }
+                case "UK", "GB" -> {
+                    return "£";
+                }
+            }
+        }
+
+        return "$";
+    }
+
+    public static String getCurrencySymbol(String currencyCode) {
+        return getCurrencySymbol(currencyCode, null);
+    }
 }
