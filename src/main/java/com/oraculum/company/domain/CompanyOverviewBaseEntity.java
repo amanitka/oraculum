@@ -81,6 +81,12 @@ public abstract class CompanyOverviewBaseEntity {
     @Column(name = "price_change_1m")
     private Float priceChange1m;
 
+    @Column(name = "price_change_6m")
+    private Float priceChange6m;
+
+    @Column(name = "price_change_1y")
+    private Float priceChange1y;
+
     @Column(name = "pe_ratio")
     private Float peRatio;
 

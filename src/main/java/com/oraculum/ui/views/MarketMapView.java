@@ -13,6 +13,9 @@ import com.github.appreciated.apexcharts.helper.Series;
 import com.oraculum.company.api.*;
 import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.company.api.dto.CompanyOverviewDto;
+import com.oraculum.analyst.api.dto.CompanyAnalysisRequest;
+import com.oraculum.company.api.dto.TickerKeyDto;
+import com.oraculum.ui.service.AnalysisRequestService;
 import com.oraculum.ui.MainLayout;
 import com.oraculum.ui.ViewHelper;
 import com.oraculum.ui.components.CompanyOverviewComponent;
@@ -39,6 +42,7 @@ import jakarta.annotation.security.PermitAll;
 import tools.jackson.databind.ObjectMapper;
 
 import java.text.NumberFormat;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -54,6 +58,7 @@ public class MarketMapView extends VerticalLayout {
     private final CompanyNewsApi companyNewsApi;
     private final CompanyInsiderTransactionApi companyInsiderTransactionApi;
     private final CompanyValuationApi companyValuationApi;
+    private final AnalysisRequestService analysisRequestService;
     private final ObjectMapper objectMapper;
 
     public MarketMapView(CompanyScreenerApi companyScreenerApi,
@@ -63,6 +68,7 @@ public class MarketMapView extends VerticalLayout {
                          CompanyNewsApi companyNewsApi,
                          CompanyInsiderTransactionApi companyInsiderTransactionApi,
                          CompanyValuationApi companyValuationApi,
+                         AnalysisRequestService analysisRequestService,
                          ObjectMapper objectMapper) {
         this.companyScreenerApi = companyScreenerApi;
         this.companyMetadataApi = companyMetadataApi;
@@ -71,6 +77,7 @@ public class MarketMapView extends VerticalLayout {
         this.companyNewsApi = companyNewsApi;
         this.companyInsiderTransactionApi = companyInsiderTransactionApi;
         this.companyValuationApi = companyValuationApi;
+        this.analysisRequestService = analysisRequestService;
         this.objectMapper = objectMapper;
 
         setPadding(true);
@@ -84,7 +91,16 @@ public class MarketMapView extends VerticalLayout {
         H3 title = new H3("Market Map");
         title.addClassNames(LumoUtility.Margin.Bottom.NONE);
         title.getStyle().set("margin-top", "2rem");
-        Paragraph description = new Paragraph("Interactive treemap and sortable table view visualizing market capitalization, sector division, growth trends, moving averages, and volume velocity.");
+        
+        List<CompanyOverviewDto> companies = companyScreenerApi.getCompanyOverview();
+        LocalDate maxTradeDate = companies != null ? companies.stream()
+                .map(CompanyOverviewDto::tradeDate)
+                .filter(Objects::nonNull)
+                .max(LocalDate::compareTo)
+                .orElse(null) : null;
+                
+        String asOfText = maxTradeDate != null ? " (Data as of " + maxTradeDate + ")" : "";
+        Paragraph description = new Paragraph("Interactive treemap and sortable table view visualizing market capitalization, sector division, growth trends, moving averages, and volume velocity." + asOfText);
         description.addClassNames(LumoUtility.TextColor.SECONDARY);
 
         Tab treemapTab = new Tab("Treemap View");
@@ -99,16 +115,29 @@ public class MarketMapView extends VerticalLayout {
         tabs.addSelectedChangeListener(event -> {
             contentArea.removeAll();
             if (event.getSelectedTab().equals(treemapTab)) {
-                ApexCharts treemap = createTreemap();
+                ApexCharts treemap = createTreemap(companies);
                 contentArea.add(Objects.requireNonNullElseGet(treemap, () -> new Paragraph("Not enough data to display the market map.")));
             } else {
-                List<CompanyOverviewDto> companies = companyScreenerApi.getCompanyOverview();
                 Grid<CompanyOverviewDto> grid = createMarketGrid(companies != null ? companies : List.of());
-                contentArea.add(grid);
+                
+                com.vaadin.flow.component.orderedlayout.HorizontalLayout toolbar = new com.vaadin.flow.component.orderedlayout.HorizontalLayout();
+                toolbar.setWidthFull();
+                toolbar.setJustifyContentMode(com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode.END);
+                toolbar.addClassNames(LumoUtility.Padding.Bottom.SMALL);
+
+                Button runAnalysisBtn = new Button("Run Analysis", com.vaadin.flow.component.icon.VaadinIcon.PLAY.create());
+                runAnalysisBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+                toolbar.add(runAnalysisBtn);
+                toolbar.getStyle().set("margin-top", "1rem");
+                toolbar.getStyle().set("margin-bottom", "0.5rem");
+                
+                runAnalysisBtn.addClickListener(_ -> triggerAnalysis(grid.getSelectedItems(), grid));
+                
+                contentArea.add(toolbar, grid);
             }
         });
 
-        ApexCharts treemap = createTreemap();
+        ApexCharts treemap = createTreemap(companies);
         contentArea.add(Objects.requireNonNullElseGet(treemap, () -> new Paragraph("Not enough data to display the market map.")));
 
         add(title, description, tabs, ViewHelper.wrapInCard(contentArea));
@@ -122,6 +151,10 @@ public class MarketMapView extends VerticalLayout {
         grid.setSizeFull();
         grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
         grid.addClassName("screener-grid");
+        grid.setSelectionMode(Grid.SelectionMode.MULTI);
+        if (grid.getSelectionModel() instanceof com.vaadin.flow.component.grid.GridMultiSelectionModel<CompanyOverviewDto> multiModel) {
+            multiModel.setSelectionColumnFrozen(true);
+        }
 
         grid.addColumn(CompanyOverviewDto::ticker).setHeader("Ticker").setAutoWidth(true).setFrozen(true).setKey("ticker").setSortable(true);
 
@@ -146,6 +179,10 @@ public class MarketMapView extends VerticalLayout {
                 .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::priceChange1w));
         grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.priceChange1m()))).setHeader("1M %").setAutoWidth(true).setSortable(true)
                 .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::priceChange1m));
+        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.priceChange6m()))).setHeader("6M %").setAutoWidth(true).setSortable(true)
+                .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::priceChange6m));
+        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.priceChange1y()))).setHeader("1Y %").setAutoWidth(true).setSortable(true)
+                .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::priceChange1y));
 
         grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.pctFrom50dMa()))).setHeader("vs 50D MA").setAutoWidth(true).setSortable(true)
                 .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::pctFrom50dMa));
@@ -218,6 +255,28 @@ public class MarketMapView extends VerticalLayout {
         """, getElement());
     }
 
+    private void triggerAnalysis(Set<CompanyOverviewDto> selectedItems, Grid<CompanyOverviewDto> grid) {
+        if (!validateBatchSelection(selectedItems.size())) return;
+        for (CompanyOverviewDto item : selectedItems) {
+            CompanyAnalysisRequest requestDto = new CompanyAnalysisRequest(UUID.randomUUID(), item.companyId(), new TickerKeyDto(item.ticker(), item.market()), LocalDate.now(), null);
+            analysisRequestService.requestAnalysis(requestDto);
+        }
+        ViewHelper.showSuccess("Triggered analysis for " + selectedItems.size() + " companies.");
+        grid.deselectAll();
+    }
+
+    private boolean validateBatchSelection(int count) {
+        if (count == 0) {
+            ViewHelper.showError("Please select at least one company.");
+            return false;
+        }
+        if (count > 10) {
+            ViewHelper.showError("Maximum of 10 companies allowed per batch.");
+            return false;
+        }
+        return true;
+    }
+
     @ClientCallable
     public void onCompanySelected(int companyId) {
         CompanyDto company = companyMetadataApi.getCompanyById(companyId);
@@ -251,8 +310,7 @@ public class MarketMapView extends VerticalLayout {
         }
     }
 
-    private ApexCharts createTreemap() {
-        List<CompanyOverviewDto> companies = companyScreenerApi.getCompanyOverview();
+    private ApexCharts createTreemap(List<CompanyOverviewDto> companies) {
         if (companies == null || companies.isEmpty()) {
             return null;
         }
@@ -291,9 +349,12 @@ public class MarketMapView extends VerticalLayout {
                 c.priceChange1d(),
                 c.priceChange1w(),
                 c.priceChange1m(),
+                c.priceChange6m(),
+                c.priceChange1y(),
                 c.pctFrom50dMa(),
                 c.pctFrom200dMa(),
-                c.volumeVelocity()
+                c.volumeVelocity(),
+                c.tradeDate() != null ? c.tradeDate().toString() : "N/A"
         );
     }
 
@@ -321,12 +382,15 @@ public class MarketMapView extends VerticalLayout {
             
                 return '<div style="padding: 12px 16px; background: rgba(18, 24, 38, 0.95); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: #fff; font-family: var(--lumo-font-family, sans-serif); box-shadow: 0 4px 16px rgba(0,0,0,0.4); min-width: 200px;">' +
                        '<div style="font-size: 14px; font-weight: 700; margin-bottom: 4px; color: #f0f4f8;">' + name + ' <span style="color:#8a99ad; font-size:12px; font-weight:400;">(' + ticker + ')</span></div>' +
-                       '<div style="font-size: 12px; margin-bottom: 8px; color: #cbd5e1;">Market Cap: <strong style="color:#fff;">' + cap + '</strong></div>' +
+                       '<div style="font-size: 12px; margin-bottom: 2px; color: #cbd5e1;">Market Cap: <strong style="color:#fff;">' + cap + '</strong></div>' +
+                       '<div style="font-size: 12px; margin-bottom: 8px; color: #cbd5e1;">Last Trade: <strong style="color:#fff;">' + (item.tradeDate || 'N/A') + '</strong></div>' +
                        '<hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 6px 0;"/>' +
                        '<div style="font-size: 12px; display: grid; grid-template-columns: 90px 1fr; gap: 4px;">' +
-                       '<span style="color:#94a3b8;">1-Day:</span>' + formatPct(item.priceChange1d) +
+                       '<span style="color:#94a3b8;">Prev Close:</span>' + formatPct(item.priceChange1d) +
                        '<span style="color:#94a3b8;">1-Week:</span>' + formatPct(item.priceChange1w) +
                        '<span style="color:#94a3b8;">1-Month:</span>' + formatPct(item.priceChange1m) +
+                       '<span style="color:#94a3b8;">6-Month:</span>' + formatPct(item.priceChange6m) +
+                       '<span style="color:#94a3b8;">1-Year:</span>' + formatPct(item.priceChange1y) +
                        '<span style="color:#94a3b8;">vs 50D MA:</span>' + formatPct(item.pctFrom50dMa) +
                        '<span style="color:#94a3b8;">vs 200D MA:</span>' + formatPct(item.pctFrom200dMa) +
                        '<span style="color:#94a3b8;">Vol Velocity:</span>' + formatVel(item.volumeVelocity) +
@@ -371,13 +435,13 @@ public class MarketMapView extends VerticalLayout {
     }
 
     private String getColorForPriceChange(Float priceChange) {
-        if (priceChange >= 3.0f) return "#00FF00";
-        if (priceChange >= 1.0f) return "#00CC00";
-        if (priceChange > 0.0f) return "#009900";
-        if (priceChange <= -3.0f) return "#FF0000";
-        if (priceChange <= -1.0f) return "#CC0000";
-        if (priceChange < 0.0f) return "#990000";
-        return "#666666";
+        if (priceChange >= 3.0f) return "#16a34a";
+        if (priceChange >= 1.0f) return "#15803d";
+        if (priceChange > 0.0f) return "#166534";
+        if (priceChange <= -3.0f) return "#dc2626";
+        if (priceChange <= -1.0f) return "#b91c1c";
+        if (priceChange < 0.0f) return "#991b1b";
+        return "#334155";
     }
 
     private static class MarketMapFilter {
@@ -400,13 +464,17 @@ public class MarketMapView extends VerticalLayout {
         public Float priceChange1d;
         public Float priceChange1w;
         public Float priceChange1m;
+        public Float priceChange6m;
+        public Float priceChange1y;
         public Float pctFrom50dMa;
         public Float pctFrom200dMa;
         public Float volumeVelocity;
+        public String tradeDate;
 
         public CustomData(String x, Float y, String fillColor, String companyName, int companyId,
                           Float priceChange1d, Float priceChange1w, Float priceChange1m,
-                          Float pctFrom50dMa, Float pctFrom200dMa, Float volumeVelocity) {
+                          Float priceChange6m, Float priceChange1y,
+                          Float pctFrom50dMa, Float pctFrom200dMa, Float volumeVelocity, String tradeDate) {
             this.x = x;
             this.y = y;
             this.fillColor = fillColor;
@@ -415,9 +483,12 @@ public class MarketMapView extends VerticalLayout {
             this.priceChange1d = priceChange1d;
             this.priceChange1w = priceChange1w;
             this.priceChange1m = priceChange1m;
+            this.priceChange6m = priceChange6m;
+            this.priceChange1y = priceChange1y;
             this.pctFrom50dMa = pctFrom50dMa;
             this.pctFrom200dMa = pctFrom200dMa;
             this.volumeVelocity = volumeVelocity;
+            this.tradeDate = tradeDate;
         }
     }
 }

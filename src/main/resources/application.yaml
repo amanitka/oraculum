@@ -107,7 +107,7 @@ oraculum:
       cron: "0 0 3 * * TUE-SAT"
     news:
       incremental-window-hours: 1
-      cron: "0 0 4,10,15,20 * * *"
+      cron: "0 0 2,8,14,22 * * *"
     insider-transactions:
       cron: "0 0 4,16 * * *"
     macroeconomic:
@@ -185,8 +185,8 @@ oraculum:
 
     providers:
       lmstudio:
-        base-url: "http://10.10.1.3:1234/v1"
-        api-key: "lmstudio"
+        base-url: ${ORACULUM_LMSTUDIO_BASE_URL:http://10.10.1.3:1234/v1}
+        api-key: ${ORACULUM_LMSTUDIO_API_KEY:lmstudio}
 
       gemini:
         base-url: "https://generativelanguage.googleapis.com/v1beta/openai/"

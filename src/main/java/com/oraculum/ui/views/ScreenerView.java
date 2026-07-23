@@ -1,15 +1,8 @@
 package com.oraculum.ui.views;
 
 import com.oraculum.analyst.api.dto.CompanyAnalysisRequest;
-import com.oraculum.company.api.CompanyMetadataApi;
-import com.oraculum.company.api.CompanyFinancialDataApi;
-import com.oraculum.company.api.CompanySharePriceApi;
-import com.oraculum.company.api.CompanyNewsApi;
-import com.oraculum.company.api.CompanyInsiderTransactionApi;
-import com.oraculum.company.api.CompanyScreenerApi;
-import com.oraculum.company.api.CompanyValuationApi;
+import com.oraculum.company.api.*;
 import com.oraculum.company.api.domain.CompanySize;
-import com.oraculum.company.api.dto.TickerKeyDto;
 import com.oraculum.company.api.dto.*;
 import com.oraculum.ui.MainLayout;
 import com.oraculum.ui.ViewHelper;
@@ -33,6 +26,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteAlias;
 import com.vaadin.flow.theme.lumo.LumoUtility;
+import jakarta.annotation.security.PermitAll;
 import tools.jackson.databind.ObjectMapper;
 
 import java.text.NumberFormat;
@@ -40,8 +34,6 @@ import java.time.LocalDate;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import jakarta.annotation.security.PermitAll;
 
 @Route(value = "screener", layout = MainLayout.class)
 @RouteAlias(value = "", layout = MainLayout.class)
@@ -59,6 +51,7 @@ public class ScreenerView extends VerticalLayout {
     private final AnalysisRequestService analysisRequestService;
     private final ObjectMapper objectMapper;
     private final VerticalLayout gridContainer;
+    private final List<CompanyOverviewDto> masterData;
 
     public ScreenerView(CompanyScreenerApi companyScreenerApi,
                         CompanyMetadataApi companyMetadataApi,
@@ -86,7 +79,16 @@ public class ScreenerView extends VerticalLayout {
         H3 title = new H3("Investment Screeners");
         title.addClassNames(LumoUtility.Margin.Bottom.NONE);
         title.getStyle().set("margin-top", "2rem"); // Pushes the text down significantly from the top menu
-        Paragraph description = new Paragraph("Select a screening strategy below to view fully-materialized market data.");
+
+        masterData = companyScreenerApi.getCompanyOverview();
+        LocalDate maxTradeDate = masterData != null ? masterData.stream()
+                .map(CompanyOverviewDto::tradeDate)
+                .filter(Objects::nonNull)
+                .max(LocalDate::compareTo)
+                .orElse(null) : null;
+
+        String asOfText = maxTradeDate != null ? " (Data as of " + maxTradeDate + ")" : "";
+        Paragraph description = new Paragraph("Select a screening strategy below to view fully-materialized market data." + asOfText);
         description.addClassNames(LumoUtility.TextColor.SECONDARY);
 
         Tab tabMaster = new Tab("Master Ranks");
@@ -122,7 +124,7 @@ public class ScreenerView extends VerticalLayout {
         switch (tabLabel) {
             case "Master Ranks" -> {
                 Grid<CompanyOverviewDto> grid = createMasterGrid();
-                GridListDataView<CompanyOverviewDto> dataView = grid.setItems(companyScreenerApi.getCompanyOverview());
+                GridListDataView<CompanyOverviewDto> dataView = grid.setItems(masterData != null ? masterData : List.of());
                 setupFilters(grid, dataView, CompanyOverviewDto.class);
                 runAnalysisBtn.addClickListener(_ -> triggerAnalysisMaster(grid.getSelectedItems(), grid));
                 gridContainer.add(toolbar, ViewHelper.wrapInCard(grid));
@@ -256,16 +258,18 @@ public class ScreenerView extends VerticalLayout {
         grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.qualitySpan(item.qualityScore()))).setHeader("Quality").setAutoWidth(true).setKey("quality")
                 .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::qualityScore));
 
-        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.priceChange1d()))).setHeader("1D %").setAutoWidth(true).setSortable(true)
-                .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::priceChange1d));
-        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.priceChange1w()))).setHeader("1W %").setAutoWidth(true).setSortable(true)
+        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.priceChange1w()))).setHeader("1W %").setWidth("120px").setFlexGrow(0).setSortable(true)
                 .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::priceChange1w));
-        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.priceChange1m()))).setHeader("1M %").setAutoWidth(true).setSortable(true)
+        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.priceChange1m()))).setHeader("1M %").setWidth("120px").setFlexGrow(0).setSortable(true)
                 .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::priceChange1m));
+        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.priceChange6m()))).setHeader("6M %").setWidth("120px").setFlexGrow(0).setSortable(true)
+                .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::priceChange6m));
+        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.priceChange1y()))).setHeader("1Y %").setWidth("120px").setFlexGrow(0).setSortable(true)
+                .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::priceChange1y));
 
-        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.pctFrom50dMa()))).setHeader("vs 50D MA").setAutoWidth(true).setSortable(true)
+        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.pctFrom50dMa()))).setHeader("vs 50D MA").setWidth("130px").setFlexGrow(0).setSortable(true)
                 .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::pctFrom50dMa));
-        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.pctFrom200dMa()))).setHeader("vs 200D MA").setAutoWidth(true).setSortable(true)
+        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.pctFrom200dMa()))).setHeader("vs 200D MA").setWidth("130px").setFlexGrow(0).setSortable(true)
                 .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::pctFrom200dMa));
 
         grid.addColumn(item -> item.volumeVelocity() != null ? String.format(Locale.US, "%.2fx", item.volumeVelocity()) : "-")
@@ -475,11 +479,11 @@ public class ScreenerView extends VerticalLayout {
                 .setComparator(Comparator.comparing(ScreenerInsiderDto::csuiteBuysValue12m, Comparator.nullsFirst(Double::compareTo)));
 
         grid.addColumn(new ComponentRenderer<>(item -> {
-            boolean hasBuy = item.hasClusterBuy() != null && item.hasClusterBuy();
-            Span badge = new Span(hasBuy ? "Yes" : "No");
-            badge.getElement().getThemeList().addAll(List.of("badge", hasBuy ? "success" : "contrast"));
-            return badge;
-        }))
+                    boolean hasBuy = item.hasClusterBuy() != null && item.hasClusterBuy();
+                    Span badge = new Span(hasBuy ? "Yes" : "No");
+                    badge.getElement().getThemeList().addAll(List.of("badge", hasBuy ? "success" : "contrast"));
+                    return badge;
+                }))
                 .setHeader("Cluster Buy").setAutoWidth(true).setSortable(true)
                 .setComparator(Comparator.comparing(item -> item.hasClusterBuy() != null && item.hasClusterBuy(), Boolean::compareTo));
 
