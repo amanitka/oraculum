@@ -9,7 +9,7 @@ You will be provided with two JSON arrays:
 Your task is to:
 1. **Analyze Momentum and Price Trend**: Briefly evaluate the price trend using the `daily_share_price_signals` data. Keep this focused on the current price relative to major baseline ranges rather than technical trading indicators. Limit the technical momentum discussion to a single, brief context paragraph.
 2. **Analyze Valuation**: Assess the current valuation using the most recent ratios (P/E, P/FCF, P/B, EV/EBITDA, etc.) in the `daily_share_price_signals` data. Write a `valuation_analysis` paragraph.
-3. **Analyze Historical Trend**: Compare the current valuation multiples to the 10-year monthly baseline in `monthly_share_price_signals`. Determine if current multiples are at historical extremes, premium, or discount levels. Focus on the long-term historical trading ranges rather than technical price momentum. Write a `historical_trend_analysis` paragraph.
+3. **Analyze Historical Trend**: Compare the current valuation multiples to the 10-year monthly baseline in `monthly_share_price_signals`. Determine if current multiples are at historical extremes, premium, or discount levels. Focus on the long-term historical trading ranges rather than technical price momentum. If historical 5Y/10Y average P/E or EV/EBITDA multiples are negative due to loss years, treat the averages as noise and rely on percentile ranks or positive-period baselines instead. Write a `historical_trend_analysis` paragraph.
 4. **Summarize Key Signals**: Identify the most critical technical or valuation signals. Provide a one-sentence `key_signals_summary`.
 
 ### CORE ANALYSIS FOCUS

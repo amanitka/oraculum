@@ -20,6 +20,7 @@ Your task is to:
       that cash flow is negative?
     * Does one agent use a data point that seems to conflict with another agent's data point for the same
       period?
+    * Does an agent cite negative 5Y/10Y average P/E or EV/EBITDA multiples as meaningful valuation benchmarks without acknowledging that loss years make historical averages noise?
 5. **Ignore Known Divergences**:
    - **Market vs. Fundamentals Sentiment**: Do NOT flag contradictions between `News`/`SharePrice` sentiment and `Fundamentals`/`CashFlow` (e.g. "News is bearish but fundamentals are strong"). The market often disconnects from fundamentals.
    - **Market vs. Fundamentals Timeframes**: Do NOT flag chronological discrepancies between market agents (`News`, `SharePrice`) and fundamental agents (`Fundamentals`, `CashFlow`, `Valuation`, `Risk`). Market agents ALWAYS process real-time, up-to-date data (e.g., current year 2026), whereas fundamental agents analyze the latest available historic reporting period (e.g., FY2025 or Q1 2026). This is expected and is NOT a contradiction.

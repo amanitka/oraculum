@@ -129,14 +129,32 @@ WITH raw_data AS (SELECT
                        w_seq AS (PARTITION BY company_id,                UPPER(variant) ORDER BY fiscal_year, fiscal_period)
                 ),
      streaks AS (SELECT
-                    *,
-                    SUM(CASE WHEN fcf        > 0        THEN 1 ELSE 0 END) OVER w4     AS fcf_streak,
-                    SUM(CASE WHEN net_income > 0        THEN 1 ELSE 0 END) OVER w4     AS ni_streak,
-                    SUM(CASE WHEN revenue    > prev_rev THEN 1 ELSE 0 END) OVER w4_yoy AS rev_growth_streak
-                 FROM lagged
-                 WINDOW w4     AS (PARTITION BY company_id,               UPPER(variant) ORDER BY fiscal_year, fiscal_period ROWS BETWEEN 3 PRECEDING AND CURRENT ROW),
-                        w4_yoy AS (PARTITION BY company_id, fiscal_period, UPPER(variant) ORDER BY fiscal_year              ROWS BETWEEN 3 PRECEDING AND CURRENT ROW)
-                 ),
+                     *,
+                     CASE
+                         WHEN fcf <= 0 OR fcf IS NULL THEN 0
+                         WHEN LAG(fcf, 1) OVER w_seq <= 0 OR LAG(fcf, 1) OVER w_seq IS NULL THEN 1
+                         WHEN LAG(fcf, 2) OVER w_seq <= 0 OR LAG(fcf, 2) OVER w_seq IS NULL THEN 2
+                         WHEN LAG(fcf, 3) OVER w_seq <= 0 OR LAG(fcf, 3) OVER w_seq IS NULL THEN 3
+                         ELSE 4
+                     END AS fcf_streak,
+                     CASE
+                         WHEN net_income <= 0 OR net_income IS NULL THEN 0
+                         WHEN LAG(net_income, 1) OVER w_seq <= 0 OR LAG(net_income, 1) OVER w_seq IS NULL THEN 1
+                         WHEN LAG(net_income, 2) OVER w_seq <= 0 OR LAG(net_income, 2) OVER w_seq IS NULL THEN 2
+                         WHEN LAG(net_income, 3) OVER w_seq <= 0 OR LAG(net_income, 3) OVER w_seq IS NULL THEN 3
+                         ELSE 4
+                     END AS ni_streak,
+                     CASE
+                         WHEN revenue <= prev_rev OR prev_rev IS NULL THEN 0
+                         WHEN LAG(revenue, 1) OVER w_yoy <= LAG(revenue, 2) OVER w_yoy OR LAG(revenue, 2) OVER w_yoy IS NULL THEN 1
+                         WHEN LAG(revenue, 2) OVER w_yoy <= LAG(revenue, 3) OVER w_yoy OR LAG(revenue, 3) OVER w_yoy IS NULL THEN 2
+                         WHEN LAG(revenue, 3) OVER w_yoy <= LAG(revenue, 4) OVER w_yoy OR LAG(revenue, 4) OVER w_yoy IS NULL THEN 3
+                         ELSE 4
+                     END AS rev_growth_streak
+                  FROM lagged
+                  WINDOW w_seq AS (PARTITION BY company_id,                UPPER(variant) ORDER BY fiscal_year, fiscal_period),
+                         w_yoy AS (PARTITION BY company_id, fiscal_period, UPPER(variant) ORDER BY fiscal_year)
+                  ),
      final_metrics AS (SELECT
                           id,
                           company_id,

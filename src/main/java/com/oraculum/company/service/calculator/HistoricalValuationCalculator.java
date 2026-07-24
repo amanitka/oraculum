@@ -60,21 +60,31 @@ public class HistoricalValuationCalculator {
     }
 
     private HistoricalValuationSummaryDto computeSummary(String name, float current, List<Float> valid10y, List<Float> valid5y) {
-        double sum10y = 0;
         float min10y = Float.MAX_VALUE;
         float max10y = -Float.MAX_VALUE;
         int countBelow = 0;
         for (float val : valid10y) {
-            sum10y += val;
             min10y = Math.min(min10y, val);
             max10y = Math.max(max10y, val);
             if (val <= current) countBelow++;
         }
-        float avg10y = (float) (sum10y / valid10y.size());
         int percentile10y = (int) Math.round((double) countBelow / valid10y.size() * 100);
-        float avg5y = computeAverage(valid5y, avg10y);
+
+        List<Float> avg10yValues = filterPositiveIfEarningsMultiple(name, valid10y);
+        List<Float> avg5yValues = filterPositiveIfEarningsMultiple(name, valid5y);
+
+        float avg10y = computeAverage(avg10yValues, current);
+        float avg5y = computeAverage(avg5yValues, avg10y);
 
         return new HistoricalValuationSummaryDto(name, current, avg5y, avg10y, percentile10y, min10y, max10y);
+    }
+
+    private List<Float> filterPositiveIfEarningsMultiple(String name, List<Float> values) {
+        if ("P/E".equals(name) || "EV/EBITDA".equals(name)) {
+            List<Float> positive = values.stream().filter(v -> v > 0).collect(Collectors.toList());
+            return positive.isEmpty() ? values : positive;
+        }
+        return values;
     }
 
     private float computeAverage(List<Float> values, float fallback) {

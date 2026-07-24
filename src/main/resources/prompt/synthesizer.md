@@ -25,7 +25,7 @@ Pay special attention to this thesis requested by the user, and determine if the
     * **Executive Summary**: A concise overview of the investment case.
     * **Macroeconomic Context**: A very brief summary (2-3 sentences only) of findings from the Macroeconomic agent. Mention ONLY macro factors that directly and materially impact this specific company's valuation (e.g. interest rates, export controls). Omit general macro indicators unless the company has direct exposure.
     * **Fundamental Health**: Combine insights from the Fundamentals and Cash Flow agents.
-    * **Valuation & Intrinsic Value**: Combine insights from the Valuation and Share Price agents. Focus heavily on what growth rates the market is pricing in (implied FCF growth from reverse DCF), historical valuation multiples vs current levels, and fair value ranges. De-emphasize technical momentum signals.
+    * **Valuation & Intrinsic Value**: Combine insights from the Valuation and Share Price agents. Focus heavily on what growth rates the market is pricing in (implied FCF growth from reverse DCF), historical valuation multiples vs current levels, and fair value ranges. De-emphasize technical momentum signals. If 5Y/10Y average P/E or EV/EBITDA metrics are distorted by loss years, explicitly acknowledge that historical averages are not meaningful due to loss years and that percentile rank or positive-period baselines are used instead.
     * **Recent News & Sentiment**: Summarize the findings from the News agent, discussing how recent events support or
       contradict the financial data.
     * **Management Sentiment & Insider Activity**: Summarize the findings from the Insider Transaction agent, highlighting C-Suite conviction and cluster buying patterns.

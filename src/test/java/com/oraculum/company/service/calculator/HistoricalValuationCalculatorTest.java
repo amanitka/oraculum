@@ -55,4 +55,31 @@ class HistoricalValuationCalculatorTest {
         assertThat(pe.min10y()).isEqualTo(10.0f);
         assertThat(pe.max10y()).isEqualTo(30.0f);
     }
+
+    @Test
+    void calculate_filtersNegativePeForAveragesButIncludesInPercentiles() {
+        SharePriceSignalDto latestDaily = mock(SharePriceSignalDto.class);
+        when(latestDaily.tradeDate()).thenReturn(LocalDate.of(2026, 7, 17));
+        when(latestDaily.peRatio()).thenReturn(20.0f);
+
+        SharePriceSignalDto m1 = mock(SharePriceSignalDto.class);
+        when(m1.tradeDate()).thenReturn(LocalDate.of(2026, 6, 1));
+        when(m1.peRatio()).thenReturn(10.0f);
+
+        SharePriceSignalDto m2 = mock(SharePriceSignalDto.class);
+        when(m2.tradeDate()).thenReturn(LocalDate.of(2025, 6, 1));
+        when(m2.peRatio()).thenReturn(30.0f);
+
+        SharePriceSignalDto m3 = mock(SharePriceSignalDto.class);
+        when(m3.tradeDate()).thenReturn(LocalDate.of(2024, 6, 1));
+        when(m3.peRatio()).thenReturn(-180.0f); // Loss year P/E
+
+        List<HistoricalValuationSummaryDto> results = calculator.calculate(List.of(latestDaily), List.of(m1, m2, m3));
+
+        HistoricalValuationSummaryDto pe = results.stream().filter(r -> r.metric().equals("P/E")).findFirst().orElseThrow();
+        // avg10y should average only positive P/E values (10.0 + 30.0) / 2 = 20.0, ignoring -180.0
+        assertThat(pe.avg10y()).isEqualTo(20.0f);
+        // min10y should still record -180.0
+        assertThat(pe.min10y()).isEqualTo(-180.0f);
+    }
 }
