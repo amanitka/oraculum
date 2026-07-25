@@ -182,19 +182,20 @@ public class AnalysisView extends VerticalLayout {
         title.addClassNames(LumoUtility.Margin.Top.NONE, LumoUtility.Margin.Bottom.SMALL);
         title.getStyle().set("margin-bottom", "1rem");
         title.getStyle().set("margin-top", "1rem");
+        
         grid = buildGrid();
 
         List<CompanyAnalysisDto> data = companyAnalysisApi.getCompanyAnalysisList(org.springframework.data.domain.PageRequest.of(0, 1000)).getContent();
         gridData = new java.util.ArrayList<>(data);
         GridListDataView<CompanyAnalysisDto> dataView = grid.setItems(gridData);
         setupFilters(dataView);
-
+        
         layout.add(title, grid);
         layout.expand(grid);
 
         return ViewHelper.wrapInCard(layout);
     }
-
+    
     private Grid<CompanyAnalysisDto> buildGrid() {
         Grid<CompanyAnalysisDto> g = new Grid<>(CompanyAnalysisDto.class, false);
         g.setSizeFull();

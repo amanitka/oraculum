@@ -3,7 +3,6 @@ package com.oraculum.ui;
 import com.oraculum.analyst.api.domain.AnalysisOutlook;
 import com.oraculum.analyst.api.domain.AnalysisRecommendation;
 import com.oraculum.analyst.api.domain.AnalysisStatus;
-
 import com.oraculum.company.api.*;
 import com.oraculum.company.api.domain.CompanySize;
 import com.oraculum.company.api.domain.NewsSentimentLabel;
@@ -26,13 +25,12 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.textfield.TextFieldVariant;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.theme.lumo.LumoUtility;
-import java.util.Comparator;
-import java.util.function.Function;
-
 import tools.jackson.databind.ObjectMapper;
 
+import java.util.Comparator;
 import java.util.Locale;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * Shared UI utilities for Oraculum views.
@@ -209,6 +207,66 @@ public final class ViewHelper {
     }
 
     /**
+     * Creates a header component with an info icon and tooltip explanation.
+     */
+    public static Component createExplainedHeader(String title, String explanation) {
+        Span container = new Span();
+        container.getStyle().set("display", "inline-flex").set("align-items", "center").set("gap", "4px");
+        Span titleSpan = new Span(title);
+        com.vaadin.flow.component.icon.Icon infoIcon = VaadinIcon.INFO_CIRCLE_O.create();
+        infoIcon.getStyle().set("width", "14px").set("height", "14px").set("color", "var(--lumo-secondary-text-color)");
+        infoIcon.setTooltipText(explanation);
+        container.add(titleSpan, infoIcon);
+        return container;
+    }
+
+    /**
+     * Formats large numbers compactly ($654.0M, $1.25B, $2.10T).
+     */
+    public static String formatCompact(Number value) {
+        if (value == null) return "-";
+        double d = value.doubleValue();
+        double abs = Math.abs(d);
+        if (abs >= 1_000_000_000_000.0) return String.format(Locale.US, "$%.2fT", d / 1e12);
+        if (abs >= 1_000_000_000.0) return String.format(Locale.US, "$%.2fB", d / 1e9);
+        if (abs >= 1_000_000.0) return String.format(Locale.US, "$%.1fM", d / 1e6);
+        if (abs >= 1_000.0) return String.format(Locale.US, "$%.1fK", d / 1e3);
+        return String.format(Locale.US, "$%.0f", d);
+    }
+
+    /**
+     * Formats compact numbers without currency symbol (654.0M, 1.25B).
+     */
+    public static String formatCompactNumber(Number value) {
+        if (value == null) return "-";
+        double d = value.doubleValue();
+        double abs = Math.abs(d);
+        if (abs >= 1_000_000_000_000.0) return String.format(Locale.US, "%.2fT", d / 1e12);
+        if (abs >= 1_000_000_000.0) return String.format(Locale.US, "%.2fB", d / 1e9);
+        if (abs >= 1_000_000.0) return String.format(Locale.US, "%.1fM", d / 1e6);
+        if (abs >= 1_000.0) return String.format(Locale.US, "%.1fK", d / 1e3);
+        return String.format(Locale.US, "%.0f", d);
+    }
+
+    /**
+     * Creates a color-coded percentage delta Span (+2.5% green, -1.2% red).
+     */
+    public static Span deltaSpan(Float value) {
+        if (value == null) return new Span("-");
+        float pct = value >= 1.0f || value <= -1.0f ? value : value * 100;
+        Span s = new Span(String.format(Locale.US, "%+.2f%%", pct));
+        if (pct > 0) {
+            s.addClassName(LumoUtility.TextColor.SUCCESS);
+        } else if (pct < 0) {
+            s.addClassName(LumoUtility.TextColor.ERROR);
+        } else {
+            s.addClassName(LumoUtility.TextColor.SECONDARY);
+        }
+        s.addClassName(LumoUtility.FontWeight.MEDIUM);
+        return s;
+    }
+
+    /**
      * Creates a color-coded price change percentage Span (+2.5% green, -1.2% red).
      */
     public static Span priceChangeSpan(Float changePct) {
@@ -290,9 +348,15 @@ public final class ViewHelper {
             CompanyDto company = companyMetadataApi.getCompanyById(companyId);
             if (company != null) {
                 Dialog dialog = new Dialog();
+                dialog.setHeaderTitle(company.companyName() + " (" + company.ticker() + ")");
                 dialog.setWidth("90vw");
                 dialog.setHeight("90vh");
                 dialog.add(new CompanyOverviewComponent(companyFinancialDataApi, companySharePriceApi, companyNewsApi, companyInsiderTransactionApi, companyValuationApi, company, objectMapper));
+
+                Button headerCloseBtn = new Button(VaadinIcon.CLOSE.create(), _ -> dialog.close());
+                headerCloseBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_ICON);
+                headerCloseBtn.setAriaLabel("Close dialog");
+                dialog.getHeader().add(headerCloseBtn);
 
                 Button closeBtn = new Button("Close", _ -> dialog.close());
                 closeBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);

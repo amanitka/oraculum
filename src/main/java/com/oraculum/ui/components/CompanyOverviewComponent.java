@@ -47,6 +47,7 @@ public class CompanyOverviewComponent extends VerticalLayout {
     private final ObjectMapper objectMapper;
     private final Div chartPlaceholder;
     private ComboBox<String> timeframeComboBox;
+    private HorizontalLayout priceSummaryBar;
 
     public CompanyOverviewComponent(CompanyFinancialDataApi companyFinancialDataApi,
                                     CompanySharePriceApi companySharePriceApi,
@@ -104,17 +105,18 @@ public class CompanyOverviewComponent extends VerticalLayout {
 
         add(mainTabSheet);
 
-        // Load chart data once component is attached to DOM to fix initial width rendering bug
-        addAttachListener(_ -> loadChartData());
+        // Load chart and summary data once component is attached to DOM to fix initial width rendering bug
+        addAttachListener(_ -> {
+            loadPriceSummary();
+            loadChartData();
+        });
     }
 
     private Component createHeader() {
         HorizontalLayout header = new HorizontalLayout();
         header.setWidthFull();
         header.setAlignItems(FlexComponent.Alignment.BASELINE);
-
-        H3 name = new H3(company.companyName() + " (" + company.ticker() + ")");
-        name.getStyle().set("margin", "0");
+        header.getStyle().set("margin-top", "0.5rem");
 
         Span industry = new Span(company.industryName() != null ? company.industryName() : company.industryId());
         industry.getElement().getThemeList().addAll(List.of("badge", "contrast"));
@@ -122,7 +124,20 @@ public class CompanyOverviewComponent extends VerticalLayout {
         Span sector = new Span(company.sectorName());
         sector.getElement().getThemeList().addAll(List.of("badge", "contrast"));
 
-        header.add(name, industry, sector);
+        header.add(industry, sector);
+        
+        if (company.market() != null) {
+            Span market = new Span(company.market());
+            market.getElement().getThemeList().addAll(List.of("badge", "primary"));
+            header.add(market);
+        }
+
+        if (company.currency() != null) {
+            Span currency = new Span(company.currency());
+            currency.getElement().getThemeList().addAll(List.of("badge", "success"));
+            header.add(currency);
+        }
+
         return header;
     }
 
@@ -130,6 +145,15 @@ public class CompanyOverviewComponent extends VerticalLayout {
         VerticalLayout layout = new VerticalLayout();
         layout.setWidthFull();
         layout.setPadding(true);
+
+        priceSummaryBar = new HorizontalLayout();
+        priceSummaryBar.setWidthFull();
+        priceSummaryBar.setJustifyContentMode(FlexComponent.JustifyContentMode.AROUND);
+        priceSummaryBar.getStyle().set("padding", "1rem");
+        priceSummaryBar.getStyle().set("background-color", "var(--lumo-contrast-5pct)");
+        priceSummaryBar.getStyle().set("border-radius", "8px");
+        priceSummaryBar.getStyle().set("margin-bottom", "1rem");
+        layout.add(priceSummaryBar);
 
         HorizontalLayout chartHeader = new HorizontalLayout();
         chartHeader.setWidthFull();
@@ -304,6 +328,10 @@ public class CompanyOverviewComponent extends VerticalLayout {
                 return String.valueOf(num.longValue());
             }
 
+            if (Math.abs(d) >= 1_000_000.0) {
+                return ViewHelper.formatCompactNumber(num);
+            }
+
             if (Math.abs(d) < 1000 && d != Math.floor(d)) {
                 return String.format(java.util.Locale.US, "%,.2f", d);
             } else {
@@ -334,6 +362,10 @@ public class CompanyOverviewComponent extends VerticalLayout {
                 }
             }
         }
+
+        allKeys.removeIf(k -> k.equalsIgnoreCase("id") || k.equalsIgnoreCase("simfin_id")
+                           || k.equalsIgnoreCase("simfin id") || k.equalsIgnoreCase("simfinid")
+                           || k.equalsIgnoreCase("company_id") || k.equalsIgnoreCase("company id"));
 
         String[] priorityKeys = {"Report Date", "Fiscal Year", "Fiscal Period", "Currency", "Ticker"};
         for (String pk : priorityKeys) {
@@ -506,6 +538,72 @@ public class CompanyOverviewComponent extends VerticalLayout {
                         "setTimeout(() => window.dispatchEvent(new Event('resize')), 600);")
         );
     }
+    
+    private void loadPriceSummary() {
+        List<SharePriceDto> allPrices = companySharePriceApi.getSharePricesByCompanyId(company.id(), LocalDate.now().minusDays(500));
+        if (allPrices.isEmpty()) return;
+
+        List<SharePriceDto> sortedPrices = new ArrayList<>(allPrices);
+        sortedPrices.sort(Comparator.comparing(SharePriceDto::tradeDate));
+
+        SharePriceDto latest = sortedPrices.getLast();
+        
+        SharePriceDto prevDay = sortedPrices.size() > 1 ? sortedPrices.get(sortedPrices.size() - 2) : latest;
+        float change1D = (latest.close() - prevDay.close()) / prevDay.close() * 100f;
+
+        LocalDate oneYearAgo = latest.tradeDate().minusYears(1);
+        SharePriceDto yearAgoPrice = sortedPrices.stream()
+                .filter(p -> !p.tradeDate().isBefore(oneYearAgo))
+                .findFirst()
+                .orElse(sortedPrices.getFirst());
+        float change1Y = (latest.close() - yearAgoPrice.close()) / yearAgoPrice.close() * 100f;
+
+        double sma50 = sortedPrices.stream().skip(Math.max(0, sortedPrices.size() - 50))
+                .mapToDouble(SharePriceDto::close).average().orElse(latest.close());
+        float vsSma50 = (float) ((latest.close() - sma50) / sma50 * 100.0);
+
+        double sma200 = sortedPrices.stream().skip(Math.max(0, sortedPrices.size() - 200))
+                .mapToDouble(SharePriceDto::close).average().orElse(latest.close());
+        float vsSma200 = (float) ((latest.close() - sma200) / sma200 * 100.0);
+
+        priceSummaryBar.removeAll();
+        priceSummaryBar.add(createPriceSummaryItem("Latest Price", String.format(java.util.Locale.US, "$%.2f", latest.close()), null));
+        priceSummaryBar.add(createPriceSummaryItem("1D Change", String.format(java.util.Locale.US, "%.2f%%", Math.abs(change1D)), change1D));
+        priceSummaryBar.add(createPriceSummaryItem("1Y Change", String.format(java.util.Locale.US, "%.2f%%", Math.abs(change1Y)), change1Y));
+        priceSummaryBar.add(createPriceSummaryItem("vs 50D SMA", String.format(java.util.Locale.US, "%.2f%%", Math.abs(vsSma50)), vsSma50));
+        priceSummaryBar.add(createPriceSummaryItem("vs 200D SMA", String.format(java.util.Locale.US, "%.2f%%", Math.abs(vsSma200)), vsSma200));
+    }
+
+    private Component createPriceSummaryItem(String label, String value, Float delta) {
+        VerticalLayout item = new VerticalLayout();
+        item.setPadding(false);
+        item.setSpacing(false);
+        item.setDefaultHorizontalComponentAlignment(FlexComponent.Alignment.CENTER);
+
+        Span lblSpan = new Span(label);
+        lblSpan.getStyle().set("font-size", "var(--lumo-font-size-xs)")
+               .set("color", "var(--lumo-secondary-text-color)")
+               .set("text-transform", "uppercase");
+
+        HorizontalLayout valLayout = new HorizontalLayout();
+        valLayout.setAlignItems(FlexComponent.Alignment.CENTER);
+        valLayout.setSpacing(true);
+
+        Span valSpan = new Span(value);
+        valSpan.getStyle().set("font-weight", "bold").set("font-size", "var(--lumo-font-size-l)");
+
+        if (delta != null) {
+            com.vaadin.flow.component.icon.Icon icon = delta >= 0 ? com.vaadin.flow.component.icon.VaadinIcon.ARROW_UP.create() : com.vaadin.flow.component.icon.VaadinIcon.ARROW_DOWN.create();
+            icon.setSize("14px");
+            icon.setColor(delta >= 0 ? "var(--lumo-success-text-color)" : "var(--lumo-error-text-color)");
+            valSpan.getStyle().set("color", delta >= 0 ? "var(--lumo-success-text-color)" : "var(--lumo-error-text-color)");
+            valLayout.add(icon);
+        }
+
+        valLayout.add(valSpan);
+        item.add(lblSpan, valLayout);
+        return item;
+    }
 
     private Component createValuationLayout() {
         VerticalLayout layout = new VerticalLayout();
@@ -564,14 +662,20 @@ public class CompanyOverviewComponent extends VerticalLayout {
             grid.addColumn(item -> formatFloat(item.avg10y())).setHeader("10Y Average").setAutoWidth(true);
 
             grid.addColumn(new ComponentRenderer<>(item -> {
-                Span badge = new Span(String.format("%d%%", item.percentile10y()));
+                Span badge = new Span(item.percentile10y() != null ? String.format("%d%%", item.percentile10y()) : "-");
                 if (item.percentile10y() != null) {
-                    if (item.percentile10y() > 80) {
-                        badge.getElement().getThemeList().addAll(List.of("badge", "error"));
-                    } else if (item.percentile10y() < 30) {
-                        badge.getElement().getThemeList().addAll(List.of("badge", "success"));
+                    badge.getElement().getThemeList().add("badge");
+                    int p = item.percentile10y();
+                    if (p > 70) {
+                        // Heatmap red (expensive)
+                        badge.getStyle().set("background-color", "rgba(220, 38, 38, 0.2)");
+                        badge.getStyle().set("color", "var(--lumo-error-text-color)");
+                    } else if (p < 30) {
+                        // Heatmap green (cheap)
+                        badge.getStyle().set("background-color", "rgba(22, 163, 74, 0.2)");
+                        badge.getStyle().set("color", "var(--lumo-success-text-color)");
                     } else {
-                        badge.getElement().getThemeList().addAll(List.of("badge", "contrast"));
+                        badge.getElement().getThemeList().add("contrast");
                     }
                 }
                 return badge;

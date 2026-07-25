@@ -23,6 +23,12 @@ import com.vaadin.flow.router.RouterLayout;
 import com.vaadin.flow.router.RouterLink;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.dialog.Dialog;
+import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+
 import com.oraculum.analyst.api.AnalysisUsageApi;
 import com.oraculum.analyst.api.dto.UserAnalysisUsage;
 import com.vaadin.flow.component.html.Span;
@@ -179,10 +185,63 @@ public class MainLayout extends AppLayout implements RouterLayout, AfterNavigati
                     avatarWrapper, userDetails, usage,
                     userManagementApi, harvesterBatchApi, eventPublisher, companyMetadataApi);
 
-            rightGroup.add(avatarWrapper);
+            // Add Glossary Button
+            Button glossaryBtn = new Button(VaadinIcon.QUESTION_CIRCLE_O.create());
+            glossaryBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_ICON);
+            glossaryBtn.setTooltipText("Glossary & Help");
+            glossaryBtn.addClickListener(_ -> openGlossary());
+            glossaryBtn.getStyle().set("margin-right", "1rem");
+
+            rightGroup.add(glossaryBtn, avatarWrapper);
         });
 
         return rightGroup;
+    }
+
+    private void openGlossary() {
+        Dialog dialog = new Dialog();
+        dialog.setHeaderTitle("Financial Glossary");
+        dialog.setWidth("600px");
+        
+        VerticalLayout layout = new VerticalLayout();
+        layout.setPadding(true);
+        layout.setSpacing(false);
+        
+        layout.add(createGlossaryItem("Ranks & Scores", null));
+        layout.add(createGlossaryItem("Q-Rank (Quality)", "Percentile rank (0-100) comparing a company's profitability and balance sheet strength against its sector."));
+        layout.add(createGlossaryItem("V-Rank (Value)", "Percentile rank (0-100) comparing a company's valuation multiples (P/E, EV/EBITDA, P/FCF) against its sector."));
+        layout.add(createGlossaryItem("F-Rank (Financial Trend)", "Percentile rank (0-100) comparing a company's fundamental improvement against its sector."));
+        layout.add(createGlossaryItem("Trend Score", "Absolute score (0-9) measuring fundamental business improvements (profitability, leverage, liquidity) based on the Piotroski F-Score methodology."));
+        
+        layout.add(createGlossaryItem("Market Metrics", null));
+        layout.add(createGlossaryItem("Vol Velocity", "Ratio of the current trading volume to the historical average volume. Values > 1.0x indicate higher than normal trading activity."));
+        layout.add(createGlossaryItem("Reverse DCF", "A reverse discounted cash flow analysis that calculates the implied future growth rate currently priced into the stock."));
+        
+        layout.add(createGlossaryItem("Signals", null));
+        layout.add(createGlossaryItem("Screener Signal", "Composite investment signal derived from combined Q-Rank, V-Rank, and F-Rank scores (Strong Buy, Buy, Neutral, Avoid)."));
+        layout.add(createGlossaryItem("News Sentiment", "Aggregated sentiment score from recent financial news coverage."));
+        
+        dialog.add(layout);
+        
+        Button closeBtn = new Button("Close", _ -> dialog.close());
+        closeBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        dialog.getFooter().add(closeBtn);
+        
+        dialog.open();
+    }
+    
+    private Component createGlossaryItem(String term, String desc) {
+        if (desc == null) {
+            com.vaadin.flow.component.html.H4 header = new com.vaadin.flow.component.html.H4(term);
+            header.getStyle().set("margin-top", "1.5rem").set("margin-bottom", "0.5rem").set("color", "var(--lumo-primary-text-color)");
+            return header;
+        }
+        Span termSpan = new Span(term + ": ");
+        termSpan.getStyle().set("font-weight", "600");
+        Span descSpan = new Span(desc);
+        com.vaadin.flow.component.html.Paragraph p = new com.vaadin.flow.component.html.Paragraph(termSpan, descSpan);
+        p.getStyle().set("margin-top", "0.2rem").set("margin-bottom", "0.4rem").set("line-height", "1.5").set("color", "var(--lumo-secondary-text-color)");
+        return p;
     }
 
     @Override

@@ -110,7 +110,7 @@ public class MarketMapView extends VerticalLayout {
         Tabs tabs = new Tabs(treemapTab, tableTab);
 
         List<String> availableMarkets = getAvailableMarkets(companies);
-        String defaultMarket = availableMarkets.contains("US") ? "US" : (availableMarkets.isEmpty() ? "US" : availableMarkets.get(0));
+        String defaultMarket = availableMarkets.contains("US") ? "US" : (availableMarkets.isEmpty() ? "US" : availableMarkets.getFirst());
 
         ComboBox<String> marketSelect = new ComboBox<>();
         marketSelect.setPlaceholder("Market");
@@ -185,7 +185,7 @@ public class MarketMapView extends VerticalLayout {
         grid.addColumn(CompanyOverviewDto::sectorName).setHeader("Sector").setAutoWidth(true).setKey("sector").setSortable(true);
         grid.addColumn(CompanyOverviewDto::industryName).setHeader("Industry").setAutoWidth(true).setKey("industry").setSortable(true);
 
-        grid.addColumn(c -> c.marketCapitalization() != null ? String.format(Locale.US, "%s%.2fB", ViewHelper.getCurrencySymbol(c.currency(), c.market()), c.marketCapitalization() / 1_000_000_000f) : "-")
+        grid.addColumn(c -> ViewHelper.formatCompact(c.marketCapitalization()))
                 .setHeader("Market Cap").setWidth("130px").setFlexGrow(0).setSortable(true)
                 .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::marketCapitalization));
 
@@ -210,10 +210,13 @@ public class MarketMapView extends VerticalLayout {
                 .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::pctFrom200dMa));
 
         grid.addColumn(item -> item.volumeVelocity() != null ? String.format(Locale.US, "%.2fx", item.volumeVelocity()) : "-")
-                .setHeader("Vol Velocity").setWidth("120px").setFlexGrow(0).setSortable(true)
+                .setHeader(ViewHelper.createExplainedHeader("Vol Velocity", "Volume Velocity. Ratio of recent trading volume to historical average."))
+                .setWidth("120px").setFlexGrow(0).setSortable(true)
                 .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::volumeVelocity));
 
-        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.qualitySpan(item.qualityScore()))).setHeader("Quality").setWidth("110px").setFlexGrow(0).setSortable(true)
+        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.qualitySpan(item.qualityScore())))
+                .setHeader(ViewHelper.createExplainedHeader("Quality", "Quality Score (0-100). Higher is better. Based on profitability and balance sheet strength."))
+                .setWidth("110px").setFlexGrow(0).setSortable(true)
                 .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::qualityScore));
 
         grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.signalBadge(item.compositeSignal()))).setHeader("Signal").setWidth("130px").setFlexGrow(0).setSortable(true)
@@ -302,6 +305,7 @@ public class MarketMapView extends VerticalLayout {
         CompanyDto company = companyMetadataApi.getCompanyById(companyId);
         if (company != null) {
             Dialog dialog = new Dialog();
+            dialog.setHeaderTitle(company.companyName() + " (" + company.ticker() + ")");
             dialog.setWidth("90vw");
             dialog.setHeight("90vh");
             dialog.add(new CompanyOverviewComponent(
@@ -313,6 +317,11 @@ public class MarketMapView extends VerticalLayout {
                     company,
                     objectMapper
             ));
+
+            Button headerCloseBtn = new Button(VaadinIcon.CLOSE.create(), _ -> dialog.close());
+            headerCloseBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_ICON);
+            headerCloseBtn.setAriaLabel("Close dialog");
+            dialog.getHeader().add(headerCloseBtn);
 
             Button closeBtn = new Button("Close", _ -> dialog.close());
             closeBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -477,7 +486,7 @@ public class MarketMapView extends VerticalLayout {
                 .collect(Collectors.toList());
         if (distinct.contains("US")) {
             distinct.remove("US");
-            distinct.add(0, "US");
+            distinct.addFirst("US");
         }
         return distinct.isEmpty() ? List.of("US") : distinct;
     }
