@@ -125,9 +125,9 @@ public class CompanyOverviewComponent extends VerticalLayout {
         sector.getElement().getThemeList().addAll(List.of("badge", "contrast"));
 
         header.add(industry, sector);
-        
+
         if (company.market() != null) {
-            Span market = new Span(company.market());
+            Span market = new Span(company.market().toUpperCase(java.util.Locale.US));
             market.getElement().getThemeList().addAll(List.of("badge", "primary"));
             header.add(market);
         }
@@ -180,7 +180,8 @@ public class CompanyOverviewComponent extends VerticalLayout {
     private Component createRatiosLayout() {
         // Fetch data
         List<CompanyFinancialRatiosDto> data = companyFinancialDataApi.getCompanyFinancialRatiosByCompanyId(company.id(), LocalDate.now().minusYears(20));
-        return createVariantTabSheet(data, this::createRatiosGrid);
+        List<IndustryFinancialRatiosDto> industryData = companyFinancialDataApi.getIndustryFinancialRatiosByIndustryName(company.industryName());
+        return createRatiosTabSheet(data, industryData);
     }
 
     private Component createIncomeStatementLayout() {
@@ -364,8 +365,8 @@ public class CompanyOverviewComponent extends VerticalLayout {
         }
 
         allKeys.removeIf(k -> k.equalsIgnoreCase("id") || k.equalsIgnoreCase("simfin_id")
-                           || k.equalsIgnoreCase("simfin id") || k.equalsIgnoreCase("simfinid")
-                           || k.equalsIgnoreCase("company_id") || k.equalsIgnoreCase("company id"));
+                || k.equalsIgnoreCase("simfin id") || k.equalsIgnoreCase("simfinid")
+                || k.equalsIgnoreCase("company_id") || k.equalsIgnoreCase("company id"));
 
         String[] priorityKeys = {"Report Date", "Fiscal Year", "Fiscal Period", "Currency", "Ticker"};
         for (String pk : priorityKeys) {
@@ -391,17 +392,25 @@ public class CompanyOverviewComponent extends VerticalLayout {
         grid.addColumn(CompanyFinancialRatiosDto::reportDate).setHeader("Report Date").setSortable(true).setAutoWidth(true);
         grid.addColumn(CompanyFinancialRatiosDto::financialTrendScore).setHeader("Trend Score").setSortable(true).setAutoWidth(true);
         grid.addColumn(new com.vaadin.flow.data.renderer.ComponentRenderer<>(item -> ViewHelper.qualitySpan(item.qualityScore()))).setHeader("Quality").setSortable(true).setAutoWidth(true);
-        
+
         grid.addColumn(item -> item.returnOnEquity() != null ? String.format(java.util.Locale.US, "%.2f%%", item.returnOnEquity() * 100) : "-")
                 .setHeader("ROE").setSortable(true).setAutoWidth(true);
         grid.addColumn(item -> item.grossMargin() != null ? String.format(java.util.Locale.US, "%.2f%%", item.grossMargin() * 100) : "-")
                 .setHeader("Gross Margin").setSortable(true).setAutoWidth(true);
         grid.addColumn(item -> item.netMargin() != null ? String.format(java.util.Locale.US, "%.2f%%", item.netMargin() * 100) : "-")
                 .setHeader("Net Margin").setSortable(true).setAutoWidth(true);
+        grid.addColumn(item -> item.operatingMargin() != null ? String.format(java.util.Locale.US, "%.2f%%", item.operatingMargin() * 100) : "-")
+                .setHeader("Operating Margin").setSortable(true).setAutoWidth(true);
+        grid.addColumn(item -> item.fcfMargin() != null ? String.format(java.util.Locale.US, "%.2f%%", item.fcfMargin() * 100) : "-")
+                .setHeader("FCF Margin").setSortable(true).setAutoWidth(true);
         grid.addColumn(item -> item.revenueYoyGrowth() != null ? String.format(java.util.Locale.US, "%.2f%%", item.revenueYoyGrowth() * 100) : "-")
                 .setHeader("Rev Growth (YoY)").setSortable(true).setAutoWidth(true);
         grid.addColumn(item -> item.quickRatio() != null ? String.format(java.util.Locale.US, "%.2fx", item.quickRatio()) : "-")
                 .setHeader("Quick Ratio").setSortable(true).setAutoWidth(true);
+        grid.addColumn(item -> item.currentRatio() != null ? String.format(java.util.Locale.US, "%.2fx", item.currentRatio()) : "-")
+                .setHeader("Current Ratio").setSortable(true).setAutoWidth(true);
+        grid.addColumn(item -> item.debtToEquity() != null ? String.format(java.util.Locale.US, "%.2fx", item.debtToEquity()) : "-")
+                .setHeader("Debt to Equity").setSortable(true).setAutoWidth(true);
 
         grid.setItems(items.stream().sorted(Comparator.comparing(CompanyFinancialRatiosDto::reportDate).reversed()).collect(Collectors.toList()));
         return grid;
@@ -452,7 +461,7 @@ public class CompanyOverviewComponent extends VerticalLayout {
 
     private <T> Component createGridContainer(List<T> items, java.util.function.Function<List<T>, Component> gridCreator) {
         VerticalLayout layout = new VerticalLayout();
-        layout.setWidthFull(); 
+        layout.setWidthFull();
         layout.setPadding(true);
         if (items.isEmpty()) {
             layout.add(new Span("No records found for this timeframe."));
@@ -465,6 +474,160 @@ public class CompanyOverviewComponent extends VerticalLayout {
             layout.add(grid);
         }
         return layout;
+    }
+
+    private Component createRatiosTabSheet(List<CompanyFinancialRatiosDto> allData, List<IndustryFinancialRatiosDto> industryData) {
+        if (allData == null || allData.isEmpty()) {
+            return new Span("No data available.");
+        }
+        TabSheet variantTabs = new TabSheet();
+        variantTabs.setSizeFull();
+
+        List<CompanyFinancialRatiosDto> annual = new ArrayList<>();
+        List<CompanyFinancialRatiosDto> quarterly = new ArrayList<>();
+        List<CompanyFinancialRatiosDto> ttm = new ArrayList<>();
+
+        for (CompanyFinancialRatiosDto item : allData) {
+            StatementVariant variant = item.variant();
+            if (StatementVariant.ANNUAL.equals(variant)) annual.add(item);
+            else if (StatementVariant.QUARTERLY.equals(variant)) quarterly.add(item);
+            else if (StatementVariant.TTM.equals(variant)) ttm.add(item);
+        }
+
+        variantTabs.add("Annual", createRatiosGridContainer(annual, getIndustryDto(industryData, StatementVariant.ANNUAL)));
+        variantTabs.add("Quarterly", createRatiosGridContainer(quarterly, getIndustryDto(industryData, StatementVariant.QUARTERLY)));
+        variantTabs.add("TTM", createRatiosGridContainer(ttm, getIndustryDto(industryData, StatementVariant.TTM)));
+
+        return variantTabs;
+    }
+
+    private IndustryFinancialRatiosDto getIndustryDto(List<IndustryFinancialRatiosDto> list, StatementVariant variant) {
+        if (list == null) return null;
+        return list.stream().filter(i -> variant.equals(i.variant())).findFirst().orElse(null);
+    }
+
+    private Component createRatiosGridContainer(List<CompanyFinancialRatiosDto> items, IndustryFinancialRatiosDto industryDto) {
+        VerticalLayout layout = new VerticalLayout();
+        layout.setWidthFull();
+        layout.setPadding(true);
+        if (items.isEmpty()) {
+            layout.add(new Span("No records found for this timeframe."));
+            return layout;
+        }
+
+        if (industryDto != null) {
+            items.stream().max(Comparator.comparing(CompanyFinancialRatiosDto::reportDate)).ifPresent(latest -> layout.add(createIndustryComparison(latest, industryDto)));
+        }
+
+        Grid<CompanyFinancialRatiosDto> grid = createRatiosGrid(items);
+        grid.setWidthFull();
+        grid.setHeight("600px");
+        layout.add(grid);
+
+        return layout;
+    }
+
+    private Component createIndustryComparison(CompanyFinancialRatiosDto latest, IndustryFinancialRatiosDto industry) {
+        VerticalLayout container = new VerticalLayout();
+        container.setWidthFull();
+        container.setPadding(false);
+
+        H3 header = new H3("Industry Comparison (Latest: " + latest.reportDate() + " vs " + industry.industryName() + " Avg)");
+        header.getStyle().set("margin-top", "0").set("margin-bottom", "1rem").set("font-size", "1.1rem");
+
+        HorizontalLayout cardsLayout = new HorizontalLayout();
+        cardsLayout.setWidthFull();
+        cardsLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.AROUND);
+        cardsLayout.getStyle()
+                .set("background-color", "var(--lumo-contrast-5pct)")
+                .set("padding", "1rem")
+                .set("border-radius", "8px")
+                .set("margin-bottom", "0.5rem");
+
+        cardsLayout.add(
+                createRatioComparisonCard("ROE", latest.returnOnEquity(), industry.returnOnEquity(), true, false),
+                createRatioComparisonCard("Gross Margin", latest.grossMargin(), industry.grossMargin(), true, false),
+                createRatioComparisonCard("Net Margin", latest.netMargin(), industry.netMargin(), true, false),
+                createRatioComparisonCard("Operating Margin", latest.operatingMargin(), industry.operatingMargin(), true, false),
+                createRatioComparisonCard("FCF Margin", latest.fcfMargin(), industry.fcfMargin(), true, false)
+        );
+
+        HorizontalLayout cardsLayout2 = new HorizontalLayout();
+        cardsLayout2.setWidthFull();
+        cardsLayout2.setJustifyContentMode(FlexComponent.JustifyContentMode.AROUND);
+        cardsLayout2.getStyle()
+                .set("background-color", "var(--lumo-contrast-5pct)")
+                .set("padding", "1rem")
+                .set("border-radius", "8px")
+                .set("margin-bottom", "1.5rem");
+
+        cardsLayout2.add(
+                createRatioComparisonCard("Current Ratio", latest.currentRatio(), industry.currentRatio(), false, false),
+                createRatioComparisonCard("Debt to Equity", latest.debtToEquity(), industry.debtToEquity(), false, true),
+                createRatioComparisonCard("Rev Growth (YoY)", latest.revenueYoyGrowth(), industry.revenueYoyGrowth(), true, false)
+        );
+
+        container.add(header, cardsLayout, cardsLayout2);
+        return container;
+    }
+
+    private Component createRatioComparisonCard(String title, Float compVal, Float indVal, boolean isPercent, boolean lowerIsBetter) {
+        VerticalLayout card = new VerticalLayout();
+        card.addClassName("metric-card");
+        card.setPadding(false);
+        card.setSpacing(false);
+        card.setAlignItems(FlexComponent.Alignment.CENTER);
+
+        Span lblSpan = new Span(title);
+        lblSpan.getStyle()
+                .set("font-size", "var(--lumo-font-size-xs)")
+                .set("color", "var(--lumo-secondary-text-color)")
+                .set("text-transform", "uppercase")
+                .set("letter-spacing", "0.05em");
+
+        String formatStr = isPercent ? "%.2f%%" : "%.2fx";
+        float mult = isPercent ? 100f : 1f;
+
+        String compStr = compVal != null ? String.format(java.util.Locale.US, formatStr, compVal * mult) : "-";
+        String indStr = indVal != null ? String.format(java.util.Locale.US, formatStr, indVal * mult) : "-";
+
+        Span valSpan = new Span(compStr);
+        valSpan.getStyle()
+                .set("font-size", "var(--lumo-font-size-xl)")
+                .set("font-weight", "bold")
+                .set("color", "var(--lumo-header-text-color)");
+
+        Span indSpan = new Span("Ind: " + indStr);
+        indSpan.getStyle()
+                .set("font-size", "var(--lumo-font-size-s)")
+                .set("color", "var(--lumo-secondary-text-color)");
+
+        HorizontalLayout valLayout = new HorizontalLayout(valSpan);
+        valLayout.setAlignItems(FlexComponent.Alignment.CENTER);
+        valLayout.setSpacing(true);
+
+        if (compVal != null && indVal != null) {
+            float diff = compVal - indVal;
+            boolean isBetter = lowerIsBetter ? (diff < 0) : (diff > 0);
+
+            Span diffBadge = new Span();
+            diffBadge.getElement().getThemeList().add("badge");
+            diffBadge.getStyle().set("font-size", "0.75rem");
+
+            String diffFormatStr = isPercent ? "%+.2f%%" : "%+.2fx";
+            String diffStr = String.format(java.util.Locale.US, diffFormatStr, diff * mult);
+            diffBadge.setText(diffStr);
+
+            if (isBetter) {
+                diffBadge.getElement().getThemeList().add("success");
+            } else {
+                diffBadge.getElement().getThemeList().add("error");
+            }
+            valLayout.add(diffBadge);
+        }
+
+        card.add(lblSpan, valLayout, indSpan);
+        return card;
     }
 
     private void loadChartData() {
@@ -538,7 +701,7 @@ public class CompanyOverviewComponent extends VerticalLayout {
                         "setTimeout(() => window.dispatchEvent(new Event('resize')), 600);")
         );
     }
-    
+
     private void loadPriceSummary() {
         List<SharePriceDto> allPrices = companySharePriceApi.getSharePricesByCompanyId(company.id(), LocalDate.now().minusDays(500));
         if (allPrices.isEmpty()) return;
@@ -547,7 +710,7 @@ public class CompanyOverviewComponent extends VerticalLayout {
         sortedPrices.sort(Comparator.comparing(SharePriceDto::tradeDate));
 
         SharePriceDto latest = sortedPrices.getLast();
-        
+
         SharePriceDto prevDay = sortedPrices.size() > 1 ? sortedPrices.get(sortedPrices.size() - 2) : latest;
         float change1D = (latest.close() - prevDay.close()) / prevDay.close() * 100f;
 
@@ -582,8 +745,8 @@ public class CompanyOverviewComponent extends VerticalLayout {
 
         Span lblSpan = new Span(label);
         lblSpan.getStyle().set("font-size", "var(--lumo-font-size-xs)")
-               .set("color", "var(--lumo-secondary-text-color)")
-               .set("text-transform", "uppercase");
+                .set("color", "var(--lumo-secondary-text-color)")
+                .set("text-transform", "uppercase");
 
         HorizontalLayout valLayout = new HorizontalLayout();
         valLayout.setAlignItems(FlexComponent.Alignment.CENTER);
