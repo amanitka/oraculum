@@ -148,11 +148,11 @@ public class CompanyOverviewComponent extends VerticalLayout {
 
         priceSummaryBar = new HorizontalLayout();
         priceSummaryBar.setWidthFull();
-        priceSummaryBar.setJustifyContentMode(FlexComponent.JustifyContentMode.AROUND);
-        priceSummaryBar.getStyle().set("padding", "1rem");
-        priceSummaryBar.getStyle().set("background-color", "var(--lumo-contrast-5pct)");
-        priceSummaryBar.getStyle().set("border-radius", "8px");
-        priceSummaryBar.getStyle().set("margin-bottom", "1rem");
+        priceSummaryBar.setJustifyContentMode(FlexComponent.JustifyContentMode.START);
+        priceSummaryBar.getStyle()
+                .set("margin-bottom", "1.5rem")
+                .set("flex-wrap", "wrap")
+                .set("gap", "1.5rem");
         layout.add(priceSummaryBar);
 
         HorizontalLayout chartHeader = new HorizontalLayout();
@@ -537,44 +537,35 @@ public class CompanyOverviewComponent extends VerticalLayout {
 
         HorizontalLayout cardsLayout = new HorizontalLayout();
         cardsLayout.setWidthFull();
-        cardsLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.AROUND);
+        cardsLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.START);
         cardsLayout.getStyle()
-                .set("background-color", "var(--lumo-contrast-5pct)")
-                .set("padding", "1rem")
-                .set("border-radius", "8px")
-                .set("margin-bottom", "0.5rem");
+                .set("margin-bottom", "1.5rem")
+                .set("flex-wrap", "wrap")
+                .set("gap", "1.5rem");
 
         cardsLayout.add(
                 createRatioComparisonCard("ROE", latest.returnOnEquity(), industry.returnOnEquity(), true, false),
                 createRatioComparisonCard("Gross Margin", latest.grossMargin(), industry.grossMargin(), true, false),
                 createRatioComparisonCard("Net Margin", latest.netMargin(), industry.netMargin(), true, false),
                 createRatioComparisonCard("Operating Margin", latest.operatingMargin(), industry.operatingMargin(), true, false),
-                createRatioComparisonCard("FCF Margin", latest.fcfMargin(), industry.fcfMargin(), true, false)
-        );
-
-        HorizontalLayout cardsLayout2 = new HorizontalLayout();
-        cardsLayout2.setWidthFull();
-        cardsLayout2.setJustifyContentMode(FlexComponent.JustifyContentMode.AROUND);
-        cardsLayout2.getStyle()
-                .set("background-color", "var(--lumo-contrast-5pct)")
-                .set("padding", "1rem")
-                .set("border-radius", "8px")
-                .set("margin-bottom", "1.5rem");
-
-        cardsLayout2.add(
+                createRatioComparisonCard("FCF Margin", latest.fcfMargin(), industry.fcfMargin(), true, false),
                 createRatioComparisonCard("Current Ratio", latest.currentRatio(), industry.currentRatio(), false, false),
                 createRatioComparisonCard("Debt to Equity", latest.debtToEquity(), industry.debtToEquity(), false, true),
                 createRatioComparisonCard("Rev Growth (YoY)", latest.revenueYoyGrowth(), industry.revenueYoyGrowth(), true, false)
         );
 
-        container.add(header, cardsLayout, cardsLayout2);
+        container.add(header, cardsLayout);
         return container;
     }
 
     private Component createRatioComparisonCard(String title, Float compVal, Float indVal, boolean isPercent, boolean lowerIsBetter) {
         VerticalLayout card = new VerticalLayout();
         card.addClassName("metric-card");
-        card.setPadding(false);
+        card.setWidth(null);
+        card.getStyle()
+                .set("flex", "1 1 140px")
+                .set("max-width", "250px");
+        card.setPadding(true);
         card.setSpacing(false);
         card.setAlignItems(FlexComponent.Alignment.CENTER);
 
@@ -739,7 +730,12 @@ public class CompanyOverviewComponent extends VerticalLayout {
 
     private Component createPriceSummaryItem(String label, String value, Float delta) {
         VerticalLayout item = new VerticalLayout();
-        item.setPadding(false);
+        item.addClassName("metric-card");
+        item.setWidth(null);
+        item.getStyle()
+                .set("flex", "1 1 140px")
+                .set("max-width", "250px");
+        item.setPadding(true);
         item.setSpacing(false);
         item.setDefaultHorizontalComponentAlignment(FlexComponent.Alignment.CENTER);
 
