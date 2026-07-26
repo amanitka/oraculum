@@ -42,12 +42,7 @@ public class AgentWorkflowState {
     public Map<AgentType, Object> getSpecialistOutputs() {
         return agentOutputs.entrySet().stream()
                 .filter(e -> e.getKey().isSpecialist())
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey, 
-                        Map.Entry::getValue, 
-                        (v1, v2) -> v1, 
-                        LinkedHashMap::new
-                ));
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     public String getCriticFeedbackFor(AgentType type) {

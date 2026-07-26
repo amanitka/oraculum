@@ -24,7 +24,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.context.ApplicationEventPublisher;
-import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -35,7 +34,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-import org.mockito.Spy;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -56,14 +54,8 @@ class CompanyAnalysisWorkflowServiceTest {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
-    @Spy
-    private ObjectMapper objectMapper = new ObjectMapper();
-
     @Mock
     private CitationIntegrityService citationIntegrityService;
-
-    @Mock
-    private com.oraculum.analyst.agent.document.service.SecDocumentProcessingAgent secDocumentProcessingAgent;
 
     @InjectMocks
     private CompanyAnalysisWorkflowService workflowService;
