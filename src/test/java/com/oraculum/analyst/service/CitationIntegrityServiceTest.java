@@ -37,7 +37,7 @@ class CitationIntegrityServiceTest {
         String report = "FY2027 EPS consensus average $8.99 [309].";
         String result = service.verifyCitations(report, citations);
 
-        assertThat(result).isEqualTo("FY2027 EPS consensus average $8.99 [309 ?].\n\n*Note: Citations marked with [?] contain extrapolated metrics or claims that could not be strictly verified against the raw numerical data.*");
+        assertThat(result).isEqualTo("FY2027 EPS consensus average $8.99 [309 ?].\n\n*Note: Citations marked with [?] contain extrapolated metrics or claims that could not be strictly verified. Citations marked with [!] reference missing or hallucinated sources.*");
     }
 
     @Test
@@ -83,6 +83,6 @@ class CitationIntegrityServiceTest {
         String result = service.verifyCitations(report, citations);
 
         // 8.99 matches 1, but doesn't match 2
-        assertThat(result).isEqualTo("The EPS is 8.99 [1, 2 ?].\n\n*Note: Citations marked with [?] contain extrapolated metrics or claims that could not be strictly verified against the raw numerical data.*");
+        assertThat(result).isEqualTo("The EPS is 8.99 [1, 2 ?].\n\n*Note: Citations marked with [?] contain extrapolated metrics or claims that could not be strictly verified. Citations marked with [!] reference missing or hallucinated sources.*");
     }
 }

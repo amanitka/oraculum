@@ -64,11 +64,13 @@ public class CompanyAnalysisWorkflowService {
         if (rawOutput == null || rawOutput.result() == null) {
             return rawOutput;
         }
-
+        CitationMetrics metrics = new CitationMetrics();
         T verifiedResult = citationIntegrityService.verifyRecordCitations(
                 rawOutput.result(),
-                ctx.state().getCitationRegistry().getCitations()
+                ctx.state().getCitationRegistry().getCitations(),
+                metrics
         );
+        log.info("{} Citation Metrics: {}", agent.getName(), metrics.getSummary());
 
         return new AgentOutput<>(verifiedResult, rawOutput.tokens());
     }

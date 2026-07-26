@@ -24,6 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.context.ApplicationEventPublisher;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -57,14 +58,18 @@ class CompanyAnalysisWorkflowServiceTest {
     @Mock
     private CitationIntegrityService citationIntegrityService;
 
+    @Mock
+    private ObjectMapper objectMapper;
+
     @InjectMocks
     private CompanyAnalysisWorkflowService workflowService;
 
     private CompanyAnalysisRequestEvent request;
 
     @BeforeEach
-    void setUp() {
-        when(citationIntegrityService.verifyRecordCitations(any(), any())).thenAnswer(inv -> inv.getArgument(0));
+    void setUp() throws Exception {
+        when(citationIntegrityService.verifyRecordCitations(any(), any(), any())).thenAnswer(inv -> inv.getArgument(0));
+        when(objectMapper.writeValueAsString(any())).thenReturn("{}");
         UUID correlationId = UUID.randomUUID();
         request = new CompanyAnalysisRequestEvent(
                 correlationId,
