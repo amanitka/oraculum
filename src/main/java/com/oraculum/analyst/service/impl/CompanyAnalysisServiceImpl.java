@@ -1,7 +1,8 @@
 package com.oraculum.analyst.service.impl;
 
-import com.oraculum.analyst.api.dto.CompanyAnalysisDto;
+import com.oraculum.analyst.api.dto.CompanyAnalysisViewDto;
 import com.oraculum.analyst.domain.CompanyAnalysisEntity;
+import com.oraculum.analyst.domain.CompanyAnalysisViewRepository;
 import com.oraculum.analyst.repository.CompanyAnalysisRepository;
 import com.oraculum.analyst.service.CompanyAnalysisService;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ import java.util.UUID;
 public class CompanyAnalysisServiceImpl implements CompanyAnalysisService {
 
     private final CompanyAnalysisRepository companyAnalysisRepository;
+    private final CompanyAnalysisViewRepository companyAnalysisViewRepository;
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -32,9 +34,16 @@ public class CompanyAnalysisServiceImpl implements CompanyAnalysisService {
     }
 
     @Override
-    public Page<CompanyAnalysisDto> getCompanyAnalysisList(Pageable pageable) {
-        return companyAnalysisRepository.findAllByOrderByCreatedAtDesc(pageable)
-                .map(CompanyAnalysisDto::fromEntity);
+    public Page<CompanyAnalysisViewDto> getLatestCompanyAnalyses(Pageable pageable) {
+        return companyAnalysisViewRepository.findByIsLatestTrueOrderByCreatedAtDesc(pageable)
+                .map(CompanyAnalysisViewDto::fromEntity);
     }
 
+    @Override
+    public java.util.List<CompanyAnalysisViewDto> getHistoricalAnalysesByCompanyId(Integer companyId) {
+        return companyAnalysisViewRepository.findByCompanyIdOrderByCreatedAtDesc(companyId)
+                .stream()
+                .map(CompanyAnalysisViewDto::fromEntity)
+                .toList();
+    }
 }

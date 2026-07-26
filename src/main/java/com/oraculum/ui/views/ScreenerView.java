@@ -1,11 +1,12 @@
 package com.oraculum.ui.views;
 
 import com.oraculum.analyst.api.dto.CompanyAnalysisRequest;
-import com.oraculum.company.api.*;
+import com.oraculum.company.api.CompanyScreenerApi;
 import com.oraculum.company.api.domain.CompanySize;
 import com.oraculum.company.api.dto.*;
 import com.oraculum.ui.MainLayout;
 import com.oraculum.ui.ViewHelper;
+import com.oraculum.ui.factory.CompanyDetailsButtonFactory;
 import com.oraculum.ui.service.AnalysisRequestService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -21,15 +22,12 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
-import com.vaadin.flow.data.renderer.NumberRenderer;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteAlias;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
-import tools.jackson.databind.ObjectMapper;
 
-import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.function.Function;
@@ -42,35 +40,20 @@ import java.util.stream.Collectors;
 public class ScreenerView extends VerticalLayout {
 
     private final CompanyScreenerApi companyScreenerApi;
-    private final CompanyMetadataApi companyMetadataApi;
-    private final CompanyFinancialDataApi companyFinancialDataApi;
-    private final CompanySharePriceApi companySharePriceApi;
-    private final CompanyNewsApi companyNewsApi;
-    private final CompanyInsiderTransactionApi companyInsiderTransactionApi;
-    private final CompanyValuationApi companyValuationApi;
+    private final CompanyDetailsButtonFactory companyDetailsButtonFactory;
+    private final com.oraculum.company.api.CompanyNewsApi companyNewsApi;
     private final AnalysisRequestService analysisRequestService;
-    private final ObjectMapper objectMapper;
     private final VerticalLayout gridContainer;
     private final List<CompanyOverviewDto> masterData;
 
     public ScreenerView(CompanyScreenerApi companyScreenerApi,
-                        CompanyMetadataApi companyMetadataApi,
-                        CompanyFinancialDataApi companyFinancialDataApi,
-                        CompanySharePriceApi companySharePriceApi,
-                        CompanyNewsApi companyNewsApi,
-                        CompanyInsiderTransactionApi companyInsiderTransactionApi,
-                        CompanyValuationApi companyValuationApi,
+                        CompanyDetailsButtonFactory companyDetailsButtonFactory,
                         AnalysisRequestService analysisRequestService,
-                        ObjectMapper objectMapper) {
+                        com.oraculum.company.api.CompanyNewsApi companyNewsApi) {
         this.companyScreenerApi = companyScreenerApi;
-        this.companyMetadataApi = companyMetadataApi;
-        this.companyFinancialDataApi = companyFinancialDataApi;
-        this.companySharePriceApi = companySharePriceApi;
-        this.companyNewsApi = companyNewsApi;
-        this.companyInsiderTransactionApi = companyInsiderTransactionApi;
-        this.companyValuationApi = companyValuationApi;
+        this.companyDetailsButtonFactory = companyDetailsButtonFactory;
         this.analysisRequestService = analysisRequestService;
-        this.objectMapper = objectMapper;
+        this.companyNewsApi = companyNewsApi;
         setPadding(true);
         setSpacing(false);
         setSizeFull();
@@ -564,7 +547,7 @@ public class ScreenerView extends VerticalLayout {
     }
 
     private Button createCompanyDetailsButton(int companyId) {
-        return ViewHelper.createCompanyDetailsButton(companyMetadataApi, companyFinancialDataApi, companySharePriceApi, companyNewsApi, companyInsiderTransactionApi, companyValuationApi, objectMapper, companyId, true);
+        return companyDetailsButtonFactory.createButton(companyId, true);
     }
 
     /**

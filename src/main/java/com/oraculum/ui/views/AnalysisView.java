@@ -2,14 +2,16 @@ package com.oraculum.ui.views;
 
 import com.oraculum.analyst.api.CompanyAnalysisApi;
 import com.oraculum.analyst.api.domain.AnalysisStatus;
-import com.oraculum.analyst.api.dto.CompanyAnalysisRequest;
 import com.oraculum.analyst.api.dto.CompanyAnalysisDto;
-import com.oraculum.company.api.*;
+import com.oraculum.analyst.api.dto.CompanyAnalysisRequest;
+import com.oraculum.analyst.api.dto.CompanyAnalysisViewDto;
+import com.oraculum.company.api.CompanyMetadataApi;
 import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.company.api.dto.TickerKeyDto;
 import com.oraculum.ui.MainLayout;
 import com.oraculum.ui.ViewHelper;
 import com.oraculum.ui.api.CompanyAnalysisProgressBroadcasterService;
+import com.oraculum.ui.factory.CompanyDetailsButtonFactory;
 import com.oraculum.ui.service.AnalysisRequestService;
 import com.oraculum.ui.views.components.AnalysisResultRenderer;
 import com.vaadin.flow.component.Component;
@@ -22,6 +24,7 @@ import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.grid.HeaderRow;
 import com.vaadin.flow.component.grid.dataview.GridListDataView;
 import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
@@ -32,14 +35,12 @@ import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
-import tools.jackson.databind.ObjectMapper;
+import jakarta.annotation.security.PermitAll;
 
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
-
-import jakarta.annotation.security.PermitAll;
 
 @Route(value = "analysis", layout = MainLayout.class)
 @PageTitle("Analysis | Oraculum")
@@ -47,41 +48,30 @@ import jakarta.annotation.security.PermitAll;
 public class AnalysisView extends VerticalLayout {
 
     private final CompanyMetadataApi companyMetadataApi;
-    private final CompanyFinancialDataApi companyFinancialDataApi;
-    private final CompanySharePriceApi companySharePriceApi;
-    private final CompanyNewsApi companyNewsApi;
-    private final CompanyInsiderTransactionApi companyInsiderTransactionApi;
+    private final CompanyDetailsButtonFactory companyDetailsButtonFactory;
+
+
     private final CompanyAnalysisApi companyAnalysisApi;
-    private final CompanyValuationApi companyValuationApi;
+
     private final AnalysisRequestService analysisRequestService;
-    private final ObjectMapper objectMapper;
+
     private final CompanyAnalysisProgressBroadcasterService broadcaster;
     private final AnalysisResultRenderer analysisResultRenderer;
     private ComboBox<CompanyDto> companyComboBox;
     private TextArea analysisFocusInput;
-    private Grid<CompanyAnalysisDto> grid;
-    private java.util.List<CompanyAnalysisDto> gridData;
+    private Grid<CompanyAnalysisViewDto> grid;
+    private java.util.List<CompanyAnalysisViewDto> gridData;
 
     public AnalysisView(CompanyMetadataApi companyMetadataApi,
-                        CompanyFinancialDataApi companyFinancialDataApi,
-                        CompanySharePriceApi companySharePriceApi,
-                        CompanyNewsApi companyNewsApi,
-                        CompanyInsiderTransactionApi companyInsiderTransactionApi,
+                        CompanyDetailsButtonFactory companyDetailsButtonFactory,
                         CompanyAnalysisApi companyAnalysisApi,
-                        CompanyValuationApi companyValuationApi,
                         AnalysisRequestService analysisRequestService,
-                        ObjectMapper objectMapper,
                         CompanyAnalysisProgressBroadcasterService broadcaster,
                         AnalysisResultRenderer analysisResultRenderer) {
         this.companyMetadataApi = companyMetadataApi;
-        this.companyFinancialDataApi = companyFinancialDataApi;
-        this.companySharePriceApi = companySharePriceApi;
-        this.companyNewsApi = companyNewsApi;
-        this.companyInsiderTransactionApi = companyInsiderTransactionApi;
+        this.companyDetailsButtonFactory = companyDetailsButtonFactory;
         this.companyAnalysisApi = companyAnalysisApi;
-        this.companyValuationApi = companyValuationApi;
         this.analysisRequestService = analysisRequestService;
-        this.objectMapper = objectMapper;
         this.broadcaster = broadcaster;
         this.analysisResultRenderer = analysisResultRenderer;
 
@@ -153,7 +143,7 @@ public class AnalysisView extends VerticalLayout {
         try {
             UUID correlationId = UUID.randomUUID();
 
-            CompanyAnalysisDto transientDto = new CompanyAnalysisDto();
+            CompanyAnalysisViewDto transientDto = new CompanyAnalysisViewDto();
             transientDto.setId(correlationId);
             transientDto.setCompanyId(company.id());
             transientDto.setTicker(company.ticker());
@@ -182,28 +172,41 @@ public class AnalysisView extends VerticalLayout {
         title.addClassNames(LumoUtility.Margin.Top.NONE, LumoUtility.Margin.Bottom.SMALL);
         title.getStyle().set("margin-bottom", "1rem");
         title.getStyle().set("margin-top", "1rem");
-        
+
         grid = buildGrid();
 
-        List<CompanyAnalysisDto> data = companyAnalysisApi.getCompanyAnalysisList(org.springframework.data.domain.PageRequest.of(0, 1000)).getContent();
+        List<CompanyAnalysisViewDto> data = companyAnalysisApi.getLatestCompanyAnalyses(org.springframework.data.domain.PageRequest.of(0, 1000)).getContent();
         gridData = new java.util.ArrayList<>(data);
-        GridListDataView<CompanyAnalysisDto> dataView = grid.setItems(gridData);
+        GridListDataView<CompanyAnalysisViewDto> dataView = grid.setItems(gridData);
         setupFilters(dataView);
-        
+
         layout.add(title, grid);
         layout.expand(grid);
 
         return ViewHelper.wrapInCard(layout);
     }
-    
-    private Grid<CompanyAnalysisDto> buildGrid() {
-        Grid<CompanyAnalysisDto> g = new Grid<>(CompanyAnalysisDto.class, false);
+
+    private Grid<CompanyAnalysisViewDto> buildGrid() {
+        Grid<CompanyAnalysisViewDto> g = new Grid<>(CompanyAnalysisViewDto.class, false);
         g.setSizeFull();
         g.addThemeVariants(GridVariant.LUMO_NO_BORDER);
         g.addClassName("screener-grid");
 
-        g.addColumn(CompanyAnalysisDto::getTicker).setHeader("Ticker").setKey("ticker").setSortable(true);
-        g.addColumn(CompanyAnalysisDto::getMarket).setHeader("Market").setKey("market").setSortable(true);
+        g.addComponentColumn(item -> {
+            if (item.getTotalAnalyses() != null && item.getTotalAnalyses() > 1) {
+                com.vaadin.flow.component.icon.Icon icon = com.vaadin.flow.component.icon.VaadinIcon.ANGLE_DOWN.create();
+                icon.setSize("14px");
+                icon.setColor("var(--lumo-tertiary-text-color)");
+                icon.getStyle().set("margin-right", "4px");
+                return new com.vaadin.flow.component.html.Span(icon, new com.vaadin.flow.component.html.Span(item.getTicker()));
+            } else {
+                return new com.vaadin.flow.component.html.Span(item.getTicker());
+            }
+        }).setHeader("Ticker").setKey("ticker").setComparator(Comparator.comparing(CompanyAnalysisViewDto::getTicker)).setSortable(true).setAutoWidth(true);
+
+        g.addColumn(CompanyAnalysisViewDto::getCompanyName).setHeader("Company").setKey("companyName").setSortable(true).setFlexGrow(2);
+        
+        g.addColumn(CompanyAnalysisViewDto::getMarket).setHeader("Market").setKey("market").setSortable(true);
 
         g.addColumn(new ComponentRenderer<>(a -> {
                     if (a.getStatus() == AnalysisStatus.QUEUED || a.getStatus() == AnalysisStatus.RUNNING) {
@@ -211,23 +214,23 @@ public class AnalysisView extends VerticalLayout {
                     }
                     return ViewHelper.statusBadge(a.getStatus());
                 })).setHeader("Status").setKey("status")
-                .setComparator(Comparator.comparing(CompanyAnalysisDto::getStatus, Comparator.nullsLast(Comparator.naturalOrder())))
+                .setComparator(Comparator.comparing(CompanyAnalysisViewDto::getStatus, Comparator.nullsLast(Comparator.naturalOrder())))
                 .setSortable(true)
                 .setAutoWidth(true);
 
-        g.addColumn(CompanyAnalysisDto::getConviction).setHeader("Conviction").setSortable(true);
+        g.addColumn(CompanyAnalysisViewDto::getConviction).setHeader("Conviction").setSortable(true);
 
         g.addColumn(new ComponentRenderer<>(a -> ViewHelper.outlookBadge(a.getOutlook())))
                 .setHeader("Outlook").setKey("outlook")
-                .setComparator(Comparator.comparing(CompanyAnalysisDto::getOutlook, Comparator.nullsLast(Comparator.naturalOrder())))
+                .setComparator(Comparator.comparing(CompanyAnalysisViewDto::getOutlook, Comparator.nullsLast(Comparator.naturalOrder())))
                 .setSortable(true);
 
         g.addColumn(new ComponentRenderer<>(a -> ViewHelper.recommendationBadge(a.getRecommendation())))
                 .setHeader("Recommendation").setKey("recommendation")
-                .setComparator(Comparator.comparing(CompanyAnalysisDto::getRecommendation, Comparator.nullsLast(Comparator.naturalOrder())))
+                .setComparator(Comparator.comparing(CompanyAnalysisViewDto::getRecommendation, Comparator.nullsLast(Comparator.naturalOrder())))
                 .setSortable(true);
 
-        g.addColumn(CompanyAnalysisDto::getAnalysisDate).setHeader("Analysis Date").setSortable(true);
+        g.addColumn(CompanyAnalysisViewDto::getAnalysisDate).setHeader("Analysis Date").setSortable(true);
 
         g.addColumn(new ComponentRenderer<>(a -> {
             Button reportBtn = new Button(VaadinIcon.EYE.create());
@@ -236,7 +239,7 @@ public class AnalysisView extends VerticalLayout {
             reportBtn.setTooltipText("View report");
             reportBtn.addClickListener(_ -> showAnalysisDetails(a));
 
-            Button companyBtn = ViewHelper.createCompanyDetailsButton(companyMetadataApi, companyFinancialDataApi, companySharePriceApi, companyNewsApi, companyInsiderTransactionApi, companyValuationApi, objectMapper, a.getCompanyId(), false);
+            Button companyBtn = companyDetailsButtonFactory.createButton(a.getCompanyId(), false);
 
             HorizontalLayout actions = new HorizontalLayout(reportBtn, companyBtn);
             actions.setSpacing(true);
@@ -244,10 +247,49 @@ public class AnalysisView extends VerticalLayout {
         })).setHeader("Actions");
 
         g.addItemDoubleClickListener(event -> showAnalysisDetails(event.getItem()));
+
+        g.setItemDetailsRenderer(new ComponentRenderer<>(company -> {
+            VerticalLayout historyLayout = new VerticalLayout();
+            historyLayout.setPadding(true);
+            historyLayout.setSpacing(true);
+            historyLayout.getStyle().set("background-color", "var(--lumo-contrast-5pct)");
+
+            H4 historyTitle = new H4("Analysis History for " + company.getCompanyName());
+            historyTitle.getStyle().set("margin-top", "0").set("margin-bottom", "0.5rem");
+            historyLayout.add(historyTitle);
+
+            java.util.List<CompanyAnalysisViewDto> history = companyAnalysisApi.getHistoricalAnalysesByCompanyId(company.getCompanyId());
+            if (history != null && history.size() > 1) {
+                Grid<CompanyAnalysisViewDto> historyGrid = new Grid<>(CompanyAnalysisViewDto.class, false);
+                historyGrid.addThemeVariants(GridVariant.LUMO_COMPACT, GridVariant.LUMO_NO_BORDER);
+                historyGrid.setAllRowsVisible(true);
+
+                historyGrid.addColumn(CompanyAnalysisViewDto::getAnalysisDate).setHeader("Date").setAutoWidth(true);
+                historyGrid.addColumn(new ComponentRenderer<>(a -> ViewHelper.statusBadge(a.getStatus()))).setHeader("Status").setAutoWidth(true);
+                historyGrid.addColumn(new ComponentRenderer<>(a -> ViewHelper.outlookBadge(a.getOutlook()))).setHeader("Outlook").setAutoWidth(true);
+                historyGrid.addColumn(new ComponentRenderer<>(a -> ViewHelper.recommendationBadge(a.getRecommendation()))).setHeader("Recommendation").setAutoWidth(true);
+                historyGrid.addColumn(CompanyAnalysisViewDto::getConviction).setHeader("Conviction").setAutoWidth(true);
+                historyGrid.addColumn(new ComponentRenderer<>(a -> {
+                    Button viewBtn = new Button("View", VaadinIcon.EYE.create());
+                    viewBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
+                    viewBtn.addClickListener(_ -> showAnalysisDetails(a));
+                    return viewBtn;
+                })).setHeader("Actions");
+
+                // Skip the first one since it's the latest which is already shown in the parent row
+                historyGrid.setItems(history.stream().skip(1).toList());
+                historyLayout.add(historyGrid);
+            } else {
+                historyLayout.add(new Span("No older analysis available."));
+            }
+
+            return historyLayout;
+        }));
+
         return g;
     }
 
-    private void setupFilters(GridListDataView<CompanyAnalysisDto> dataView) {
+    private void setupFilters(GridListDataView<CompanyAnalysisViewDto> dataView) {
         HeaderRow filterRow = grid.appendHeaderRow();
         AnalysisFilter filter = new AnalysisFilter();
         dataView.setFilter(filter::test);
@@ -281,6 +323,29 @@ public class AnalysisView extends VerticalLayout {
         dialog.setCloseOnEsc(true);
         dialog.setCloseOnOutsideClick(true);
 
+        HorizontalLayout headerLayout = new HorizontalLayout();
+        headerLayout.setAlignItems(Alignment.CENTER);
+        headerLayout.setJustifyContentMode(JustifyContentMode.BETWEEN);
+        headerLayout.setWidthFull();
+
+        String titleText = analysis.getTicker() + " Financial Analysis Report";
+        if (analysis instanceof com.oraculum.analyst.api.dto.CompanyAnalysisViewDto) {
+            titleText = ((com.oraculum.analyst.api.dto.CompanyAnalysisViewDto) analysis).getCompanyName() + " (" + analysis.getTicker() + ") Financial Analysis Report";
+        }
+        com.vaadin.flow.component.html.H3 title = new com.vaadin.flow.component.html.H3(titleText);
+        title.getStyle().set("margin", "0");
+
+        HorizontalLayout badges = new HorizontalLayout();
+        if (analysis.getOutlook() != null) {
+            badges.add(ViewHelper.outlookBadge(analysis.getOutlook()));
+        }
+        if (analysis.getRecommendation() != null) {
+            badges.add(ViewHelper.recommendationBadge(analysis.getRecommendation()));
+        }
+
+        headerLayout.add(title, badges);
+        dialog.getHeader().add(headerLayout);
+
         dialog.add(analysisResultRenderer.renderAnalysisTabs(analysis));
 
         Button closeButton = new Button("Close", _ -> dialog.close());
@@ -291,7 +356,7 @@ public class AnalysisView extends VerticalLayout {
 
     private void refreshGridData() {
         getUI().ifPresent(ui -> ui.access(() -> {
-            List<CompanyAnalysisDto> latest = companyAnalysisApi.getCompanyAnalysisList(org.springframework.data.domain.PageRequest.of(0, 1000)).getContent();
+            List<CompanyAnalysisViewDto> latest = companyAnalysisApi.getLatestCompanyAnalyses(org.springframework.data.domain.PageRequest.of(0, 1000)).getContent();
             gridData.clear();
             gridData.addAll(latest);
             grid.getDataProvider().refreshAll();
@@ -301,7 +366,7 @@ public class AnalysisView extends VerticalLayout {
     private static class AnalysisFilter {
         String ticker, market, status, outlook, recommendation;
 
-        boolean test(CompanyAnalysisDto a) {
+        boolean test(CompanyAnalysisViewDto a) {
             return ViewHelper.matches(a.getTicker(), ticker)
                     && ViewHelper.matches(a.getMarket(), market)
                     && ViewHelper.matches(a.getStatus() != null ? a.getStatus().getDisplayName() : "Pending", status)

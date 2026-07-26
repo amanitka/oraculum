@@ -11,20 +11,17 @@ import com.github.appreciated.apexcharts.config.chart.builder.EventsBuilder;
 import com.github.appreciated.apexcharts.config.plotoptions.builder.TreemapBuilder;
 import com.github.appreciated.apexcharts.helper.Series;
 import com.oraculum.analyst.api.dto.CompanyAnalysisRequest;
-import com.oraculum.company.api.*;
-import com.oraculum.company.api.dto.CompanyDto;
+import com.oraculum.company.api.CompanyScreenerApi;
 import com.oraculum.company.api.dto.CompanyOverviewDto;
 import com.oraculum.company.api.dto.TickerKeyDto;
 import com.oraculum.ui.MainLayout;
 import com.oraculum.ui.ViewHelper;
-import com.oraculum.ui.components.CompanyOverviewComponent;
+import com.oraculum.ui.factory.CompanyDetailsButtonFactory;
 import com.oraculum.ui.service.AnalysisRequestService;
 import com.vaadin.flow.component.ClientCallable;
-import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.grid.HeaderRow;
@@ -42,7 +39,6 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
-import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -54,33 +50,15 @@ import java.util.stream.Collectors;
 public class MarketMapView extends VerticalLayout {
 
     private final CompanyScreenerApi companyScreenerApi;
-    private final CompanyMetadataApi companyMetadataApi;
-    private final CompanyFinancialDataApi companyFinancialDataApi;
-    private final CompanySharePriceApi companySharePriceApi;
-    private final CompanyNewsApi companyNewsApi;
-    private final CompanyInsiderTransactionApi companyInsiderTransactionApi;
-    private final CompanyValuationApi companyValuationApi;
     private final AnalysisRequestService analysisRequestService;
-    private final ObjectMapper objectMapper;
+    private final CompanyDetailsButtonFactory companyDetailsButtonFactory;
 
     public MarketMapView(CompanyScreenerApi companyScreenerApi,
-                         CompanyMetadataApi companyMetadataApi,
-                         CompanyFinancialDataApi companyFinancialDataApi,
-                         CompanySharePriceApi companySharePriceApi,
-                         CompanyNewsApi companyNewsApi,
-                         CompanyInsiderTransactionApi companyInsiderTransactionApi,
-                         CompanyValuationApi companyValuationApi,
                          AnalysisRequestService analysisRequestService,
-                         ObjectMapper objectMapper) {
+                         CompanyDetailsButtonFactory companyDetailsButtonFactory) {
         this.companyScreenerApi = companyScreenerApi;
-        this.companyMetadataApi = companyMetadataApi;
-        this.companyFinancialDataApi = companyFinancialDataApi;
-        this.companySharePriceApi = companySharePriceApi;
-        this.companyNewsApi = companyNewsApi;
-        this.companyInsiderTransactionApi = companyInsiderTransactionApi;
-        this.companyValuationApi = companyValuationApi;
         this.analysisRequestService = analysisRequestService;
-        this.objectMapper = objectMapper;
+        this.companyDetailsButtonFactory = companyDetailsButtonFactory;
 
         setPadding(true);
         setSpacing(false);
@@ -254,17 +232,7 @@ public class MarketMapView extends VerticalLayout {
     }
 
     private Button createCompanyDetailsButton(int companyId) {
-        return ViewHelper.createCompanyDetailsButton(
-                companyMetadataApi,
-                companyFinancialDataApi,
-                companySharePriceApi,
-                companyNewsApi,
-                companyInsiderTransactionApi,
-                companyValuationApi,
-                objectMapper,
-                companyId,
-                true
-        );
+        return companyDetailsButtonFactory.createButton(companyId, true);
     }
 
     private void attachClientClickListener() {
@@ -302,41 +270,7 @@ public class MarketMapView extends VerticalLayout {
 
     @ClientCallable
     public void onCompanySelected(int companyId) {
-        CompanyDto company = companyMetadataApi.getCompanyById(companyId);
-        if (company != null) {
-            Dialog dialog = new Dialog();
-            dialog.setHeaderTitle(company.companyName() + " (" + company.ticker() + ")");
-            dialog.setWidth("90vw");
-            dialog.setHeight("90vh");
-            dialog.add(new CompanyOverviewComponent(
-                    companyFinancialDataApi,
-                    companySharePriceApi,
-                    companyNewsApi,
-                    companyInsiderTransactionApi,
-                    companyValuationApi,
-                    company,
-                    objectMapper
-            ));
-
-            Button headerCloseBtn = new Button(VaadinIcon.CLOSE.create(), _ -> dialog.close());
-            headerCloseBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_ICON);
-            headerCloseBtn.setAriaLabel("Close dialog");
-            dialog.getHeader().add(headerCloseBtn);
-
-            Button closeBtn = new Button("Close", _ -> dialog.close());
-            closeBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-            dialog.getFooter().add(closeBtn);
-
-            dialog.addOpenedChangeListener(e -> {
-                if (e.isOpened()) {
-                    UI.getCurrent().getPage().executeJs("setTimeout(() => window.dispatchEvent(new Event('resize')), 250);");
-                }
-            });
-
-            dialog.open();
-        } else {
-            ViewHelper.showError("Company details not found.");
-        }
+        companyDetailsButtonFactory.openCompanyDetailsDialog(companyId);
     }
 
     private ApexCharts createTreemap(List<CompanyOverviewDto> companies) {

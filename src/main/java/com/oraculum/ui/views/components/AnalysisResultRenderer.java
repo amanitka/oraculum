@@ -83,7 +83,11 @@ public class AnalysisResultRenderer {
             layout.add(new Span("No report generated."));
         } else {
             Component markdownContainer = renderMarkdownWithCitations(md, analysis.getAnalysisData());
-            markdownContainer.getStyle().set("padding", "24px").set("color", "var(--lumo-body-text-color)");
+            markdownContainer.getStyle()
+                    .set("max-width", "850px")
+                    .set("margin", "0 auto")
+                    .set("padding", "32px")
+                    .set("color", "var(--lumo-body-text-color)");
 
             Scroller scroller = new Scroller(markdownContainer);
             scroller.setSizeFull();
@@ -313,7 +317,18 @@ public class AnalysisResultRenderer {
 
         public CitationMarkdownContainer(String html, JsonNode citationsNode) {
             this.citationsNode = citationsNode;
-            add(new Html("<div><div class='rendered-markdown'>" + html + "</div></div>"));
+
+            String style = "<style>" +
+                    ".rendered-markdown { font-size: 1rem; line-height: 1.7; }" +
+                    ".rendered-markdown h1, .rendered-markdown h2, .rendered-markdown h3 { margin-top: 2rem; margin-bottom: 1rem; font-weight: 600; color: var(--lumo-header-text-color); }" +
+                    ".rendered-markdown h2 { border-bottom: 1px solid var(--lumo-contrast-10pct); padding-bottom: 0.5rem; }" +
+                    ".rendered-markdown p { margin-bottom: 1.25rem; }" +
+                    ".rendered-markdown strong { font-weight: 600; color: var(--lumo-primary-text-color); }" +
+                    ".reference-data-link { font-size: 0.75rem; vertical-align: super; background: var(--lumo-contrast-10pct); border-radius: 4px; padding: 2px 4px; text-decoration: none; color: var(--lumo-primary-text-color); font-weight: bold; margin-left: 2px; transition: all 0.2s ease; }" +
+                    ".reference-data-link:hover { background: var(--lumo-primary-color); color: white; }" +
+                    "</style>";
+
+            add(new Html("<div>" + style + "<div class='rendered-markdown'>" + html + "</div></div>"));
 
             getElement().executeJs(
                     "const links = this.querySelectorAll('.reference-data-link');" +

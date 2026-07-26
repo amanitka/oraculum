@@ -3,17 +3,10 @@ package com.oraculum.ui;
 import com.oraculum.analyst.api.domain.AnalysisOutlook;
 import com.oraculum.analyst.api.domain.AnalysisRecommendation;
 import com.oraculum.analyst.api.domain.AnalysisStatus;
-import com.oraculum.company.api.*;
 import com.oraculum.company.api.domain.CompanySize;
 import com.oraculum.company.api.domain.NewsSentimentLabel;
 import com.oraculum.company.api.domain.ScreenerSignal;
-import com.oraculum.company.api.dto.CompanyDto;
-import com.oraculum.ui.components.CompanyOverviewComponent;
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.UI;
-import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
-import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.HeaderRow;
 import com.vaadin.flow.component.html.Div;
@@ -25,7 +18,6 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.textfield.TextFieldVariant;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.theme.lumo.LumoUtility;
-import tools.jackson.databind.ObjectMapper;
 
 import java.util.Comparator;
 import java.util.Locale;
@@ -328,54 +320,6 @@ public final class ViewHelper {
 
     // ── Components ─────────────────────────────────────────────────────────
 
-    /**
-     * Creates a standard button that opens the Company Overview Tearsheet dialog.
-     *
-     * @param showText if true, shows "View" text; if false, shows icon-only button with tooltip
-     */
-    public static Button createCompanyDetailsButton(CompanyMetadataApi companyMetadataApi, CompanyFinancialDataApi companyFinancialDataApi, CompanySharePriceApi companySharePriceApi, CompanyNewsApi companyNewsApi, CompanyInsiderTransactionApi companyInsiderTransactionApi, CompanyValuationApi companyValuationApi, ObjectMapper objectMapper, int companyId, boolean showText) {
-        Button btn;
-        if (showText) {
-            btn = new Button("View", VaadinIcon.CHART_LINE.create());
-            btn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
-        } else {
-            btn = new Button(VaadinIcon.CHART_LINE.create());
-            btn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ICON);
-            btn.setAriaLabel("View company tearsheet");
-            btn.setTooltipText("View company tearsheet");
-        }
-        btn.addClickListener(_ -> {
-            CompanyDto company = companyMetadataApi.getCompanyById(companyId);
-            if (company != null) {
-                Dialog dialog = new Dialog();
-                dialog.setHeaderTitle(company.companyName() + " (" + company.ticker() + ")");
-                dialog.setWidth("90vw");
-                dialog.setHeight("90vh");
-                dialog.add(new CompanyOverviewComponent(companyFinancialDataApi, companySharePriceApi, companyNewsApi, companyInsiderTransactionApi, companyValuationApi, company, objectMapper));
-
-                Button headerCloseBtn = new Button(VaadinIcon.CLOSE.create(), _ -> dialog.close());
-                headerCloseBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_ICON);
-                headerCloseBtn.setAriaLabel("Close dialog");
-                dialog.getHeader().add(headerCloseBtn);
-
-                Button closeBtn = new Button("Close", _ -> dialog.close());
-                closeBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-                dialog.getFooter().add(closeBtn);
-
-                // Trigger window resize when dialog completes opening animation so external JS charts (ApexCharts) resize correctly
-                dialog.addOpenedChangeListener(e -> {
-                    if (e.isOpened()) {
-                        UI.getCurrent().getPage().executeJs("setTimeout(() => window.dispatchEvent(new Event('resize')), 250);");
-                    }
-                });
-
-                dialog.open();
-            } else {
-                showError("Company details not found.");
-            }
-        });
-        return btn;
-    }
 
     /**
      * Resolves the proper currency symbol based on currency code and market context.
