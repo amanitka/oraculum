@@ -35,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import org.mockito.Spy;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -55,8 +56,14 @@ class CompanyAnalysisWorkflowServiceTest {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
+    @Spy
+    private ObjectMapper objectMapper = new ObjectMapper();
+
     @Mock
-    private ObjectMapper objectMapper;
+    private CitationIntegrityService citationIntegrityService;
+
+    @Mock
+    private com.oraculum.analyst.agent.document.service.SecDocumentProcessingAgent secDocumentProcessingAgent;
 
     @InjectMocks
     private CompanyAnalysisWorkflowService workflowService;
@@ -65,7 +72,7 @@ class CompanyAnalysisWorkflowServiceTest {
 
     @BeforeEach
     void setUp() {
-        when(objectMapper.writeValueAsString(any())).thenReturn("[]");
+        when(citationIntegrityService.verifyRecordCitations(any(), any())).thenAnswer(inv -> inv.getArgument(0));
         UUID correlationId = UUID.randomUUID();
         request = new CompanyAnalysisRequestEvent(
                 correlationId,

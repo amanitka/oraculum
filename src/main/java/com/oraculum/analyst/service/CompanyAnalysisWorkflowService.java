@@ -20,10 +20,9 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -58,6 +57,20 @@ public class CompanyAnalysisWorkflowService {
             LocalDate analysisDate = request.analysisDate() != null ? request.analysisDate() : LocalDate.now();
             return createFailureResult(request, analysisDate, e, now); // Can't easily recover partial state here unless we pass it up
         }
+    }
+
+    private <T> AgentOutput<T> runAndVerifyAgent(Agent<T> agent, AgentContext ctx) {
+        AgentOutput<T> rawOutput = agent.run(ctx);
+        if (rawOutput == null || rawOutput.result() == null) {
+            return rawOutput;
+        }
+
+        T verifiedResult = citationIntegrityService.verifyRecordCitations(
+                rawOutput.result(),
+                ctx.state().getCitationRegistry().getCitations()
+        );
+
+        return new AgentOutput<>(verifiedResult, rawOutput.tokens());
     }
 
     private void processPendingCompanyDocuments(CompanyAnalysisRequestEvent request) {
@@ -103,7 +116,8 @@ public class CompanyAnalysisWorkflowService {
         for (Agent<?> agent : specialists) {
             log.info("Starting {} phase", agent.getName());
             eventPublisher.publishEvent(new CompanyAnalysisProgressEvent(request.correlationId(), agent.getName(), false));
-            var output = agent.run(ctx);
+            var output = runAndVerifyAgent(agent, ctx);
+
             ctx.state().putAgentOutput(agent.getName(), output.result());
             recordTraceAndTokens(ctx, agent.getName().name(), output);
             log.info("{} phase complete. Tokens: {}", agent.getName(), output.tokens());
@@ -118,8 +132,9 @@ public class CompanyAnalysisWorkflowService {
         for (int rerunCount = 0; rerunCount <= maxReruns; rerunCount++) {
             log.info("Starting Critic phase (rerunCount: {})", rerunCount);
             eventPublisher.publishEvent(new CompanyAnalysisProgressEvent(request.correlationId(), AgentType.CRITIC, false));
-            var outputRaw = critic.run(ctx);
-            CriticAgentOutput output = (CriticAgentOutput) outputRaw.result();
+
+            AgentOutput<CriticAgentOutput> outputRaw = (AgentOutput<CriticAgentOutput>) runAndVerifyAgent(critic, ctx);
+            CriticAgentOutput output = outputRaw.result();
 
             String traceKey = rerunCount == 0 ? "CRITIC" : "CRITIC_VERIFY_" + rerunCount;
             recordTraceAndTokens(ctx, traceKey, outputRaw);
@@ -163,7 +178,7 @@ public class CompanyAnalysisWorkflowService {
             Agent<?> agent = agents.get(type);
             log.info("Re-running {} phase based on Critic feedback", type.getAgentName());
             eventPublisher.publishEvent(new CompanyAnalysisProgressEvent(request.correlationId(), type, false));
-            var output = agent.run(ctx);
+            var output = runAndVerifyAgent(agent, ctx);
             ctx.state().putAgentOutput(type, output.result());
             recordTraceAndTokens(ctx, type.name() + "_RERUN_" + rerunCount, output);
         }
@@ -174,7 +189,9 @@ public class CompanyAnalysisWorkflowService {
         log.info("Starting Synthesizer phase");
         eventPublisher.publishEvent(new CompanyAnalysisProgressEvent(request.correlationId(), AgentType.SYNTHESIZER, false));
         Agent<SynthesizerAgentOutput> synthesizer = (Agent<SynthesizerAgentOutput>) agents.get(AgentType.SYNTHESIZER);
-        var output = synthesizer.run(ctx);
+
+        var output = runAndVerifyAgent(synthesizer, ctx);
+
         recordTraceAndTokens(ctx, AgentType.SYNTHESIZER.name(), output);
         log.info("Synthesizer phase complete. Recommendation: {}", output.result().recommendation());
         return output.result();
@@ -191,16 +208,10 @@ public class CompanyAnalysisWorkflowService {
 
         injectPrunedCitationsToTrace(ctx);
 
-        String verifiedReportMd = citationIntegrityService.verifyCitations(finalOut.reportMd(), ctx.state().getCitationRegistry().getCitations());
-
-        List<String> verifiedKeyDrivers = (List<String>) citationIntegrityService.verifyObjectRecursive(
-                finalOut.keyDrivers(), ctx.state().getCitationRegistry().getCitations());
-
-        List<String> verifiedKeyRisks = (List<String>) citationIntegrityService.verifyObjectRecursive(
-                finalOut.keyRisks(), ctx.state().getCitationRegistry().getCitations());
-
-        Map<String, Object> verifiedAgentTrace = (Map<String, Object>) citationIntegrityService.verifyObjectRecursive(
-                ctx.state().getAgentTrace(), ctx.state().getCitationRegistry().getCitations());
+        String finalReportMd = finalOut.reportMd();
+        if (finalReportMd != null && finalReportMd.contains("?]") && !finalReportMd.contains("*Note: Citations marked with [?]")) {
+            finalReportMd += "\n\n*Note: Citations marked with [?] contain extrapolated metrics or claims that could not be strictly verified against the raw numerical data.*";
+        }
 
         return CompanyAnalysisResult.builder()
                 .correlationId(req.correlationId())
@@ -208,13 +219,13 @@ public class CompanyAnalysisWorkflowService {
                 .market(req.ticker().market())
                 .analysisDate(ctx.analysisDate())
                 .status(AnalysisStatus.COMPLETED)
-                .reportMd(verifiedReportMd)
+                .reportMd(finalReportMd)
                 .outlook(finalOut.outlook())
                 .recommendation(finalOut.recommendation())
                 .conviction(finalOut.conviction())
-                .keyDrivers(verifiedKeyDrivers)
-                .keyRisks(verifiedKeyRisks)
-                .agentTrace(verifiedAgentTrace)
+                .keyDrivers(finalOut.keyDrivers())
+                .keyRisks(finalOut.keyRisks())
+                .agentTrace(ctx.state().getAgentTrace())
                 .tokenUsage(tokens)
                 .createdAt(now)
                 .updatedAt(ZonedDateTime.now())
@@ -224,18 +235,21 @@ public class CompanyAnalysisWorkflowService {
     private void injectPrunedCitationsToTrace(AgentContext ctx) {
         String fullTraceStr = objectMapper.writeValueAsString(ctx.state().getAgentTrace());
         Map<Integer, Object> allCitations = ctx.state().getCitationRegistry().getCitations();
-        Map<String, Object> prunedCitations = new java.util.HashMap<>();
+        Map<Integer, Object> prunedCitations = new TreeMap<>();
 
-        java.util.regex.Pattern p = java.util.regex.Pattern.compile("\\[(\\d+)\\]");
-        java.util.regex.Matcher m = p.matcher(fullTraceStr);
+        Pattern p = java.util.regex.Pattern.compile("\\[([\\d,\\s\\?]+)\\]");
+        Matcher m = p.matcher(fullTraceStr);
         while (m.find()) {
-            String idStr = m.group(1);
-            try {
-                int id = Integer.parseInt(idStr);
-                if (allCitations.containsKey(id)) {
-                    prunedCitations.put(idStr, allCitations.get(id));
+            String idsStr = m.group(1);
+            java.util.regex.Matcher idMatcher = java.util.regex.Pattern.compile("\\d+").matcher(idsStr);
+            while (idMatcher.find()) {
+                try {
+                    int id = Integer.parseInt(idMatcher.group());
+                    if (allCitations.containsKey(id)) {
+                        prunedCitations.put(id, allCitations.get(id));
+                    }
+                } catch (NumberFormatException ignored) {
                 }
-            } catch (NumberFormatException ignored) {
             }
         }
         ctx.state().putAgentTrace(AgentWorkflowState.TRACE_CITATIONS_KEY, prunedCitations);

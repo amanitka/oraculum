@@ -6,6 +6,8 @@ import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -60,33 +62,48 @@ public class CitationIntegrityService {
         return correctedReport.toString();
     }
 
-    public Object verifyObjectRecursive(Object obj, Map<Integer, Object> citations) {
-        if (obj == null) return null;
-
-        if (obj instanceof String) {
-            return verifyCitations((String) obj, citations, false);
+    public <T> T verifyRecordCitations(T record, Map<Integer, Object> citations) {
+        if (record == null) return null;
+        Class<?> clazz = record.getClass();
+        if (!clazz.isRecord()) {
+            return record;
         }
-
-        if (!(obj instanceof Number || obj instanceof Boolean || obj instanceof List || obj instanceof Map)) {
-            obj = objectMapper.convertValue(obj, Object.class);
-        }
-
-        if (obj instanceof List) {
-            List<Object> list = (List<Object>) obj;
-            List<Object> newList = new ArrayList<>();
-            for (Object item : list) {
-                newList.add(verifyObjectRecursive(item, citations));
+        try {
+            RecordComponent[] components = clazz.getRecordComponents();
+            Object[] args = new Object[components.length];
+            Class<?>[] paramTypes = new Class<?>[components.length];
+            for (int i = 0; i < components.length; i++) {
+                java.lang.reflect.RecordComponent component = components[i];
+                paramTypes[i] = component.getType();
+                java.lang.reflect.Method accessor = component.getAccessor();
+                Object value = accessor.invoke(record);
+                if (value instanceof String str) {
+                    args[i] = verifyCitations(str, citations, false);
+                } else if (value instanceof List<?> list) {
+                    List<Object> newList = new ArrayList<>();
+                    for (Object item : list) {
+                        if (item instanceof String strItem) {
+                            newList.add(verifyCitations(strItem, citations, false));
+                        } else if (item != null && item.getClass().isRecord()) {
+                            newList.add(verifyRecordCitations(item, citations));
+                        } else {
+                            newList.add(item);
+                        }
+                    }
+                    args[i] = newList;
+                } else if (value != null && value.getClass().isRecord()) {
+                    args[i] = verifyRecordCitations(value, citations);
+                } else {
+                    args[i] = value;
+                }
             }
-            return newList;
-        } else if (obj instanceof Map) {
-            Map<String, Object> map = (Map<String, Object>) obj;
-            Map<String, Object> newMap = new java.util.HashMap<>();
-            for (Map.Entry<String, Object> entry : map.entrySet()) {
-                newMap.put(entry.getKey(), verifyObjectRecursive(entry.getValue(), citations));
-            }
-            return newMap;
+            Constructor<?> constructor = clazz.getDeclaredConstructor(paramTypes);
+            constructor.setAccessible(true);
+            return (T) constructor.newInstance(args);
+        } catch (Exception e) {
+            log.error("Failed to verify record citations for {}", clazz.getName(), e);
+            return record;
         }
-        return obj;
     }
 
     private String extractContext(String reportMd, int matchStart) {
