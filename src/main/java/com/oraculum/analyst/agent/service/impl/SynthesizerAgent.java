@@ -18,7 +18,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -34,12 +36,14 @@ public class SynthesizerAgent implements Agent<SynthesizerAgentOutput> {
     }
 
     private String getWarningMessage(CriticAgentOutput criticOutput) {
-        if (criticOutput != null && !criticOutput.isConsistent()) {
-            return "\nWARNING: The Critic identified inconsistencies that could not be automatically resolved (specialist rerun limits reached). " +
-                    "You MUST carefully evaluate these contradictions yourself and provide the final reconciliation in your report.";
-        } else {
-            return "";
-        }
+        if (criticOutput == null) return "";
+        List<CriticAgentOutput.Contradiction> unresolved = criticOutput.unresolvedContradictions();
+        if (unresolved.isEmpty()) return "";
+        String items = unresolved.stream()
+                .map(CriticAgentOutput.Contradiction::description)
+                .collect(Collectors.joining("; "));
+        return "\nWARNING: The following contradictions could not be resolved — " +
+                "hedge these explicitly in your report: " + items;
     }
 
     @Override
@@ -56,7 +60,7 @@ public class SynthesizerAgent implements Agent<SynthesizerAgentOutput> {
                 .replace("{{ company_profile }}", ctx.factSheetData().getCompanyProfile())
                 .replace("{{ specialist_output }}", specialistOutputJson)
                 .replace("{{ critic_output }}", criticOutputJson)
-                .replace("{{ ttm_ratios_ground_truth }}", ctx.factSheetData().getLatestTtmRatios(4))
+                .replace("{{ canonical_facts }}", ctx.factSheetData().getCanonicalFacts())
                 .replace("{{ unaddressed_warning }}", getWarningMessage(criticOutput))
                 .replace("{{ ticker }}", ctx.ticker());
 

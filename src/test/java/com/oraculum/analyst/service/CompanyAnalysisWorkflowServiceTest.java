@@ -15,7 +15,6 @@ import com.oraculum.analyst.dto.CompanyFactSheetData;
 import com.oraculum.company.api.CompanyMetadataApi;
 import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.company.api.dto.TickerKeyDto;
-import com.oraculum.analyst.agent.document.service.SecDocumentProcessingAgent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,6 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.context.ApplicationEventPublisher;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -50,16 +50,13 @@ class CompanyAnalysisWorkflowServiceTest {
     private CompanyFactSheetDataService companyFactSheetDataService;
 
     @Mock
-    private SecDocumentProcessingAgent secDocumentProcessingAgent;
-
-    @Mock
     private Map<AgentType, Agent<?>> agents;
 
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
     @Mock
-    private tools.jackson.databind.ObjectMapper objectMapper;
+    private ObjectMapper objectMapper;
 
     @InjectMocks
     private CompanyAnalysisWorkflowService workflowService;
@@ -90,7 +87,6 @@ class CompanyAnalysisWorkflowServiceTest {
         assertNotNull(result.error());
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     void run_successfulAnalysis_noReruns() {
         CompanyDto companyDto = mock(CompanyDto.class);
@@ -107,7 +103,7 @@ class CompanyAnalysisWorkflowServiceTest {
         Agent<CriticAgentOutput> criticAgent = mock(Agent.class);
         when(agents.get(AgentType.CRITIC)).thenReturn((Agent) criticAgent);
         AgentOutput<CriticAgentOutput> criticOutput = new AgentOutput<>(
-                new CriticAgentOutput(List.of("Consolidated feedback"), true, null), 100
+                new CriticAgentOutput(List.of(), true, null), 100
         );
         when(criticAgent.run(any())).thenReturn(criticOutput);
 

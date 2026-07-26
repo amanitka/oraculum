@@ -284,19 +284,37 @@ public class AnalysisResultRenderer {
             if (!rootNode.has(TRACE_CITATIONS_KEY)) return markdown;
             JsonNode citationsNode = rootNode.get(TRACE_CITATIONS_KEY);
 
-            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\[(\\d+)\\]");
+            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\[([\\d,\\s\\?\u26A0\uFE0F]+)\\]");
             java.util.regex.Matcher matcher = pattern.matcher(markdown);
 
             StringBuilder sb = new StringBuilder();
             while (matcher.find()) {
-                String citationId = matcher.group(1);
-                if (citationsNode.has(citationId)) {
-                    String replacement = "<a href=\"javascript:void(0)\" class=\"reference-data-link\" data-reference-id=\""
-                            + citationId + "\">[" + citationId + "]</a>";
-                    matcher.appendReplacement(sb, replacement);
-                } else {
-                    matcher.appendReplacement(sb, "[$1]");
+                String inner = matcher.group(1);
+                String[] parts = inner.split(",");
+                StringBuilder replacement = new StringBuilder("[");
+                
+                for (int i = 0; i < parts.length; i++) {
+                    String part = parts[i].trim();
+                    String id = part.replaceAll("[^\\d]", "");
+                    String suffix = part.replaceAll("[\\d]", "").trim();
+                    
+                    if (!id.isEmpty() && citationsNode.has(id)) {
+                        replacement.append("<a href=\"javascript:void(0)\" class=\"reference-data-link\" data-reference-id=\"")
+                                .append(id).append("\">").append(id).append("</a>");
+                        if (!suffix.isEmpty()) {
+                            // If suffix contains ? we can style it or just leave it
+                            replacement.append(" ").append(suffix);
+                        }
+                    } else {
+                        replacement.append(part);
+                    }
+                    
+                    if (i < parts.length - 1) {
+                        replacement.append(", ");
+                    }
                 }
+                replacement.append("]");
+                matcher.appendReplacement(sb, java.util.regex.Matcher.quoteReplacement(replacement.toString()));
             }
             matcher.appendTail(sb);
             return sb.toString();

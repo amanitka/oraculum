@@ -10,6 +10,16 @@ You will be provided with two complementary views of the company's financials:
 
 Use all views together. Use quarterly data to identify recent momentum and sequential changes. Use annual data to assess long-term growth quality, normalized profitability, and business cycle trends. Use industry ratios to benchmark the company's profitability and efficiency against its peers. Integrate the SEC MD&A summaries to capture qualitative explanations of the company's performance, growth drivers, and strategic adjustments.
 
+### Canonical Facts (authoritative — do not recompute)
+
+These values come from the Financial Ratios source (TTM) and are authoritative.
+Use them for growth rates, margins, and returns — do NOT derive your own values
+for these metrics from the historical statements.
+
+ALL VALUES BELOW ARE DECIMALS:  0.503 = 50.3%,  1.2379 = 123.79%
+
+{{ canonical_facts }}
+
 ### CORE ANALYSIS FOCUS
 Pay special attention to this thesis requested by the user:
 {{ analysis_focus }}

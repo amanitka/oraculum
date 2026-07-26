@@ -37,6 +37,7 @@ public class FundamentalsAgent implements Agent<FundamentalsAgentOutput> {
         FinancialDataProfile profile = getName().getDataProfile();
         String prompt = promptRegistry.getPrompt(PromptType.FUNDAMENTALS)
                 .replace("{{ analysis_focus }}", ctx.analysisFocus() != null ? ctx.analysisFocus() : "Standard comprehensive analysis.")
+                .replace("{{ canonical_facts }}", factSheet.getCanonicalFacts())
                 // Quarterly: recent sequential trend (all periods)
                 .replace("{{ income_statement_history_q }}", factSheet.getIncomeStatementHistory(StatementVariant.QUARTERLY))
                 .replace("{{ balance_sheet_history_q }}", factSheet.getBalanceSheetHistory(StatementVariant.QUARTERLY))

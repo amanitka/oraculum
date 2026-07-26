@@ -5,22 +5,39 @@ You have been provided with the following historical and future expectations dat
 {{ earnings_estimates_json }}
 ```
 
+And recent SEC Exhibit 99.1 (Earnings Release) summaries:
+```json
+{{ recent_sec_ex99_1_summaries }}
+```
+
 ### Analysis Focus
 {{ analysis_focus }}
 
 ### Current Baseline
 Current Share Price: {{ current_price }}
 Current Trailing P/E: {{ trailing_pe }}
-Historical EPS YoY Growth: {{ historical_eps_growth }}%
+Historical EPS YoY Growth (TTM, from Financial Ratios): {{ historical_eps_growth }}
+⚠ The value above is a DECIMAL. 1.2379 means 123.79% growth. Do NOT append a % sign or treat it as a percentage directly. Multiply by 100 to convert when writing prose.
+
+### Canonical Facts (authoritative — do not recompute)
+
+These values come from the Financial Ratios source (TTM) and are authoritative.
+Use them for growth rates, margins, and returns — do NOT derive your own values
+for these metrics from the Alpha Vantage estimates table.
+
+ALL VALUES BELOW ARE DECIMALS:  0.503 = 50.3%,  1.2379 = 123.79%
+
+{{ canonical_facts }}
 
 ### Instructions
 1. Analyze the annual (fiscal year) and quarterly consensus estimates separately.
 2. Identify the trend in EPS and revenue estimates. Is growth expected to accelerate, decelerate, or turn negative?
-3. Compute the **revision momentum**. Look at the net revisions (ups minus downs) over the trailing 7 and 30 days to gauge analyst sentiment shifts.
-4. Assess the spread between high and low estimates to evaluate analyst consensus confidence. A wider spread implies greater uncertainty.
-5. Notice if the number of analysts covering future periods decreases significantly, which can also signal declining visibility.
-6. Compare the forward estimates to the baseline. Calculate the Forward P/E for the next fiscal year (using {{ current_price }} and the upcoming 'eps_estimate_average'). Does the Forward P/E represent a significant contraction or expansion compared to the Trailing P/E? Is the projected EPS growth accelerating or decelerating compared to the historical growth?
-7. Summarize your findings in a structured, concise Markdown format.
+3. Cross-reference the consensus estimates and revisions against management commentary in the recent SEC Exhibit 99.1 (Earnings Release) summaries to explain the 'why' behind estimate shifts.
+4. Compute the **revision momentum**. Look at the net revisions (ups minus downs) over the trailing 7 and 30 days to gauge analyst sentiment shifts.
+5. Assess the spread between high and low estimates to evaluate analyst consensus confidence. A wider spread implies greater uncertainty.
+6. Notice if the number of analysts covering future periods decreases significantly, which can also signal declining visibility.
+7. Compare the forward estimates to the baseline. Calculate the Forward P/E for the next fiscal year (using {{ current_price }} and the upcoming 'eps_estimate_average'). Does the Forward P/E represent a significant contraction or expansion compared to the Trailing P/E? Is the projected EPS growth accelerating or decelerating compared to the historical growth?
+8. Summarize your findings in a structured, concise Markdown format.
 
 You MUST respond with valid JSON using exactly this schema:
 {

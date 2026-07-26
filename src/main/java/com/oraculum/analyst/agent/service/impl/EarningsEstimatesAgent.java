@@ -17,7 +17,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -33,22 +32,23 @@ public class EarningsEstimatesAgent implements Agent<EarningsEstimatesAgentOutpu
 
     private String preparePrompt(AgentContext ctx, String earningsEstimatesJson) {
         SharePriceSignalDto currentSignal = ctx.getLatestSignal();
-        String priceStr = "N/A";
-        String peStr = "N/A";
-        String epsGrowthStr = "N/A";
 
-        if (currentSignal != null) {
-            priceStr = currentSignal.sharePrice() != null ? String.valueOf(currentSignal.sharePrice()) : "N/A";
-            peStr = currentSignal.peRatio() != null ? String.valueOf(currentSignal.peRatio()) : "N/A";
-            epsGrowthStr = currentSignal.epsYoyGrowth() != null ? String.valueOf(currentSignal.epsYoyGrowth()) : "N/A";
-        }
+        String priceStr = currentSignal != null && currentSignal.sharePrice() != null ? String.valueOf(currentSignal.sharePrice()) : "N/A";
+        String peStr = currentSignal != null && currentSignal.peRatio() != null ? String.valueOf(currentSignal.peRatio()) : "N/A";
+        String epsGrowthStr = currentSignal != null && currentSignal.epsYoyGrowth() != null
+                ? String.format("%.4f (= %.2f%% — this is a DECIMAL, not a percentage)",
+                currentSignal.epsYoyGrowth(), currentSignal.epsYoyGrowth() * 100)
+                : "N/A";
+
         String prompt = promptRegistry.getPrompt(PromptType.EARNINGS_ESTIMATES)
                 .replace("{{ analysis_focus }}", ctx.analysisFocus() != null ? ctx.analysisFocus() : "Standard comprehensive analysis.")
                 .replace("{{ earnings_estimates_json }}", earningsEstimatesJson)
                 .replace("{{ ticker }}", ctx.ticker())
                 .replace("{{ current_price }}", priceStr)
                 .replace("{{ trailing_pe }}", peStr)
-                .replace("{{ historical_eps_growth }}", epsGrowthStr);
+                .replace("{{ historical_eps_growth }}", epsGrowthStr)
+                .replace("{{ canonical_facts }}", ctx.factSheetData().getCanonicalFacts())
+                .replace("{{ recent_sec_ex99_1_summaries }}", ctx.factSheetData().getRecentSecEx991Summaries());
 
         return appendCriticFeedbackIfPresent(prompt, ctx);
     }

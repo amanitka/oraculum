@@ -6,11 +6,11 @@ import com.oraculum.analyst.agent.dto.FundamentalsAgentOutput;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.PromptType;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
+import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.llm.api.LlmCallRequest;
 import com.oraculum.llm.api.LlmRouterApi;
 import com.oraculum.llm.api.dto.LlmMetrics;
 import com.oraculum.llm.api.dto.LlmResponse;
-import com.oraculum.company.api.dto.CompanyDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -64,6 +64,7 @@ class FundamentalsAgentTest {
     @Test
     void run_returnsValidOutput() {
         when(promptRegistry.getPrompt(PromptType.FUNDAMENTALS)).thenReturn("Analyze {{ ticker }} focus: {{ analysis_focus }}");
+        when(factSheetData.getCanonicalFacts()).thenReturn("{}");
         when(factSheetData.getIncomeStatementHistory(any())).thenReturn("IS_DATA");
         when(factSheetData.getBalanceSheetHistory(any())).thenReturn("BS_DATA");
         when(factSheetData.getCompanyFinancialRatios(any())).thenReturn("RATIO_DATA");
@@ -74,8 +75,8 @@ class FundamentalsAgentTest {
 
         FundamentalsAgentOutput outputData = mock(FundamentalsAgentOutput.class);
         LlmResponse<FundamentalsAgentOutput> llmResponse = new LlmResponse<>(outputData, new LlmMetrics(null, null, 100, 50, 150, 100L));
-        
-        when(llmRouterApi.executeCall(any(LlmCallRequest.class))).thenReturn((LlmResponse) llmResponse);
+
+        when(llmRouterApi.executeCall(any(LlmCallRequest.class))).thenReturn(llmResponse);
 
         AgentOutput<FundamentalsAgentOutput> result = agent.run(context);
 
@@ -85,7 +86,7 @@ class FundamentalsAgentTest {
 
         ArgumentCaptor<LlmCallRequest> captor = ArgumentCaptor.forClass(LlmCallRequest.class);
         verify(llmRouterApi).executeCall(captor.capture());
-        
+
         LlmCallRequest request = captor.getValue();
         assertThat(request.prompt()).contains("AAPL");
     }

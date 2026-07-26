@@ -20,7 +20,7 @@ public record SharePriceSignalSlim(
         @JsonProperty("enterprise_value_to_ebitda") Float enterpriseValueToEbitda,
         @JsonProperty("return_on_equity") Float returnOnEquity,
         @JsonProperty("revenue_yoy_growth") Float revenueYoyGrowth,
-        @JsonProperty("financial_trend_score") Integer financialTrendScore,
+        @JsonProperty("momentum_trend_score") Integer financialTrendScore,
         @JsonProperty("market_capitalization") Float marketCapitalization,
         @JsonProperty("enterprise_value") Float enterpriseValue,
         @JsonProperty("enterprise_value_to_revenue") Float enterpriseValueToRevenue,

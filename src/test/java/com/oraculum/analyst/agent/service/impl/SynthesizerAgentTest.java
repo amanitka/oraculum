@@ -51,7 +51,7 @@ class SynthesizerAgentTest {
     private AgentContext context;
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() {
         CompanyDto companyDto = mock(CompanyDto.class);
         when(companyDto.ticker()).thenReturn("AAPL");
         com.oraculum.analyst.agent.dto.AgentWorkflowState state = mock(com.oraculum.analyst.agent.dto.AgentWorkflowState.class);
@@ -65,7 +65,7 @@ class SynthesizerAgentTest {
                 .build();
         when(objectMapper.writeValueAsString(any())).thenReturn("{}");
         when(factSheetData.getCompanyProfile()).thenReturn("{}");
-        when(factSheetData.getLatestTtmRatios(anyInt())).thenReturn("[]");
+        when(factSheetData.getCanonicalFacts()).thenReturn("{}");
     }
 
     @Test

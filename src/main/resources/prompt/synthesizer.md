@@ -7,11 +7,10 @@ You will be provided with three JSON inputs:
 1. `company_profile`: The basic company description, sector, and industry.
 2. `specialist_output`: The analysis from the specialist agents.
 3. `critic_output`: The findings from the Critic.
-4. `ttm_ratios_ground_truth`: The last 4 TTM periods of pre-computed, validated financial metrics. These are ground truth — do not recalculate them.
+4. `canonical_facts`: Pre-computed, validated financial metrics representing the single source of truth.
    Use them to:
    * Verify numbers cited by specialist agents.
    * Resolve conflicts — if agents appear to disagree on 'growth', check `revenue_yoy_growth_ttm` for the actual value.
-   * Note that TTM Q4 periods equal the full fiscal year for that year.
    Do not use this data to replace specialist analysis. Use it only to arbitrate and verify.
 {{ unaddressed_warning }}
 
@@ -73,7 +72,7 @@ Rules:
   "company_profile": {{ company_profile }},
   "specialists": {{ specialist_output }},
   "critic": {{ critic_output }},
-  "ttm_ratios_ground_truth": {{ ttm_ratios_ground_truth }}
+  "canonical_facts": {{ canonical_facts }}
 }
 ```
 

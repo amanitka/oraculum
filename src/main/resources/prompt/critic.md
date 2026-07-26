@@ -37,7 +37,14 @@ Your task is to:
 
 You MUST respond with valid JSON using exactly this schema:
 {
-  "contradictions_found": ["string"],
+  "contradictions_found": [
+    {
+      "description": "One concise sentence describing the contradiction",
+      "agents_involved": ["AGENT_A", "AGENT_B"],
+      "correction_type": "REASONING_ERROR | DATA_SOURCE_CONFLICT | TIME_WINDOW_MISMATCH",
+      "resolution": "RERUN_APPLIED | NARRATIVE_RECONCILED | UNRESOLVED"
+    }
+  ],
   "is_consistent": true,
   "recommended_reruns": [
     {
@@ -48,12 +55,23 @@ You MUST respond with valid JSON using exactly this schema:
   ]
 }
 
+correction_type values:
+  REASONING_ERROR       — the agent misinterpreted data it was given; a rerun may fix this
+  DATA_SOURCE_CONFLICT  — two data sources disagree on the same metric; a rerun will NOT help
+  TIME_WINDOW_MISMATCH  — same metric, different time periods; this is not an error
+
+resolution values:
+  RERUN_APPLIED         — set this when you are recommending a rerun for this contradiction
+  NARRATIVE_RECONCILED  — set this when the contradiction can be explained without a rerun
+  UNRESOLVED            — set this for DATA_SOURCE_CONFLICTs you cannot resolve
+
 Rules:
 - ALWAYS explicitly cite the specific year or timeframe and the exact source of your information (e.g., 'In 2023, according to the income statement...').
 - Keep each `contradictions_found` item to one concise sentence.
 - Return at most 5 contradiction items.
 - If no contradictions exist, return an empty list and set `is_consistent` to `true`.
 - `recommended_reruns` must be `[]` when `is_consistent` is `true`.
+- Set `resolution` before deciding whether to recommend a rerun. Only REASONING_ERROR contradictions should ever have `RERUN_APPLIED`.
 - Only recommend reruns for contradictions that would materially mislead the Synthesizer or a portfolio manager.
 - Rank entries in `recommended_reruns` from most severe (`severity: 1`) to least severe.
 - Do not list more than 5 entries in `recommended_reruns`.

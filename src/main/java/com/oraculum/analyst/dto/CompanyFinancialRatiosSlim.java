@@ -41,7 +41,7 @@ public record CompanyFinancialRatiosSlim(
         @JsonProperty("fcf_yoy_growth")        Float fcfYoyGrowth,
 
         // ── Quality signals ──────────────────────────────────────────────────────
-        @JsonProperty("financial_trend_score")       Integer financialTrendScore,
+        @JsonProperty("ratios_trend_score")          Integer financialTrendScore,
         @JsonProperty("margin_expansion_signal") Integer marginExpansionSignal,
         @JsonProperty("earnings_quality_ratio")  Float   earningsQualityRatio,
         @JsonProperty("is_cash_earnings")        Integer isCashEarnings,

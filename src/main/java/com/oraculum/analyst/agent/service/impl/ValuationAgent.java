@@ -39,6 +39,7 @@ public class ValuationAgent implements Agent<ValuationAgentOutput> {
         String recentDailyJson = factSheet.getLatestDailySharePriceSignals(5);
         String prompt = promptRegistry.getPrompt(PromptType.VALUATION)
                 .replace("{{ analysis_focus }}", ctx.analysisFocus() != null ? ctx.analysisFocus() : "Standard comprehensive analysis.")
+                .replace("{{ canonical_facts }}", factSheet.getCanonicalFacts())
                 .replace("{{ company_financial_ratios_a }}", factSheet.getCompanyFinancialRatios(StatementVariant.ANNUAL, profile.periodLimit(StatementVariant.ANNUAL)))
                 .replace("{{ company_financial_ratios_ttm }}", factSheet.getCompanyFinancialRatios(StatementVariant.TTM, profile.periodLimit(StatementVariant.TTM)))
                 .replace("{{ industry_ratios }}", factSheet.getLatestIndustryRatios(StatementVariant.TTM))

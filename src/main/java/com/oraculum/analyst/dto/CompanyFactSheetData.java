@@ -1,5 +1,6 @@
 package com.oraculum.analyst.dto;
 
+import com.oraculum.analyst.agent.dto.CanonicalFacts;
 import com.oraculum.analyst.util.JsonUtils;
 import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.domain.TickerDocumentSubtype;
@@ -12,7 +13,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.JsonNode;
-
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ObjectNode;
 
@@ -139,6 +139,29 @@ public class CompanyFactSheetData {
         return JsonUtils.toJson(jsonMapper, slimDtos, "[]");
     }
 
+    /**
+     * Returns raw DTOs for code-level consumers (e.g. CanonicalFactsService).
+     */
+    public List<CompanyFinancialRatiosDto> getCompanyFinancialRatiosList(StatementVariant variant) {
+        return Optional.ofNullable(companyFinancialRatios.get(variant)).orElse(List.of());
+    }
+
+    public String getCanonicalFacts() {
+        CompanyFinancialRatiosDto ttm = getCompanyFinancialRatiosList(StatementVariant.TTM).stream()
+                .max(Comparator.comparing(CompanyFinancialRatiosDto::reportDate))
+                .orElse(null);
+        CompanyFinancialRatiosDto annual = getCompanyFinancialRatiosList(StatementVariant.ANNUAL).stream()
+                .max(Comparator.comparing(CompanyFinancialRatiosDto::reportDate))
+                .orElse(null);
+
+        if (ttm == null) {
+            log.warn("No TTM ratios for {}. Canonical facts incomplete.", company.ticker());
+        }
+
+        CanonicalFacts facts = CanonicalFacts.from(ttm, annual);
+        return JsonUtils.toJson(jsonMapper, facts, "{}");
+    }
+
     private String processSharePriceSignals(List<SharePriceSignalDto> signals, int limit) {
         if (signals == null || signals.isEmpty()) return "[]";
         List<SharePriceSignalSlim> slim = signals.stream()
@@ -187,20 +210,6 @@ public class CompanyFactSheetData {
             return dailySharePriceSignals.getFirst();
         }
         return null;
-    }
-
-    public String getLatestTtmRatios(int periods) {
-        List<CompanyFinancialRatiosDto> ttmRatios = companyFinancialRatios.get(StatementVariant.TTM);
-        if (ttmRatios == null || ttmRatios.isEmpty()) return "[]";
-        List<CompanyFinancialRatiosSlim> slim = ttmRatios.stream()
-                .sorted(CompanyFinancialRatiosDto.getComparator().reversed()) // most recent first
-                .limit(periods)
-                .map(dto -> {
-                    String citationId = citationRegistry.getOrAssignCitationId(CompanyFinancialRatiosDto.class, dto.id(), dto);
-                    return CompanyFinancialRatiosSlim.from(dto, citationId);
-                })
-                .collect(Collectors.toList());
-        return JsonUtils.toJson(jsonMapper, slim, "[]");
     }
 
     public String getLatestIndustryRatios(StatementVariant variant) {

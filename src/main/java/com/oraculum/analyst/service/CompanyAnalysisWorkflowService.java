@@ -38,6 +38,7 @@ public class CompanyAnalysisWorkflowService {
     private final Map<AgentType, Agent<?>> agents;
     private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
+    private final CitationIntegrityService citationIntegrityService;
 
     public CompanyAnalysisResult run(CompanyAnalysisRequestEvent request) {
         long startMs = System.currentTimeMillis();
@@ -80,7 +81,14 @@ public class CompanyAnalysisWorkflowService {
         CompanyFactSheetData factSheetData = companyFactSheetDataService.create(company, state.getCitationRegistry());
         LocalDate analysisDate = request.analysisDate() != null ? request.analysisDate() : LocalDate.now();
 
-        return new AgentContext(request.correlationId(), company, factSheetData, analysisDate, analystProperties.tokenBudget(), state);
+        return AgentContext.builder()
+                .correlationId(request.correlationId())
+                .company(company)
+                .factSheetData(factSheetData)
+                .analysisDate(analysisDate)
+                .tokenBudget(analystProperties.tokenBudget())
+                .state(state)
+                .build();
     }
 
 
@@ -183,19 +191,30 @@ public class CompanyAnalysisWorkflowService {
 
         injectPrunedCitationsToTrace(ctx);
 
+        String verifiedReportMd = citationIntegrityService.verifyCitations(finalOut.reportMd(), ctx.state().getCitationRegistry().getCitations());
+
+        List<String> verifiedKeyDrivers = (List<String>) citationIntegrityService.verifyObjectRecursive(
+                finalOut.keyDrivers(), ctx.state().getCitationRegistry().getCitations());
+
+        List<String> verifiedKeyRisks = (List<String>) citationIntegrityService.verifyObjectRecursive(
+                finalOut.keyRisks(), ctx.state().getCitationRegistry().getCitations());
+
+        Map<String, Object> verifiedAgentTrace = (Map<String, Object>) citationIntegrityService.verifyObjectRecursive(
+                ctx.state().getAgentTrace(), ctx.state().getCitationRegistry().getCitations());
+
         return CompanyAnalysisResult.builder()
                 .correlationId(req.correlationId())
                 .ticker(req.ticker().ticker())
                 .market(req.ticker().market())
                 .analysisDate(ctx.analysisDate())
                 .status(AnalysisStatus.COMPLETED)
-                .reportMd(finalOut.reportMd())
+                .reportMd(verifiedReportMd)
                 .outlook(finalOut.outlook())
                 .recommendation(finalOut.recommendation())
                 .conviction(finalOut.conviction())
-                .keyDrivers(finalOut.keyDrivers())
-                .keyRisks(finalOut.keyRisks())
-                .agentTrace(ctx.state().getAgentTrace())
+                .keyDrivers(verifiedKeyDrivers)
+                .keyRisks(verifiedKeyRisks)
+                .agentTrace(verifiedAgentTrace)
                 .tokenUsage(tokens)
                 .createdAt(now)
                 .updatedAt(ZonedDateTime.now())

@@ -20,6 +20,16 @@ Your task is to:
 7.  **Intrinsic Value Assessment**: Write a detailed `intrinsic_value_assessment` summarizing your findings from the Reverse DCF and Historical Valuation Context.
 8.  **Deliver a Verdict**: Provide a one-sentence `summary` of your conclusion.
 
+### Canonical Facts (authoritative — do not recompute)
+
+These values come from the Financial Ratios source (TTM) and are authoritative.
+Use them for growth rates, margins, and returns — do NOT derive your own values
+for these metrics from the historical statements.
+
+ALL VALUES BELOW ARE DECIMALS:  0.503 = 50.3%,  1.2379 = 123.79%
+
+{{ canonical_facts }}
+
 ### CORE ANALYSIS FOCUS
 Pay special attention to this thesis requested by the user:
 {{ analysis_focus }}
