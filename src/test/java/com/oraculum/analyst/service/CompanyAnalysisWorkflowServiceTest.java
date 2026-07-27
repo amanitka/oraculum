@@ -1,5 +1,6 @@
 package com.oraculum.analyst.service;
 
+import com.oraculum.analyst.agent.document.service.SecDocumentProcessingAgent;
 import com.oraculum.analyst.agent.dto.AgentOutput;
 import com.oraculum.analyst.agent.dto.CriticAgentOutput;
 import com.oraculum.analyst.agent.dto.SynthesizerAgentOutput;
@@ -8,6 +9,7 @@ import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.api.domain.AnalysisOutlook;
 import com.oraculum.analyst.api.domain.AnalysisRecommendation;
 import com.oraculum.analyst.api.dto.CompanyAnalysisRequestEvent;
+import com.oraculum.analyst.api.dto.ExecutiveSummaryAgentOutput;
 import com.oraculum.analyst.api.event.CompanyAnalysisProgressEvent;
 import com.oraculum.analyst.config.AnalystProperties;
 import com.oraculum.analyst.dto.CompanyAnalysisResult;
@@ -24,7 +26,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.context.ApplicationEventPublisher;
-import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -50,6 +52,9 @@ class CompanyAnalysisWorkflowServiceTest {
     private CompanyFactSheetDataService companyFactSheetDataService;
 
     @Mock
+    private SecDocumentProcessingAgent secDocumentProcessingAgent;
+
+    @Mock
     private Map<AgentType, Agent<?>> agents;
 
     @Mock
@@ -59,7 +64,7 @@ class CompanyAnalysisWorkflowServiceTest {
     private CitationIntegrityService citationIntegrityService;
 
     @Mock
-    private ObjectMapper objectMapper;
+    private JsonMapper jsonMapper;
 
     @InjectMocks
     private CompanyAnalysisWorkflowService workflowService;
@@ -67,9 +72,9 @@ class CompanyAnalysisWorkflowServiceTest {
     private CompanyAnalysisRequestEvent request;
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() {
         when(citationIntegrityService.verifyRecordCitations(any(), any(), any())).thenAnswer(inv -> inv.getArgument(0));
-        when(objectMapper.writeValueAsString(any())).thenReturn("{}");
+        when(jsonMapper.writeValueAsString(any())).thenReturn("{}");
         UUID correlationId = UUID.randomUUID();
         request = new CompanyAnalysisRequestEvent(
                 correlationId,
@@ -118,6 +123,14 @@ class CompanyAnalysisWorkflowServiceTest {
                 new SynthesizerAgentOutput("Report", AnalysisOutlook.BULLISH, AnalysisRecommendation.BUY, 80, null, null), 200
         );
         when(synthesizerAgent.run(any())).thenReturn(synthOutput);
+
+        // mock executive summary output
+        Agent<ExecutiveSummaryAgentOutput> executiveSummaryAgent = mock(Agent.class);
+        when(agents.get(AgentType.EXECUTIVE_SUMMARY)).thenReturn((Agent) executiveSummaryAgent);
+        AgentOutput<ExecutiveSummaryAgentOutput> summaryOutput = new AgentOutput<>(
+                new ExecutiveSummaryAgentOutput("BUY", 4, "Thesis", List.of("Bull"), List.of("Bear"), "Valuation", "Watch"), 50
+        );
+        when(executiveSummaryAgent.run(any())).thenReturn(summaryOutput);
 
         CompanyAnalysisResult result = workflowService.run(request);
 
