@@ -1,6 +1,7 @@
 package com.oraculum.ui.views.components;
 
 import com.oraculum.analyst.api.dto.CompanyAnalysisDto;
+import com.oraculum.analyst.api.dto.ExecutiveSummaryAgentOutput;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Html;
 import com.vaadin.flow.component.UI;
@@ -10,6 +11,7 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -34,6 +36,23 @@ public class AnalysisResultRenderer {
 
     private static final String TRACE_CITATIONS_KEY = "CITATIONS";
     private final JsonMapper jsonMapper;
+
+    public Component renderAnalysisResult(CompanyAnalysisDto analysis) {
+        VerticalLayout root = new VerticalLayout();
+        root.setPadding(false);
+        root.setSpacing(true);
+        root.setSizeFull();
+
+        if (analysis.getSummary() != null && !analysis.getSummary().isBlank()) {
+            Component snapshotCard = renderInvestmentSnapshot(analysis.getSummary(), analysis);
+            if (snapshotCard != null) {
+                root.add(snapshotCard);
+            }
+        }
+
+        root.add(renderAnalysisTabs(analysis));
+        return root;
+    }
 
     public TabSheet renderAnalysisTabs(CompanyAnalysisDto analysis) {
         TabSheet tabSheet = new TabSheet();
@@ -292,12 +311,12 @@ public class AnalysisResultRenderer {
                 String inner = matcher.group(1);
                 String[] parts = inner.split(",");
                 StringBuilder replacement = new StringBuilder("[");
-                
+
                 for (int i = 0; i < parts.length; i++) {
                     String part = parts[i].trim();
                     String id = part.replaceAll("[^\\d]", "");
                     String suffix = part.replaceAll("[\\d]", "").trim();
-                    
+
                     if (!id.isEmpty() && citationsNode.has(id)) {
                         replacement.append("<a href=\"javascript:void(0)\" class=\"reference-data-link\" data-reference-id=\"")
                                 .append(id).append("\">").append(id).append("</a>");
@@ -308,7 +327,7 @@ public class AnalysisResultRenderer {
                     } else {
                         replacement.append(part);
                     }
-                    
+
                     if (i < parts.length - 1) {
                         replacement.append(", ");
                     }
@@ -327,6 +346,130 @@ public class AnalysisResultRenderer {
         if (key == null || key.isEmpty()) return key;
         String withSpaces = key.replaceAll("([a-z])([A-Z]+)", "$1 $2").replace("_", " ").toLowerCase();
         return withSpaces.substring(0, 1).toUpperCase() + withSpaces.substring(1);
+    }
+
+    private Component renderInvestmentSnapshot(String snapshotJson, CompanyAnalysisDto analysis) {
+        try {
+            ExecutiveSummaryAgentOutput snapshot = jsonMapper.readValue(snapshotJson, ExecutiveSummaryAgentOutput.class);
+            if (snapshot == null) return null;
+
+            Div container = new Div();
+            container.addClassNames(
+                    LumoUtility.Background.CONTRAST_5,
+                    LumoUtility.Padding.MEDIUM,
+                    LumoUtility.BorderRadius.LARGE,
+                    LumoUtility.Margin.Bottom.MEDIUM,
+                    LumoUtility.Width.FULL
+            );
+            container.getStyle().set("border", "1px solid var(--lumo-contrast-10pct)");
+
+            container.add(createSnapshotHeader(snapshot, analysis));
+            if (snapshot.thesis() != null && !snapshot.thesis().isBlank()) {
+                Paragraph thesisP = new Paragraph(snapshot.thesis());
+                thesisP.addClassNames(LumoUtility.Margin.Vertical.SMALL, LumoUtility.FontSize.MEDIUM);
+                thesisP.getStyle().set("font-weight", "500").set("line-height", "1.5");
+                container.add(thesisP);
+            }
+
+            Component points = createSnapshotPoints(snapshot);
+            if (points != null) {
+                container.add(points);
+            }
+
+            container.add(createSnapshotFooter(snapshot));
+            return container;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private Component createSnapshotHeader(ExecutiveSummaryAgentOutput snapshot, CompanyAnalysisDto analysis) {
+        HorizontalLayout header = new HorizontalLayout();
+        header.setWidthFull();
+        header.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
+        header.setAlignItems(FlexComponent.Alignment.CENTER);
+
+        String verdictText = snapshot.verdict() != null ? snapshot.verdict() : (analysis.getRecommendation() != null ? analysis.getRecommendation().name() : "");
+        Span verdictBadge = new Span(verdictText);
+        verdictBadge.getElement().getThemeList().add("badge");
+        if ("BUY".equalsIgnoreCase(verdictText) || "BULLISH".equalsIgnoreCase(verdictText)) {
+            verdictBadge.getElement().getThemeList().add("success");
+        } else if ("SELL".equalsIgnoreCase(verdictText) || "BEARISH".equalsIgnoreCase(verdictText)) {
+            verdictBadge.getElement().getThemeList().add("error");
+        }
+        verdictBadge.getStyle().set("font-size", "1rem").set("padding", "6px 12px");
+
+        H4 title = new H4("Investment Snapshot");
+        title.getStyle().set("margin", "0");
+
+        Span convictionLabel = new Span("Conviction: " + snapshot.conviction() + "/5");
+        convictionLabel.addClassNames(LumoUtility.FontWeight.BOLD, LumoUtility.FontSize.SMALL);
+
+        HorizontalLayout titleBadge = new HorizontalLayout(title, verdictBadge);
+        titleBadge.setAlignItems(FlexComponent.Alignment.CENTER);
+        header.add(titleBadge, convictionLabel);
+        return header;
+    }
+
+    private Component createSnapshotPoints(ExecutiveSummaryAgentOutput snapshot) {
+        HorizontalLayout pointsLayout = new HorizontalLayout();
+        pointsLayout.setWidthFull();
+        pointsLayout.setSpacing(true);
+
+        if (snapshot.topBullPoints() != null && !snapshot.topBullPoints().isEmpty()) {
+            pointsLayout.add(createPointsColumn("Key Positives", snapshot.topBullPoints(), LumoUtility.TextColor.SUCCESS));
+        }
+        if (snapshot.topBearPoints() != null && !snapshot.topBearPoints().isEmpty()) {
+            pointsLayout.add(createPointsColumn("Key Risks", snapshot.topBearPoints(), LumoUtility.TextColor.ERROR));
+        }
+
+        return pointsLayout.getComponentCount() > 0 ? pointsLayout : null;
+    }
+
+    private Component createPointsColumn(String title, List<String> items, String colorClass) {
+        VerticalLayout col = new VerticalLayout();
+        col.setPadding(false);
+        col.setSpacing(false);
+        col.setWidthFull();
+
+        Span header = new Span(title);
+        header.addClassNames(colorClass, LumoUtility.FontWeight.BOLD, LumoUtility.FontSize.SMALL);
+        col.add(header);
+
+        UnorderedList list = new UnorderedList();
+        list.addClassNames(LumoUtility.Margin.Top.XSMALL, LumoUtility.FontSize.SMALL);
+        list.getStyle().set("padding-left", "1.2rem");
+        for (String item : items) {
+            list.add(new ListItem(item));
+        }
+        col.add(list);
+        return col;
+    }
+
+    private Component createSnapshotFooter(ExecutiveSummaryAgentOutput snapshot) {
+        VerticalLayout footer = new VerticalLayout();
+        footer.setPadding(false);
+        footer.setSpacing(false);
+
+        if (snapshot.valuationOneLiner() != null && !snapshot.valuationOneLiner().isBlank()) {
+            Paragraph valP = new Paragraph();
+            valP.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.Margin.Top.SMALL, LumoUtility.Margin.Bottom.NONE);
+            Span boldVal = new Span("Valuation: ");
+            boldVal.addClassNames(LumoUtility.FontWeight.BOLD);
+            valP.add(boldVal, new Span(snapshot.valuationOneLiner()));
+            footer.add(valP);
+        }
+
+        if (snapshot.whatWouldChangeThis() != null && !snapshot.whatWouldChangeThis().isBlank()) {
+            Paragraph watchP = new Paragraph();
+            watchP.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.Margin.Top.XSMALL, LumoUtility.Margin.Bottom.NONE);
+            Span boldWatch = new Span("Watch for: ");
+            boldWatch.addClassNames(LumoUtility.FontWeight.BOLD);
+            watchP.add(boldWatch, new Span(snapshot.whatWouldChangeThis()));
+            footer.add(watchP);
+        }
+
+        return footer;
     }
 
     public class CitationMarkdownContainer extends Div {

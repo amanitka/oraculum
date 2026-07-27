@@ -11,6 +11,7 @@ public enum PromptType {
     VALUATION("/prompt/valuation.md"),
     SHARE_PRICE("/prompt/share_price.md"),
     SYNTHESIZER("/prompt/synthesizer.md"),
+    EXECUTIVE_SUMMARY("/prompt/executive_summary.md"),
     FUNDAMENTALS("/prompt/fundamentals.md"),
     EARNINGS_ESTIMATES("/prompt/earnings_estimates.md"),
     INSIDER_TRANSACTION("/prompt/insider_transaction.md"),

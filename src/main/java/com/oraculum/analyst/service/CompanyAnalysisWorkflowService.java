@@ -6,17 +6,20 @@ import com.oraculum.analyst.agent.service.Agent;
 import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.api.domain.AnalysisStatus;
 import com.oraculum.analyst.api.dto.CompanyAnalysisRequestEvent;
+import com.oraculum.analyst.api.dto.ExecutiveSummaryAgentOutput;
 import com.oraculum.analyst.api.event.CompanyAnalysisProgressEvent;
 import com.oraculum.analyst.config.AnalystProperties;
 import com.oraculum.analyst.dto.CompanyAnalysisResult;
+import com.oraculum.analyst.dto.CompanyAnalysisWorkflowResult;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
+import com.oraculum.analyst.util.JsonUtils;
 import com.oraculum.company.api.CompanyMetadataApi;
 import com.oraculum.company.api.dto.CompanyDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
@@ -36,7 +39,7 @@ public class CompanyAnalysisWorkflowService {
     private final SecDocumentProcessingAgent secDocumentProcessingAgent;
     private final Map<AgentType, Agent<?>> agents;
     private final ApplicationEventPublisher eventPublisher;
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
     private final CitationIntegrityService citationIntegrityService;
 
     public CompanyAnalysisResult run(CompanyAnalysisRequestEvent request) {
@@ -49,9 +52,11 @@ public class CompanyAnalysisWorkflowService {
             AgentContext ctx = initializeContext(request);
             runSpecialistPhase(request, ctx);
             runCriticCorrectionLoop(request, ctx);
-            SynthesizerAgentOutput finalOutput = runSynthesizerPhase(request, ctx);
+            SynthesizerAgentOutput synthesizerOutput = runSynthesizerPhase(request, ctx);
+            ExecutiveSummaryAgentOutput summaryOutput = runExecutiveSummaryPhase(request, ctx);
 
-            return createSuccessResult(request, ctx, finalOutput, startMs, now);
+            CompanyAnalysisWorkflowResult outcome = new CompanyAnalysisWorkflowResult(request, ctx, synthesizerOutput, summaryOutput, startMs, now);
+            return createSuccessResult(outcome);
         } catch (Exception e) {
             log.error("Workflow failed after {}ms: {}", System.currentTimeMillis() - startMs, e.getMessage(), e);
             LocalDate analysisDate = request.analysisDate() != null ? request.analysisDate() : LocalDate.now();
@@ -194,8 +199,22 @@ public class CompanyAnalysisWorkflowService {
 
         var output = runAndVerifyAgent(synthesizer, ctx);
 
+        ctx.state().putAgentOutput(AgentType.SYNTHESIZER, output.result());
         recordTraceAndTokens(ctx, AgentType.SYNTHESIZER.name(), output);
         log.info("Synthesizer phase complete. Recommendation: {}", output.result().recommendation());
+        return output.result();
+    }
+
+    private ExecutiveSummaryAgentOutput runExecutiveSummaryPhase(CompanyAnalysisRequestEvent request, AgentContext ctx) {
+        log.info("Starting Executive Summary phase");
+        eventPublisher.publishEvent(new CompanyAnalysisProgressEvent(request.correlationId(), AgentType.EXECUTIVE_SUMMARY, false));
+        Agent<ExecutiveSummaryAgentOutput> agent = (Agent<ExecutiveSummaryAgentOutput>) agents.get(AgentType.EXECUTIVE_SUMMARY);
+
+        var output = runAndVerifyAgent(agent, ctx);
+
+        ctx.state().putAgentOutput(AgentType.EXECUTIVE_SUMMARY, output.result());
+        recordTraceAndTokens(ctx, AgentType.EXECUTIVE_SUMMARY.name(), output);
+        log.info("Executive Summary phase complete");
         return output.result();
     }
 
@@ -204,16 +223,16 @@ public class CompanyAnalysisWorkflowService {
         ctx.state().addTokens(output.tokens());
     }
 
-    private CompanyAnalysisResult createSuccessResult(CompanyAnalysisRequestEvent req, AgentContext ctx, SynthesizerAgentOutput finalOut, long startMs, ZonedDateTime now) {
+    private CompanyAnalysisResult createSuccessResult(CompanyAnalysisWorkflowResult outcome) {
+        AgentContext ctx = outcome.context();
+        CompanyAnalysisRequestEvent req = outcome.request();
+        SynthesizerAgentOutput finalOut = outcome.synthesizerOutput();
+        ExecutiveSummaryAgentOutput execSummary = outcome.executiveSummaryOutput();
+
         int tokens = ctx.state().getTotalTokens();
-        log.info("Analysis workflow completed in {}ms. Tokens: {}", System.currentTimeMillis() - startMs, tokens);
+        log.info("Analysis workflow completed in {}ms. Tokens: {}", System.currentTimeMillis() - outcome.startMs(), tokens);
 
         injectPrunedCitationsToTrace(ctx);
-
-        String finalReportMd = finalOut.reportMd();
-        if (finalReportMd != null && finalReportMd.contains("?]") && !finalReportMd.contains("*Note: Citations marked with [?]")) {
-            finalReportMd += "\n\n*Note: Citations marked with [?] contain extrapolated metrics or claims that could not be strictly verified against the raw numerical data.*";
-        }
 
         return CompanyAnalysisResult.builder()
                 .correlationId(req.correlationId())
@@ -221,7 +240,8 @@ public class CompanyAnalysisWorkflowService {
                 .market(req.ticker().market())
                 .analysisDate(ctx.analysisDate())
                 .status(AnalysisStatus.COMPLETED)
-                .reportMd(finalReportMd)
+                .report(formatFinalReport(finalOut.report()))
+                .summary(JsonUtils.toJson(jsonMapper, execSummary, "{}"))
                 .outlook(finalOut.outlook())
                 .recommendation(finalOut.recommendation())
                 .conviction(finalOut.conviction())
@@ -229,13 +249,20 @@ public class CompanyAnalysisWorkflowService {
                 .keyRisks(finalOut.keyRisks())
                 .agentTrace(ctx.state().getAgentTrace())
                 .tokenUsage(tokens)
-                .createdAt(now)
+                .createdAt(outcome.now())
                 .updatedAt(ZonedDateTime.now())
                 .build();
     }
 
+    private String formatFinalReport(String reportMd) {
+        if (reportMd != null && reportMd.contains("?]") && !reportMd.contains("*Note: Citations marked with [?]")) {
+            return reportMd + "\n\n*Note: Citations marked with [?] contain extrapolated metrics or claims that could not be strictly verified against the raw numerical data.*";
+        }
+        return reportMd;
+    }
+
     private void injectPrunedCitationsToTrace(AgentContext ctx) {
-        String fullTraceStr = objectMapper.writeValueAsString(ctx.state().getAgentTrace());
+        String fullTraceStr = JsonUtils.toJson(jsonMapper, ctx.state().getAgentTrace(), "");
         Map<Integer, Object> allCitations = ctx.state().getCitationRegistry().getCitations();
         Map<Integer, Object> prunedCitations = new TreeMap<>();
 

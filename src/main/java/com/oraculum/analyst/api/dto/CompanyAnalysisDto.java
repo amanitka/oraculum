@@ -24,6 +24,7 @@ public class CompanyAnalysisDto {
     private LocalDate analysisDate;
     private AnalysisStatus status;
     private String report;
+    private String summary;
     private AnalysisOutlook outlook;
     private AnalysisRecommendation recommendation;
     private Integer conviction;
@@ -43,6 +44,7 @@ public class CompanyAnalysisDto {
                 entity.getAnalysisDate(),
                 entity.getStatus(),
                 entity.getReport(),
+                entity.getSummary(),
                 entity.getOutlook(),
                 entity.getRecommendation(),
                 entity.getConviction(),

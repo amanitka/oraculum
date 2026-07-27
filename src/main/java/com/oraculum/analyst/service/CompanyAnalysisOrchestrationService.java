@@ -72,7 +72,8 @@ public class CompanyAnalysisOrchestrationService {
     private void completeAnalysis(CompanyAnalysisEntity entity, CompanyAnalysisResult result) {
         try {
             entity.setStatus(result.status());
-            entity.setReport(result.reportMd());
+            entity.setReport(result.report());
+            entity.setSummary(result.summary());
             entity.setOutlook(result.outlook());
             entity.setRecommendation(result.recommendation());
             entity.setConviction(result.conviction());

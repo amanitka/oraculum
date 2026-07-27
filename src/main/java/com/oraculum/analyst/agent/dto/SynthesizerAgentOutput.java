@@ -6,7 +6,7 @@ import com.oraculum.analyst.api.domain.AnalysisRecommendation;
 
 import java.util.List;
 
-public record SynthesizerAgentOutput(@JsonProperty("report_md") String reportMd,
+public record SynthesizerAgentOutput(@JsonProperty("report") String report,
                                      @JsonProperty("outlook") AnalysisOutlook outlook,
                                      @JsonProperty("recommendation") AnalysisRecommendation recommendation,
                                      @JsonProperty("conviction") int conviction,

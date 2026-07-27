@@ -28,7 +28,6 @@ public class LlmExecutionServiceImpl implements LlmExecutionService {
                 .options(OpenAiChatOptions.builder()
                         .model(request.model())
                         .temperature(request.temperature())
-                        .maxTokens(request.maxCompletionTokens())
                         .maxCompletionTokens(request.maxCompletionTokens()))
                 .call();
     }

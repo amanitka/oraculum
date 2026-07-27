@@ -3,12 +3,7 @@ package com.oraculum.analyst.domain;
 import com.oraculum.analyst.api.domain.AnalysisOutlook;
 import com.oraculum.analyst.api.domain.AnalysisRecommendation;
 import com.oraculum.analyst.api.domain.AnalysisStatus;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -54,6 +49,9 @@ public class CompanyAnalysisViewEntity {
     private AnalysisStatus status;
 
     private String report;
+
+    @Column(name = "summary", columnDefinition = "json")
+    private String summary;
 
     @Enumerated(EnumType.STRING)
     private AnalysisOutlook outlook;

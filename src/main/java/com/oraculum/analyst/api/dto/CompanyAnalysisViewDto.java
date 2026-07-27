@@ -28,6 +28,7 @@ public class CompanyAnalysisViewDto extends CompanyAnalysisDto {
         dto.setAnalysisDate(entity.getAnalysisDate());
         dto.setStatus(entity.getStatus());
         dto.setReport(entity.getReport());
+        dto.setSummary(entity.getSummary());
         dto.setOutlook(entity.getOutlook());
         dto.setRecommendation(entity.getRecommendation());
         dto.setConviction(entity.getConviction());
@@ -35,7 +36,6 @@ public class CompanyAnalysisViewDto extends CompanyAnalysisDto {
         dto.setError(entity.getError());
         dto.setCreatedAt(entity.getCreatedAt());
         dto.setUpdatedAt(entity.getUpdatedAt());
-        
         dto.setCompanyName(entity.getCompanyName());
         dto.setIndustryName(entity.getIndustryName());
         dto.setSectorName(entity.getSectorName());

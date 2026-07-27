@@ -12,6 +12,7 @@ SELECT
     a.analysis_date,
     a.status,
     a.report,
+    a.summary,
     a.outlook,
     a.recommendation,
     a.conviction,

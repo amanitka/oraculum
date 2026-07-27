@@ -346,7 +346,7 @@ public class AnalysisView extends VerticalLayout {
         headerLayout.add(title, badges);
         dialog.getHeader().add(headerLayout);
 
-        dialog.add(analysisResultRenderer.renderAnalysisTabs(analysis));
+        dialog.add(analysisResultRenderer.renderAnalysisResult(analysis));
 
         Button closeButton = new Button("Close", _ -> dialog.close());
         closeButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);

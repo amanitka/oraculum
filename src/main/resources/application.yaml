@@ -176,7 +176,7 @@ oraculum:
   llm:
     common:
       temperature: 0.0
-      max-completion-tokens: 8192
+      max-completion-tokens: 12288
       provider-fallback-order:
         - lmstudio
         - gemini

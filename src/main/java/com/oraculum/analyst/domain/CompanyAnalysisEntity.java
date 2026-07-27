@@ -48,6 +48,10 @@ public class CompanyAnalysisEntity {
     @Column(name = "report", columnDefinition = "TEXT")
     private String report;
 
+    @Column(name = "summary", columnDefinition = "json")
+    @ColumnTransformer(write = "?::json")
+    private String summary;
+
     @Enumerated(EnumType.STRING)
     @Column(length = 10)
     private AnalysisOutlook outlook;
@@ -64,7 +68,7 @@ public class CompanyAnalysisEntity {
 
     @Column(columnDefinition = "TEXT")
     private String error;
-    
+
     @Column(name = "requested_by")
     private Long requestedBy;
 
