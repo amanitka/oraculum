@@ -48,8 +48,11 @@ Respond with valid JSON matching this exact schema:
 
 ## Rules
 
-- `thesis` must be 2-3 sentences maximum. State the conclusion, then the
-  strongest supporting reason.
+- `thesis` must be 2-3 sentences maximum. State the overall investment conclusion
+  and risk/reward balance — the "so what", not the "what". Do NOT repeat or
+  preview specific data points that already appear in `top_bull_points` or
+  `top_bear_points`. Write at a level ABOVE the bullets: the reader should
+  understand *why* the stock is a buy/sell/hold, not just *that* the revenue grew.
 - `top_bull_points` and `top_bear_points` must each contain exactly 3 items.
   Pick the 3 most decision-relevant points from the report. Each point should
   be one concise sentence.
