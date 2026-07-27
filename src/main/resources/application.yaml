@@ -107,7 +107,7 @@ oraculum:
       cron: "0 0 3 * * TUE-SAT"
     news:
       incremental-window-hours: 1
-      cron: "0 0 2,8,14,22 * * *"
+      cron: "0 0 2,8,12,18 * * *"
     insider-transactions:
       cron: "0 0 4,16 * * *"
     macroeconomic:

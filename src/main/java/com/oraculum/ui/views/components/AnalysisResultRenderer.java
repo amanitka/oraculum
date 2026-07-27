@@ -81,7 +81,7 @@ public class AnalysisResultRenderer {
         layout.setPadding(true);
         layout.setSpacing(true);
         layout.setSizeFull();
-        layout.getStyle().set("max-width", "1350px").set("margin", "0 auto");
+        layout.getStyle().set("max-width", "1400px").set("margin", "0 auto");
 
         Scroller scroller = new Scroller(layout);
         scroller.setSizeFull();
@@ -131,7 +131,7 @@ public class AnalysisResultRenderer {
         } else {
             Component markdownContainer = renderMarkdownWithCitations(md, analysis.getAnalysisData());
             markdownContainer.getStyle()
-                    .set("max-width", "1200px")
+                    .set("max-width", "1400px")
                     .set("margin", "0 auto")
                     .set("padding", "24px 32px")
                     .set("color", "var(--lumo-body-text-color)");
@@ -225,7 +225,7 @@ public class AnalysisResultRenderer {
         layout.setPadding(true);
         layout.setSpacing(true);
         layout.setSizeFull();
-        layout.getStyle().set("max-width", "1200px").set("margin", "0 auto").set("overflow-y", "auto");
+        layout.getStyle().set("max-width", "1400px").set("margin", "0 auto").set("overflow-y", "auto");
 
         for (Map.Entry<String, JsonNode> field : agentData.properties()) {
             String key = field.getKey();
