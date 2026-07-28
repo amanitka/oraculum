@@ -234,15 +234,35 @@ public class CitationIntegrityService {
     private void extractNumbersFromJson(JsonNode node, List<Double> numbers, List<String> targetFields) {
         if (node.isObject()) {
             node.properties().forEach(entry -> {
-                if (targetFields.isEmpty() || targetFields.contains(entry.getKey())) {
+                boolean isTarget = targetFields.isEmpty() || targetFields.stream()
+                        .anyMatch(t -> entry.getKey().toLowerCase().contains(t.toLowerCase()));
+                if (isTarget) {
                     extractAllNumbers(entry.getValue(), numbers);
                 } else if (entry.getValue().isObject() || entry.getValue().isArray()) {
                     extractNumbersFromJson(entry.getValue(), numbers, targetFields);
+                } else if (entry.getValue().isString()) {
+                    String text = entry.getValue().asString().trim();
+                    if ((text.startsWith("{") && text.endsWith("}")) || (text.startsWith("[") && text.endsWith("]"))) {
+                        try {
+                            JsonNode nested = objectMapper.readTree(text);
+                            extractNumbersFromJson(nested, numbers, targetFields);
+                        } catch (Exception ignored) {
+                        }
+                    }
                 }
             });
         } else if (node.isArray()) {
             for (JsonNode child : node) {
                 extractNumbersFromJson(child, numbers, targetFields);
+            }
+        } else if (node.isString()) {
+            String text = node.asString().trim();
+            if ((text.startsWith("{") && text.endsWith("}")) || (text.startsWith("[") && text.endsWith("]"))) {
+                try {
+                    JsonNode nested = objectMapper.readTree(text);
+                    extractNumbersFromJson(nested, numbers, targetFields);
+                } catch (Exception ignored) {
+                }
             }
         } else if (targetFields.isEmpty()) {
             extractAllNumbers(node, numbers);
@@ -259,8 +279,17 @@ public class CitationIntegrityService {
         } else if (node.isNumber()) {
             numbers.add(node.asDouble());
         } else if (node.isString()) {
+            String text = node.asString().trim();
+            if ((text.startsWith("{") && text.endsWith("}")) || (text.startsWith("[") && text.endsWith("]"))) {
+                try {
+                    JsonNode nested = objectMapper.readTree(text);
+                    extractAllNumbers(nested, numbers);
+                    return;
+                } catch (Exception ignored) {
+                }
+            }
             try {
-                double val = Double.parseDouble(node.asString());
+                double val = Double.parseDouble(text);
                 numbers.add(val);
             } catch (NumberFormatException ignored) {
             }

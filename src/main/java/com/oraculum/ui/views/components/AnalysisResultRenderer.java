@@ -82,7 +82,7 @@ public class AnalysisResultRenderer {
         layout.setPadding(false);
         layout.setSpacing(true);
         layout.setWidthFull();
-        layout.getStyle().set("box-sizing", "border-box");
+        layout.getStyle().set("box-sizing", "border-box").set("padding", "24px 16px");
 
         Scroller scroller = new Scroller(layout, Scroller.ScrollDirection.VERTICAL);
         scroller.setSizeFull();

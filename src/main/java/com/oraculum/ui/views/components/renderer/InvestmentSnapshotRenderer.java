@@ -90,6 +90,9 @@ public class InvestmentSnapshotRenderer {
                 .set("letter-spacing", "1px");
 
         HorizontalLayout titleBadge = new HorizontalLayout(title, verdictBadge);
+        if (analysis.getOutlook() != null) {
+            titleBadge.add(com.oraculum.ui.ViewHelper.outlookBadge(analysis.getOutlook()));
+        }
         titleBadge.setAlignItems(FlexComponent.Alignment.CENTER);
         titleBadge.getStyle().set("gap", "12px");
 

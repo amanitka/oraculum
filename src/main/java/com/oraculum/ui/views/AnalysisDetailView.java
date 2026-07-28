@@ -35,7 +35,7 @@ public class AnalysisDetailView extends VerticalLayout implements HasUrlParamete
         this.analysisResultRenderer = analysisResultRenderer;
 
         setSizeFull();
-        getStyle().set("padding-bottom", "2rem").set("overflow-x", "hidden").set("box-sizing", "border-box");
+        getStyle().set("padding-top", "2rem").set("padding-bottom", "2rem").set("overflow-x", "hidden").set("box-sizing", "border-box");
         setPadding(true);
         setSpacing(false);
     }
@@ -84,9 +84,7 @@ public class AnalysisDetailView extends VerticalLayout implements HasUrlParamete
 
         HorizontalLayout badges = new HorizontalLayout();
         badges.setAlignItems(FlexComponent.Alignment.CENTER);
-        if (analysis.getOutlook() != null) {
-            badges.add(ViewHelper.outlookBadge(analysis.getOutlook()));
-        }
+
         if (analysis.getRecommendation() != null) {
             badges.add(ViewHelper.recommendationBadge(analysis.getRecommendation()));
         }
@@ -99,7 +97,7 @@ public class AnalysisDetailView extends VerticalLayout implements HasUrlParamete
         add(topBar);
 
         var resultComponent = analysisResultRenderer.renderAnalysisResult(analysis);
-        resultComponent.getElement().getStyle().set("flex-grow", "1");
+        resultComponent.getElement().getStyle().set("flex-grow", "1").set("padding-top", "2rem");
         add(resultComponent);
     }
 

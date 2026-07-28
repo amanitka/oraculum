@@ -82,11 +82,16 @@ public class MarkdownRenderer {
                     String suffix = part.replaceAll("[\\d]", "").trim();
 
                     if (!id.isEmpty() && citationsNode.has(id)) {
-                        replacement.append("<a href=\"javascript:void(0)\" class=\"reference-data-link\" data-reference-id=\"")
-                                .append(id).append("\">").append(id).append("</a>");
+                        boolean isUnverifiable = suffix.contains("?");
+                        String titleAttr = isUnverifiable ? " title=\"This claim couldn't be automatically verified against the underlying data\"" : "";
+                        String classAttr = isUnverifiable ? "reference-data-link unverifiable" : "reference-data-link";
+                        
+                        replacement.append("<a href=\"javascript:void(0)\" class=\"").append(classAttr).append("\" data-reference-id=\"")
+                                .append(id).append("\"").append(titleAttr).append(">").append(id);
                         if (!suffix.isEmpty()) {
                             replacement.append(" ").append(suffix);
                         }
+                        replacement.append("</a>");
                     } else {
                         replacement.append(part);
                     }
@@ -115,11 +120,16 @@ public class MarkdownRenderer {
             String style = "<style>" +
                     ".rendered-markdown { font-size: 1rem; line-height: 1.7; }" +
                     ".rendered-markdown h1, .rendered-markdown h2, .rendered-markdown h3 { margin-top: 2rem; margin-bottom: 1rem; font-weight: 600; color: var(--lumo-header-text-color); }" +
-                    ".rendered-markdown h2 { border-bottom: 1px solid var(--lumo-contrast-10pct); padding-bottom: 0.5rem; }" +
+                    ".rendered-markdown h1 { font-size: 1.35rem; }" +
+                    ".rendered-markdown h2 { font-size: 1.15rem; border-bottom: 1px solid var(--lumo-contrast-10pct); padding-bottom: 0.5rem; }" +
+                    ".rendered-markdown h3 { font-size: 1.05rem; }" +
+                    ".rendered-markdown h4 { font-size: 1rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; }" +
                     ".rendered-markdown p { margin-bottom: 1.25rem; }" +
                     ".rendered-markdown strong { font-weight: 600; color: var(--lumo-primary-text-color); }" +
                     ".reference-data-link { font-size: 0.75rem; vertical-align: super; background: var(--lumo-contrast-10pct); border-radius: 4px; padding: 2px 4px; text-decoration: none; color: var(--lumo-primary-text-color); font-weight: bold; margin-left: 2px; transition: all 0.2s ease; }" +
                     ".reference-data-link:hover { background: var(--lumo-primary-color); color: white; }" +
+                    ".reference-data-link.unverifiable { background: var(--lumo-warning-color-10pct); color: var(--lumo-warning-text-color); border: 1px solid var(--lumo-warning-color-50pct); }" +
+                    ".reference-data-link.unverifiable:hover { background: var(--lumo-warning-color); color: var(--lumo-warning-contrast-color); }" +
                     "</style>";
 
             add(new Html("<div>" + style + "<div class='rendered-markdown'>" + html + "</div></div>"));

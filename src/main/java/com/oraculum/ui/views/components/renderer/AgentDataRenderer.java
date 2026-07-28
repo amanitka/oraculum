@@ -92,15 +92,15 @@ public class AgentDataRenderer {
                     layout.add(row);
                 }
                 case null, default -> {
-                    H4 fieldHeader = new H4(RendererUtil.formatKeyTitle(key));
+                    H3 fieldHeader = new H3(RendererUtil.formatKeyTitle(key));
                     fieldHeader.getStyle()
-                            .set("margin-top", "20px")
-                            .set("margin-bottom", "10px")
-                            .set("font-size", "0.9rem")
-                            .set("font-weight", "700")
-                            .set("letter-spacing", "0.5px")
-                            .set("color", "var(--lumo-secondary-text-color)")
-                            .set("text-transform", "uppercase");
+                            .set("margin-top", "2rem")
+                            .set("margin-bottom", "1rem")
+                            .set("font-size", "1.1rem")
+                            .set("font-weight", "600")
+                            .set("color", "var(--lumo-header-text-color)")
+                            .set("border-bottom", "1px solid var(--lumo-contrast-10pct)")
+                            .set("padding-bottom", "0.5rem");
                     layout.add(fieldHeader);
 
                     if (value.isArray()) {
