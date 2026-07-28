@@ -17,7 +17,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.json.JsonMapper;
 
+import com.oraculum.company.api.domain.StatementVariant;
+
+import java.util.Arrays;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -36,10 +41,10 @@ public class CriticAgent implements Agent<CriticAgentOutput> {
     @Override
     public AgentOutput<CriticAgentOutput> run(AgentContext ctx) {
         Map<AgentType, Object> specialistOutputs = ctx.state().getSpecialistOutputs();
-        java.util.Map<String, java.util.Set<com.oraculum.company.api.domain.StatementVariant>> agentTimeframes = java.util.Arrays.stream(AgentType.values())
+        Map<String, Set<StatementVariant>> agentTimeframes = Arrays.stream(AgentType.values())
                 .filter(AgentType::isSpecialist)
                 .filter(a -> !a.requiredVariants().isEmpty())
-                .collect(java.util.stream.Collectors.toMap(AgentType::getAgentName, AgentType::requiredVariants));
+                .collect(Collectors.toMap(AgentType::getAgentName, AgentType::requiredVariants));
         String agentTimeframesJson = JsonUtils.toJson(jsonMapper, agentTimeframes, "{}");
         String priorOutputsJson = JsonUtils.toJson(jsonMapper, specialistOutputs, "{}");
 

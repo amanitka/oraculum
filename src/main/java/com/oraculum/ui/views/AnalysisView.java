@@ -13,12 +13,11 @@ import com.oraculum.ui.ViewHelper;
 import com.oraculum.ui.api.CompanyAnalysisProgressBroadcasterService;
 import com.oraculum.ui.factory.CompanyDetailsButtonFactory;
 import com.oraculum.ui.service.AnalysisRequestService;
-import com.oraculum.ui.views.components.AnalysisResultRenderer;
+
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.grid.HeaderRow;
@@ -56,7 +55,7 @@ public class AnalysisView extends VerticalLayout {
     private final AnalysisRequestService analysisRequestService;
 
     private final CompanyAnalysisProgressBroadcasterService broadcaster;
-    private final AnalysisResultRenderer analysisResultRenderer;
+
     private ComboBox<CompanyDto> companyComboBox;
     private TextArea analysisFocusInput;
     private Grid<CompanyAnalysisViewDto> grid;
@@ -66,14 +65,12 @@ public class AnalysisView extends VerticalLayout {
                         CompanyDetailsButtonFactory companyDetailsButtonFactory,
                         CompanyAnalysisApi companyAnalysisApi,
                         AnalysisRequestService analysisRequestService,
-                        CompanyAnalysisProgressBroadcasterService broadcaster,
-                        AnalysisResultRenderer analysisResultRenderer) {
+                        CompanyAnalysisProgressBroadcasterService broadcaster) {
         this.companyMetadataApi = companyMetadataApi;
         this.companyDetailsButtonFactory = companyDetailsButtonFactory;
         this.companyAnalysisApi = companyAnalysisApi;
         this.analysisRequestService = analysisRequestService;
         this.broadcaster = broadcaster;
-        this.analysisResultRenderer = analysisResultRenderer;
 
         setSizeFull();
         getStyle().set("padding-bottom", "2rem");
@@ -205,7 +202,7 @@ public class AnalysisView extends VerticalLayout {
         }).setHeader("Ticker").setKey("ticker").setComparator(Comparator.comparing(CompanyAnalysisViewDto::getTicker)).setSortable(true).setAutoWidth(true);
 
         g.addColumn(CompanyAnalysisViewDto::getCompanyName).setHeader("Company").setKey("companyName").setSortable(true).setFlexGrow(2);
-        
+
         g.addColumn(CompanyAnalysisViewDto::getMarket).setHeader("Market").setKey("market").setSortable(true);
 
         g.addColumn(new ComponentRenderer<>(a -> {
@@ -317,41 +314,8 @@ public class AnalysisView extends VerticalLayout {
     }
 
     private void showAnalysisDetails(CompanyAnalysisDto analysis) {
-        Dialog dialog = new Dialog();
-        dialog.setWidth("85vw");
-        dialog.setHeight("85vh");
-        dialog.setCloseOnEsc(true);
-        dialog.setCloseOnOutsideClick(true);
-
-        HorizontalLayout headerLayout = new HorizontalLayout();
-        headerLayout.setAlignItems(Alignment.CENTER);
-        headerLayout.setJustifyContentMode(JustifyContentMode.BETWEEN);
-        headerLayout.setWidthFull();
-
-        String titleText = analysis.getTicker() + " Financial Analysis Report";
-        if (analysis instanceof com.oraculum.analyst.api.dto.CompanyAnalysisViewDto) {
-            titleText = ((com.oraculum.analyst.api.dto.CompanyAnalysisViewDto) analysis).getCompanyName() + " (" + analysis.getTicker() + ") Financial Analysis Report";
-        }
-        com.vaadin.flow.component.html.H3 title = new com.vaadin.flow.component.html.H3(titleText);
-        title.getStyle().set("margin", "0");
-
-        HorizontalLayout badges = new HorizontalLayout();
-        if (analysis.getOutlook() != null) {
-            badges.add(ViewHelper.outlookBadge(analysis.getOutlook()));
-        }
-        if (analysis.getRecommendation() != null) {
-            badges.add(ViewHelper.recommendationBadge(analysis.getRecommendation()));
-        }
-
-        headerLayout.add(title, badges);
-        dialog.getHeader().add(headerLayout);
-
-        dialog.add(analysisResultRenderer.renderAnalysisResult(analysis));
-
-        Button closeButton = new Button("Close", _ -> dialog.close());
-        closeButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        dialog.getFooter().add(closeButton);
-        dialog.open();
+        if (analysis == null || analysis.getId() == null) return;
+        getUI().ifPresent(ui -> ui.navigate(AnalysisDetailView.class, analysis.getId().toString()));
     }
 
     private void refreshGridData() {

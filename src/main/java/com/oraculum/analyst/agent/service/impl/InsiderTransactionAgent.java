@@ -16,6 +16,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import com.oraculum.analyst.api.domain.InsiderSentiment;
+
+import java.util.List;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -31,9 +35,9 @@ public class InsiderTransactionAgent implements Agent<InsiderTransactionAgentOut
 
     private AgentOutput<InsiderTransactionAgentOutput> getDefaultOutput() {
         return new AgentOutput<>(new InsiderTransactionAgentOutput(
-                com.oraculum.analyst.api.domain.InsiderSentiment.NEUTRAL,
+                InsiderSentiment.NEUTRAL,
                 3,
-                java.util.List.of("No recent transactions"),
+                List.of("No recent transactions"),
                 "No cluster buying observed.",
                 "There are no recent insider transactions to analyze for this ticker."
         ), 0);

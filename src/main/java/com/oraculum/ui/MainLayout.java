@@ -1,5 +1,6 @@
 package com.oraculum.ui;
 
+import com.oraculum.ui.views.AnalysisDetailView;
 import com.oraculum.ui.views.AnalysisView;
 import com.oraculum.ui.views.CompanyView;
 import com.oraculum.ui.views.EconomyView;
@@ -137,6 +138,7 @@ public class MainLayout extends AppLayout implements RouterLayout, AfterNavigati
         tabMap.put(ScreenerView.class, tabScreener);
         tabMap.put(MarketMapView.class, tabMarketMap);
         tabMap.put(AnalysisView.class, tabAnalysis);
+        tabMap.put(AnalysisDetailView.class, tabAnalysis);
         tabMap.put(CompanyView.class, tabCompany);
         tabMap.put(EconomyView.class, tabEconomy);
 

@@ -1,33 +1,33 @@
 package com.oraculum.ui.views.components;
 
 import com.oraculum.analyst.api.dto.CompanyAnalysisDto;
-import com.oraculum.analyst.api.dto.ExecutiveSummaryAgentOutput;
+import com.oraculum.ui.views.components.renderer.AgentDataRenderer;
+import com.oraculum.ui.views.components.renderer.InvestmentSnapshotRenderer;
+import com.oraculum.ui.views.components.renderer.MarkdownRenderer;
+import com.oraculum.ui.views.components.renderer.RendererUtil;
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.Html;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
-import com.vaadin.flow.component.dialog.Dialog;
-import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.html.*;
+import com.vaadin.flow.component.html.Anchor;
+import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.component.textfield.TextArea;
+import com.vaadin.flow.server.streams.DownloadEvent;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import lombok.RequiredArgsConstructor;
-import org.commonmark.parser.Parser;
-import org.commonmark.renderer.html.HtmlRenderer;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 @Service
@@ -36,6 +36,9 @@ public class AnalysisResultRenderer {
 
     private static final String TRACE_CITATIONS_KEY = "CITATIONS";
     private final JsonMapper jsonMapper;
+    private final InvestmentSnapshotRenderer investmentSnapshotRenderer;
+    private final MarkdownRenderer markdownRenderer;
+    private final AgentDataRenderer agentDataRenderer;
 
     public Component renderAnalysisResult(CompanyAnalysisDto analysis) {
         VerticalLayout root = new VerticalLayout();
@@ -66,25 +69,24 @@ public class AnalysisResultRenderer {
         tabSheet.add("Full Report", createReportTab(analysis));
 
         Component workflowDetails = createWorkflowDetailsTab(analysis);
-        if (workflowDetails != null) {
-            tabSheet.add("Details", workflowDetails);
-        }
+        tabSheet.add("Details", workflowDetails);
 
         return tabSheet;
     }
 
     private Component createSummaryTab(CompanyAnalysisDto analysis) {
-        Component snapshotCard = renderInvestmentSnapshot(analysis.getSummary(), analysis);
+        Component snapshotCard = investmentSnapshotRenderer.renderInvestmentSnapshot(analysis.getSummary(), analysis);
         if (snapshotCard == null) return null;
 
         VerticalLayout layout = new VerticalLayout(snapshotCard);
-        layout.setPadding(true);
+        layout.setPadding(false);
         layout.setSpacing(true);
-        layout.setSizeFull();
-        layout.getStyle().set("max-width", "1400px").set("margin", "0 auto");
+        layout.setWidthFull();
+        layout.getStyle().set("box-sizing", "border-box");
 
-        Scroller scroller = new Scroller(layout);
+        Scroller scroller = new Scroller(layout, Scroller.ScrollDirection.VERTICAL);
         scroller.setSizeFull();
+        scroller.getStyle().set("overflow-x", "hidden");
         return scroller;
     }
 
@@ -119,29 +121,22 @@ public class AnalysisResultRenderer {
     }
 
     private Component createReportTab(CompanyAnalysisDto analysis) {
-        VerticalLayout layout = new VerticalLayout();
-        layout.setPadding(true);
-        layout.setSpacing(true);
-        layout.setSizeFull();
-        layout.getStyle().set("overflow-y", "auto");
-
         String md = analysis.getReport();
         if (md == null || md.isBlank()) {
-            layout.add(new Span("No report generated."));
-        } else {
-            Component markdownContainer = renderMarkdownWithCitations(md, analysis.getAnalysisData());
-            markdownContainer.getStyle()
-                    .set("max-width", "1400px")
-                    .set("margin", "0 auto")
-                    .set("padding", "24px 32px")
-                    .set("color", "var(--lumo-body-text-color)");
-
-            Scroller scroller = new Scroller(markdownContainer);
-            scroller.setSizeFull();
-            layout.add(scroller);
+            return new Span("No report generated.");
         }
+        Component markdownContainer = markdownRenderer.renderMarkdownWithCitations(md, analysis.getAnalysisData());
+        markdownContainer.getStyle()
+                .set("max-width", "100%")
+                .set("box-sizing", "border-box")
+                .set("margin", "0 auto")
+                .set("padding", "24px 16px")
+                .set("color", "var(--lumo-body-text-color)");
 
-        return layout;
+        Scroller scroller = new Scroller(markdownContainer, Scroller.ScrollDirection.VERTICAL);
+        scroller.setSizeFull();
+        scroller.getStyle().set("overflow-x", "hidden");
+        return scroller;
     }
 
     private Component createJsonTab(CompanyAnalysisDto analysis) {
@@ -168,13 +163,13 @@ public class AnalysisResultRenderer {
         });
         copyButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
 
-        Anchor downloadAnchor = new Anchor((com.vaadin.flow.server.streams.DownloadEvent event) -> {
+        Anchor downloadAnchor = new Anchor((DownloadEvent event) -> {
             String filename = analysis.getTicker() != null ? "analysis_" + analysis.getTicker() + ".json" : "analysis.json";
             event.setFileName(filename);
             event.getResponse().setHeader("Content-Type", "application/json");
-            try (java.io.OutputStream out = event.getOutputStream()) {
+            try (OutputStream out = event.getOutputStream()) {
                 out.write(finalJson.getBytes(StandardCharsets.UTF_8));
-            } catch (java.io.IOException ignored) {
+            } catch (IOException ignored) {
             }
         }, "");
         downloadAnchor.getElement().setAttribute("download", true);
@@ -206,489 +201,13 @@ public class AnalysisResultRenderer {
                     continue;
                 }
 
-                Component tabContent = createAgentTabContent(entry.getValue(), jsonData);
+                Component tabContent = agentDataRenderer.createAgentTabContent(entry.getValue(), jsonData);
                 if (tabContent != null) {
-                    tabSheet.add(formatKeyTitle(key), tabContent);
+                    tabSheet.add(RendererUtil.formatKeyTitle(key), tabContent);
                 }
             }
         } catch (Exception e) {
             // Silently fallback without adding tabs
-        }
-    }
-
-    private Component createAgentTabContent(JsonNode agentData, String jsonData) {
-        if (agentData == null || agentData.properties().isEmpty()) {
-            return null;
-        }
-
-        VerticalLayout layout = new VerticalLayout();
-        layout.setPadding(true);
-        layout.setSpacing(true);
-        layout.setSizeFull();
-        layout.getStyle().set("max-width", "1400px").set("margin", "0 auto").set("overflow-y", "auto");
-
-        for (Map.Entry<String, JsonNode> field : agentData.properties()) {
-            String key = field.getKey();
-            JsonNode value = field.getValue();
-
-            com.vaadin.flow.component.html.H3 fieldHeader = new com.vaadin.flow.component.html.H3(formatKeyTitle(key));
-            fieldHeader.addClassName("json-key-header");
-            layout.add(fieldHeader);
-
-            if (value.isArray()) {
-                layout.add(renderArrayField(key, value, jsonData));
-            } else if (value.isObject()) {
-                layout.add(renderObjectField(value));
-            } else {
-                layout.add(renderPrimitiveField(value, jsonData));
-            }
-        }
-
-        return layout;
-    }
-
-    private Component renderArrayField(String key, JsonNode value, String jsonData) {
-        UnorderedList list = new UnorderedList();
-        list.addClassNames(LumoUtility.Margin.Top.NONE, LumoUtility.FontSize.SMALL);
-        for (JsonNode item : value) {
-            if (item.isObject()) {
-                if ("recommended_reruns".equals(key)) {
-                    list.add(new ListItem(renderRecommendedRerunItem(item)));
-                } else {
-                    list.add(new ListItem(renderObjectField(item)));
-                }
-            } else {
-                ListItem li = new ListItem();
-                li.add(renderMarkdownWithCitations(item.asString(), jsonData));
-                list.add(li);
-            }
-        }
-        return list;
-    }
-
-    private Component renderRecommendedRerunItem(JsonNode item) {
-        Div rerunDiv = new Div();
-        rerunDiv.addClassNames(LumoUtility.Background.CONTRAST_5, LumoUtility.Padding.SMALL,
-                LumoUtility.BorderRadius.MEDIUM, LumoUtility.Margin.Bottom.SMALL);
-
-        String specialist = item.path("specialist").asString("");
-        String severity = item.path("severity").asString("");
-        String instruction = item.path("instruction").asString("");
-
-        Span badge = new Span(specialist + " (Severity " + severity + ")");
-        badge.getElement().getThemeList().add("badge");
-        badge.getElement().getThemeList().add("error");
-        badge.addClassNames(LumoUtility.Margin.Bottom.SMALL);
-        badge.getStyle().set("display", "inline-block");
-
-        Paragraph inst = new Paragraph(instruction);
-        inst.addClassNames(LumoUtility.Margin.NONE, LumoUtility.FontSize.SMALL);
-
-        rerunDiv.add(badge, inst);
-        return rerunDiv;
-    }
-
-    private Component renderObjectField(JsonNode value) {
-        Pre pre = new Pre(value.toPrettyString());
-        pre.addClassNames(LumoUtility.Background.CONTRAST_5, LumoUtility.Padding.SMALL, LumoUtility.FontSize.SMALL);
-        pre.getStyle().set("border-radius", "4px").set("font-family", "monospace");
-        return pre;
-    }
-
-    private Component renderPrimitiveField(JsonNode value, String jsonData) {
-        return renderMarkdownWithCitations(value.asString(), jsonData);
-    }
-
-    private Component renderMarkdownWithCitations(String strValue, String jsonData) {
-        try {
-            JsonNode citationsNode = null;
-            if (jsonData != null) {
-                JsonNode rootNode = jsonMapper.readTree(jsonData);
-                if (rootNode.has(TRACE_CITATIONS_KEY)) {
-                    citationsNode = rootNode.get(TRACE_CITATIONS_KEY);
-                }
-            }
-
-            String processedMd = injectCitations(strValue, jsonData);
-            String htmlContent = HtmlRenderer.builder().build()
-                    .render(Parser.builder().build().parse(processedMd));
-
-            CitationMarkdownContainer container = new CitationMarkdownContainer(htmlContent, citationsNode);
-            container.getStyle().set("line-height", "1.6").set("font-size", "0.9rem");
-            return container;
-        } catch (Exception e) {
-            Paragraph p = new Paragraph(strValue);
-            p.getStyle().set("white-space", "pre-wrap");
-            p.addClassNames(LumoUtility.Margin.Top.NONE, LumoUtility.FontSize.SMALL, LumoUtility.TextColor.BODY);
-            return p;
-        }
-    }
-
-    private String injectCitations(String markdown, String analysisDataJson) {
-        if (analysisDataJson == null || markdown == null) return markdown;
-        try {
-            JsonNode rootNode = jsonMapper.readTree(analysisDataJson);
-            if (!rootNode.has(TRACE_CITATIONS_KEY)) return markdown;
-            JsonNode citationsNode = rootNode.get(TRACE_CITATIONS_KEY);
-
-            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\[([\\d,\\s\\?\u26A0\uFE0F]+)\\]");
-            java.util.regex.Matcher matcher = pattern.matcher(markdown);
-
-            StringBuilder sb = new StringBuilder();
-            while (matcher.find()) {
-                String inner = matcher.group(1);
-                String[] parts = inner.split(",");
-                StringBuilder replacement = new StringBuilder("[");
-
-                for (int i = 0; i < parts.length; i++) {
-                    String part = parts[i].trim();
-                    String id = part.replaceAll("[^\\d]", "");
-                    String suffix = part.replaceAll("[\\d]", "").trim();
-
-                    if (!id.isEmpty() && citationsNode.has(id)) {
-                        replacement.append("<a href=\"javascript:void(0)\" class=\"reference-data-link\" data-reference-id=\"")
-                                .append(id).append("\">").append(id).append("</a>");
-                        if (!suffix.isEmpty()) {
-                            // If suffix contains ? we can style it or just leave it
-                            replacement.append(" ").append(suffix);
-                        }
-                    } else {
-                        replacement.append(part);
-                    }
-
-                    if (i < parts.length - 1) {
-                        replacement.append(", ");
-                    }
-                }
-                replacement.append("]");
-                matcher.appendReplacement(sb, java.util.regex.Matcher.quoteReplacement(replacement.toString()));
-            }
-            matcher.appendTail(sb);
-            return sb.toString();
-        } catch (Exception e) {
-            return markdown;
-        }
-    }
-
-    private String formatKeyTitle(String key) {
-        if (key == null || key.isEmpty()) return key;
-        String withSpaces = key.replaceAll("([a-z])([A-Z]+)", "$1 $2").replace("_", " ").toLowerCase();
-        return withSpaces.substring(0, 1).toUpperCase() + withSpaces.substring(1);
-    }
-
-    private Component renderInvestmentSnapshot(String snapshotJson, CompanyAnalysisDto analysis) {
-        try {
-            ExecutiveSummaryAgentOutput snapshot = jsonMapper.readValue(snapshotJson, ExecutiveSummaryAgentOutput.class);
-            if (snapshot == null) return null;
-
-            Div container = new Div();
-            container.addClassNames(
-                    LumoUtility.Width.FULL
-            );
-
-            container.add(createSnapshotHeader(snapshot, analysis));
-
-            if (snapshot.thesis() != null && !snapshot.thesis().isBlank()) {
-                container.add(createSnapshotThesis(snapshot.thesis()));
-            }
-
-            Component points = createSnapshotPoints(snapshot);
-            if (points != null) {
-                container.add(points);
-            }
-
-            Component footer = createSnapshotFooter(snapshot);
-            if (footer != null) {
-                container.add(footer);
-            }
-
-            return container;
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    private Component createSnapshotHeader(ExecutiveSummaryAgentOutput snapshot, CompanyAnalysisDto analysis) {
-        HorizontalLayout header = new HorizontalLayout();
-        header.setWidthFull();
-        header.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
-        header.setAlignItems(FlexComponent.Alignment.CENTER);
-        header.getStyle().set("margin-bottom", "16px");
-
-        H3 title = new H3("Investment Snapshot");
-        title.getStyle()
-                .set("margin", "0")
-                .set("font-size", "1.25rem")
-                .set("font-weight", "700")
-                .set("letter-spacing", "0.5px");
-
-        String verdictText = snapshot.verdict() != null && !snapshot.verdict().isBlank()
-                ? snapshot.verdict()
-                : (analysis.getRecommendation() != null ? analysis.getRecommendation().name() : "");
-
-        Span verdictBadge = new Span(verdictText);
-        verdictBadge.getElement().getThemeList().add("badge");
-        if ("BUY".equalsIgnoreCase(verdictText) || "BULLISH".equalsIgnoreCase(verdictText)) {
-            verdictBadge.getElement().getThemeList().add("success");
-        } else if ("SELL".equalsIgnoreCase(verdictText) || "BEARISH".equalsIgnoreCase(verdictText)) {
-            verdictBadge.getElement().getThemeList().add("error");
-        } else {
-            verdictBadge.getElement().getThemeList().add("contrast");
-        }
-        verdictBadge.getStyle()
-                .set("font-size", "0.95rem")
-                .set("padding", "6px 14px")
-                .set("font-weight", "bold")
-                .set("letter-spacing", "1px");
-
-        HorizontalLayout titleBadge = new HorizontalLayout(title, verdictBadge);
-        titleBadge.setAlignItems(FlexComponent.Alignment.CENTER);
-        titleBadge.getStyle().set("gap", "12px");
-
-        HorizontalLayout convictionLayout = new HorizontalLayout();
-        convictionLayout.setAlignItems(FlexComponent.Alignment.CENTER);
-        convictionLayout.getStyle().set("gap", "10px");
-
-        int conviction = snapshot.conviction();
-        HorizontalLayout meter = new HorizontalLayout();
-        meter.setSpacing(false);
-        meter.getStyle().set("gap", "4px").set("align-items", "center");
-
-        for (int i = 1; i <= 5; i++) {
-            Span bar = new Span();
-            bar.getStyle()
-                    .set("width", "12px")
-                    .set("height", "16px")
-                    .set("border-radius", "3px");
-            if (i <= conviction) {
-                bar.getStyle().set("background", "var(--lumo-primary-color)");
-            } else {
-                bar.getStyle().set("background", "rgba(255, 255, 255, 0.15)");
-            }
-            meter.add(bar);
-        }
-
-        Span convictionText = new Span("Conviction " + conviction + "/5");
-        convictionText.addClassNames(LumoUtility.FontWeight.BOLD, LumoUtility.FontSize.MEDIUM);
-        convictionText.getStyle().set("color", "var(--lumo-secondary-text-color)");
-
-        convictionLayout.add(meter, convictionText);
-        header.add(titleBadge, convictionLayout);
-        return header;
-    }
-
-    private Component createSnapshotThesis(String thesis) {
-        Div thesisCard = new Div();
-        thesisCard.setWidthFull();
-        thesisCard.getStyle()
-                .set("background", "rgba(var(--lumo-primary-color-rgb), 0.05)")
-                .set("border-left", "3px solid var(--lumo-primary-color)")
-                .set("border-radius", "0 8px 8px 0")
-                .set("padding", "12px 16px")
-                .set("margin-bottom", "16px");
-
-        Paragraph p = new Paragraph(thesis);
-        p.getStyle()
-                .set("margin", "0")
-                .set("font-size", "0.95rem")
-                .set("line-height", "1.6")
-                .set("color", "var(--lumo-header-text-color)");
-
-        thesisCard.add(p);
-        return thesisCard;
-    }
-
-    private Component createSnapshotPoints(ExecutiveSummaryAgentOutput snapshot) {
-        HorizontalLayout pointsLayout = new HorizontalLayout();
-        pointsLayout.setWidthFull();
-        pointsLayout.setSpacing(true);
-        pointsLayout.getStyle().set("margin-bottom", "16px");
-
-        if (snapshot.topBullPoints() != null && !snapshot.topBullPoints().isEmpty()) {
-            pointsLayout.add(createPointsCard("Key Bull Drivers", snapshot.topBullPoints(), true));
-        }
-        if (snapshot.topBearPoints() != null && !snapshot.topBearPoints().isEmpty()) {
-            pointsLayout.add(createPointsCard("Key Risks & Headwinds", snapshot.topBearPoints(), false));
-        }
-
-        return pointsLayout.getComponentCount() > 0 ? pointsLayout : null;
-    }
-
-    private Component createPointsCard(String titleText, List<String> items, boolean isBull) {
-        VerticalLayout card = new VerticalLayout();
-        card.setPadding(true);
-        card.setSpacing(false);
-        card.setWidthFull();
-
-        String bg = isBull ? "rgba(46, 204, 113, 0.05)" : "rgba(231, 76, 60, 0.05)";
-        String borderColor = isBull ? "rgba(46, 204, 113, 0.2)" : "rgba(231, 76, 60, 0.2)";
-        String headerColor = isBull ? "#2ecc71" : "#e74c3c";
-        String icon = isBull ? "▲ " : "▼ ";
-
-        card.getStyle()
-                .set("background", bg)
-                .set("border", "1px solid " + borderColor)
-                .set("border-radius", "8px")
-                .set("padding", "14px 16px");
-
-        H5 header = new H5(icon + titleText);
-        header.getStyle()
-                .set("margin", "0 0 10px 0")
-                .set("color", headerColor)
-                .set("font-size", "0.85rem")
-                .set("font-weight", "700")
-                .set("text-transform", "uppercase")
-                .set("letter-spacing", "0.5px");
-        card.add(header);
-
-        UnorderedList list = new UnorderedList();
-        list.getStyle()
-                .set("margin", "0")
-                .set("padding-left", "1.2rem")
-                .set("font-size", "0.88rem")
-                .set("line-height", "1.55");
-
-        for (String item : items) {
-            ListItem li = new ListItem(item);
-            li.getStyle().set("margin-bottom", "6px");
-            list.add(li);
-        }
-        card.add(list);
-        return card;
-    }
-
-    private Component createSnapshotFooter(ExecutiveSummaryAgentOutput snapshot) {
-        HorizontalLayout footer = new HorizontalLayout();
-        footer.setWidthFull();
-        footer.setSpacing(true);
-
-        boolean hasValuation = snapshot.valuationOneLiner() != null && !snapshot.valuationOneLiner().isBlank();
-        boolean hasWatch = snapshot.whatWouldChangeThis() != null && !snapshot.whatWouldChangeThis().isBlank();
-
-        if (!hasValuation && !hasWatch) return null;
-
-        if (hasValuation) {
-            footer.add(createFooterPill("Valuation Context", snapshot.valuationOneLiner(), "🏷️", "rgba(255, 255, 255, 0.03)", "rgba(255, 255, 255, 0.1)"));
-        }
-        if (hasWatch) {
-            footer.add(createFooterPill("Watch Trigger", snapshot.whatWouldChangeThis(), "⚡", "rgba(241, 196, 15, 0.05)", "rgba(241, 196, 15, 0.2)"));
-        }
-
-        return footer;
-    }
-
-    private Component createFooterPill(String title, String content, String iconStr, String bg, String borderColor) {
-        Div box = new Div();
-        box.setWidthFull();
-        box.getStyle()
-                .set("background", bg)
-                .set("border", "1px solid " + borderColor)
-                .set("border-radius", "8px")
-                .set("padding", "10px 14px");
-
-        Span iconSpan = new Span(iconStr + " ");
-        Span titleSpan = new Span(title + ": ");
-        titleSpan.getStyle().set("font-weight", "700").set("font-size", "0.85rem");
-
-        Span contentSpan = new Span(content);
-        contentSpan.getStyle().set("font-size", "0.85rem").set("color", "var(--lumo-secondary-text-color)");
-
-        box.add(iconSpan, titleSpan, contentSpan);
-        return box;
-    }
-
-    public class CitationMarkdownContainer extends Div {
-
-        private final JsonNode citationsNode;
-
-        public CitationMarkdownContainer(String html, JsonNode citationsNode) {
-            this.citationsNode = citationsNode;
-
-            String style = "<style>" +
-                    ".rendered-markdown { font-size: 1rem; line-height: 1.7; }" +
-                    ".rendered-markdown h1, .rendered-markdown h2, .rendered-markdown h3 { margin-top: 2rem; margin-bottom: 1rem; font-weight: 600; color: var(--lumo-header-text-color); }" +
-                    ".rendered-markdown h2 { border-bottom: 1px solid var(--lumo-contrast-10pct); padding-bottom: 0.5rem; }" +
-                    ".rendered-markdown p { margin-bottom: 1.25rem; }" +
-                    ".rendered-markdown strong { font-weight: 600; color: var(--lumo-primary-text-color); }" +
-                    ".reference-data-link { font-size: 0.75rem; vertical-align: super; background: var(--lumo-contrast-10pct); border-radius: 4px; padding: 2px 4px; text-decoration: none; color: var(--lumo-primary-text-color); font-weight: bold; margin-left: 2px; transition: all 0.2s ease; }" +
-                    ".reference-data-link:hover { background: var(--lumo-primary-color); color: white; }" +
-                    "</style>";
-
-            add(new Html("<div>" + style + "<div class='rendered-markdown'>" + html + "</div></div>"));
-
-            getElement().executeJs(
-                    "const links = this.querySelectorAll('.reference-data-link');" +
-                            "links.forEach(link => {" +
-                            "  link.addEventListener('click', (e) => {" +
-                            "    e.preventDefault();" +
-                            "    const citationId = link.getAttribute('data-reference-id');" +
-                            "    this.$server.showReferenceDataDialog(citationId);" +
-                            "  });" +
-                            "});"
-            );
-
-
-        }
-
-        @com.vaadin.flow.component.ClientCallable
-        public void showReferenceDataDialog(String citationId) {
-            if (citationId == null || citationsNode == null || !citationsNode.has(citationId)) return;
-            try {
-                JsonNode data = citationsNode.get(citationId);
-
-                Dialog dialog = new Dialog();
-                String title = "Citation Source [" + citationId + "]";
-                if (data.isObject()) {
-                    if (data.has("_source") && data.has("_variant")) {
-                        title += " - " + data.get("_source").asString() + " (" + data.get("_variant").asString() + ")";
-                    } else if (data.has("_source")) {
-                        title += " - " + data.get("_source").asString();
-                    }
-                }
-                dialog.setHeaderTitle(title);
-
-                dialog.setWidth("700px");
-                dialog.setMaxHeight("85vh");
-
-                Grid<Map.Entry<String, JsonNode>> grid = new Grid<>();
-                grid.addThemeVariants(com.vaadin.flow.component.grid.GridVariant.LUMO_NO_BORDER,
-                        com.vaadin.flow.component.grid.GridVariant.LUMO_COMPACT,
-                        com.vaadin.flow.component.grid.GridVariant.LUMO_WRAP_CELL_CONTENT);
-                grid.addColumn(entry -> formatKeyTitle(entry.getKey())).setHeader("Property").setAutoWidth(true).setFlexGrow(1);
-                grid.addComponentColumn(entry -> {
-                    JsonNode val = entry.getValue();
-                    if (val.isObject() || val.isArray()) {
-                        Pre pre = new Pre(val.toPrettyString());
-                        pre.getStyle().set("margin", "0").set("font-size", "0.85em").set("white-space", "pre-wrap");
-                        return pre;
-                    } else if (val.isNumber()) {
-                        java.text.NumberFormat nf = java.text.NumberFormat.getInstance(java.util.Locale.US);
-                        nf.setGroupingUsed(true);
-                        nf.setMaximumFractionDigits(4);
-                        return new Span(nf.format(val.asDouble()));
-                    } else {
-                        return new Span(val.asString());
-                    }
-                }).setHeader("Value").setFlexGrow(2);
-
-                List<Map.Entry<String, JsonNode>> items = new ArrayList<>();
-                data.properties().forEach(entry -> {
-                    if (!entry.getKey().startsWith("_")) {
-                        items.add(entry);
-                    }
-                });
-                grid.setItems(items);
-
-                Button closeButton = new Button("Close", _ -> dialog.close());
-                closeButton.addThemeVariants(com.vaadin.flow.component.button.ButtonVariant.LUMO_PRIMARY);
-                dialog.getFooter().add(closeButton);
-
-                dialog.add(grid);
-                dialog.open();
-
-            } catch (Exception e) {
-                // Ignore
-            }
         }
     }
 }
