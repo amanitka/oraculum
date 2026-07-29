@@ -25,7 +25,7 @@ import java.util.List;
 public class CompanyTickerDocumentServiceImpl implements CompanyTickerDocumentApi {
 
     private final TickerDocumentSyncStatusRepository repository;
-    private final TickerSecDocumentStaleSyncRepository staleSyncRepository;
+    private final TickerSecDocumentSyncRepository syncRepository;
     private final TickerDocumentPendingRepository pendingRepository;
     private final TickerDocumentRawRepository rawRepository;
     private final TickerDocumentRepository summaryRepository;
@@ -42,8 +42,19 @@ public class CompanyTickerDocumentServiceImpl implements CompanyTickerDocumentAp
     @Override
     @Transactional(readOnly = true)
     public List<TickerDocumentSyncStatusDto> getStaleSecDocuments(int limit) {
-        return staleSyncRepository.findStaleDocuments(PageRequest.of(0, limit)).stream()
-                .map(this::mapStaleToDto)
+        return syncRepository.findStaleDocuments(PageRequest.of(0, limit)).stream()
+                .map(this::mapSyncToDto)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TickerDocumentSyncStatusDto> getSyncStatusesByTickers(List<String> tickers) {
+        if (tickers == null || tickers.isEmpty()) {
+            return List.of();
+        }
+        return syncRepository.findByTickers(tickers).stream()
+                .map(this::mapSyncToDto)
                 .toList();
     }
 
@@ -56,7 +67,7 @@ public class CompanyTickerDocumentServiceImpl implements CompanyTickerDocumentAp
                 .build();
     }
 
-    private TickerDocumentSyncStatusDto mapStaleToDto(TickerSecDocumentStaleSyncEntity entity) {
+    private TickerDocumentSyncStatusDto mapSyncToDto(TickerSecDocumentSyncEntity entity) {
         return TickerDocumentSyncStatusDto.builder()
                 .ticker(entity.getTicker())
                 .market(entity.getMarket())

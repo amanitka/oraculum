@@ -6,10 +6,11 @@
 --              (8K, 10K) that are stale and need to be refreshed.
 -- =================================================================
 DROP VIEW IF EXISTS public.v_ticker_sec_document_stale_sync CASCADE;
+DROP VIEW IF EXISTS public.v_ticker_sec_document_sync CASCADE;
 
-DO $$ BEGIN RAISE NOTICE 'Creating view: v_ticker_sec_document_stale_sync'; END $$;
+DO $$ BEGIN RAISE NOTICE 'Creating view: v_ticker_sec_document_sync'; END $$;
 
-CREATE VIEW public.v_ticker_sec_document_stale_sync AS
+CREATE VIEW public.v_ticker_sec_document_sync AS
 SELECT
     c.ticker,
     c.market,
@@ -17,7 +18,16 @@ SELECT
     dt.document_type,
     tds.last_processed_file_date,
     tds.last_file_refresh_at,
-    tds.last_refresh_at
+    tds.last_refresh_at,
+    CASE WHEN (tds.last_refresh_at IS NULL
+       OR (tds.last_refresh_at IS NOT NULL
+           AND tds.last_processed_file_date IS NOT NULL
+           AND tds.last_refresh_at < NOW() - INTERVAL '30 DAYS'
+           AND COALESCE(tds.last_file_refresh_at, '1970-01-01'::timestamptz) < NOW() - INTERVAL '30 DAYS')
+       OR (tds.last_refresh_at IS NOT NULL
+           AND tds.last_processed_file_date IS NULL
+           AND tds.last_refresh_at < NOW() - INTERVAL '90 DAYS')
+    ) THEN 'Y' ELSE 'N' END AS is_stale
 FROM public.t_company c
 CROSS JOIN (SELECT 'SEC_8K' AS document_type
             UNION ALL
@@ -29,16 +39,7 @@ LEFT JOIN public.t_ticker_document_sync_status tds ON tds.ticker = c.ticker
                                                  AND tds.market = c.market
                                                  AND tds.document_type = dt.document_type
                                                  AND tds.source = 'SEC_EDGAR'
-WHERE c.market = 'us'
-  AND (tds.last_refresh_at IS NULL
-       OR (tds.last_refresh_at IS NOT NULL
-           AND tds.last_processed_file_date IS NOT NULL
-           AND tds.last_refresh_at < NOW() - INTERVAL '30 DAYS'
-           AND COALESCE(tds.last_file_refresh_at, '1970-01-01'::timestamptz) < NOW() - INTERVAL '30 DAYS')
-       OR (tds.last_refresh_at IS NOT NULL
-           AND tds.last_processed_file_date IS NULL
-           AND tds.last_refresh_at < NOW() - INTERVAL '90 DAYS')
-       );
+WHERE c.market = 'us';
 
 -- =================================================================
 -- VIEW: v_ticker_document

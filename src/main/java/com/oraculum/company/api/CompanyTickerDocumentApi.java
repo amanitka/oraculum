@@ -14,6 +14,8 @@ public interface CompanyTickerDocumentApi {
 
     List<TickerDocumentSyncStatusDto> getStaleSecDocuments(int limit);
 
+    List<TickerDocumentSyncStatusDto> getSyncStatusesByTickers(List<String> tickers);
+
     void createDocumentSummary(TickerDocumentDto summary);
 
     void updateRawDocumentStatus(String id, LocalDate reportPeriod, TickerDocumentProcessingStatus status);

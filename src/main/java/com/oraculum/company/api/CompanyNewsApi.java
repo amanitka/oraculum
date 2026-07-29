@@ -1,5 +1,6 @@
 package com.oraculum.company.api;
 
+import com.oraculum.company.api.dto.NewsArticleDto;
 import com.oraculum.company.api.dto.NewsTickerDto;
 import com.oraculum.company.api.dto.TickerNewsSentimentDto;
 
@@ -10,8 +11,10 @@ import java.util.Optional;
 
 public interface CompanyNewsApi {
     Optional<OffsetDateTime> getNewsLastTimePublished();
+
     List<NewsTickerDto> getNewsByTicker(String ticker, LocalDate after);
+
     Optional<TickerNewsSentimentDto> getNewsSentimentByTicker(String ticker);
-    
-    void createOrUpdateNewsBatch(List<com.oraculum.company.api.dto.NewsArticleDto> articles);
+
+    void createOrUpdateNewsBatch(List<NewsArticleDto> articles);
 }

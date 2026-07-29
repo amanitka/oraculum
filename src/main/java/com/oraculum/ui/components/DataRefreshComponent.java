@@ -26,6 +26,7 @@ import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import org.springframework.context.ApplicationEventPublisher;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -112,10 +113,27 @@ public class DataRefreshComponent extends VerticalLayout {
         });
 
         items.add(new RefreshRow(
-                "Ticker Documents",
-                "Refreshes SEC filings for US companies.",
+                "Ticker Documents (Historical)",
+                "Refreshes SEC filings for US companies (Stale backfill).",
                 tickersField,
                 btnTickerDocs
+        ));
+
+        // 5b. Daily SEC Documents (Fast Check)
+        DatePicker dailyDate = new DatePicker();
+        dailyDate.setPlaceholder("Target date (defaults to today)");
+        dailyDate.setWidth("200px");
+        
+        Button btnDailyDocs = createRefreshButton("Daily SEC Documents", () -> {
+            LocalDate targetDate = dailyDate.getValue() != null ? dailyDate.getValue() : LocalDate.now();
+            harvesterBatchApi.refreshDailyNewSecDocuments(targetDate);
+        });
+
+        items.add(new RefreshRow(
+                "Daily SEC Documents",
+                "Fast check for new SEC documents using the daily master index.",
+                dailyDate,
+                btnDailyDocs
         ));
 
         // 6. Share Prices

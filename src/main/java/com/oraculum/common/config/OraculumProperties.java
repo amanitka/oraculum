@@ -50,7 +50,8 @@ public record OraculumProperties(Data data,
     public record Harvester(String exchangeDirectory,
                             ExchangeCleanup exchangeCleanup,
                             AlphaVantage alphaVantage,
-                            Fred fred) {
+                            Fred fred,
+                            SecEdgar secEdgar) {
 
         public String resolveExchangePath(String relativePath) {
             return Path.of(exchangeDirectory).resolve(Path.of(relativePath).getFileName()).normalize().toString();
@@ -70,6 +71,10 @@ public record OraculumProperties(Data data,
         public record Fred(String apiKey,
                            String baseUrl,
                            int historyLimitYears) {
+        }
+
+        public record SecEdgar(String baseUrl,
+                               String userAgent) {
         }
     }
 }

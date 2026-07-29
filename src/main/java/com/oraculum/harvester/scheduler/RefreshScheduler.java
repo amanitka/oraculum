@@ -9,6 +9,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -90,13 +92,14 @@ public class RefreshScheduler {
         }
     }
 
-    @Scheduled(cron = "${oraculum.data.sec-documents.cron}")
-    public void refreshStaleSecDocuments() {
-        log.info("Starting scheduled stale SEC documents refresh...");
+    @Scheduled(cron = "${oraculum.data.sec-documents.cron:0 0 * * * *}")
+    public void refreshSecDocuments() {
+        log.info("Starting scheduled SEC documents refresh (Daily + Stale)...");
         try {
+            refreshService.refreshDailyNewSecDocuments(LocalDate.now());
             refreshService.refreshStaleSecDocuments();
         } catch (Exception e) {
-            log.error("Scheduled stale SEC documents refresh failed", e);
+            log.error("Scheduled SEC documents refresh failed", e);
         }
     }
 }

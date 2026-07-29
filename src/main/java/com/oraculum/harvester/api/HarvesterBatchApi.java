@@ -19,6 +19,8 @@ public interface HarvesterBatchApi {
 
     void refreshStaleSecDocuments();
 
+    void refreshDailyNewSecDocuments(LocalDate targetDate);
+
     void refreshNews();
 
     void refreshMacroeconomic();

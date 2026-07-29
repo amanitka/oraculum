@@ -10,7 +10,7 @@ import com.oraculum.company.api.dto.TickerKeyDto;
 import com.oraculum.company.domain.TickerDocumentEntity;
 import com.oraculum.company.domain.TickerDocumentPendingEntity;
 import com.oraculum.company.domain.TickerDocumentSyncStatusEntity;
-import com.oraculum.company.domain.TickerSecDocumentStaleSyncEntity;
+import com.oraculum.company.domain.TickerSecDocumentSyncEntity;
 import com.oraculum.company.repository.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,7 +32,7 @@ class CompanyTickerDocumentServiceImplTest {
     private TickerDocumentSyncStatusRepository repository;
 
     @Mock
-    private TickerSecDocumentStaleSyncRepository staleSyncRepository;
+    private TickerSecDocumentSyncRepository syncRepository;
 
     @Mock
     private TickerDocumentPendingRepository pendingRepository;
@@ -68,14 +68,15 @@ class CompanyTickerDocumentServiceImplTest {
 
     @Test
     void getStaleSecDocuments_returnsMappedDtos() {
-        TickerSecDocumentStaleSyncEntity entity = TickerSecDocumentStaleSyncEntity.builder()
+        TickerSecDocumentSyncEntity entity = TickerSecDocumentSyncEntity.builder()
                 .ticker("MSFT")
                 .market("US")
                 .documentType("SEC_10K")
                 .lastProcessedFileDate(LocalDate.of(2023, 6, 1))
+                .isStale(true)
                 .build();
 
-        when(staleSyncRepository.findStaleDocuments(PageRequest.of(0, 10))).thenReturn(List.of(entity));
+        when(syncRepository.findStaleDocuments(PageRequest.of(0, 10))).thenReturn(List.of(entity));
 
         List<TickerDocumentSyncStatusDto> result = service.getStaleSecDocuments(10);
 

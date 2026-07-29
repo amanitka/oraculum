@@ -1,12 +1,10 @@
 package com.oraculum.harvester.service;
 
-import com.oraculum.company.api.CompanyMetadataApi;
 import com.oraculum.company.api.CompanyTickerDocumentApi;
 import com.oraculum.company.api.domain.TickerDocumentType;
-import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.company.api.dto.TickerDocumentSyncStatusDto;
-import com.oraculum.harvester.api.dto.FetchSecDocumentsRequest;
 import com.oraculum.company.api.dto.TickerKeyDto;
+import com.oraculum.harvester.api.dto.FetchSecDocumentsRequest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -22,9 +20,6 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class SecDocumentHarvesterServiceTest {
-
-    @Mock
-    private CompanyMetadataApi companyMetadataApi;
 
     @Mock
     private CompanyTickerDocumentApi companyTickerDocumentApi;
@@ -107,17 +102,30 @@ class SecDocumentHarvesterServiceTest {
 
     @Test
     void buildSecDocumentsRequest_buildsRequestCorrectly() {
-        CompanyDto company1 = new CompanyDto(1, "AAPL", "US", "Apple Inc.", null, null, null, null, null, null, null, "0000320193", null);
-        when(companyMetadataApi.getCompaniesByMarketAndTickers("US", List.of("AAPL"))).thenReturn(List.of(company1));
-
         TickerDocumentSyncStatusDto status1 = TickerDocumentSyncStatusDto.builder()
                 .ticker("AAPL")
                 .market("US")
+                .cik("0000320193")
                 .documentType(TickerDocumentType.SEC_8K)
                 .lastProcessedFileDate(LocalDate.of(2023, 1, 1))
                 .build();
-        when(companyTickerDocumentApi.getSyncStatusesByTickersAndMarket(List.of("AAPL"), "US"))
-                .thenReturn(List.of(status1));
+        TickerDocumentSyncStatusDto status2 = TickerDocumentSyncStatusDto.builder()
+                .ticker("AAPL")
+                .market("US")
+                .cik("0000320193")
+                .documentType(TickerDocumentType.SEC_10K)
+                .lastProcessedFileDate(null)
+                .build();
+        TickerDocumentSyncStatusDto status3 = TickerDocumentSyncStatusDto.builder()
+                .ticker("AAPL")
+                .market("US")
+                .cik("0000320193")
+                .documentType(TickerDocumentType.SEC_10Q)
+                .lastProcessedFileDate(null)
+                .build();
+
+        when(companyTickerDocumentApi.getSyncStatusesByTickers(List.of("AAPL")))
+                .thenReturn(List.of(status1, status2, status3));
 
         Optional<FetchSecDocumentsRequest> requestOpt = service.buildSecDocumentsRequest(
                 List.of(new TickerKeyDto("AAPL", "US"))

@@ -134,7 +134,6 @@ oraculum:
       data-file-ready: ${ORACULUM_KAFKA_TOPIC_DATA_FILE_READY:oraculum.data_file_ready}
       market: ${ORACULUM_KAFKA_TOPIC_MARKET:oraculum.market}
       industry: ${ORACULUM_KAFKA_TOPIC_INDUSTRY:oraculum.industry}
-      news: ${ORACULUM_KAFKA_TOPIC_NEWS:oraculum.news}
       harvester-request: ${ORACULUM_KAFKA_TOPIC_HARVESTER_REQUEST:oraculum.harvester.request}
 
   analyst:
@@ -172,6 +171,9 @@ oraculum:
       api-key: ${ORACULUM_FRED_API_KEY}
       base-url: "https://api.stlouisfed.org/fred"
       history-limit-years: 10
+    sec-edgar:
+      base-url: "https://www.sec.gov"
+      user-agent: ${ORACULUM_SEC_USER_AGENT:Oraculum DataHarvester (admin@oraculum.com)}
 
   llm:
     common:

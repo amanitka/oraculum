@@ -118,6 +118,13 @@ public class HarvesterBatchService implements HarvesterBatchApi {
     }
 
     @Override
+    public void refreshDailyNewSecDocuments(LocalDate targetDate) {
+        log.info("Requesting daily new SEC documents refresh for date: {}", targetDate);
+        secDocumentHarvesterService.buildDailyNewSecDocumentsRequests(targetDate)
+                .forEach(this::publishRequest);
+    }
+
+    @Override
     public void refreshInsiderTransactions() {
         log.info("Requesting insider transactions refresh");
         LocalDateTime maxDate = companyInsiderTransactionApi.getInsiderTransactionsLastFilingDate().orElse(null);
