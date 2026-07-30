@@ -5,7 +5,6 @@ import com.oraculum.company.api.domain.TickerDocumentType;
 import com.oraculum.company.api.dto.TickerDocumentSyncStatusDto;
 import com.oraculum.company.api.dto.TickerKeyDto;
 import com.oraculum.harvester.api.dto.FetchSecDocumentsRequest;
-import com.oraculum.harvester.provider.SecCikMapperClient;
 import com.oraculum.harvester.provider.SecEdgarIndexClient;
 import com.oraculum.harvester.provider.dto.SecDailyFilingDto;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +12,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -23,7 +25,6 @@ public class SecDocumentHarvesterService {
 
     private final CompanyTickerDocumentApi companyTickerDocumentApi;
     private final SecEdgarIndexClient secEdgarIndexClient;
-    private final SecCikMapperClient secCikMapperClient;
 
     public Optional<FetchSecDocumentsRequest> buildSecDocumentsRequest(List<TickerKeyDto> tickers) {
         if (tickers == null || tickers.isEmpty()) {
@@ -56,19 +57,16 @@ public class SecDocumentHarvesterService {
     public List<FetchSecDocumentsRequest> buildDailyNewSecDocumentsRequests(LocalDate targetDate) {
         log.info("Checking for new SEC documents in daily index for date: {}", targetDate);
 
-        List<SecDailyFilingDto> filteredFilings = getFilteredDailyFilings(targetDate);
-        if (filteredFilings.isEmpty()) return List.of();
-
-        List<String> indexCiks = filteredFilings.stream().map(SecDailyFilingDto::cik).distinct().toList();
-        List<String> targetedTickers = mapCiksToTrackedTickers(indexCiks);
-
-        if (targetedTickers.isEmpty()) {
-            log.info("None of the CIKs in today's index map to actively tracked tickers.");
+        Map<String, Map<TickerDocumentType, SecDailyFilingDto>> filingsByCik = secEdgarIndexClient.downloadDailyIndex(targetDate);
+        if (filingsByCik.isEmpty()) {
+            log.info("No relevant filings found in daily index for {}", targetDate);
             return List.of();
         }
 
-        List<TickerDocumentSyncStatusDto> statuses = companyTickerDocumentApi.getSyncStatusesByTickers(targetedTickers);
-        List<TickerDocumentSyncStatusDto> newStatuses = filterByNewFilings(statuses, filteredFilings);
+        List<String> targetedCiks = new ArrayList<>(filingsByCik.keySet());
+        List<TickerDocumentSyncStatusDto> allStatuses = companyTickerDocumentApi.getSyncStatusesByCiks(targetedCiks);
+
+        List<TickerDocumentSyncStatusDto> newStatuses = filterByNewFilings(allStatuses, filingsByCik);
 
         if (newStatuses.isEmpty()) {
             log.info("All filings for tracked companies are already processed.");
@@ -79,8 +77,7 @@ public class SecDocumentHarvesterService {
         return toBatchedRequests(buildTickerDocumentItems(newStatuses));
     }
 
-    private List<FetchSecDocumentsRequest.TickerDocumentItem> buildTickerDocumentItems(
-            List<TickerDocumentSyncStatusDto> statuses) {
+    private List<FetchSecDocumentsRequest.TickerDocumentItem> buildTickerDocumentItems(List<TickerDocumentSyncStatusDto> statuses) {
         Map<TickerKey, List<TickerDocumentSyncStatusDto>> byTicker = statuses.stream()
                 .collect(Collectors.groupingBy(dto -> new TickerKey(dto.getTicker(), dto.getMarket())));
 
@@ -89,8 +86,7 @@ public class SecDocumentHarvesterService {
                 .toList();
     }
 
-    private FetchSecDocumentsRequest.TickerDocumentItem buildItemForTicker(
-            Map.Entry<TickerKey, List<TickerDocumentSyncStatusDto>> entry) {
+    private FetchSecDocumentsRequest.TickerDocumentItem buildItemForTicker(Map.Entry<TickerKey, List<TickerDocumentSyncStatusDto>> entry) {
         TickerKey key = entry.getKey();
         String cik = entry.getValue().stream()
                 .map(TickerDocumentSyncStatusDto::getCik)
@@ -135,67 +131,38 @@ public class SecDocumentHarvesterService {
         return chunks;
     }
 
-    private List<SecDailyFilingDto> getFilteredDailyFilings(LocalDate targetDate) {
-        List<SecDailyFilingDto> dailyFilings = secEdgarIndexClient.downloadDailyIndex(targetDate);
-        if (dailyFilings.isEmpty()) {
-            log.info("No filings found in daily index for {}", targetDate);
-        }
-        return dailyFilings;
-    }
-
-    private List<String> mapCiksToTrackedTickers(List<String> indexCiks) {
-        Map<String, String> tickerToCikMap = secCikMapperClient.loadTickerToCikMapping();
-        Map<String, List<String>> cikToTickers = new HashMap<>();
-        for (Map.Entry<String, String> entry : tickerToCikMap.entrySet()) {
-            cikToTickers.computeIfAbsent(entry.getValue(), _ -> new ArrayList<>()).add(entry.getKey());
-        }
-
-        return indexCiks.stream()
-                .map(cikToTickers::get)
-                .filter(Objects::nonNull)
-                .flatMap(List::stream)
-                .distinct()
-                .toList();
-    }
-
-    private List<TickerDocumentSyncStatusDto> filterByNewFilings(List<TickerDocumentSyncStatusDto> statuses, List<SecDailyFilingDto> filings) {
-        Map<String, Map<TickerDocumentType, LocalDate>> maxDateByCikAndForm = filings.stream()
-                .collect(Collectors.groupingBy(SecDailyFilingDto::cik,
-                        Collectors.toMap(SecDailyFilingDto::formType, SecDailyFilingDto::dateFiled,
-                                (d1, d2) -> d1.isAfter(d2) ? d1 : d2)));
+    private List<TickerDocumentSyncStatusDto> filterByNewFilings(
+            List<TickerDocumentSyncStatusDto> statuses,
+            Map<String, Map<TickerDocumentType, SecDailyFilingDto>> filingsByCik) {
 
         return statuses.stream()
-                .filter(status -> isNewFiling(status, maxDateByCikAndForm))
+                .filter(status -> isNewFiling(status, filingsByCik))
                 .toList();
     }
 
     private boolean isNewFiling(TickerDocumentSyncStatusDto status,
-                                Map<String, Map<TickerDocumentType, LocalDate>> maxDateByCikAndForm) {
-        String paddedCik = resolvePaddedCik(status);
-        if (paddedCik == null) return false;
+                                Map<String, Map<TickerDocumentType, SecDailyFilingDto>> filingsByCik) {
+        String paddedCik = status.getCik();
+        if (paddedCik == null || paddedCik.isBlank()) {
+            return false;
+        }
 
-        Map<TickerDocumentType, LocalDate> formDates = maxDateByCikAndForm.get(paddedCik);
-        if (formDates == null) return false;
+        try {
+            paddedCik = String.format("%010d", Long.parseLong(paddedCik));
+        } catch (NumberFormatException e) {
+            return false;
+        }
 
-        LocalDate dateFiled = formDates.get(status.getDocumentType());
-        if (dateFiled == null) return false;
+        Map<TickerDocumentType, SecDailyFilingDto> formFilings = filingsByCik.get(paddedCik);
+        if (formFilings == null) return false;
 
+        SecDailyFilingDto filing = formFilings.get(status.getDocumentType());
+        if (filing == null) return false;
+
+        LocalDate dateFiled = filing.dateFiled();
         LocalDate lastProcessed = status.getLastProcessedFileDate();
-        return lastProcessed == null || !dateFiled.isBefore(lastProcessed);
-    }
 
-    private String resolvePaddedCik(TickerDocumentSyncStatusDto status) {
-        String cik = status.getCik();
-        if (cik == null || cik.isBlank()) {
-            cik = secCikMapperClient.getCikForTicker(status.getTicker());
-        }
-        if (cik != null && !cik.isBlank()) {
-            try {
-                return String.format("%010d", Long.parseLong(cik));
-            } catch (NumberFormatException ignored) {
-            }
-        }
-        return null;
+        return lastProcessed == null || !dateFiled.isBefore(lastProcessed);
     }
 
     private record TickerKey(String ticker, String market) {

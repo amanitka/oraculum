@@ -2,11 +2,9 @@ package com.oraculum.harvester.provider;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -17,43 +15,52 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class SecCikMapperClient {
     private final RestClient restClient;
-    private final SecCikMapperClient self;
 
-    public SecCikMapperClient(@Qualifier("secEdgarRestClient") RestClient restClient,
-                              @Lazy SecCikMapperClient self) {
+    public SecCikMapperClient(@Qualifier("secEdgarRestClient") RestClient restClient) {
         this.restClient = restClient;
-        this.self = self;
     }
 
-    public String getCikForTicker(String ticker) {
-        Map<String, String> cache = self.loadTickerToCikMapping();
-        return cache != null ? cache.get(ticker.toUpperCase()) : null;
-    }
-
-    @Cacheable("secTickersCache")
     public Map<String, String> loadTickerToCikMapping() {
         log.info("Downloading SEC Ticker to CIK mapping from company_tickers.json...");
         try {
             Map<String, SecTickerRecord> rawMap = fetchRawTickerMapping();
             return buildCacheFromRawMap(rawMap);
         } catch (Exception e) {
-            log.error("Failed to load SEC Ticker to CIK mapping", e);
+            log.error("Failed to execute request to SEC EDGAR: {}", e.getMessage());
             return new ConcurrentHashMap<>();
         }
     }
 
     private Map<String, SecTickerRecord> fetchRawTickerMapping() {
-        Map<String, SecTickerRecord> rawMap = restClient.get()
+        return restClient.get()
                 .uri("/files/company_tickers.json")
-                .retrieve()
-                .body(new ParameterizedTypeReference<>() {
+                .exchange((_, response) -> {
+                    Map<String, SecTickerRecord> rawMap = handleExchangeResponse(response);
+                    if (rawMap == null || rawMap.isEmpty()) {
+                        return Map.of();
+                    }
+                    return rawMap;
                 });
+    }
 
-        if (rawMap == null || rawMap.isEmpty()) {
-            log.warn("Received empty response from SEC company_tickers.json");
-            return Map.of();
+    private Map<String, SecTickerRecord> handleExchangeResponse(RestClient.RequestHeadersSpec.ConvertibleClientHttpResponse response) throws java.io.IOException {
+        HttpStatusCode status = response.getStatusCode();
+
+        if (status.isSameCodeAs(HttpStatus.SERVICE_UNAVAILABLE)) {
+            log.warn("SEC EDGAR is temporarily unavailable (503). Skipping Ticker to CIK mapping.");
+            return null;
         }
-        return rawMap;
+        if (status.isSameCodeAs(HttpStatus.TOO_MANY_REQUESTS)) {
+            log.warn("Rate limited by SEC EDGAR (429). Skipping Ticker to CIK mapping.");
+            return null;
+        }
+        if (status.isError()) {
+            log.error("Failed to fetch SEC Ticker to CIK mapping: {}", status);
+            return null;
+        }
+
+        return response.bodyTo(new ParameterizedTypeReference<>() {
+        });
     }
 
     private Map<String, String> buildCacheFromRawMap(Map<String, SecTickerRecord> rawMap) {
@@ -66,12 +73,6 @@ public class SecCikMapperClient {
         });
         log.info("Successfully loaded SEC Ticker to CIK mapping. Loaded {} records.", cache.size());
         return cache;
-    }
-
-    @CacheEvict(value = "secTickersCache", allEntries = true)
-    @Scheduled(cron = "0 0 4 * * *") // Clear cache daily at 4 AM to force reload
-    public void clearCache() {
-        log.info("Evicting SEC Ticker to CIK mapping cache...");
     }
 
     private record SecTickerRecord(Integer cik_str, String ticker, String title) {

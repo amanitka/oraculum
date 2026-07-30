@@ -58,6 +58,17 @@ public class CompanyTickerDocumentServiceImpl implements CompanyTickerDocumentAp
                 .toList();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<TickerDocumentSyncStatusDto> getSyncStatusesByCiks(List<String> ciks) {
+        if (ciks == null || ciks.isEmpty()) {
+            return List.of();
+        }
+        return syncRepository.findByCiks(ciks).stream()
+                .map(this::mapSyncToDto)
+                .toList();
+    }
+
     private TickerDocumentSyncStatusDto mapToDto(TickerDocumentSyncStatusEntity entity) {
         return TickerDocumentSyncStatusDto.builder()
                 .ticker(entity.getTicker())

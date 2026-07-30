@@ -16,4 +16,7 @@ public interface TickerSecDocumentSyncRepository extends JpaRepository<TickerSec
     
     @Query("SELECT e FROM TickerSecDocumentSyncEntity e WHERE e.ticker IN :tickers")
     List<TickerSecDocumentSyncEntity> findByTickers(@Param("tickers") List<String> tickers);
+
+    @Query("SELECT e FROM TickerSecDocumentSyncEntity e WHERE e.cik IN :ciks")
+    List<TickerSecDocumentSyncEntity> findByCiks(@Param("ciks") List<String> ciks);
 }

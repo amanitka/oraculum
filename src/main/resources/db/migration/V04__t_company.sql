@@ -19,3 +19,4 @@ CREATE TABLE public.t_company (
     CONSTRAINT uq_company_ticker_market UNIQUE (ticker, market)
 );
 
+CREATE INDEX ix_company_cik ON public.t_company (cik);

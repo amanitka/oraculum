@@ -12,6 +12,8 @@ import java.util.List;
 public interface CompanyTickerDocumentApi {
     List<TickerDocumentSyncStatusDto> getSyncStatusesByTickersAndMarket(List<String> tickers, String market);
 
+    List<TickerDocumentSyncStatusDto> getSyncStatusesByCiks(List<String> ciks);
+
     List<TickerDocumentSyncStatusDto> getStaleSecDocuments(int limit);
 
     List<TickerDocumentSyncStatusDto> getSyncStatusesByTickers(List<String> tickers);

@@ -48,17 +48,6 @@ public class CompanyMetadataServiceImpl implements CompanyMetadataApi {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<CompanyDto> getCompaniesByMarketAndTickers(String market, List<String> tickers) {
-        if (tickers == null || tickers.isEmpty()) {
-            return List.of();
-        }
-        return companyRepository.findByMarketAndTickerIn(market, tickers).stream()
-                .map(CompanyDto::fromEntity)
-                .toList();
-    }
-
-    @Override
     @Transactional
     public void createOrUpdateMarket(MarketDto market) {
         marketRepository.save(market.toEntity());
@@ -68,5 +57,22 @@ public class CompanyMetadataServiceImpl implements CompanyMetadataApi {
     @Transactional
     public void createOrUpdateIndustry(IndustryDto industry) {
         industryRepository.save(industry.toEntity());
+    }
+
+    @Override
+    @Transactional
+    public void updateCompanyCiks(java.util.Map<String, String> tickerToCik) {
+        List<CompanyEntity> companies = companyRepository.findAll();
+        List<CompanyEntity> toUpdate = new java.util.ArrayList<>();
+        for (CompanyEntity company : companies) {
+            String secCik = tickerToCik.get(company.getTicker().toUpperCase());
+            if (secCik != null && !secCik.equals(company.getCik())) {
+                company.setCik(secCik);
+                toUpdate.add(company);
+            }
+        }
+        if (!toUpdate.isEmpty()) {
+            companyRepository.saveAll(toUpdate);
+        }
     }
 }

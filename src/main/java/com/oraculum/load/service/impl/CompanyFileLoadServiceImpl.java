@@ -58,7 +58,7 @@ public class CompanyFileLoadServiceImpl implements ParquetFileLoadService {
                description = EXCLUDED.description,
                employee_count = EXCLUDED.employee_count,
                currency = EXCLUDED.currency,
-               cik = EXCLUDED.cik,
+               cik = COALESCE(EXCLUDED.cik, dest.cik),
                extracted_at = EXCLUDED.extracted_at,
                updated_at = CURRENT_TIMESTAMP;
             """;

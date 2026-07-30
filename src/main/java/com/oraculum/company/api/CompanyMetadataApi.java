@@ -1,8 +1,11 @@
 package com.oraculum.company.api;
 
 import com.oraculum.company.api.dto.CompanyDto;
+import com.oraculum.company.api.dto.IndustryDto;
+import com.oraculum.company.api.dto.MarketDto;
 
 import java.util.List;
+import java.util.Map;
 
 public interface CompanyMetadataApi {
     CompanyDto getCompanyById(int companyId);
@@ -11,9 +14,9 @@ public interface CompanyMetadataApi {
 
     List<String> getAllMarketIds();
 
-    List<CompanyDto> getCompaniesByMarketAndTickers(String market, List<String> tickers);
+    void createOrUpdateMarket(MarketDto market);
 
-    void createOrUpdateMarket(com.oraculum.company.api.dto.MarketDto market);
+    void createOrUpdateIndustry(IndustryDto industry);
 
-    void createOrUpdateIndustry(com.oraculum.company.api.dto.IndustryDto industry);
+    void updateCompanyCiks(Map<String, String> tickerToCik);
 }
