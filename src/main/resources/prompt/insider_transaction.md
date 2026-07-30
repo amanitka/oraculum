@@ -29,8 +29,8 @@ You MUST respond with valid JSON using exactly this schema:
   "evidence": [
     {
       "metric": "string (e.g. 'Revenue Growth')",
-      "value": 0.0,
-      "previous_value": 0.0,
+      "value": "string (e.g. 1.5M, 15%)",
+      "previous_value": "string",
       "trend": "IMPROVING | DETERIORATING | STABLE",
       "significance": "string (Why this matters)"
     }

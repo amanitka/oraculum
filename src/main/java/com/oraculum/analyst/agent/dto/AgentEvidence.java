@@ -1,9 +1,11 @@
 package com.oraculum.analyst.agent.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.List;
 
 public record AgentEvidence(
-        @JsonProperty("claim") String claim,
-        @JsonProperty("metrics") List<MetricEvidence> metrics
+        @JsonProperty("metric") String metric,
+        @JsonProperty("value") String value,
+        @JsonProperty("previous_value") String previousValue,
+        @JsonProperty("trend") String trend,
+        @JsonProperty("significance") String significance
 ) {}

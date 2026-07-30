@@ -2,6 +2,7 @@ package com.oraculum.ui.views.components.renderer;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.html.*;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -34,6 +35,35 @@ public class AgentDataRenderer {
             JsonNode value = field.getValue();
 
             switch (key) {
+                case "headline" -> {
+                    layout.add(renderHeadline(value));
+                }
+                case "score" -> {
+                    layout.add(renderScore(value));
+                }
+                case "confidence" -> {
+                    JsonNode reasons = agentData.path("confidence_reasons");
+                    layout.add(renderConfidence(value, reasons));
+                }
+                case "confidence_reasons" -> {
+                    // Handled inside confidence
+                }
+                case "strengths" -> {
+                    layout.add(renderStrengths(value));
+                }
+                case "weaknesses" -> {
+                    layout.add(renderWeaknesses(value));
+                }
+                case "evidence" -> {
+                    layout.add(renderEvidence(value, jsonData));
+                }
+                case "metrics" -> {
+                    layout.add(renderMetrics(value));
+                }
+                case "summary" -> {
+                    layout.add(renderSummary(value, jsonData));
+                }
+
                 case "is_consistent", "isConsistent" -> {
                     boolean isConsistent = value.asBoolean(true);
                     HorizontalLayout consistencyRow = new HorizontalLayout();
@@ -325,5 +355,252 @@ public class AgentDataRenderer {
 
     private Component renderPrimitiveField(JsonNode value, String jsonData) {
         return markdownRenderer.renderMarkdownWithCitations(value.asString(), jsonData);
+    }
+
+    private Component renderHeadline(JsonNode value) {
+        H2 headline = new H2(value.asString(""));
+        headline.addClassNames(LumoUtility.TextColor.PRIMARY, LumoUtility.Margin.Top.MEDIUM, LumoUtility.Margin.Bottom.MEDIUM);
+        headline.getStyle().set("font-size", "1.5rem").set("font-weight", "bold");
+        return headline;
+    }
+
+    private Component renderScore(JsonNode value) {
+        double score = value.asDouble(0.0);
+        HorizontalLayout layout = new HorizontalLayout();
+        layout.setAlignItems(FlexComponent.Alignment.CENTER);
+        layout.getStyle().set("margin-top", "10px").set("margin-bottom", "20px").set("gap", "12px");
+
+        H4 label = new H4("SCORE:");
+        label.getStyle()
+                .set("margin", "0")
+                .set("font-size", "0.9rem")
+                .set("font-weight", "700")
+                .set("color", "var(--lumo-secondary-text-color)");
+
+        HorizontalLayout meter = new HorizontalLayout();
+        meter.setSpacing(false);
+        meter.getStyle().set("gap", "3px").set("align-items", "center");
+
+        int fullBlocks = (int) score;
+        for (int i = 1; i <= 10; i++) {
+            Span bar = new Span();
+            bar.getStyle()
+                    .set("width", "12px")
+                    .set("height", "16px")
+                    .set("border-radius", "2px");
+            if (i <= fullBlocks) {
+                if (i <= 3) {
+                    bar.getStyle().set("background", "var(--lumo-error-color)");
+                } else if (i <= 7) {
+                    bar.getStyle().set("background", "var(--lumo-warning-color)");
+                } else {
+                    bar.getStyle().set("background", "var(--lumo-success-color)");
+                }
+            } else {
+                bar.getStyle().set("background", "rgba(var(--lumo-contrast-rgb), 0.1)");
+            }
+            meter.add(bar);
+        }
+
+        Span text = new Span(String.format("%.1f / 10.0", score));
+        text.addClassNames(LumoUtility.FontWeight.BOLD, LumoUtility.FontSize.SMALL);
+
+        layout.add(label, meter, text);
+        return layout;
+    }
+
+    private Component renderConfidence(JsonNode confidence, JsonNode reasons) {
+        HorizontalLayout layout = new HorizontalLayout();
+        layout.setAlignItems(FlexComponent.Alignment.CENTER);
+        layout.getStyle().set("margin-top", "10px").set("margin-bottom", "20px").set("gap", "12px");
+
+        H4 label = new H4("CONFIDENCE:");
+        label.getStyle()
+                .set("margin", "0")
+                .set("font-size", "0.9rem")
+                .set("font-weight", "700")
+                .set("color", "var(--lumo-secondary-text-color)");
+
+        double confVal = confidence.asDouble(0.0);
+        Span badge = new Span((int)(confVal * 100) + "%");
+        badge.getElement().getThemeList().add("badge");
+        if (confVal >= 0.8) {
+            badge.getElement().getThemeList().add("success");
+        } else if (confVal >= 0.5) {
+            badge.getElement().getThemeList().add("contrast");
+        } else {
+            badge.getElement().getThemeList().add("error");
+        }
+        
+        layout.add(label, badge);
+        
+        VerticalLayout main = new VerticalLayout(layout);
+        main.setPadding(false);
+        main.setSpacing(false);
+
+        if (reasons != null && reasons.isArray() && !reasons.isEmpty()) {
+            UnorderedList reasonsList = new UnorderedList();
+            reasonsList.getStyle().set("color", "var(--lumo-secondary-text-color)").set("font-size", "0.9rem").set("margin-top", "0").set("margin-bottom", "20px");
+            for (JsonNode reason : reasons) {
+                reasonsList.add(new ListItem(reason.asString()));
+            }
+            main.add(reasonsList);
+        }
+
+        return main;
+    }
+
+    private Component renderStrengths(JsonNode value) {
+        if (value == null || value.isEmpty()) return new Span();
+        VerticalLayout layout = new VerticalLayout();
+        layout.setPadding(false); layout.setSpacing(false);
+        layout.getStyle().set("margin-bottom", "20px");
+
+        H4 header = new H4("Key Strengths");
+        header.addClassNames(LumoUtility.Margin.Bottom.SMALL);
+        layout.add(header);
+
+        for (JsonNode item : value) {
+            HorizontalLayout row = new HorizontalLayout();
+            row.setAlignItems(FlexComponent.Alignment.START);
+            com.vaadin.flow.component.icon.Icon icon = VaadinIcon.CHECK_CIRCLE.create();
+            icon.setColor("var(--lumo-success-color)");
+            icon.setSize("16px");
+            icon.getStyle().set("margin-top", "4px").set("flex-shrink", "0");
+            Span text = new Span(item.asString());
+            row.add(icon, text);
+            layout.add(row);
+        }
+        return layout;
+    }
+
+    private Component renderWeaknesses(JsonNode value) {
+        if (value == null || value.isEmpty()) return new Span();
+        VerticalLayout layout = new VerticalLayout();
+        layout.setPadding(false); layout.setSpacing(false);
+        layout.getStyle().set("margin-bottom", "20px");
+
+        H4 header = new H4("Key Weaknesses");
+        header.addClassNames(LumoUtility.Margin.Bottom.SMALL);
+        layout.add(header);
+
+        for (JsonNode item : value) {
+            HorizontalLayout row = new HorizontalLayout();
+            row.setAlignItems(FlexComponent.Alignment.START);
+            com.vaadin.flow.component.icon.Icon icon = VaadinIcon.WARNING.create();
+            icon.setColor("var(--lumo-error-color)");
+            icon.setSize("16px");
+            icon.getStyle().set("margin-top", "4px").set("flex-shrink", "0");
+            Span text = new Span(item.asString());
+            row.add(icon, text);
+            layout.add(row);
+        }
+        return layout;
+    }
+
+    private Component renderEvidence(JsonNode value, String jsonData) {
+        if (value == null || value.isEmpty()) return new Span();
+        VerticalLayout layout = new VerticalLayout();
+        layout.setPadding(false); layout.setSpacing(true);
+        layout.getStyle().set("margin-bottom", "20px");
+
+        H4 header = new H4("Evidence & Data");
+        header.addClassNames(LumoUtility.Margin.Bottom.SMALL);
+        layout.add(header);
+
+        for (JsonNode item : value) {
+            Div card = new Div();
+            card.getStyle()
+                    .set("background", "rgba(var(--lumo-contrast-rgb), 0.03)")
+                    .set("border", "1px solid var(--lumo-contrast-10pct)")
+                    .set("border-radius", "8px")
+                    .set("padding", "12px 16px")
+                    .set("width", "100%")
+                    .set("box-sizing", "border-box");
+
+            String metric = item.path("metric").asString("");
+            String trend = item.path("trend").asString("");
+            String current = item.path("value").asText("");
+            String prev = item.path("previous_value").asText("");
+            String sig = item.path("significance").asString("");
+
+            HorizontalLayout topRow = new HorizontalLayout();
+            topRow.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
+            topRow.setAlignItems(FlexComponent.Alignment.CENTER);
+            topRow.setWidthFull();
+            
+            Span metricName = new Span(metric);
+            metricName.addClassNames(LumoUtility.FontWeight.BOLD);
+            
+            Span trendBadge = new Span(trend);
+            trendBadge.getElement().getThemeList().add("badge");
+            if ("IMPROVING".equalsIgnoreCase(trend)) {
+                trendBadge.getElement().getThemeList().add("success");
+            } else if ("DETERIORATING".equalsIgnoreCase(trend)) {
+                trendBadge.getElement().getThemeList().add("error");
+            } else {
+                trendBadge.getElement().getThemeList().add("contrast");
+            }
+            trendBadge.getStyle().set("font-size", "0.75rem");
+            
+            topRow.add(metricName, trendBadge);
+
+            HorizontalLayout valsRow = new HorizontalLayout();
+            valsRow.setAlignItems(FlexComponent.Alignment.BASELINE);
+            valsRow.getStyle().set("margin-top", "8px");
+            Span currSpan = new Span("Current: " + current);
+            currSpan.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.TextColor.SECONDARY);
+            Span prevSpan = new Span("Previous: " + prev);
+            prevSpan.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.TextColor.SECONDARY);
+            valsRow.add(currSpan, prevSpan);
+
+            Paragraph sigText = new Paragraph(sig);
+            sigText.addClassNames(LumoUtility.Margin.Top.SMALL, LumoUtility.Margin.Bottom.NONE, LumoUtility.FontSize.SMALL);
+
+            card.add(topRow, valsRow, sigText);
+            layout.add(card);
+        }
+        return layout;
+    }
+
+    private Component renderMetrics(JsonNode value) {
+        if (value == null || value.isEmpty()) return new Span();
+        VerticalLayout layout = new VerticalLayout();
+        layout.setPadding(false); layout.setSpacing(false);
+        layout.getStyle().set("margin-bottom", "20px");
+
+        H4 header = new H4("Key Metrics");
+        header.addClassNames(LumoUtility.Margin.Bottom.SMALL);
+        layout.add(header);
+
+        HorizontalLayout badges = new HorizontalLayout();
+        badges.getStyle().set("flex-wrap", "wrap").set("gap", "10px");
+
+        for (java.util.Map.Entry<String, JsonNode> entry : value.properties()) {
+            Span badge = new Span(RendererUtil.formatKeyTitle(entry.getKey()) + ": " + entry.getValue().asText());
+            badge.getStyle()
+                    .set("background", "var(--lumo-contrast-5pct)")
+                    .set("border", "1px solid var(--lumo-contrast-20pct)")
+                    .set("border-radius", "4px")
+                    .set("padding", "6px 10px")
+                    .set("font-size", "0.85rem")
+                    .set("font-weight", "600");
+            badges.add(badge);
+        }
+        layout.add(badges);
+        return layout;
+    }
+
+    private Component renderSummary(JsonNode value, String jsonData) {
+        VerticalLayout layout = new VerticalLayout();
+        layout.setPadding(false); layout.setSpacing(false);
+        layout.getStyle().set("margin-bottom", "20px");
+
+        H4 header = new H4("Summary");
+        header.addClassNames(LumoUtility.Margin.Bottom.SMALL);
+        
+        Component markdown = markdownRenderer.renderMarkdownWithCitations(value.asString(), jsonData);
+        layout.add(header, markdown);
+        return layout;
     }
 }
