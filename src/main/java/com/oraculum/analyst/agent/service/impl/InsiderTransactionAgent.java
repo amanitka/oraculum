@@ -1,8 +1,10 @@
 package com.oraculum.analyst.agent.service.impl;
 
+import com.oraculum.analyst.agent.dto.*;
+
 import com.oraculum.analyst.agent.dto.AgentContext;
 import com.oraculum.analyst.agent.dto.AgentOutput;
-import com.oraculum.analyst.agent.dto.InsiderTransactionAgentOutput;
+
 import com.oraculum.analyst.agent.service.Agent;
 import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.config.PromptRegistry;
@@ -23,7 +25,7 @@ import java.util.List;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class InsiderTransactionAgent implements Agent<InsiderTransactionAgentOutput> {
+public class InsiderTransactionAgent implements Agent<StandardAgentOutput> {
 
     private final LlmRouterApi llmRouterApi;
     private final PromptRegistry promptRegistry;
@@ -33,14 +35,8 @@ public class InsiderTransactionAgent implements Agent<InsiderTransactionAgentOut
         return AgentType.INSIDER_TRANSACTION;
     }
 
-    private AgentOutput<InsiderTransactionAgentOutput> getDefaultOutput() {
-        return new AgentOutput<>(new InsiderTransactionAgentOutput(
-                InsiderSentiment.NEUTRAL,
-                3,
-                List.of("No recent transactions"),
-                "No cluster buying observed.",
-                "There are no recent insider transactions to analyze for this ticker."
-        ), 0);
+    private AgentOutput<StandardAgentOutput> getDefaultOutput() {
+        return new AgentOutput<>(new StandardAgentOutput("No insider transactions available.", 0.0, 0.0, List.of(), List.of(), List.of(), List.of(), java.util.Map.of(), "No insider transactions available."), 0);
     }
 
     private String getPrompt(AgentContext ctx, String recentTransactions) {
@@ -53,7 +49,7 @@ public class InsiderTransactionAgent implements Agent<InsiderTransactionAgentOut
     }
 
     @Override
-    public AgentOutput<InsiderTransactionAgentOutput> run(AgentContext ctx) {
+    public AgentOutput<StandardAgentOutput> run(AgentContext ctx) {
         log.info("InsiderTransactionAgent starting analysis for ticker: {}", ctx.ticker());
         String recentTransactions = ctx.factSheetData().getRecentInsiderTransactions();
         if ("[]".equals(recentTransactions)) {
@@ -62,11 +58,11 @@ public class InsiderTransactionAgent implements Agent<InsiderTransactionAgentOut
         }
 
         String prompt = getPrompt(ctx, recentTransactions);
-        LlmResponse<InsiderTransactionAgentOutput> response = llmRouterApi.executeCall(
+        LlmResponse<StandardAgentOutput> response = llmRouterApi.executeCall(
                 LlmCallRequest.of(
                         LlmTierType.STANDARD,
                         prompt,
-                        InsiderTransactionAgentOutput.class,
+                        StandardAgentOutput.class,
                         ctx.correlationId(),
                         CorrelationType.COMPANY_ANALYSIS,
                         getName().name())

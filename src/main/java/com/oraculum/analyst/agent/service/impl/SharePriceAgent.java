@@ -1,8 +1,10 @@
 package com.oraculum.analyst.agent.service.impl;
 
+import com.oraculum.analyst.agent.dto.*;
+
 import com.oraculum.analyst.agent.dto.AgentContext;
 import com.oraculum.analyst.agent.dto.AgentOutput;
-import com.oraculum.analyst.agent.dto.SharePriceAgentOutput;
+
 import com.oraculum.analyst.agent.service.Agent;
 import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.config.PromptRegistry;
@@ -18,7 +20,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class SharePriceAgent implements Agent<SharePriceAgentOutput> {
+public class SharePriceAgent implements Agent<StandardAgentOutput> {
 
     private final LlmRouterApi llmRouterApi;
     private final PromptRegistry promptRegistry;
@@ -31,7 +33,7 @@ public class SharePriceAgent implements Agent<SharePriceAgentOutput> {
 
 
     @Override
-    public AgentOutput<SharePriceAgentOutput> run(AgentContext ctx) {
+    public AgentOutput<StandardAgentOutput> run(AgentContext ctx) {
         CompanyFactSheetData factSheet = ctx.factSheetData();
 
         String prompt = promptRegistry.getPrompt(PromptType.SHARE_PRICE)
@@ -43,8 +45,8 @@ public class SharePriceAgent implements Agent<SharePriceAgentOutput> {
 
         String fullPrompt = appendCriticFeedbackIfPresent(prompt, ctx);
 
-        LlmResponse<SharePriceAgentOutput> response = llmRouterApi.executeCall(
-                LlmCallRequest.of(LlmTierType.STANDARD, fullPrompt, SharePriceAgentOutput.class, ctx.correlationId(), CorrelationType.COMPANY_ANALYSIS, getName().name()));
+        LlmResponse<StandardAgentOutput> response = llmRouterApi.executeCall(
+                LlmCallRequest.of(LlmTierType.STANDARD, fullPrompt, StandardAgentOutput.class, ctx.correlationId(), CorrelationType.COMPANY_ANALYSIS, getName().name()));
 
         return new AgentOutput<>(response.result(), response.metrics().totalTokens());
     }

@@ -1,8 +1,10 @@
 package com.oraculum.analyst.agent.service.impl;
 
+import com.oraculum.analyst.agent.dto.*;
+
 import com.oraculum.analyst.agent.dto.AgentContext;
 import com.oraculum.analyst.agent.dto.AgentOutput;
-import com.oraculum.analyst.agent.dto.NewsAgentOutput;
+
 import com.oraculum.analyst.agent.service.Agent;
 import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.config.PromptRegistry;
@@ -21,7 +23,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class NewsAgent implements Agent<NewsAgentOutput> {
+public class NewsAgent implements Agent<StandardAgentOutput> {
 
     private final LlmRouterApi llmRouterApi;
     private final PromptRegistry promptRegistry;
@@ -32,19 +34,19 @@ public class NewsAgent implements Agent<NewsAgentOutput> {
     }
 
     @Override
-    public AgentOutput<NewsAgentOutput> run(AgentContext ctx) {
+    public AgentOutput<StandardAgentOutput> run(AgentContext ctx) {
         log.info("NewsAgent starting analysis for ticker: {}", ctx.ticker());
         String news = ctx.factSheetData().getRecentNews();
         String secEx991Summary = ctx.factSheetData().getRecentSecEx991Summaries();
 
         if (hasNoData(news) && hasNoData(secEx991Summary)) {
             log.warn("No recent news or 8-K documents found for ticker: {}", ctx.ticker());
-            return new AgentOutput<>(new NewsAgentOutput("No significant recent news or material events found for this ticker."), 0);
+            return new AgentOutput<>(new StandardAgentOutput("No significant recent news or material events found for this ticker.", 0.0, 0.0, java.util.List.of(), java.util.List.of(), java.util.List.of(), java.util.List.of(), java.util.Map.of(), "No significant recent news or material events found for this ticker."), 0);
         }
 
         String fullPrompt = buildFullPrompt(ctx, news, secEx991Summary);
-        LlmResponse<NewsAgentOutput> response = llmRouterApi.executeCall(
-                LlmCallRequest.of(LlmTierType.STANDARD, fullPrompt, NewsAgentOutput.class, ctx.correlationId(), CorrelationType.COMPANY_ANALYSIS, getName().name()));
+        LlmResponse<StandardAgentOutput> response = llmRouterApi.executeCall(
+                LlmCallRequest.of(LlmTierType.STANDARD, fullPrompt, StandardAgentOutput.class, ctx.correlationId(), CorrelationType.COMPANY_ANALYSIS, getName().name()));
 
         log.info("NewsAgent successfully generated summary for ticker: {}", ctx.ticker());
         return new AgentOutput<>(response.result(), response.metrics().totalTokens());

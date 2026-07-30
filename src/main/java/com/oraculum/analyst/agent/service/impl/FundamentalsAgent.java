@@ -1,8 +1,10 @@
 package com.oraculum.analyst.agent.service.impl;
 
+import com.oraculum.analyst.agent.dto.*;
+
 import com.oraculum.analyst.agent.dto.AgentContext;
 import com.oraculum.analyst.agent.dto.AgentOutput;
-import com.oraculum.analyst.agent.dto.FundamentalsAgentOutput;
+
 import com.oraculum.analyst.agent.service.Agent;
 import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.api.domain.FinancialDataProfile;
@@ -20,7 +22,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class FundamentalsAgent implements Agent<FundamentalsAgentOutput> {
+public class FundamentalsAgent implements Agent<StandardAgentOutput> {
 
     private final LlmRouterApi llmRouterApi;
     private final PromptRegistry promptRegistry;
@@ -32,7 +34,7 @@ public class FundamentalsAgent implements Agent<FundamentalsAgentOutput> {
 
 
     @Override
-    public AgentOutput<FundamentalsAgentOutput> run(AgentContext ctx) {
+    public AgentOutput<StandardAgentOutput> run(AgentContext ctx) {
         CompanyFactSheetData factSheet = ctx.factSheetData();
         FinancialDataProfile profile = getName().getDataProfile();
         String prompt = promptRegistry.getPrompt(PromptType.FUNDAMENTALS)
@@ -52,8 +54,8 @@ public class FundamentalsAgent implements Agent<FundamentalsAgentOutput> {
 
         String fullPrompt = appendCriticFeedbackIfPresent(prompt, ctx);
 
-        LlmResponse<FundamentalsAgentOutput> response = llmRouterApi.executeCall(
-                LlmCallRequest.of(LlmTierType.STANDARD, fullPrompt, FundamentalsAgentOutput.class, ctx.correlationId(), CorrelationType.COMPANY_ANALYSIS, getName().name()));
+        LlmResponse<StandardAgentOutput> response = llmRouterApi.executeCall(
+                LlmCallRequest.of(LlmTierType.STANDARD, fullPrompt, StandardAgentOutput.class, ctx.correlationId(), CorrelationType.COMPANY_ANALYSIS, getName().name()));
 
         return new AgentOutput<>(response.result(), response.metrics().totalTokens());
     }

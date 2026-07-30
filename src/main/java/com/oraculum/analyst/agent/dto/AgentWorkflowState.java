@@ -53,9 +53,9 @@ public class AgentWorkflowState {
         this.criticFeedback = null;
     }
 
-    public String getMacroeconomicAgentOutput() {
+    public String getMacroEconomicSummary() {
         if (agentOutputs.containsKey(AgentType.MACROECONOMIC)) {
-            MacroeconomicAgentOutput macroOutput = (MacroeconomicAgentOutput) getAgentOutput(AgentType.MACROECONOMIC);
+            StandardAgentOutput macroOutput = (StandardAgentOutput) getAgentOutput(AgentType.MACROECONOMIC);
             return macroOutput.summary();
         }
         return "No macroeconomic analysis available.";

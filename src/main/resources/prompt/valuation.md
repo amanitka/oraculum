@@ -38,9 +38,25 @@ Do not hallucinate data. Base your entire analysis strictly on the provided JSON
 
 You MUST respond with valid JSON using exactly this schema:
 {
-  "multiple_analysis": "string",
-  "intrinsic_value_assessment": "string",
-  "summary": "string"
+  "headline": "string (One compelling sentence summarizing the primary finding)",
+  "score": 0.0,
+  "confidence": 0.0,
+  "confidence_reasons": ["string (Reason 1)", "string (Reason 2)"],
+  "strengths": ["string (Strength 1)", "string (Strength 2)"],
+  "weaknesses": ["string (Weakness 1)", "string (Weakness 2)"],
+  "evidence": [
+    {
+      "metric": "string (e.g. 'Revenue Growth')",
+      "value": 0.0,
+      "previous_value": 0.0,
+      "trend": "IMPROVING | DETERIORATING | STABLE",
+      "significance": "string (Why this matters)"
+    }
+  ],
+  "metrics": {
+    "key1": "value1"
+  },
+  "summary": "string (Detailed paragraph explaining your overall findings)"
 }
 
 Rules:

@@ -18,31 +18,25 @@ You will be provided with three JSON inputs:
 Pay special attention to this thesis requested by the user, and determine if the findings support or refute it:
 {{ analysis_focus }}
 
-1. **Review and Synthesize**: Carefully read all the agent outputs. Weave the findings together into a logical story. Resolve any contradictions highlighted by the Critic Agent. Reconcile any divergence between the organic agent consensus and the `company_profile` context. Does strong growth justify a high valuation? Does recent negative news contradict a strong balance sheet?
-2. **Structure the Report**: Generate a SINGLE Markdown string for the `report` field that contains ALL of the following sections combined together:
-    * **Executive Summary**: A concise overview of the investment case.
-    * **Macroeconomic Context**: A very brief summary (2-3 sentences only) of findings from the Macroeconomic agent. Mention ONLY macro factors that directly and materially impact this specific company's valuation (e.g. interest rates, export controls). Omit general macro indicators unless the company has direct exposure.
-    * **Fundamental Health**: Combine insights from the Fundamentals and Cash Flow agents.
-    * **Valuation & Intrinsic Value**: Combine insights from the Valuation and Share Price agents. Focus heavily on what growth rates the market is pricing in (implied FCF growth from reverse DCF), historical valuation multiples vs current levels, and fair value ranges. De-emphasize technical momentum signals. If 5Y/10Y average P/E or EV/EBITDA metrics are distorted by loss years, explicitly acknowledge that historical averages are not meaningful due to loss years and that percentile rank or positive-period baselines are used instead.
-    * **Recent News & Sentiment**: Summarize the findings from the News agent, discussing how recent events support or contradict the financial data.
-    * **Management Sentiment & Insider Activity**: Summarize the findings from the Insider Transaction agent, highlighting C-Suite conviction and cluster buying patterns.
-    * **Earnings Estimates & Analyst Consensus**: Summarize the forward-looking EPS and revenue estimates from the EarningsEstimates agent. If the data was unavailable (API quota exhausted), explicitly state so and note the analysis is based on historical data only.
-    * **Risks & Critic's Reconciliation**: Summarize the Risk agent's findings AND explicitly address how any conflicts, contradictions, or red flags flagged by the Critic Agent are resolved.
-    * **Investment Thesis**:
-        - **Why Buy**: 3-5 bullet points of key bullish arguments.
-        - **Why Not Buy**: 3-5 bullet points of key bearish arguments.
-        - **What Would Change My Mind**: 3-5 specific, measurable triggers (e.g., "Data center growth <20%", "Gross margin falls below 48%", etc.).
+1. **Review and Synthesize**: Carefully read all the agent outputs. Weave the findings together into a logical story. Resolve any contradictions highlighted by the Critic Agent. Reconcile any divergence between the organic agent consensus and the `company_profile` context.
+2. **Synthesize Executive Summary**: Write a comprehensive `executive_summary` that weaves together fundamental health, valuation, and risks into a cohesive thesis.
 3. **Determine Verdict**: Produce a structured verdict including an `outlook`, `recommendation`, and a `conviction` score (1-5).
-4. **Extract Key Points**: List the main bullish drivers and bearish risks.
 
 You MUST respond with valid JSON using exactly this schema:
 {
-  "report": "## Executive Summary\n...\n\n## Macroeconomic Context\n...\n\n## Fundamental Health\n...\n\n## Valuation & Intrinsic Value\n...\n\n## Recent News & Sentiment\n...\n\n## Management Sentiment & Insider Activity\n...\n\n## Earnings Estimates & Analyst Consensus\n...\n\n## Risks & Critic's Reconciliation\n...\n\n## Investment Thesis\n...",
+  "executive_summary": "string (A comprehensive 3-4 paragraph summary of the investment case, weaving together fundamental health, valuation, and risks)",
+  "recommendation_reasoning": "string (Detailed justification for the recommendation)",
+  "factor_scores": {
+    "fundamental_health": 0.0,
+    "valuation": 0.0,
+    "growth_prospects": 0.0,
+    "risk_profile": 0.0
+  },
+  "key_drivers": ["string"],
+  "key_risks": ["string"],
   "outlook": "string ('BULLISH', 'BEARISH', or 'NEUTRAL')",
   "recommendation": "string ('BUY', 'SELL', 'HOLD', or 'NEUTRAL')",
-  "conviction": 1,
-  "key_drivers": ["string"],
-  "key_risks": ["string"]
+  "conviction": 1
 }
 
 Rules:
@@ -61,7 +55,6 @@ Rules:
 - Do NOT wrap the JSON in markdown code blocks (e.g., do not use ```json or ```). Your entire response must be exactly one raw JSON object starting with `{` and ending with `}`.
 - Do NOT output multiple JSON blocks. Output exactly ONE complete JSON object containing all required fields.
 - Do not hallucinate data. Base your entire analysis strictly on the provided agent outputs.
-- **CRITICAL**: The `report` text is embedded inside a JSON string. Ensure all control characters (such as newlines, tabs) and double quotes inside `report` are correctly escaped (e.g. use `\n` for newlines and `\"` for quotes) to prevent JSON parsing errors.
 
 **Agent Outputs JSON:**
 

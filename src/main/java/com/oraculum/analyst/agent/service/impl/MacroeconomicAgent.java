@@ -1,8 +1,10 @@
 package com.oraculum.analyst.agent.service.impl;
 
+import com.oraculum.analyst.agent.dto.*;
+
 import com.oraculum.analyst.agent.dto.AgentContext;
 import com.oraculum.analyst.agent.dto.AgentOutput;
-import com.oraculum.analyst.agent.dto.MacroeconomicAgentOutput;
+
 import com.oraculum.analyst.agent.service.Agent;
 import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.config.PromptRegistry;
@@ -19,7 +21,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class MacroeconomicAgent implements Agent<MacroeconomicAgentOutput> {
+public class MacroeconomicAgent implements Agent<StandardAgentOutput> {
 
     private final LlmRouterApi llmRouterApi;
     private final PromptRegistry promptRegistry;
@@ -29,10 +31,8 @@ public class MacroeconomicAgent implements Agent<MacroeconomicAgentOutput> {
         return AgentType.MACROECONOMIC;
     }
 
-    private AgentOutput<MacroeconomicAgentOutput> getDefaultOutput() {
-        return new AgentOutput<>(new MacroeconomicAgentOutput(
-                "No specific macroeconomic headwinds or tailwinds were identified for this company's profile."
-        ), 0);
+    private AgentOutput<StandardAgentOutput> getDefaultOutput() {
+        return new AgentOutput<>(new StandardAgentOutput("No macroeconomic data available.", 0.0, 0.0, java.util.List.of(), java.util.List.of(), java.util.List.of(), java.util.List.of(), java.util.Map.of(), "No macroeconomic data available."), 0);
     }
 
     private String getPrompt(AgentContext ctx, String macroeconomicSummary) {
@@ -44,7 +44,7 @@ public class MacroeconomicAgent implements Agent<MacroeconomicAgentOutput> {
     }
 
     @Override
-    public AgentOutput<MacroeconomicAgentOutput> run(AgentContext ctx) {
+    public AgentOutput<StandardAgentOutput> run(AgentContext ctx) {
         log.info("MacroeconomicAgent starting analysis for ticker: {}", ctx.ticker());
         String macroeconomicSummary = ctx.factSheetData().getMacroeconomicSummary();
         if ("[]".equals(macroeconomicSummary)) {
@@ -53,11 +53,11 @@ public class MacroeconomicAgent implements Agent<MacroeconomicAgentOutput> {
         }
 
         String prompt = getPrompt(ctx, macroeconomicSummary);
-        LlmResponse<MacroeconomicAgentOutput> response = llmRouterApi.executeCall(
+        LlmResponse<StandardAgentOutput> response = llmRouterApi.executeCall(
                 LlmCallRequest.of(
                         LlmTierType.STANDARD,
                         prompt,
-                        MacroeconomicAgentOutput.class,
+                        StandardAgentOutput.class,
                         ctx.correlationId(),
                         CorrelationType.COMPANY_ANALYSIS,
                         getName().name())

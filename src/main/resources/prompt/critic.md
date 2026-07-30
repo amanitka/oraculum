@@ -41,7 +41,7 @@ You MUST respond with valid JSON using exactly this schema:
     {
       "description": "One concise sentence describing the contradiction",
       "agents_involved": ["AGENT_A", "AGENT_B"],
-      "correction_type": "REASONING_ERROR | DATA_SOURCE_CONFLICT | TIME_WINDOW_MISMATCH",
+      "correction_type": "REASONING_ERROR | DATA_SOURCE_CONFLICT | TIME_WINDOW_MISMATCH | UNSUPPORTED_CLAIM | MISSING_EVIDENCE | DUPLICATE_LOGIC | OVERCONFIDENCE",
       "resolution": "RERUN_APPLIED | NARRATIVE_RECONCILED | UNRESOLVED"
     }
   ],
@@ -59,6 +59,10 @@ correction_type values:
   REASONING_ERROR       — the agent misinterpreted data it was given; a rerun may fix this
   DATA_SOURCE_CONFLICT  — two data sources disagree on the same metric; a rerun will NOT help
   TIME_WINDOW_MISMATCH  — same metric, different time periods; this is not an error
+  UNSUPPORTED_CLAIM     — agent stated a fact without evidence or citation
+  MISSING_EVIDENCE      — agent missed a critical fact that changes the narrative
+  DUPLICATE_LOGIC       — agent double-counted an impact
+  OVERCONFIDENCE        — agent confidence is too high given weak evidence
 
 resolution values:
   RERUN_APPLIED         — set this when you are recommending a rerun for this contradiction

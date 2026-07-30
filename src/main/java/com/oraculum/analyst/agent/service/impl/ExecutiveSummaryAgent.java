@@ -1,8 +1,10 @@
 package com.oraculum.analyst.agent.service.impl;
 
+import com.oraculum.analyst.agent.dto.*;
+
 import com.oraculum.analyst.agent.dto.AgentContext;
 import com.oraculum.analyst.agent.dto.AgentOutput;
-import com.oraculum.analyst.agent.dto.SynthesizerAgentOutput;
+
 import com.oraculum.analyst.agent.service.Agent;
 import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.api.dto.ExecutiveSummaryAgentOutput;
@@ -52,7 +54,7 @@ public class ExecutiveSummaryAgent implements Agent<ExecutiveSummaryAgentOutput>
         List<String> keyRisks = synthOutput.keyRisks() != null ? synthOutput.keyRisks() : List.of();
 
         return promptRegistry.getPrompt(PromptType.EXECUTIVE_SUMMARY)
-                .replace("{{ report }}", synthOutput.report() != null ? synthOutput.report() : "")
+                .replace("{{ report }}", synthOutput.executiveSummary() != null ? synthOutput.executiveSummary() : "")
                 .replace("{{ outlook }}", synthOutput.outlook() != null ? synthOutput.outlook().name() : "")
                 .replace("{{ recommendation }}", synthOutput.recommendation() != null ? synthOutput.recommendation().name() : "")
                 .replace("{{ conviction }}", String.valueOf(synthOutput.conviction()))

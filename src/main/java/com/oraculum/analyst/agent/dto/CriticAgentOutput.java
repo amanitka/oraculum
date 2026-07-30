@@ -21,7 +21,11 @@ public record CriticAgentOutput(
     public enum CorrectionType {
         REASONING_ERROR,
         DATA_SOURCE_CONFLICT,
-        TIME_WINDOW_MISMATCH
+        TIME_WINDOW_MISMATCH,
+        UNSUPPORTED_CLAIM,
+        MISSING_EVIDENCE,
+        DUPLICATE_LOGIC,
+        OVERCONFIDENCE
     }
 
     public enum Resolution {

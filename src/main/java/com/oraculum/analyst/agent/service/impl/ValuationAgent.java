@@ -1,8 +1,10 @@
 package com.oraculum.analyst.agent.service.impl;
 
+import com.oraculum.analyst.agent.dto.*;
+
 import com.oraculum.analyst.agent.dto.AgentContext;
 import com.oraculum.analyst.agent.dto.AgentOutput;
-import com.oraculum.analyst.agent.dto.ValuationAgentOutput;
+
 import com.oraculum.analyst.agent.service.Agent;
 import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.api.domain.FinancialDataProfile;
@@ -20,7 +22,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class ValuationAgent implements Agent<ValuationAgentOutput> {
+public class ValuationAgent implements Agent<StandardAgentOutput> {
 
     private final LlmRouterApi llmRouterApi;
     private final PromptRegistry promptRegistry;
@@ -32,7 +34,7 @@ public class ValuationAgent implements Agent<ValuationAgentOutput> {
 
 
     @Override
-    public AgentOutput<ValuationAgentOutput> run(AgentContext ctx) {
+    public AgentOutput<StandardAgentOutput> run(AgentContext ctx) {
         CompanyFactSheetData factSheet = ctx.factSheetData();
         FinancialDataProfile profile = getName().getDataProfile();
 
@@ -44,7 +46,7 @@ public class ValuationAgent implements Agent<ValuationAgentOutput> {
                 .replace("{{ company_financial_ratios_ttm }}", factSheet.getCompanyFinancialRatios(StatementVariant.TTM, profile.periodLimit(StatementVariant.TTM)))
                 .replace("{{ industry_ratios }}", factSheet.getLatestIndustryRatios(StatementVariant.TTM))
                 .replace("{{ daily_share_price_signals }}", recentDailyJson)
-                .replace("{{ macroeconomic_context }}", ctx.state().getMacroeconomicAgentOutput())
+                .replace("{{ macroeconomic_context }}", ctx.state().getMacroEconomicSummary())
                 .replace("{{ historical_valuation_percentiles }}", factSheet.getHistoricalValuationPercentiles())
                 .replace("{{ reverse_dcf }}", factSheet.getReverseDcfAnalysis())
                 .replace("{{ ticker }}", ctx.ticker())
@@ -52,8 +54,8 @@ public class ValuationAgent implements Agent<ValuationAgentOutput> {
 
         String fullPrompt = appendCriticFeedbackIfPresent(prompt, ctx);
 
-        LlmResponse<ValuationAgentOutput> response = llmRouterApi.executeCall(
-                LlmCallRequest.of(LlmTierType.STANDARD, fullPrompt, ValuationAgentOutput.class, ctx.correlationId(), CorrelationType.COMPANY_ANALYSIS, getName().name()));
+        LlmResponse<StandardAgentOutput> response = llmRouterApi.executeCall(
+                LlmCallRequest.of(LlmTierType.STANDARD, fullPrompt, StandardAgentOutput.class, ctx.correlationId(), CorrelationType.COMPANY_ANALYSIS, getName().name()));
 
         return new AgentOutput<>(response.result(), response.metrics().totalTokens());
     }

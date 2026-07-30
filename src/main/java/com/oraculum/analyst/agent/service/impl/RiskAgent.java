@@ -20,7 +20,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 @Component
 @RequiredArgsConstructor
-public class RiskAgent implements Agent<RiskAgentOutput> {
+public class RiskAgent implements Agent<StandardAgentOutput> {
 
     private final LlmRouterApi llmRouterApi;
     private final PromptRegistry promptRegistry;
@@ -33,16 +33,16 @@ public class RiskAgent implements Agent<RiskAgentOutput> {
 
 
     @Override
-    public AgentOutput<RiskAgentOutput> run(AgentContext ctx) {
+    public AgentOutput<StandardAgentOutput> run(AgentContext ctx) {
         CompanyFactSheetData factSheet = ctx.factSheetData();
 
-        SharePriceAgentOutput sharePriceOutput = (SharePriceAgentOutput) ctx.state().getAgentOutput(AgentType.SHARE_PRICE);
+        StandardAgentOutput sharePriceOutput = (StandardAgentOutput) ctx.state().getAgentOutput(AgentType.SHARE_PRICE);
         String sharePriceJson = JsonUtils.toJson(jsonMapper, sharePriceOutput, "{}");
 
-        FundamentalsAgentOutput fundamentalsOutput = (FundamentalsAgentOutput) ctx.state().getAgentOutput(AgentType.FUNDAMENTALS);
+        StandardAgentOutput fundamentalsOutput = (StandardAgentOutput) ctx.state().getAgentOutput(AgentType.FUNDAMENTALS);
         String fundamentalsJson = JsonUtils.toJson(jsonMapper, fundamentalsOutput, "{}");
 
-        CashFlowAgentOutput cashFlowOutput = (CashFlowAgentOutput) ctx.state().getAgentOutput(AgentType.CASH_FLOW);
+        StandardAgentOutput cashFlowOutput = (StandardAgentOutput) ctx.state().getAgentOutput(AgentType.CASH_FLOW);
         String cashFlowJson = JsonUtils.toJson(jsonMapper, cashFlowOutput, "{}");
 
         FinancialDataProfile profile = getName().getDataProfile();
@@ -56,15 +56,15 @@ public class RiskAgent implements Agent<RiskAgentOutput> {
                 .replace("{{ share_price_analysis }}", sharePriceJson)
                 .replace("{{ fundamentals_analysis }}", fundamentalsJson)
                 .replace("{{ cash_flow_analysis }}", cashFlowJson)
-                .replace("{{ macroeconomic_context }}", ctx.state().getMacroeconomicAgentOutput())
+                .replace("{{ macroeconomic_context }}", ctx.state().getMacroEconomicSummary())
                 .replace("{{ sec_rf_summaries }}", factSheet.getRecentSecRfSummaries())
                 .replace("{{ ticker }}", ctx.ticker())
                 .replace("{{ analysis_date }}", ctx.analysisDate().toString());
 
         String fullPrompt = appendCriticFeedbackIfPresent(prompt, ctx);
 
-        LlmResponse<RiskAgentOutput> response = llmRouterApi.executeCall(
-                LlmCallRequest.of(LlmTierType.STANDARD, fullPrompt, RiskAgentOutput.class, ctx.correlationId(), CorrelationType.COMPANY_ANALYSIS, getName().name()));
+        LlmResponse<StandardAgentOutput> response = llmRouterApi.executeCall(
+                LlmCallRequest.of(LlmTierType.STANDARD, fullPrompt, StandardAgentOutput.class, ctx.correlationId(), CorrelationType.COMPANY_ANALYSIS, getName().name()));
 
         return new AgentOutput<>(response.result(), response.metrics().totalTokens());
     }

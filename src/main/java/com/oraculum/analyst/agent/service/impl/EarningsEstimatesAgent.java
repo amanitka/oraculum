@@ -1,8 +1,10 @@
 package com.oraculum.analyst.agent.service.impl;
 
+import com.oraculum.analyst.agent.dto.*;
+
 import com.oraculum.analyst.agent.dto.AgentContext;
 import com.oraculum.analyst.agent.dto.AgentOutput;
-import com.oraculum.analyst.agent.dto.EarningsEstimatesAgentOutput;
+
 import com.oraculum.analyst.agent.service.Agent;
 import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.config.PromptRegistry;
@@ -20,7 +22,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class EarningsEstimatesAgent implements Agent<EarningsEstimatesAgentOutput> {
+public class EarningsEstimatesAgent implements Agent<StandardAgentOutput> {
 
     private final LlmRouterApi llmRouterApi;
     private final PromptRegistry promptRegistry;
@@ -54,18 +56,16 @@ public class EarningsEstimatesAgent implements Agent<EarningsEstimatesAgentOutpu
     }
 
     @Override
-    public AgentOutput<EarningsEstimatesAgentOutput> run(AgentContext ctx) {
+    public AgentOutput<StandardAgentOutput> run(AgentContext ctx) {
         log.info("EarningsEstimatesAgent starting analysis for ticker: {}", ctx.ticker());
-        String earningsEstimatesJson = ctx.factSheetData().getFutureEarningsEstimates(ctx.analysisDate());
+        var factSheet = ctx.factSheetData();
+        String earningsEstimatesJson = factSheet.getFutureEarningsEstimates(ctx.analysisDate());
         if ("[]".equals(earningsEstimatesJson)) {
-            log.warn("Earnings estimates data unavailable for ticker: {}. Skipping LLM call.", ctx.ticker());
-            String skipMessage = "Earnings estimates data unavailable: API quota exhausted (or reserved capacity reached). " +
-                    "This analysis does not include forward-looking EPS/revenue consensus estimates.";
-            return new AgentOutput<>(new EarningsEstimatesAgentOutput(skipMessage), 0);
+            return new AgentOutput<>(new StandardAgentOutput("No earnings estimates available.", 0.0, 0.0, java.util.List.of(), java.util.List.of(), java.util.List.of(), java.util.List.of(), java.util.Map.of(), "No earnings estimates available."), 0);
         }
         String fullPrompt = preparePrompt(ctx, earningsEstimatesJson);
-        LlmResponse<EarningsEstimatesAgentOutput> response = llmRouterApi.executeCall(
-                LlmCallRequest.of(LlmTierType.STANDARD, fullPrompt, EarningsEstimatesAgentOutput.class, ctx.correlationId(), CorrelationType.COMPANY_ANALYSIS, getName().name()));
+        LlmResponse<StandardAgentOutput> response = llmRouterApi.executeCall(
+                LlmCallRequest.of(LlmTierType.STANDARD, fullPrompt, StandardAgentOutput.class, ctx.correlationId(), CorrelationType.COMPANY_ANALYSIS, getName().name()));
 
         log.info("EarningsEstimatesAgent successfully generated summary for ticker: {}", ctx.ticker());
         return new AgentOutput<>(response.result(), response.metrics().totalTokens());

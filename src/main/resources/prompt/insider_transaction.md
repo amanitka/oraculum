@@ -20,11 +20,25 @@ Pay special attention to this thesis requested by the user:
 
 You MUST respond with valid JSON using exactly this schema:
 {
-  "management_sentiment": "string (HIGHLY_BULLISH, MILDLY_BULLISH, NEUTRAL, ROUTINE_SELLING, CONCERNING_SELLING)",
-  "bullish_conviction": "integer",
-  "key_signals": ["string"],
-  "cluster_buy_analysis": "string",
-  "summary": "string"
+  "headline": "string (One compelling sentence summarizing the primary finding)",
+  "score": 0.0,
+  "confidence": 0.0,
+  "confidence_reasons": ["string (Reason 1)", "string (Reason 2)"],
+  "strengths": ["string (Strength 1)", "string (Strength 2)"],
+  "weaknesses": ["string (Weakness 1)", "string (Weakness 2)"],
+  "evidence": [
+    {
+      "metric": "string (e.g. 'Revenue Growth')",
+      "value": 0.0,
+      "previous_value": 0.0,
+      "trend": "IMPROVING | DETERIORATING | STABLE",
+      "significance": "string (Why this matters)"
+    }
+  ],
+  "metrics": {
+    "key1": "value1"
+  },
+  "summary": "string (Detailed paragraph explaining your overall findings)"
 }
 
 - `management_sentiment` (string): Must be EXACTLY one of: HIGHLY_BULLISH, MILDLY_BULLISH, NEUTRAL, ROUTINE_SELLING, CONCERNING_SELLING.

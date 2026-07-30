@@ -1,9 +1,11 @@
 package com.oraculum.analyst.agent.service.impl;
 
+import com.oraculum.analyst.agent.dto.*;
+
 import com.oraculum.analyst.agent.dto.AgentContext;
 import com.oraculum.analyst.agent.dto.AgentOutput;
-import com.oraculum.analyst.agent.dto.CashFlowAgentOutput;
-import com.oraculum.analyst.agent.dto.FundamentalsAgentOutput;
+
+
 import com.oraculum.analyst.agent.service.Agent;
 import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.api.domain.FinancialDataProfile;
@@ -23,7 +25,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 @Component
 @RequiredArgsConstructor
-public class CashFlowAgent implements Agent<CashFlowAgentOutput> {
+public class CashFlowAgent implements Agent<StandardAgentOutput> {
 
     private final LlmRouterApi llmRouterApi;
     private final PromptRegistry promptRegistry;
@@ -36,10 +38,10 @@ public class CashFlowAgent implements Agent<CashFlowAgentOutput> {
 
 
     @Override
-    public AgentOutput<CashFlowAgentOutput> run(AgentContext ctx) {
+    public AgentOutput<StandardAgentOutput> run(AgentContext ctx) {
         CompanyFactSheetData factSheet = ctx.factSheetData();
 
-        FundamentalsAgentOutput fundamentalsOutput = (FundamentalsAgentOutput) ctx.state().getAgentOutput(AgentType.FUNDAMENTALS);
+        StandardAgentOutput fundamentalsOutput = (StandardAgentOutput) ctx.state().getAgentOutput(AgentType.FUNDAMENTALS);
         String fundamentalsJson = JsonUtils.toJson(jsonMapper, fundamentalsOutput, "{}");
 
         FinancialDataProfile profile = getName().getDataProfile();
@@ -54,8 +56,8 @@ public class CashFlowAgent implements Agent<CashFlowAgentOutput> {
 
         String fullPrompt = appendCriticFeedbackIfPresent(prompt, ctx);
 
-        LlmResponse<CashFlowAgentOutput> response = llmRouterApi.executeCall(
-                LlmCallRequest.of(LlmTierType.STANDARD, fullPrompt, CashFlowAgentOutput.class, ctx.correlationId(), CorrelationType.COMPANY_ANALYSIS, getName().name()));
+        LlmResponse<StandardAgentOutput> response = llmRouterApi.executeCall(
+                LlmCallRequest.of(LlmTierType.STANDARD, fullPrompt, StandardAgentOutput.class, ctx.correlationId(), CorrelationType.COMPANY_ANALYSIS, getName().name()));
 
         return new AgentOutput<>(response.result(), response.metrics().totalTokens());
     }

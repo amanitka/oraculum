@@ -240,7 +240,7 @@ public class CompanyAnalysisWorkflowService {
                 .market(req.ticker().market())
                 .analysisDate(ctx.analysisDate())
                 .status(AnalysisStatus.COMPLETED)
-                .report(formatFinalReport(finalOut.report()))
+                .report(formatFinalReport(finalOut.executiveSummary()))
                 .summary(JsonUtils.toJson(jsonMapper, execSummary, "{}"))
                 .outlook(finalOut.outlook())
                 .recommendation(finalOut.recommendation())
