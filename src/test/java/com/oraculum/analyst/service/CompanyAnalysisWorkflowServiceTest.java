@@ -62,6 +62,9 @@ class CompanyAnalysisWorkflowServiceTest {
     @Mock
     private JsonMapper jsonMapper;
 
+    @Mock
+    private com.oraculum.analyst.agent.document.service.SecDocumentProcessingAgent secDocumentProcessingAgent;
+
     @InjectMocks
     private CompanyAnalysisWorkflowService workflowService;
 
