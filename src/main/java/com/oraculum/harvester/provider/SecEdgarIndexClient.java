@@ -40,15 +40,21 @@ public class SecEdgarIndexClient {
     public Map<String, Map<TickerDocumentType, SecDailyFilingDto>> downloadDailyIndex(LocalDate targetDate) {
         try {
             return fetchDailyIndexForDate(targetDate);
-        } catch (HttpClientErrorException.Forbidden | HttpClientErrorException.NotFound e) {
-            log.warn("Daily index for {} is not yet available on SEC servers. Falling back to previous day.", targetDate);
-            LocalDate fallbackDate = targetDate.minusDays(1);
-            try {
-                return fetchDailyIndexForDate(fallbackDate);
-            } catch (HttpClientErrorException.Forbidden | HttpClientErrorException.NotFound ex) {
-                log.warn("Daily index for {} is also not available.", fallbackDate);
-                return Map.of();
+        } catch (HttpClientErrorException e) {
+            if (e.getStatusCode().isSameCodeAs(HttpStatus.FORBIDDEN) || e.getStatusCode().isSameCodeAs(HttpStatus.NOT_FOUND)) {
+                log.warn("Daily index for {} is not yet available on SEC servers. Falling back to previous day.", targetDate);
+                LocalDate fallbackDate = targetDate.minusDays(1);
+                try {
+                    return fetchDailyIndexForDate(fallbackDate);
+                } catch (HttpClientErrorException ex) {
+                    if (ex.getStatusCode().isSameCodeAs(HttpStatus.FORBIDDEN) || ex.getStatusCode().isSameCodeAs(HttpStatus.NOT_FOUND)) {
+                        log.warn("Daily index for {} is also not available.", fallbackDate);
+                        return Map.of();
+                    }
+                    throw ex;
+                }
             }
+            throw e;
         }
     }
 

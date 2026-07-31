@@ -34,7 +34,7 @@ public class AnalysisDetailView extends VerticalLayout implements HasUrlParamete
         this.companyAnalysisApi = companyAnalysisApi;
         this.analysisResultRenderer = analysisResultRenderer;
 
-        setSizeFull();
+        setWidthFull();
         getStyle().set("padding-top", "2rem").set("padding-bottom", "2rem").set("overflow-x", "hidden").set("box-sizing", "border-box");
         setPadding(true);
         setSpacing(false);
@@ -97,7 +97,7 @@ public class AnalysisDetailView extends VerticalLayout implements HasUrlParamete
         add(topBar);
 
         var resultComponent = analysisResultRenderer.renderAnalysisResult(analysis);
-        resultComponent.getElement().getStyle().set("flex-grow", "1").set("padding-top", "2rem");
+        resultComponent.getElement().getStyle().set("padding-top", "2rem");
         add(resultComponent);
     }
 

@@ -173,7 +173,7 @@ oraculum:
       history-limit-years: 10
     sec-edgar:
       base-url: "https://www.sec.gov"
-      user-agent: ${ORACULUM_SEC_USER_AGENT:Oraculum DataHarvester (admin@oraculum.com)}
+      user-agent: ${ORACULUM_SEC_USER_AGENT:Oraculum admin@oraculum.com}
 
   llm:
     common:

@@ -32,6 +32,8 @@ public class SecEdgarConfig {
 
         builder.baseUrl(baseUrl)
                 .defaultHeader("User-Agent", userAgent)
+                .defaultHeader("Accept-Encoding", "gzip, deflate")
+                .defaultHeader("Host", "www.sec.gov")
                 .requestInterceptor((request, body, execution) -> {
                     RateLimiter.waitForPermission(getSecRateLimiter());
                     return execution.execute(request, body);

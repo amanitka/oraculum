@@ -44,7 +44,7 @@ public class AnalysisResultRenderer {
         VerticalLayout root = new VerticalLayout();
         root.setPadding(false);
         root.setSpacing(false);
-        root.setSizeFull();
+        root.setWidthFull();
 
         root.add(renderAnalysisTabs(analysis));
         return root;
@@ -52,7 +52,7 @@ public class AnalysisResultRenderer {
 
     public TabSheet renderAnalysisTabs(CompanyAnalysisDto analysis) {
         TabSheet tabSheet = new TabSheet();
-        tabSheet.setSizeFull();
+        tabSheet.setWidthFull();
 
         if (analysis.getError() != null) {
             tabSheet.add("Error", createErrorTab(analysis));
@@ -85,14 +85,14 @@ public class AnalysisResultRenderer {
         layout.getStyle().set("box-sizing", "border-box").set("padding", "24px 16px");
 
         Scroller scroller = new Scroller(layout, Scroller.ScrollDirection.VERTICAL);
-        scroller.setSizeFull();
+        scroller.setWidthFull();
         scroller.getStyle().set("overflow-x", "hidden");
         return scroller;
     }
 
     private Component createWorkflowDetailsTab(CompanyAnalysisDto analysis) {
         TabSheet subTabSheet = new TabSheet();
-        subTabSheet.setSizeFull();
+        subTabSheet.setWidthFull();
 
         addAgentTabs(subTabSheet, analysis.getAnalysisData());
         subTabSheet.add("JSON Data", createJsonTab(analysis));
@@ -110,7 +110,8 @@ public class AnalysisResultRenderer {
         TextArea errorDetails = new TextArea();
         errorDetails.setValue(analysis.getError() != null ? analysis.getError() : "Unknown error");
         errorDetails.setReadOnly(true);
-        errorDetails.setSizeFull();
+        errorDetails.setWidthFull();
+        errorDetails.setMinHeight("400px");
         errorDetails.getStyle().set("font-family", "monospace");
 
         VerticalLayout layout = new VerticalLayout(errorBanner, errorDetails);
@@ -144,7 +145,7 @@ public class AnalysisResultRenderer {
                         .set("color", "var(--lumo-body-text-color)");
                 
                 Scroller scroller = new Scroller(markdownContainer, Scroller.ScrollDirection.VERTICAL);
-                scroller.setSizeFull();
+                scroller.setWidthFull();
                 scroller.getStyle().set("overflow-x", "hidden");
                 return scroller;
             }
@@ -174,7 +175,8 @@ public class AnalysisResultRenderer {
         TextArea textArea = new TextArea();
         textArea.setValue(prettyJson);
         textArea.setReadOnly(true);
-        textArea.setSizeFull();
+        textArea.setWidthFull();
+        textArea.setMinHeight("600px");
         textArea.getStyle().set("font-family", "monospace").set("font-size", "0.9rem");
 
         final String finalJson = prettyJson;
