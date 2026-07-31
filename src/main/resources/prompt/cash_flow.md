@@ -41,10 +41,12 @@ You MUST respond with valid JSON using exactly this schema:
 }
 
 Rules:
+- CRITICAL SCORE RULE: `score` MUST be a float strictly between 0.0 and 10.0 (where 0.0 is the worst, and 10.0 is the best).
+- CRITICAL CONFIDENCE RULE: `confidence` MUST be a float strictly between 0.0 and 1.0 (where 0.0 is 0% and 1.0 is 100%).
 - STRICT JSON FORMATTING: OUTPUT ONLY VALID JSON. Do not output any conversational text, explanatory text, greetings, or introductory phrases (e.g. "Here is the structured JSON").
 - Do NOT wrap the JSON in markdown code blocks (e.g., do not use ```json or ```). Your entire response must be exactly one raw JSON object starting with `{` and ending with `}`.
 - Do NOT output multiple JSON blocks. Output exactly ONE complete JSON object containing all required fields.
-- CRITICAL CITATIONS: Every time you state a fact, metric, event, margin, or financial number derived from the data, you MUST cite the `citation_id` of the exact source immediately after the claim using brackets. Example: "Revenue grew by 20% to $1.44B [2]." Do not cite data that does not have a `citation_id`. Do not hallucinate citations.
+- CRITICAL CITATIONS FORMAT: Every time you state a fact, metric, event, margin, or financial number derived from the data, you MUST cite the `citation_id` of the exact source immediately after the claim using brackets. You MUST strictly use ONLY the numeric ID(s) inside the brackets. Example: "Revenue grew by 20% to $1.44B [2]". DO NOT add words like "citation", "source", or "Canonical Facts" inside the brackets. WRONG: "[citation 142]", "[Canonical Facts, 113]". CORRECT: "[142]", "[113, 140]". Do not cite data that does not have a `citation_id`. Do not hallucinate citations.
 - ALWAYS explicitly cite the specific year or timeframe and the exact source (e.g., 'In 2023, according to the cash flow statement...').
 - CRITICAL: Always anchor your analysis on the MOST RECENT data period provided in the JSON arrays (the "up-to-date" data). Use older historical data points strictly to establish trends (e.g., growth trajectories, margin expansion/contraction) leading up to the current period. Do not present older data as current.
 - Treat raw cash-flow values as millions of reporting currency unless explicitly labeled otherwise.

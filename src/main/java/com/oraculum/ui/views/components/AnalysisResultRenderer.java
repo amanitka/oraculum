@@ -66,7 +66,7 @@ public class AnalysisResultRenderer {
             }
         }
 
-        tabSheet.add("Full Report", createReportTab(analysis));
+        tabSheet.add("Synthesizer Report", createReportTab(analysis));
 
         Component workflowDetails = createWorkflowDetailsTab(analysis);
         tabSheet.add("Details", workflowDetails);
@@ -121,22 +121,43 @@ public class AnalysisResultRenderer {
     }
 
     private Component createReportTab(CompanyAnalysisDto analysis) {
-        String md = analysis.getReport();
-        if (md == null || md.isBlank()) {
-            return new Span("No report generated.");
+        String jsonData = analysis.getAnalysisData();
+        if (jsonData == null || jsonData.isBlank()) {
+            return new Span("No report data available.");
         }
-        Component markdownContainer = markdownRenderer.renderMarkdownWithCitations(md, analysis.getAnalysisData());
-        markdownContainer.getStyle()
-                .set("max-width", "100%")
-                .set("box-sizing", "border-box")
-                .set("margin", "0 auto")
-                .set("padding", "24px 16px")
-                .set("color", "var(--lumo-body-text-color)");
 
-        Scroller scroller = new Scroller(markdownContainer, Scroller.ScrollDirection.VERTICAL);
-        scroller.setSizeFull();
-        scroller.getStyle().set("overflow-x", "hidden");
-        return scroller;
+        try {
+            JsonNode rootNode = jsonMapper.readTree(jsonData);
+            JsonNode synthNode = rootNode.path("SYNTHESIZER");
+            if (synthNode.isMissingNode() || synthNode.isNull()) {
+                // Fallback to the raw string if SYNTHESIZER node isn't there (for backward compatibility)
+                String md = analysis.getReport();
+                if (md == null || md.isBlank()) {
+                    return new Span("No report generated.");
+                }
+                Component markdownContainer = markdownRenderer.renderMarkdownWithCitations(md, analysis.getAnalysisData());
+                markdownContainer.getStyle()
+                        .set("max-width", "100%")
+                        .set("box-sizing", "border-box")
+                        .set("margin", "0 auto")
+                        .set("padding", "24px 16px")
+                        .set("color", "var(--lumo-body-text-color)");
+                
+                Scroller scroller = new Scroller(markdownContainer, Scroller.ScrollDirection.VERTICAL);
+                scroller.setSizeFull();
+                scroller.getStyle().set("overflow-x", "hidden");
+                return scroller;
+            }
+
+            Component tabContent = agentDataRenderer.createAgentTabContent(synthNode, jsonData);
+            if (tabContent == null) {
+                return new Span("Empty synthesizer data.");
+            }
+            return tabContent;
+
+        } catch (Exception e) {
+            return new Span("Error rendering report: " + e.getMessage());
+        }
     }
 
     private Component createJsonTab(CompanyAnalysisDto analysis) {

@@ -82,6 +82,8 @@ class ExecutiveSummaryAgentTest {
                 AnalysisOutlook.BULLISH,
                 AnalysisRecommendation.BUY,
                 4,
+                "Strong growth and execution.",
+                java.util.Map.of(),
                 List.of("Strong AI capex"),
                 List.of("Export control risks")
         );

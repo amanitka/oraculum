@@ -74,11 +74,13 @@ public class InvestmentSnapshotRenderer {
                 ? snapshot.verdict()
                 : (analysis.getRecommendation() != null ? analysis.getRecommendation().name() : "");
 
+        verdictText = RendererUtil.formatKeyTitle(verdictText);
+
         Span verdictBadge = new Span(verdictText);
         verdictBadge.getElement().getThemeList().add("badge");
-        if ("BUY".equalsIgnoreCase(verdictText) || "BULLISH".equalsIgnoreCase(verdictText)) {
+        if ("Buy".equalsIgnoreCase(verdictText) || "Bullish".equalsIgnoreCase(verdictText) || verdictText.toUpperCase().contains("BUY")) {
             verdictBadge.getElement().getThemeList().add("success");
-        } else if ("SELL".equalsIgnoreCase(verdictText) || "BEARISH".equalsIgnoreCase(verdictText)) {
+        } else if ("Sell".equalsIgnoreCase(verdictText) || "Bearish".equalsIgnoreCase(verdictText) || verdictText.toUpperCase().contains("SELL")) {
             verdictBadge.getElement().getThemeList().add("error");
         } else {
             verdictBadge.getElement().getThemeList().add("contrast");

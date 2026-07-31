@@ -11,7 +11,7 @@ You will be provided with a JSON object containing two key arrays:
 6.  `reverse_dcf`: A pre-computed reverse DCF analysis showing the implied FCF growth rate the market is pricing in at the current price.
 
 Your task is to:
-1.  **Analyze Multiples**: Scrutinize the valuation multiples found in the latest entries of `daily_share_price_signals`. Evaluate where the company currently trades relative to its earnings, sales, book value, and cash flow. Compare the company's valuation metrics and margins against the `industry_ratios` medians to determine relative valuation and operational efficiency.
+1.  **Analyze Multiples**: Scrutinize the valuation multiples found in the latest entries of `daily_share_price_signals`. Evaluate where the company currently trades relative to its earnings, sales, book value, and cash flow. Compare the company's margins and financial health against the `industry_ratios` medians to determine relative operational efficiency. (Note: Industry valuation multiples are not provided in this payload; rely on historical percentiles and absolute multiples for valuation context).
 2.  **Assess Business Quality**: Use the `company_financial_ratios_a` and `company_financial_ratios_ttm` data (like ROE, margins, and free cash flow generation) to determine if the underlying business performance justifies the current valuation.
 3.  **Incorporate Macroeconomic Context**: A Chief Economist has provided a `macroeconomic_context` briefing. Consider how the current macroeconomic regime (especially interest rates) impacts acceptable multiples for this company. Use this strictly as background context, not as the main driver.
 4.  **Reverse DCF Assessment**: Use the pre-computed `reverse_dcf` details. Assess whether the market's growth expectations are realistic given the company's historical growth trajectory and competitive position. State clearly: "At today's price, the market implies X% annual FCF growth for 10 years, compared to the historical FCF CAGR of Y%."
@@ -60,10 +60,12 @@ You MUST respond with valid JSON using exactly this schema:
 }
 
 Rules:
+- CRITICAL SCORE RULE: `score` MUST be a float strictly between 0.0 and 10.0 (where 0.0 is the worst, and 10.0 is the best).
+- CRITICAL CONFIDENCE RULE: `confidence` MUST be a float strictly between 0.0 and 1.0 (where 0.0 is 0% and 1.0 is 100%).
 - STRICT JSON FORMATTING: OUTPUT ONLY VALID JSON. Do not output any conversational text, explanatory text, greetings, or introductory phrases (e.g. "Here is the structured JSON").
 - Do NOT wrap the JSON in markdown code blocks (e.g., do not use ```json or ```). Your entire response must be exactly one raw JSON object starting with `{` and ending with `}`.
 - Do NOT output multiple JSON blocks. Output exactly ONE complete JSON object containing all required fields.
-- CRITICAL CITATIONS: Every time you state a fact, metric, event, margin, or financial number derived from the data, you MUST cite the `citation_id` of the exact source immediately after the claim using brackets. Example: "Revenue grew by 20% to $1.44B [2]." Do not cite data that does not have a `citation_id`. Do not hallucinate citations.
+- CRITICAL CITATIONS FORMAT: Every time you state a fact, metric, event, margin, or financial number derived from the data, you MUST cite the `citation_id` of the exact source immediately after the claim using brackets. You MUST strictly use ONLY the numeric ID(s) inside the brackets. Example: "Revenue grew by 20% to $1.44B [2]". DO NOT add words like "citation", "source", or "Canonical Facts" inside the brackets. WRONG: "[citation 142]", "[Canonical Facts, 113]". CORRECT: "[142]", "[113, 140]". Do not cite data that does not have a `citation_id`. Do not hallucinate citations.
 - ALWAYS explicitly cite the specific year or timeframe and the exact source (e.g., 'In FY2025...').
 - CRITICAL: Always anchor your analysis on the MOST RECENT data period provided in the JSON arrays (the "up-to-date" data). Use older historical data points strictly to establish trends (e.g., growth trajectories, margin expansion/contraction) leading up to the current period. Do not present older data as current.
 - Do not include any extra keys.

@@ -18,7 +18,7 @@ Pay special attention to this thesis requested by the user:
 3. **Note Sentiment Trends:** If possible, identify if the sentiment has shifted over the period. For example, "The sentiment was largely neutral until a recent positive earnings report shifted the tone to bullish." Note any strong divergence between recent (7d) and longer-term (30d) sentiment.
 4. **Synthesize, Do Not Repeat:** Do not simply list the articles or filings. Synthesize the news and corporate releases into a coherent narrative.
 5. **Rules:**
-- CRITICAL CITATIONS: Every time you state a fact, metric, event, or news claim derived from the data, you MUST cite the `citation_id` of the exact source immediately after the claim using brackets. Example: "Management faces a lawsuit [2]." Do not cite data that does not have a `citation_id`. Do not hallucinate citations.
+- CRITICAL CITATIONS FORMAT: Every time you state a fact, metric, event, margin, or financial number derived from the data, you MUST cite the `citation_id` of the exact source immediately after the claim using brackets. You MUST strictly use ONLY the numeric ID(s) inside the brackets. Example: "Revenue grew by 20% to $1.44B [2]". DO NOT add words like "citation", "source", or "Canonical Facts" inside the brackets. WRONG: "[citation 142]", "[Canonical Facts, 113]". CORRECT: "[142]", "[113, 140]". Do not cite data that does not have a `citation_id`. Do not hallucinate citations.
 - ALWAYS explicitly cite the specific date/timeframe and the exact source of your information (e.g., 'On Oct 24, according to a Reuters article...' or 'On Feb 15, in the company's Exhibit 99.1 filing...').
 6. **Synthesize & Prioritize:** Produce a tight, analytical summary of **3-4 paragraphs (300-400 words max)**. Cover only the most investment-relevant developments: (1) earnings/guidance, (2) the single most important strategic move, (3) key risk or competitive threat, (4) net sentiment conclusion. Do NOT enumerate every article, partnership, or product announcement — ruthlessly prioritize. If it doesn't change the investment thesis, leave it out.
 
@@ -64,3 +64,7 @@ The "summary" field should contain the generated Markdown summary starting with 
 ```
 
 Analyze the recent news and sentiment for {{ ticker }} as of {{ analysis_date }} based on the provided data.
+
+Rules:
+- CRITICAL SCORE RULE: `score` MUST be a float strictly between 0.0 and 10.0 (where 0.0 is the worst, and 10.0 is the best).
+- CRITICAL CONFIDENCE RULE: `confidence` MUST be a float strictly between 0.0 and 1.0 (where 0.0 is 0% and 1.0 is 100%).

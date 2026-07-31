@@ -1,6 +1,5 @@
 package com.oraculum.analyst.service;
 
-import com.oraculum.analyst.agent.document.service.SecDocumentProcessingAgent;
 import com.oraculum.analyst.agent.dto.AgentOutput;
 import com.oraculum.analyst.agent.dto.CriticAgentOutput;
 import com.oraculum.analyst.agent.dto.SynthesizerAgentOutput;
@@ -50,9 +49,6 @@ class CompanyAnalysisWorkflowServiceTest {
 
     @Mock
     private CompanyFactSheetDataService companyFactSheetDataService;
-
-    @Mock
-    private SecDocumentProcessingAgent secDocumentProcessingAgent;
 
     @Mock
     private Map<AgentType, Agent<?>> agents;
@@ -120,7 +116,7 @@ class CompanyAnalysisWorkflowServiceTest {
         Agent<SynthesizerAgentOutput> synthesizerAgent = mock(Agent.class);
         when(agents.get(AgentType.SYNTHESIZER)).thenReturn((Agent) synthesizerAgent);
         AgentOutput<SynthesizerAgentOutput> synthOutput = new AgentOutput<>(
-                new SynthesizerAgentOutput("Report", AnalysisOutlook.BULLISH, AnalysisRecommendation.BUY, 80, null, null), 200
+                new SynthesizerAgentOutput("Report", AnalysisOutlook.BULLISH, AnalysisRecommendation.BUY, 80, "Reasoning", java.util.Map.of(), null, null), 200
         );
         when(synthesizerAgent.run(any())).thenReturn(synthOutput);
 
