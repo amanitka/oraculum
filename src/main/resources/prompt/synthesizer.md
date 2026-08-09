@@ -46,8 +46,6 @@ You MUST respond with exactly one raw JSON object matching this schema:
     "growth_prospects": 0.0,
     "risk_profile": 0.0
   },
-  "key_drivers": ["string — 1–5 concise bullets, each backed by a specific metric"],
-  "key_risks": ["string — 1–5 concise bullets, each backed by a specific metric"],
   "outlook": "string — one of: BULLISH, BEARISH, NEUTRAL (describes the company's business trajectory)",
   "valuation": "string — one of: UNDERVALUED, FAIRLY_VALUED, OVERVALUED, UNCERTAIN (describes price vs. estimated intrinsic value)",
   "conviction": 1,

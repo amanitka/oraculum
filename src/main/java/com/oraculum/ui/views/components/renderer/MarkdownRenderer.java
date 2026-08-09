@@ -125,6 +125,7 @@ public class MarkdownRenderer {
                     ".rendered-markdown h3 { font-size: 1.05rem; }" +
                     ".rendered-markdown h4 { font-size: 1rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; }" +
                     ".rendered-markdown p { margin-bottom: 1.25rem; }" +
+                    ".rendered-markdown p:last-child { margin-bottom: 0; }" +
                     ".rendered-markdown strong { font-weight: 600; color: var(--lumo-primary-text-color); }" +
                     ".reference-data-link { font-size: 0.75rem; vertical-align: super; background: var(--lumo-contrast-10pct); border-radius: 4px; padding: 2px 4px; text-decoration: none; color: var(--lumo-primary-text-color); font-weight: bold; margin-left: 2px; transition: all 0.2s ease; }" +
                     ".reference-data-link:hover { background: var(--lumo-primary-color); color: white; }" +

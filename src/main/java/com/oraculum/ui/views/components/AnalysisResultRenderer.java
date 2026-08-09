@@ -1,8 +1,9 @@
 package com.oraculum.ui.views.components;
 
+import com.oraculum.analyst.api.dto.AnalysisResult;
 import com.oraculum.analyst.api.dto.CompanyAnalysisDto;
 import com.oraculum.ui.views.components.renderer.AgentDataRenderer;
-import com.oraculum.ui.views.components.renderer.InvestmentSnapshotRenderer;
+import com.oraculum.ui.views.components.renderer.AnalysisOverviewRenderer;
 import com.oraculum.ui.views.components.renderer.MarkdownRenderer;
 import com.oraculum.ui.views.components.renderer.RendererUtil;
 import com.vaadin.flow.component.Component;
@@ -11,6 +12,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -36,7 +38,7 @@ public class AnalysisResultRenderer {
 
     private static final String TRACE_CITATIONS_KEY = "CITATIONS";
     private final JsonMapper jsonMapper;
-    private final InvestmentSnapshotRenderer investmentSnapshotRenderer;
+    private final AnalysisOverviewRenderer analysisOverviewRenderer;
     private final MarkdownRenderer markdownRenderer;
     private final AgentDataRenderer agentDataRenderer;
 
@@ -45,7 +47,6 @@ public class AnalysisResultRenderer {
         root.setPadding(false);
         root.setSpacing(false);
         root.setWidthFull();
-
         root.add(renderAnalysisTabs(analysis));
         return root;
     }
@@ -59,44 +60,69 @@ public class AnalysisResultRenderer {
             return tabSheet;
         }
 
-        if (analysis.getAnalysisResult() != null) {
-            Component summaryTabContent = createSummaryTab(analysis);
-            if (summaryTabContent != null) {
-                tabSheet.add("Executive Summary", summaryTabContent);
-            }
-        }
-
-        tabSheet.add("Synthesizer Report", createReportTab(analysis));
-
-        Component workflowDetails = createWorkflowDetailsTab(analysis);
-        tabSheet.add("Details", workflowDetails);
-
+        tabSheet.add("Report", createUnifiedReportTab(analysis));
+        tabSheet.add("Details", createWorkflowDetailsTab(analysis));
         return tabSheet;
     }
 
-    private Component createSummaryTab(CompanyAnalysisDto analysis) {
-        Component snapshotCard = investmentSnapshotRenderer.renderInvestmentSnapshot(analysis.getAnalysisResult(), analysis);
-        if (snapshotCard == null) return null;
+    private Component createUnifiedReportTab(CompanyAnalysisDto analysis) {
+        VerticalLayout layout = createBaseContainer();
 
-        VerticalLayout layout = new VerticalLayout(snapshotCard);
-        layout.setPadding(false);
-        layout.setSpacing(true);
-        layout.setWidthFull();
-        layout.getStyle().set("box-sizing", "border-box").set("padding", "24px 16px");
+        if (analysis.getAnalysisResult() != null) {
+            Component overviewCard = analysisOverviewRenderer.renderAnalysisOverview(analysis.getAnalysisResult(), analysis);
+            if (overviewCard != null) {
+                layout.add(overviewCard);
+            }
+        }
 
-        Scroller scroller = new Scroller(layout, Scroller.ScrollDirection.VERTICAL);
-        scroller.setWidthFull();
-        scroller.getStyle().set("overflow-x", "hidden");
-        return scroller;
+        AnalysisResult result = analysis.getAnalysisResult();
+        String jsonData = analysis.getAnalysisData();
+
+        if (result != null) {
+            if (result.executiveSummary() != null && !result.executiveSummary().isBlank()) {
+                addReportSection(layout, "Executive Summary", result.executiveSummary(), jsonData);
+            }
+            if (result.recommendationReasoning() != null && !result.recommendationReasoning().isBlank()) {
+                addReportSection(layout, "Valuation Justification", result.recommendationReasoning(), jsonData);
+            }
+        } else if (jsonData != null && !jsonData.isBlank()) {
+            layout.add(renderLegacyJsonReportFallback(jsonData));
+        }
+
+        return wrapInScroller(layout);
+    }
+
+    private void addReportSection(VerticalLayout layout, String title, String markdownText, String jsonData) {
+        H4 header = new H4(title);
+        header.getStyle()
+                .set("margin-top", "24px")
+                .set("margin-bottom", "14px")
+                .set("border-bottom", "1px solid var(--lumo-contrast-10pct)")
+                .set("padding-bottom", "8px")
+                .set("font-size", "1.15rem")
+                .set("color", "var(--lumo-header-text-color)");
+        layout.add(header);
+        layout.add(markdownRenderer.renderMarkdownWithCitations(markdownText, jsonData));
+    }
+
+    private Component renderLegacyJsonReportFallback(String jsonData) {
+        try {
+            JsonNode rootNode = jsonMapper.readTree(jsonData);
+            JsonNode synthNode = rootNode.path("SYNTHESIZER");
+            if (!synthNode.isMissingNode() && !synthNode.isNull()) {
+                Component tabContent = agentDataRenderer.createAgentTabContent(synthNode, jsonData);
+                if (tabContent != null) return tabContent;
+            }
+        } catch (Exception ignored) {
+        }
+        return new Span("No report data available.");
     }
 
     private Component createWorkflowDetailsTab(CompanyAnalysisDto analysis) {
         TabSheet subTabSheet = new TabSheet();
         subTabSheet.setWidthFull();
-
         addAgentTabs(subTabSheet, analysis.getAnalysisData());
         subTabSheet.add("JSON Data", createJsonTab(analysis));
-
         return subTabSheet;
     }
 
@@ -121,88 +147,17 @@ public class AnalysisResultRenderer {
         return layout;
     }
 
-    private Component createReportTab(CompanyAnalysisDto analysis) {
-        String jsonData = analysis.getAnalysisData();
-        if (jsonData == null || jsonData.isBlank()) {
-            return new Span("No report data available.");
-        }
-
-        try {
-            JsonNode rootNode = jsonMapper.readTree(jsonData);
-            JsonNode synthNode = rootNode.path("SYNTHESIZER");
-            if (synthNode.isMissingNode() || synthNode.isNull()) {
-                String md = analysis.getAnalysisResult() != null ? analysis.getAnalysisResult().executiveSummary() : null;
-                if (md == null || md.isBlank()) {
-                    return new Span("No report generated.");
-                }
-                Component markdownContainer = markdownRenderer.renderMarkdownWithCitations(md, analysis.getAnalysisData());
-                markdownContainer.getStyle()
-                        .set("max-width", "100%")
-                        .set("box-sizing", "border-box")
-                        .set("margin", "0 auto")
-                        .set("padding", "24px 16px")
-                        .set("color", "var(--lumo-body-text-color)");
-                
-                Scroller scroller = new Scroller(markdownContainer, Scroller.ScrollDirection.VERTICAL);
-                scroller.setWidthFull();
-                scroller.getStyle().set("overflow-x", "hidden");
-                return scroller;
-            }
-
-            Component tabContent = agentDataRenderer.createAgentTabContent(synthNode, jsonData);
-            if (tabContent == null) {
-                return new Span("Empty synthesizer data.");
-            }
-            return tabContent;
-
-        } catch (Exception e) {
-            return new Span("Error rendering report: " + e.getMessage());
-        }
-    }
-
     private Component createJsonTab(CompanyAnalysisDto analysis) {
-        String prettyJson = "";
-        try {
-            if (analysis.getAnalysisData() != null) {
-                Object json = jsonMapper.readValue(analysis.getAnalysisData(), Object.class);
-                prettyJson = jsonMapper.writerWithDefaultPrettyPrinter().writeValueAsString(json);
-            }
-        } catch (Exception e) {
-            prettyJson = "Error formatting JSON: " + e.getMessage();
-        }
+        String jsonText = formatJson(analysis.getAnalysisData());
 
         TextArea textArea = new TextArea();
-        textArea.setValue(prettyJson);
+        textArea.setValue(jsonText);
         textArea.setReadOnly(true);
         textArea.setWidthFull();
         textArea.setMinHeight("600px");
         textArea.getStyle().set("font-family", "monospace").set("font-size", "0.9rem");
 
-        final String finalJson = prettyJson;
-        Button copyButton = new Button("Copy JSON", _ -> {
-            UI.getCurrent().getPage().executeJs("navigator.clipboard.writeText($0)", finalJson);
-            Notification.show("JSON copied to clipboard");
-        });
-        copyButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
-
-        Anchor downloadAnchor = new Anchor((DownloadEvent event) -> {
-            String filename = analysis.getTicker() != null ? "analysis_" + analysis.getTicker() + ".json" : "analysis.json";
-            event.setFileName(filename);
-            event.getResponse().setHeader("Content-Type", "application/json");
-            try (OutputStream out = event.getOutputStream()) {
-                out.write(finalJson.getBytes(StandardCharsets.UTF_8));
-            } catch (IOException ignored) {
-            }
-        }, "");
-        downloadAnchor.getElement().setAttribute("download", true);
-        Button downloadButton = new Button("Download JSON");
-        downloadButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
-        downloadAnchor.add(downloadButton);
-
-        HorizontalLayout toolbar = new HorizontalLayout(copyButton, downloadAnchor);
-        toolbar.setSpacing(true);
-
-        VerticalLayout layout = new VerticalLayout(toolbar, textArea);
+        VerticalLayout layout = new VerticalLayout(buildJsonToolbar(analysis, jsonText), textArea);
         layout.setSizeFull();
         layout.setPadding(true);
         layout.setSpacing(true);
@@ -210,26 +165,82 @@ public class AnalysisResultRenderer {
         return layout;
     }
 
-    private void addAgentTabs(TabSheet tabSheet, String jsonData) {
-        if (jsonData == null || jsonData.isBlank()) {
-            return;
+    private HorizontalLayout buildJsonToolbar(CompanyAnalysisDto analysis, String jsonText) {
+        Button copyButton = new Button("Copy JSON", _ -> {
+            UI.getCurrent().getPage().executeJs("navigator.clipboard.writeText($0)", jsonText);
+            Notification.show("JSON copied to clipboard");
+        });
+        copyButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
+
+        Anchor downloadAnchor = createDownloadAnchor(analysis, jsonText);
+        HorizontalLayout toolbar = new HorizontalLayout(copyButton, downloadAnchor);
+        toolbar.setSpacing(true);
+        return toolbar;
+    }
+
+    private Anchor createDownloadAnchor(CompanyAnalysisDto analysis, String jsonText) {
+        Anchor downloadAnchor = new Anchor((DownloadEvent event) -> {
+            String filename = analysis.getTicker() != null ? "analysis_" + analysis.getTicker() + ".json" : "analysis.json";
+            event.setFileName(filename);
+            event.getResponse().setHeader("Content-Type", "application/json");
+            try (OutputStream out = event.getOutputStream()) {
+                out.write(jsonText.getBytes(StandardCharsets.UTF_8));
+            } catch (IOException ignored) {
+            }
+        }, "");
+        downloadAnchor.getElement().setAttribute("download", true);
+
+        Button downloadButton = new Button("Download JSON");
+        downloadButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
+        downloadAnchor.add(downloadButton);
+        return downloadAnchor;
+    }
+
+    private String formatJson(String jsonData) {
+        if (jsonData == null) return "";
+        try {
+            Object json = jsonMapper.readValue(jsonData, Object.class);
+            return jsonMapper.writerWithDefaultPrettyPrinter().writeValueAsString(json);
+        } catch (Exception e) {
+            return "Error formatting JSON: " + e.getMessage();
         }
+    }
+
+    private void addAgentTabs(TabSheet tabSheet, String jsonData) {
+        if (jsonData == null || jsonData.isBlank()) return;
+
         try {
             JsonNode rootNode = jsonMapper.readTree(jsonData);
-
             for (Map.Entry<String, JsonNode> entry : rootNode.properties()) {
                 String key = entry.getKey();
-                if (key.startsWith("SYNTHESIZER") || key.equals(TRACE_CITATIONS_KEY)) {
-                    continue;
-                }
+                if (key.startsWith("SYNTHESIZER") || key.equals(TRACE_CITATIONS_KEY)) continue;
 
                 Component tabContent = agentDataRenderer.createAgentTabContent(entry.getValue(), jsonData);
                 if (tabContent != null) {
                     tabSheet.add(RendererUtil.formatKeyTitle(key), tabContent);
                 }
             }
-        } catch (Exception e) {
-            // Silently fallback without adding tabs
+        } catch (Exception ignored) {
         }
+    }
+
+    private VerticalLayout createBaseContainer() {
+        VerticalLayout layout = new VerticalLayout();
+        layout.setPadding(true);
+        layout.setSpacing(true);
+        layout.setWidthFull();
+        layout.getStyle()
+                .set("max-width", "100%")
+                .set("box-sizing", "border-box")
+                .set("margin", "0 auto")
+                .set("padding", "24px 16px");
+        return layout;
+    }
+
+    private Scroller wrapInScroller(Component content) {
+        Scroller scroller = new Scroller(content, Scroller.ScrollDirection.VERTICAL);
+        scroller.setWidthFull();
+        scroller.getStyle().set("overflow-x", "hidden");
+        return scroller;
     }
 }

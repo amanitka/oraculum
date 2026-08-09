@@ -1,5 +1,6 @@
 package com.oraculum.analyst.api.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.oraculum.analyst.api.domain.AnalysisOutlook;
 import com.oraculum.analyst.api.domain.ValuationAssessment;
@@ -13,6 +14,7 @@ import java.util.Map;
  * Combines the full markdown report with an executive landing-page snapshot.
  * Stored as JSONB in {@code t_company_analysis.analysis_result}.
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record AnalysisResult(
 
         // ── Full report ───────────────────────────────────────────────────────
@@ -24,12 +26,6 @@ public record AnalysisResult(
 
         @JsonProperty("factor_scores")
         Map<String, Double> factorScores,
-
-        @JsonProperty("key_drivers")
-        List<String> keyDrivers,
-
-        @JsonProperty("key_risks")
-        List<String> keyRisks,
 
         // ── Valuation verdict (compliance-safe) ───────────────────────────────
         @JsonProperty("outlook")

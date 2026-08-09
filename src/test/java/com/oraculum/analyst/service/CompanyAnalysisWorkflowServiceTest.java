@@ -118,7 +118,7 @@ class CompanyAnalysisWorkflowServiceTest {
         Agent<AnalysisResult> synthesizerAgent = mock(Agent.class);
         when(agents.get(AgentType.SYNTHESIZER)).thenReturn((Agent) synthesizerAgent);
         AnalysisResult expectedAnalysisResult = new AnalysisResult(
-                "Report", "Reasoning", Map.of(), List.of("Driver"), List.of("Risk"),
+                "Report", "Reasoning", Map.of(),
                 AnalysisOutlook.BULLISH, ValuationAssessment.UNDERVALUED, 4,
                 "Thesis", List.of("Bull"), List.of("Bear"), "Valuation", "Watch"
         );
