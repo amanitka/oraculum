@@ -1,7 +1,5 @@
 package com.oraculum.analyst.api.dto;
 
-import com.oraculum.analyst.api.domain.AnalysisOutlook;
-import com.oraculum.analyst.api.domain.AnalysisRecommendation;
 import com.oraculum.analyst.api.domain.AnalysisStatus;
 import com.oraculum.analyst.domain.CompanyAnalysisEntity;
 import lombok.AllArgsConstructor;
@@ -23,11 +21,7 @@ public class CompanyAnalysisDto {
     private String ticker;
     private LocalDate analysisDate;
     private AnalysisStatus status;
-    private String report;
-    private String summary;
-    private AnalysisOutlook outlook;
-    private AnalysisRecommendation recommendation;
-    private Integer conviction;
+    private AnalysisResult analysisResult;
     private String analysisData;
     private String error;
     private OffsetDateTime createdAt;
@@ -37,17 +31,14 @@ public class CompanyAnalysisDto {
         if (entity == null) {
             return null;
         }
-        return new CompanyAnalysisDto(entity.getId(),
+        return new CompanyAnalysisDto(
+                entity.getId(),
                 entity.getCompanyId(),
                 entity.getMarket(),
                 entity.getTicker(),
                 entity.getAnalysisDate(),
                 entity.getStatus(),
-                entity.getReport(),
-                entity.getSummary(),
-                entity.getOutlook(),
-                entity.getRecommendation(),
-                entity.getConviction(),
+                entity.getAnalysisResult(),
                 entity.getAnalysisData(),
                 entity.getError(),
                 entity.getCreatedAt(),

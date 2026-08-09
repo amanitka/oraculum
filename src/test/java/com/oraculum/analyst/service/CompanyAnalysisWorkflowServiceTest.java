@@ -2,13 +2,12 @@ package com.oraculum.analyst.service;
 
 import com.oraculum.analyst.agent.dto.AgentOutput;
 import com.oraculum.analyst.agent.dto.CriticAgentOutput;
-import com.oraculum.analyst.agent.dto.SynthesizerAgentOutput;
 import com.oraculum.analyst.agent.service.Agent;
 import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.api.domain.AnalysisOutlook;
-import com.oraculum.analyst.api.domain.AnalysisRecommendation;
+import com.oraculum.analyst.api.domain.ValuationAssessment;
+import com.oraculum.analyst.api.dto.AnalysisResult;
 import com.oraculum.analyst.api.dto.CompanyAnalysisRequestEvent;
-import com.oraculum.analyst.api.dto.ExecutiveSummaryAgentOutput;
 import com.oraculum.analyst.api.event.CompanyAnalysisProgressEvent;
 import com.oraculum.analyst.config.AnalystProperties;
 import com.oraculum.analyst.dto.CompanyAnalysisResult;
@@ -116,20 +115,15 @@ class CompanyAnalysisWorkflowServiceTest {
         when(criticAgent.run(any())).thenReturn(criticOutput);
 
         // mock synthesizer output
-        Agent<SynthesizerAgentOutput> synthesizerAgent = mock(Agent.class);
+        Agent<AnalysisResult> synthesizerAgent = mock(Agent.class);
         when(agents.get(AgentType.SYNTHESIZER)).thenReturn((Agent) synthesizerAgent);
-        AgentOutput<SynthesizerAgentOutput> synthOutput = new AgentOutput<>(
-                new SynthesizerAgentOutput("Report", AnalysisOutlook.BULLISH, AnalysisRecommendation.BUY, 80, "Reasoning", java.util.Map.of(), null, null), 200
+        AnalysisResult expectedAnalysisResult = new AnalysisResult(
+                "Report", "Reasoning", Map.of(), List.of("Driver"), List.of("Risk"),
+                AnalysisOutlook.BULLISH, ValuationAssessment.UNDERVALUED, 4,
+                "Thesis", List.of("Bull"), List.of("Bear"), "Valuation", "Watch"
         );
+        AgentOutput<AnalysisResult> synthOutput = new AgentOutput<>(expectedAnalysisResult, 200);
         when(synthesizerAgent.run(any())).thenReturn(synthOutput);
-
-        // mock executive summary output
-        Agent<ExecutiveSummaryAgentOutput> executiveSummaryAgent = mock(Agent.class);
-        when(agents.get(AgentType.EXECUTIVE_SUMMARY)).thenReturn((Agent) executiveSummaryAgent);
-        AgentOutput<ExecutiveSummaryAgentOutput> summaryOutput = new AgentOutput<>(
-                new ExecutiveSummaryAgentOutput("BUY", 4, "Thesis", List.of("Bull"), List.of("Bear"), "Valuation", "Watch"), 50
-        );
-        when(executiveSummaryAgent.run(any())).thenReturn(summaryOutput);
 
         CompanyAnalysisResult result = workflowService.run(request);
 

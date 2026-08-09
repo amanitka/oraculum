@@ -27,11 +27,7 @@ public class CompanyAnalysisViewDto extends CompanyAnalysisDto {
         dto.setTicker(entity.getTicker());
         dto.setAnalysisDate(entity.getAnalysisDate());
         dto.setStatus(entity.getStatus());
-        dto.setReport(entity.getReport());
-        dto.setSummary(entity.getSummary());
-        dto.setOutlook(entity.getOutlook());
-        dto.setRecommendation(entity.getRecommendation());
-        dto.setConviction(entity.getConviction());
+        dto.setAnalysisResult(entity.getAnalysisResult());
         dto.setAnalysisData(entity.getAnalysisData());
         dto.setError(entity.getError());
         dto.setCreatedAt(entity.getCreatedAt());

@@ -2,7 +2,8 @@ package com.oraculum.analyst.agent.service.impl;
 
 import com.oraculum.analyst.agent.dto.AgentContext;
 import com.oraculum.analyst.agent.dto.AgentOutput;
-import com.oraculum.analyst.agent.dto.SynthesizerAgentOutput;
+import com.oraculum.analyst.agent.dto.AgentWorkflowState;
+import com.oraculum.analyst.api.dto.AnalysisResult;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.PromptType;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
@@ -20,7 +21,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -40,7 +41,7 @@ class SynthesizerAgentTest {
     private PromptRegistry promptRegistry;
 
     @Mock
-    private ObjectMapper objectMapper;
+    private JsonMapper jsonMapper;
 
     @Mock
     private CompanyFactSheetData factSheetData;
@@ -54,7 +55,7 @@ class SynthesizerAgentTest {
     void setUp() {
         CompanyDto companyDto = mock(CompanyDto.class);
         when(companyDto.ticker()).thenReturn("AAPL");
-        com.oraculum.analyst.agent.dto.AgentWorkflowState state = mock(com.oraculum.analyst.agent.dto.AgentWorkflowState.class);
+        AgentWorkflowState state = mock(AgentWorkflowState.class);
         when(state.getAnalysisFocus()).thenReturn("Final synthesis");
         context = AgentContext.builder()
                 .correlationId(UUID.randomUUID())
@@ -63,21 +64,24 @@ class SynthesizerAgentTest {
                 .factSheetData(factSheetData)
                 .state(state)
                 .build();
-        when(objectMapper.writeValueAsString(any())).thenReturn("{}");
         when(factSheetData.getCompanyProfile()).thenReturn("{}");
         when(factSheetData.getCanonicalFacts()).thenReturn("{}");
+        try {
+            when(jsonMapper.writeValueAsString(any())).thenReturn("{}");
+        } catch (Exception ignored) {
+        }
     }
 
     @Test
     void run_returnsValidOutput() {
         when(promptRegistry.getPrompt(PromptType.SYNTHESIZER)).thenReturn("Synthesize for {{ ticker }} focus: {{ analysis_focus }}");
 
-        SynthesizerAgentOutput outputData = mock(SynthesizerAgentOutput.class);
-        LlmResponse<SynthesizerAgentOutput> llmResponse = new LlmResponse<>(outputData, new LlmMetrics(null, null, 100, 50, 150, 100L));
+        AnalysisResult outputData = mock(AnalysisResult.class);
+        LlmResponse<AnalysisResult> llmResponse = new LlmResponse<>(outputData, new LlmMetrics(null, null, 100, 50, 150, 100L));
 
         when(llmRouterApi.executeCall(any(LlmCallRequest.class))).thenReturn(llmResponse);
 
-        AgentOutput<SynthesizerAgentOutput> result = agent.run(context);
+        AgentOutput<AnalysisResult> result = agent.run(context);
 
         assertThat(result).isNotNull();
         assertThat(result.result()).isEqualTo(outputData);

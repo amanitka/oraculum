@@ -2,6 +2,7 @@ package com.oraculum.ui.views;
 
 import com.oraculum.analyst.api.CompanyAnalysisApi;
 import com.oraculum.analyst.api.domain.AnalysisStatus;
+import com.oraculum.analyst.api.dto.AnalysisResult;
 import com.oraculum.analyst.api.dto.CompanyAnalysisDto;
 import com.oraculum.analyst.api.dto.CompanyAnalysisRequest;
 import com.oraculum.analyst.api.dto.CompanyAnalysisViewDto;
@@ -13,6 +14,7 @@ import com.oraculum.ui.ViewHelper;
 import com.oraculum.ui.api.CompanyAnalysisProgressBroadcasterService;
 import com.oraculum.ui.factory.CompanyDetailsButtonFactory;
 import com.oraculum.ui.service.AnalysisRequestService;
+import com.oraculum.ui.views.components.renderer.AnalysisResultFieldHelper;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
@@ -215,17 +217,17 @@ public class AnalysisView extends VerticalLayout {
                 .setSortable(true)
                 .setAutoWidth(true);
 
-        g.addColumn(CompanyAnalysisViewDto::getConviction).setHeader("Conviction").setSortable(true);
-
-        g.addColumn(new ComponentRenderer<>(a -> ViewHelper.outlookBadge(a.getOutlook())))
+        g.addColumn(new ComponentRenderer<>(a -> AnalysisResultFieldHelper.outlookBadge(a.getAnalysisResult())))
                 .setHeader("Outlook").setKey("outlook")
-                .setComparator(Comparator.comparing(CompanyAnalysisViewDto::getOutlook, Comparator.nullsLast(Comparator.naturalOrder())))
-                .setSortable(true);
+                .setSortable(false);
 
-        g.addColumn(new ComponentRenderer<>(a -> ViewHelper.recommendationBadge(a.getRecommendation())))
-                .setHeader("Recommendation").setKey("recommendation")
-                .setComparator(Comparator.comparing(CompanyAnalysisViewDto::getRecommendation, Comparator.nullsLast(Comparator.naturalOrder())))
-                .setSortable(true);
+        g.addColumn(new ComponentRenderer<>(a -> AnalysisResultFieldHelper.valuationBadge(a.getAnalysisResult())))
+                .setHeader("Valuation").setKey("valuation")
+                .setSortable(false);
+
+        g.addColumn(new ComponentRenderer<>(a -> AnalysisResultFieldHelper.convictionSpan(a.getAnalysisResult())))
+                .setHeader("Conviction").setKey("conviction")
+                .setSortable(false);
 
         g.addColumn(CompanyAnalysisViewDto::getAnalysisDate).setHeader("Analysis Date").setSortable(true);
 
@@ -263,9 +265,9 @@ public class AnalysisView extends VerticalLayout {
 
                 historyGrid.addColumn(CompanyAnalysisViewDto::getAnalysisDate).setHeader("Date").setAutoWidth(true);
                 historyGrid.addColumn(new ComponentRenderer<>(a -> ViewHelper.statusBadge(a.getStatus()))).setHeader("Status").setAutoWidth(true);
-                historyGrid.addColumn(new ComponentRenderer<>(a -> ViewHelper.outlookBadge(a.getOutlook()))).setHeader("Outlook").setAutoWidth(true);
-                historyGrid.addColumn(new ComponentRenderer<>(a -> ViewHelper.recommendationBadge(a.getRecommendation()))).setHeader("Recommendation").setAutoWidth(true);
-                historyGrid.addColumn(CompanyAnalysisViewDto::getConviction).setHeader("Conviction").setAutoWidth(true);
+                historyGrid.addColumn(new ComponentRenderer<>(a -> AnalysisResultFieldHelper.outlookBadge(a.getAnalysisResult()))).setHeader("Outlook").setAutoWidth(true);
+                historyGrid.addColumn(new ComponentRenderer<>(a -> AnalysisResultFieldHelper.valuationBadge(a.getAnalysisResult()))).setHeader("Valuation").setAutoWidth(true);
+                historyGrid.addColumn(new ComponentRenderer<>(a -> AnalysisResultFieldHelper.convictionSpan(a.getAnalysisResult()))).setHeader("Conviction").setAutoWidth(true);
                 historyGrid.addColumn(new ComponentRenderer<>(a -> {
                     Button viewBtn = new Button("View", VaadinIcon.EYE.create());
                     viewBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
@@ -307,8 +309,8 @@ public class AnalysisView extends VerticalLayout {
             filter.outlook = v;
             dataView.refreshAll();
         });
-        ViewHelper.addFilter(grid, filterRow, "recommendation", "Rec.", v -> {
-            filter.recommendation = v;
+        ViewHelper.addFilter(grid, filterRow, "valuation", "Valuation", v -> {
+            filter.valuation = v;
             dataView.refreshAll();
         });
     }
@@ -328,14 +330,17 @@ public class AnalysisView extends VerticalLayout {
     }
 
     private static class AnalysisFilter {
-        String ticker, market, status, outlook, recommendation;
+        String ticker, market, status, outlook, valuation;
 
         boolean test(CompanyAnalysisViewDto a) {
+            AnalysisResult res = a.getAnalysisResult();
+            String outlookText = res != null && res.outlook() != null ? res.outlook().getDisplayName() : null;
+            String valuationText = res != null && res.valuation() != null ? res.valuation().getDisplayLabel() : null;
             return ViewHelper.matches(a.getTicker(), ticker)
                     && ViewHelper.matches(a.getMarket(), market)
                     && ViewHelper.matches(a.getStatus() != null ? a.getStatus().getDisplayName() : "Pending", status)
-                    && ViewHelper.matches(a.getOutlook() != null ? a.getOutlook().getDisplayName() : "Pending", outlook)
-                    && ViewHelper.matches(a.getRecommendation() != null ? a.getRecommendation().getDisplayName() : "Pending", recommendation);
+                    && ViewHelper.matches(outlookText, outlook)
+                    && ViewHelper.matches(valuationText, valuation);
         }
     }
 

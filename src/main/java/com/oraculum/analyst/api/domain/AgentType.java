@@ -19,8 +19,7 @@ public enum AgentType {
     INSIDER_TRANSACTION("InsiderTransaction", true, 7, false, FinancialDataProfile.MARKET_SIGNALS),
     EARNINGS_ESTIMATES("EarningsEstimates", true, 8, false, FinancialDataProfile.MARKET_SIGNALS),
     CRITIC("Critic", false, -1, false, FinancialDataProfile.MARKET_SIGNALS),
-    SYNTHESIZER("Synthesizer", false, -1, false, FinancialDataProfile.MARKET_SIGNALS),
-    EXECUTIVE_SUMMARY("ExecutiveSummary", false, -1, false, FinancialDataProfile.MARKET_SIGNALS);
+    SYNTHESIZER("Synthesizer", false, -1, false, FinancialDataProfile.MARKET_SIGNALS);
 
     private final String agentName;
     private final boolean specialist;

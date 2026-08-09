@@ -59,7 +59,7 @@ public class AnalysisResultRenderer {
             return tabSheet;
         }
 
-        if (analysis.getSummary() != null && !analysis.getSummary().isBlank()) {
+        if (analysis.getAnalysisResult() != null) {
             Component summaryTabContent = createSummaryTab(analysis);
             if (summaryTabContent != null) {
                 tabSheet.add("Executive Summary", summaryTabContent);
@@ -75,7 +75,7 @@ public class AnalysisResultRenderer {
     }
 
     private Component createSummaryTab(CompanyAnalysisDto analysis) {
-        Component snapshotCard = investmentSnapshotRenderer.renderInvestmentSnapshot(analysis.getSummary(), analysis);
+        Component snapshotCard = investmentSnapshotRenderer.renderInvestmentSnapshot(analysis.getAnalysisResult(), analysis);
         if (snapshotCard == null) return null;
 
         VerticalLayout layout = new VerticalLayout(snapshotCard);
@@ -131,8 +131,7 @@ public class AnalysisResultRenderer {
             JsonNode rootNode = jsonMapper.readTree(jsonData);
             JsonNode synthNode = rootNode.path("SYNTHESIZER");
             if (synthNode.isMissingNode() || synthNode.isNull()) {
-                // Fallback to the raw string if SYNTHESIZER node isn't there (for backward compatibility)
-                String md = analysis.getReport();
+                String md = analysis.getAnalysisResult() != null ? analysis.getAnalysisResult().executiveSummary() : null;
                 if (md == null || md.isBlank()) {
                     return new Span("No report generated.");
                 }
@@ -220,7 +219,7 @@ public class AnalysisResultRenderer {
 
             for (Map.Entry<String, JsonNode> entry : rootNode.properties()) {
                 String key = entry.getKey();
-                if (key.startsWith("SYNTHESIZER") || key.startsWith("EXECUTIVE_SUMMARY") || key.equals(TRACE_CITATIONS_KEY)) {
+                if (key.startsWith("SYNTHESIZER") || key.equals(TRACE_CITATIONS_KEY)) {
                     continue;
                 }
 

@@ -1,7 +1,7 @@
 package com.oraculum.ui;
 
 import com.oraculum.analyst.api.domain.AnalysisOutlook;
-import com.oraculum.analyst.api.domain.AnalysisRecommendation;
+import com.oraculum.analyst.api.domain.ValuationAssessment;
 import com.oraculum.analyst.api.domain.AnalysisStatus;
 import com.oraculum.company.api.domain.CompanySize;
 import com.oraculum.company.api.domain.NewsSentimentLabel;
@@ -110,15 +110,15 @@ public final class ViewHelper {
     }
 
     /**
-     * Creates a themed badge Span for recommendation values (BUY, SELL, HOLD, NEUTRAL).
+     * Creates a themed badge Span for valuation assessment values (UNDERVALUED, FAIRLY_VALUED, OVERVALUED, UNCERTAIN).
      */
-    public static Span recommendationBadge(AnalysisRecommendation rec) {
-        String text = rec != null ? rec.getDisplayName() : "Pending";
+    public static Span valuationBadge(ValuationAssessment valuation) {
+        String text = valuation != null ? valuation.getDisplayLabel() : "Pending";
         Span badge = new Span(text);
         String theme = "badge";
-        if (rec != null) {
-            if (rec == AnalysisRecommendation.BUY) theme += " success primary";
-            else if (rec == AnalysisRecommendation.SELL) theme += " error";
+        if (valuation != null) {
+            if (valuation == ValuationAssessment.UNDERVALUED) theme += " success primary";
+            else if (valuation == ValuationAssessment.OVERVALUED) theme += " error";
             else theme += " contrast";
         } else {
             theme += " contrast";

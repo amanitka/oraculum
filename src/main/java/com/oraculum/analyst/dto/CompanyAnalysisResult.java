@@ -1,13 +1,11 @@
 package com.oraculum.analyst.dto;
 
-import com.oraculum.analyst.api.domain.AnalysisOutlook;
-import com.oraculum.analyst.api.domain.AnalysisRecommendation;
 import com.oraculum.analyst.api.domain.AnalysisStatus;
+import com.oraculum.analyst.api.dto.AnalysisResult;
 import lombok.Builder;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -17,13 +15,7 @@ public record CompanyAnalysisResult(UUID correlationId,
                                     String market,
                                     LocalDate analysisDate,
                                     AnalysisStatus status,
-                                    String report,
-                                    String summary,
-                                    AnalysisOutlook outlook,
-                                    AnalysisRecommendation recommendation,
-                                    Integer conviction,
-                                    List<String> keyDrivers,
-                                    List<String> keyRisks,
+                                    AnalysisResult analysisResult,
                                     Map<String, Object> agentTrace,
                                     Integer tokenUsage,
                                     String error,

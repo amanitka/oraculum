@@ -85,8 +85,8 @@ public class AnalysisDetailView extends VerticalLayout implements HasUrlParamete
         HorizontalLayout badges = new HorizontalLayout();
         badges.setAlignItems(FlexComponent.Alignment.CENTER);
 
-        if (analysis.getRecommendation() != null) {
-            badges.add(ViewHelper.recommendationBadge(analysis.getRecommendation()));
+        if (analysis.getAnalysisResult() != null && analysis.getAnalysisResult().valuation() != null) {
+            badges.add(ViewHelper.valuationBadge(analysis.getAnalysisResult().valuation()));
         }
 
         HorizontalLayout leftGroup = new HorizontalLayout(backButton, title);

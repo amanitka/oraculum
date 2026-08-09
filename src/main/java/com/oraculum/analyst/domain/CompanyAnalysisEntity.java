@@ -1,8 +1,7 @@
 package com.oraculum.analyst.domain;
 
-import com.oraculum.analyst.api.domain.AnalysisOutlook;
-import com.oraculum.analyst.api.domain.AnalysisRecommendation;
 import com.oraculum.analyst.api.domain.AnalysisStatus;
+import com.oraculum.analyst.api.dto.AnalysisResult;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -10,16 +9,20 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnTransformer;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "t_company_analysis", indexes = {@Index(name = "ix_company_analysis_company_id", columnList =
-        "company_id"), @Index(name = "ix_company_analysis_ticker_market_created", columnList = "ticker, market, " +
-        "created_at"), @Index(name = "ix_company_analysis_status_created", columnList = "status, created_at")})
+@Table(name = "t_company_analysis", indexes = {
+        @Index(name = "ix_company_analysis_company_id", columnList = "company_id"),
+        @Index(name = "ix_company_analysis_ticker_market_created", columnList = "ticker, market, created_at"),
+        @Index(name = "ix_company_analysis_status_created", columnList = "status, created_at")
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -45,23 +48,12 @@ public class CompanyAnalysisEntity {
     @Enumerated(EnumType.STRING)
     private AnalysisStatus status;
 
-    @Column(name = "report", columnDefinition = "TEXT")
-    private String report;
+    /** Automatically converted to/from JSONB by Hibernate. */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "analysis_result", columnDefinition = "jsonb")
+    private AnalysisResult analysisResult;
 
-    @Column(name = "summary", columnDefinition = "json")
-    @ColumnTransformer(write = "?::json")
-    private String summary;
-
-    @Enumerated(EnumType.STRING)
-    @Column(length = 10)
-    private AnalysisOutlook outlook;
-
-    @Enumerated(EnumType.STRING)
-    @Column(length = 10)
-    private AnalysisRecommendation recommendation;
-
-    private Integer conviction;
-
+    /** Full agent trace for debugging — stored separately from the business result. */
     @Column(name = "analysis_data", columnDefinition = "json")
     @ColumnTransformer(write = "?::json")
     private String analysisData;

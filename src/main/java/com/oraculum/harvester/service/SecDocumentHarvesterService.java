@@ -125,8 +125,8 @@ public class SecDocumentHarvesterService {
 
     private <T> List<List<T>> chunkList(List<T> list) {
         List<List<T>> chunks = new ArrayList<>();
-        for (int i = 0; i < list.size(); i += 50) {
-            chunks.add(list.subList(i, Math.min(i + 50, list.size())));
+        for (int i = 0; i < list.size(); i += 20) {
+            chunks.add(list.subList(i, Math.min(i + 20, list.size())));
         }
         return chunks;
     }

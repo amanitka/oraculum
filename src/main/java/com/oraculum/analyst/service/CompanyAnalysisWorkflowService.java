@@ -5,8 +5,8 @@ import com.oraculum.analyst.agent.dto.*;
 import com.oraculum.analyst.agent.service.Agent;
 import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.api.domain.AnalysisStatus;
+import com.oraculum.analyst.api.dto.AnalysisResult;
 import com.oraculum.analyst.api.dto.CompanyAnalysisRequestEvent;
-import com.oraculum.analyst.api.dto.ExecutiveSummaryAgentOutput;
 import com.oraculum.analyst.api.event.CompanyAnalysisProgressEvent;
 import com.oraculum.analyst.config.AnalystProperties;
 import com.oraculum.analyst.dto.CompanyAnalysisResult;
@@ -52,15 +52,20 @@ public class CompanyAnalysisWorkflowService {
             AgentContext ctx = initializeContext(request);
             runSpecialistPhase(request, ctx);
             runCriticCorrectionLoop(request, ctx);
-            SynthesizerAgentOutput synthesizerOutput = runSynthesizerPhase(request, ctx);
-            ExecutiveSummaryAgentOutput summaryOutput = runExecutiveSummaryPhase(request, ctx);
+            AnalysisResult analysisResult = runSynthesizerPhase(request, ctx);
 
-            CompanyAnalysisWorkflowResult outcome = new CompanyAnalysisWorkflowResult(request, ctx, synthesizerOutput, summaryOutput, startMs, now);
+            CompanyAnalysisWorkflowResult outcome = CompanyAnalysisWorkflowResult.builder()
+                    .request(request)
+                    .context(ctx)
+                    .analysisResult(analysisResult)
+                    .startMs(startMs)
+                    .now(now)
+                    .build();
             return createSuccessResult(outcome);
         } catch (Exception e) {
             log.error("Workflow failed after {}ms: {}", System.currentTimeMillis() - startMs, e.getMessage(), e);
             LocalDate analysisDate = request.analysisDate() != null ? request.analysisDate() : LocalDate.now();
-            return createFailureResult(request, analysisDate, e, now); // Can't easily recover partial state here unless we pass it up
+            return createFailureResult(request, analysisDate, e, now);
         }
     }
 
@@ -192,31 +197,19 @@ public class CompanyAnalysisWorkflowService {
         ctx.state().clearCriticFeedback();
     }
 
-    private SynthesizerAgentOutput runSynthesizerPhase(CompanyAnalysisRequestEvent request, AgentContext ctx) {
+    private AnalysisResult runSynthesizerPhase(CompanyAnalysisRequestEvent request, AgentContext ctx) {
         log.info("Starting Synthesizer phase");
         eventPublisher.publishEvent(new CompanyAnalysisProgressEvent(request.correlationId(), AgentType.SYNTHESIZER, false));
-        Agent<SynthesizerAgentOutput> synthesizer = (Agent<SynthesizerAgentOutput>) agents.get(AgentType.SYNTHESIZER);
+        Agent<AnalysisResult> synthesizer = (Agent<AnalysisResult>) agents.get(AgentType.SYNTHESIZER);
 
         var output = runAndVerifyAgent(synthesizer, ctx);
 
         ctx.state().putAgentOutput(AgentType.SYNTHESIZER, output.result());
         recordTraceAndTokens(ctx, AgentType.SYNTHESIZER.name(), output);
-        log.info("Synthesizer phase complete. Recommendation: {}", output.result().recommendation());
+        log.info("Synthesizer phase complete. Valuation: {}", output.result().valuation());
         return output.result();
     }
 
-    private ExecutiveSummaryAgentOutput runExecutiveSummaryPhase(CompanyAnalysisRequestEvent request, AgentContext ctx) {
-        log.info("Starting Executive Summary phase");
-        eventPublisher.publishEvent(new CompanyAnalysisProgressEvent(request.correlationId(), AgentType.EXECUTIVE_SUMMARY, false));
-        Agent<ExecutiveSummaryAgentOutput> agent = (Agent<ExecutiveSummaryAgentOutput>) agents.get(AgentType.EXECUTIVE_SUMMARY);
-
-        var output = runAndVerifyAgent(agent, ctx);
-
-        ctx.state().putAgentOutput(AgentType.EXECUTIVE_SUMMARY, output.result());
-        recordTraceAndTokens(ctx, AgentType.EXECUTIVE_SUMMARY.name(), output);
-        log.info("Executive Summary phase complete");
-        return output.result();
-    }
 
     private void recordTraceAndTokens(AgentContext ctx, String key, AgentOutput<?> output) {
         ctx.state().putAgentTrace(key, output.result());
@@ -226,8 +219,7 @@ public class CompanyAnalysisWorkflowService {
     private CompanyAnalysisResult createSuccessResult(CompanyAnalysisWorkflowResult outcome) {
         AgentContext ctx = outcome.context();
         CompanyAnalysisRequestEvent req = outcome.request();
-        SynthesizerAgentOutput finalOut = outcome.synthesizerOutput();
-        ExecutiveSummaryAgentOutput execSummary = outcome.executiveSummaryOutput();
+        AnalysisResult finalOut = outcome.analysisResult();
 
         int tokens = ctx.state().getTotalTokens();
         log.info("Analysis workflow completed in {}ms. Tokens: {}", System.currentTimeMillis() - outcome.startMs(), tokens);
@@ -240,13 +232,7 @@ public class CompanyAnalysisWorkflowService {
                 .market(req.ticker().market())
                 .analysisDate(ctx.analysisDate())
                 .status(AnalysisStatus.COMPLETED)
-                .report(formatFinalReport(finalOut.executiveSummary()))
-                .summary(JsonUtils.toJson(jsonMapper, execSummary, "{}"))
-                .outlook(finalOut.outlook())
-                .recommendation(finalOut.recommendation())
-                .conviction(finalOut.conviction())
-                .keyDrivers(finalOut.keyDrivers())
-                .keyRisks(finalOut.keyRisks())
+                .analysisResult(withFormattedReport(finalOut))
                 .agentTrace(ctx.state().getAgentTrace())
                 .tokenUsage(tokens)
                 .createdAt(outcome.now())
@@ -254,11 +240,17 @@ public class CompanyAnalysisWorkflowService {
                 .build();
     }
 
-    private String formatFinalReport(String reportMd) {
-        if (reportMd != null && reportMd.contains("?]") && !reportMd.contains("*Note: Citations marked with [?]")) {
-            return reportMd + "\n\n*Note: Citations marked with [?] contain extrapolated metrics or claims that could not be strictly verified against the raw numerical data.*";
+    private AnalysisResult withFormattedReport(AnalysisResult output) {
+        String report = output.executiveSummary();
+        if (report != null && report.contains("?]") && !report.contains("*Note: Citations marked with [?]")) {
+            report = report + "\n\n*Note: Citations marked with [?] contain extrapolated metrics or claims that could not be strictly verified against the raw numerical data.*";
+            return new AnalysisResult(report, output.recommendationReasoning(),
+                    output.factorScores(), output.keyDrivers(), output.keyRisks(),
+                    output.outlook(), output.valuation(), output.conviction(),
+                    output.thesis(), output.topBullPoints(), output.topBearPoints(),
+                    output.valuationOneLiner(), output.whatWouldChangeThis());
         }
-        return reportMd;
+        return output;
     }
 
     private void injectPrunedCitationsToTrace(AgentContext ctx) {
@@ -266,11 +258,11 @@ public class CompanyAnalysisWorkflowService {
         Map<Integer, Object> allCitations = ctx.state().getCitationRegistry().getCitations();
         Map<Integer, Object> prunedCitations = new TreeMap<>();
 
-        Pattern p = java.util.regex.Pattern.compile("\\[([\\d,\\s\\?]+)\\]");
+        Pattern p = Pattern.compile("\\[([\\d,\\s\\?]+)\\]");
         Matcher m = p.matcher(fullTraceStr);
         while (m.find()) {
             String idsStr = m.group(1);
-            java.util.regex.Matcher idMatcher = java.util.regex.Pattern.compile("\\d+").matcher(idsStr);
+            Matcher idMatcher = Pattern.compile("\\d+").matcher(idsStr);
             while (idMatcher.find()) {
                 try {
                     int id = Integer.parseInt(idMatcher.group());

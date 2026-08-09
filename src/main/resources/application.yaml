@@ -221,7 +221,7 @@ oraculum:
         openai: "gpt-5.4-mini"
 
       pro:
-        gemini: "gemini-3.1-pro-preview"
+        gemini: "gemini-3.6-flash"
         groq: "llama-3.3-70b"
         deepseek: "deepseek-v4-pro"
         openai: "gpt-5.4"

@@ -1,7 +1,9 @@
 package com.oraculum.ui.views.components.renderer;
 
+import com.oraculum.analyst.api.domain.ValuationAssessment;
+import com.oraculum.analyst.api.dto.AnalysisResult;
 import com.oraculum.analyst.api.dto.CompanyAnalysisDto;
-import com.oraculum.analyst.api.dto.ExecutiveSummaryAgentOutput;
+import com.oraculum.ui.ViewHelper;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
@@ -14,49 +16,39 @@ import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.theme.lumo.LumoUtility;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import tools.jackson.databind.json.JsonMapper;
 
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 public class InvestmentSnapshotRenderer {
 
-    private final JsonMapper jsonMapper;
+    public Component renderInvestmentSnapshot(AnalysisResult snapshot, CompanyAnalysisDto analysis) {
+        if (snapshot == null) return null;
 
-    public Component renderInvestmentSnapshot(String snapshotJson, CompanyAnalysisDto analysis) {
-        try {
-            ExecutiveSummaryAgentOutput snapshot = jsonMapper.readValue(snapshotJson, ExecutiveSummaryAgentOutput.class);
-            if (snapshot == null) return null;
+        Div container = new Div();
+        container.addClassNames(LumoUtility.Width.FULL);
 
-            Div container = new Div();
-            container.addClassNames(LumoUtility.Width.FULL);
+        container.add(createSnapshotHeader(snapshot, analysis));
 
-            container.add(createSnapshotHeader(snapshot, analysis));
-
-            if (snapshot.thesis() != null && !snapshot.thesis().isBlank()) {
-                container.add(createSnapshotThesis(snapshot.thesis()));
-            }
-
-            Component points = createSnapshotPoints(snapshot);
-            if (points != null) {
-                container.add(points);
-            }
-
-            Component footer = createSnapshotFooter(snapshot);
-            if (footer != null) {
-                container.add(footer);
-            }
-
-            return container;
-        } catch (Exception e) {
-            return null;
+        if (snapshot.thesis() != null && !snapshot.thesis().isBlank()) {
+            container.add(createSnapshotThesis(snapshot.thesis()));
         }
+
+        Component points = createSnapshotPoints(snapshot);
+        if (points != null) {
+            container.add(points);
+        }
+
+        Component footer = createSnapshotFooter(snapshot);
+        if (footer != null) {
+            container.add(footer);
+        }
+
+        return container;
     }
 
-    private Component createSnapshotHeader(ExecutiveSummaryAgentOutput snapshot, CompanyAnalysisDto analysis) {
+    private Component createSnapshotHeader(AnalysisResult snapshot, CompanyAnalysisDto analysis) {
         HorizontalLayout header = new HorizontalLayout();
         header.setWidthFull();
         header.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
@@ -70,17 +62,16 @@ public class InvestmentSnapshotRenderer {
                 .set("font-weight", "700")
                 .set("letter-spacing", "0.5px");
 
-        String verdictText = snapshot.verdict() != null && !snapshot.verdict().isBlank()
-                ? snapshot.verdict()
-                : (analysis.getRecommendation() != null ? analysis.getRecommendation().name() : "");
-
-        verdictText = RendererUtil.formatKeyTitle(verdictText);
+        ValuationAssessment valuation = snapshot.valuation();
+        String verdictText = valuation != null
+                ? valuation.getDisplayLabel()
+                : "Pending";
 
         Span verdictBadge = new Span(verdictText);
         verdictBadge.getElement().getThemeList().add("badge");
-        if ("Buy".equalsIgnoreCase(verdictText) || "Bullish".equalsIgnoreCase(verdictText) || verdictText.toUpperCase().contains("BUY")) {
+        if (valuation == ValuationAssessment.UNDERVALUED) {
             verdictBadge.getElement().getThemeList().add("success");
-        } else if ("Sell".equalsIgnoreCase(verdictText) || "Bearish".equalsIgnoreCase(verdictText) || verdictText.toUpperCase().contains("SELL")) {
+        } else if (valuation == ValuationAssessment.OVERVALUED) {
             verdictBadge.getElement().getThemeList().add("error");
         } else {
             verdictBadge.getElement().getThemeList().add("contrast");
@@ -92,17 +83,22 @@ public class InvestmentSnapshotRenderer {
                 .set("letter-spacing", "1px");
 
         HorizontalLayout titleBadge = new HorizontalLayout(title, verdictBadge);
-        if (analysis.getOutlook() != null) {
-            titleBadge.add(com.oraculum.ui.ViewHelper.outlookBadge(analysis.getOutlook()));
+        if (snapshot.outlook() != null) {
+            titleBadge.add(ViewHelper.outlookBadge(snapshot.outlook()));
         }
         titleBadge.setAlignItems(FlexComponent.Alignment.CENTER);
         titleBadge.getStyle().set("gap", "12px");
 
-        HorizontalLayout convictionLayout = new HorizontalLayout();
-        convictionLayout.setAlignItems(FlexComponent.Alignment.CENTER);
-        convictionLayout.getStyle().set("gap", "10px");
+        HorizontalLayout convictionLayout = buildConvictionMeter(snapshot.conviction());
+        header.add(titleBadge, convictionLayout);
+        return header;
+    }
 
-        int conviction = snapshot.conviction();
+    private HorizontalLayout buildConvictionMeter(int conviction) {
+        HorizontalLayout layout = new HorizontalLayout();
+        layout.setAlignItems(FlexComponent.Alignment.CENTER);
+        layout.getStyle().set("gap", "10px");
+
         HorizontalLayout meter = new HorizontalLayout();
         meter.setSpacing(false);
         meter.getStyle().set("gap", "4px").set("align-items", "center");
@@ -112,12 +108,10 @@ public class InvestmentSnapshotRenderer {
             bar.getStyle()
                     .set("width", "12px")
                     .set("height", "16px")
-                    .set("border-radius", "3px");
-            if (i <= conviction) {
-                bar.getStyle().set("background", "var(--lumo-primary-color)");
-            } else {
-                bar.getStyle().set("background", "rgba(255, 255, 255, 0.15)");
-            }
+                    .set("border-radius", "3px")
+                    .set("background", i <= conviction
+                            ? "var(--lumo-primary-color)"
+                            : "rgba(255, 255, 255, 0.15)");
             meter.add(bar);
         }
 
@@ -125,9 +119,8 @@ public class InvestmentSnapshotRenderer {
         convictionText.addClassNames(LumoUtility.FontWeight.BOLD, LumoUtility.FontSize.MEDIUM);
         convictionText.getStyle().set("color", "var(--lumo-secondary-text-color)");
 
-        convictionLayout.add(meter, convictionText);
-        header.add(titleBadge, convictionLayout);
-        return header;
+        layout.add(meter, convictionText);
+        return layout;
     }
 
     private Component createSnapshotThesis(String thesis) {
@@ -151,7 +144,7 @@ public class InvestmentSnapshotRenderer {
         return thesisCard;
     }
 
-    private Component createSnapshotPoints(ExecutiveSummaryAgentOutput snapshot) {
+    private Component createSnapshotPoints(AnalysisResult snapshot) {
         HorizontalLayout pointsLayout = new HorizontalLayout();
         pointsLayout.setWidthFull();
         pointsLayout.setSpacing(true);
@@ -210,21 +203,23 @@ public class InvestmentSnapshotRenderer {
         return card;
     }
 
-    private Component createSnapshotFooter(ExecutiveSummaryAgentOutput snapshot) {
-        HorizontalLayout footer = new HorizontalLayout();
-        footer.setWidthFull();
-        footer.setSpacing(true);
-
+    private Component createSnapshotFooter(AnalysisResult snapshot) {
         boolean hasValuation = snapshot.valuationOneLiner() != null && !snapshot.valuationOneLiner().isBlank();
         boolean hasWatch = snapshot.whatWouldChangeThis() != null && !snapshot.whatWouldChangeThis().isBlank();
 
         if (!hasValuation && !hasWatch) return null;
 
+        HorizontalLayout footer = new HorizontalLayout();
+        footer.setWidthFull();
+        footer.setSpacing(true);
+
         if (hasValuation) {
-            footer.add(createFooterPill("Valuation Context", snapshot.valuationOneLiner(), "🏷️", "rgba(255, 255, 255, 0.03)", "rgba(255, 255, 255, 0.1)"));
+            footer.add(createFooterPill("Valuation Context", snapshot.valuationOneLiner(),
+                    "🏷️", "rgba(255, 255, 255, 0.03)", "rgba(255, 255, 255, 0.1)"));
         }
         if (hasWatch) {
-            footer.add(createFooterPill("Watch Trigger", snapshot.whatWouldChangeThis(), "⚡", "rgba(241, 196, 15, 0.05)", "rgba(241, 196, 15, 0.2)"));
+            footer.add(createFooterPill("Watch Trigger", snapshot.whatWouldChangeThis(),
+                    "⚡", "rgba(241, 196, 15, 0.05)", "rgba(241, 196, 15, 0.2)"));
         }
 
         return footer;

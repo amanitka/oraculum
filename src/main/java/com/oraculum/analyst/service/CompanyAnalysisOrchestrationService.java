@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDate;
 
@@ -20,7 +20,7 @@ public class CompanyAnalysisOrchestrationService {
 
     private final CompanyAnalysisService companyAnalysisService;
     private final CompanyAnalysisWorkflowService workflow;
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
     private final ApplicationEventPublisher eventPublisher;
 
     public void executeAnalysis(CompanyAnalysisRequestEvent request) {
@@ -72,12 +72,8 @@ public class CompanyAnalysisOrchestrationService {
     private void completeAnalysis(CompanyAnalysisEntity entity, CompanyAnalysisResult result) {
         try {
             entity.setStatus(result.status());
-            entity.setReport(result.report());
-            entity.setSummary(result.summary());
-            entity.setOutlook(result.outlook());
-            entity.setRecommendation(result.recommendation());
-            entity.setConviction(result.conviction());
-            entity.setAnalysisData(objectMapper.writeValueAsString(result.agentTrace()));
+            entity.setAnalysisResult(result.analysisResult());
+            entity.setAnalysisData(jsonMapper.writeValueAsString(result.agentTrace()));
             entity.setError(result.error());
             companyAnalysisService.createOrUpdateAnalysis(entity);
             eventPublisher.publishEvent(new CompanyAnalysisProgressEvent(entity.getId(), null, true));
