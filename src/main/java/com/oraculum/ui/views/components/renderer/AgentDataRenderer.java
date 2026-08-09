@@ -17,6 +17,7 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -480,7 +481,7 @@ public class AgentDataRenderer {
             meter.add(bar);
         }
 
-        Span text = new Span(String.format("%.1f / 10.0", score));
+        Span text = new Span(String.format(Locale.US, "%.1f / 10.0", score));
         text.addClassNames(LumoUtility.FontWeight.BOLD, LumoUtility.FontSize.SMALL);
 
         layout.add(meter, text);
@@ -664,12 +665,15 @@ public class AgentDataRenderer {
         if (upper.contains("IMPROV") || upper.contains("UP") || upper.contains("BULL")) {
             icon = VaadinIcon.ARROW_UP.create();
             icon.setColor("var(--lumo-success-color)");
+            icon.getStyle().set("color", "var(--lumo-success-color)");
         } else if (upper.contains("DETERIORAT") || upper.contains("DOWN") || upper.contains("DECLIN") || upper.contains("BEAR")) {
             icon = VaadinIcon.ARROW_DOWN.create();
             icon.setColor("var(--lumo-error-color)");
+            icon.getStyle().set("color", "var(--lumo-error-color)");
         } else {
-            icon = VaadinIcon.MINUS.create();
-            icon.setColor("rgba(255, 255, 255, 0.45)");
+            icon = VaadinIcon.ARROW_RIGHT.create();
+            icon.setColor("#8c9197");
+            icon.getStyle().set("color", "#8c9197");
         }
 
         icon.setSize("14px");

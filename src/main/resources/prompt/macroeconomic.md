@@ -41,6 +41,7 @@ You MUST respond with valid JSON using exactly this schema:
 Rules:
 - CRITICAL SCORE RULE: `score` MUST be a float strictly between 0.0 and 10.0 (where 0.0 is the worst, and 10.0 is the best).
 - CRITICAL CONFIDENCE RULE: `confidence` MUST be a float strictly between 0.0 and 1.0 (where 0.0 is 0% and 1.0 is 100%).
+- CRITICAL EVIDENCE UNIT & COMPARISON RULE: `value` and `previous_value` in the `evidence` array MUST share the exact same metric unit, scale, and meaning! If `value` is a YoY percentage change (e.g. '7.59%'), `previous_value` MUST be the previous period's YoY percentage change, NOT the raw index level or dollar amount (e.g. '311761.0'). If `value` is a raw index figure (e.g. '260.491'), `previous_value` MUST be the raw index level 1 year ago (e.g. '236.570'). Never compare percentages with raw index values.
 - STRICT JSON FORMATTING: OUTPUT ONLY VALID JSON. Do not output any conversational text, explanatory text, greetings, or introductory phrases (e.g. "Here is the structured JSON").
 - Do NOT wrap the JSON in markdown code blocks (e.g., do not use ```json or ```). Your entire response must be exactly one raw JSON object starting with `{` and ending with `}`.
 - Do NOT output multiple JSON blocks. Output exactly ONE complete JSON object containing all required fields.
