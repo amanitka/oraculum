@@ -29,7 +29,8 @@ public class AgentDataRenderer {
             "headline", "score", "confidence", "confidence_reasons", "recommendation",
             "outlook", "conviction", "management_sentiment", "sentiment", "managementSentiment",
             "strengths", "key_drivers", "weaknesses", "key_risks", "evidence",
-            "metrics", "factor_scores", "summary", "executive_summary", "recommendation_reasoning"
+            "metrics", "factor_scores", "summary", "executive_summary", "recommendation_reasoning",
+            "thesis_breakers", "scenarios", "what_would_change_this", "thesis", "top_bull_points", "top_bear_points", "valuation_one_liner"
     );
 
     private final MarkdownRenderer markdownRenderer;
@@ -49,6 +50,8 @@ public class AgentDataRenderer {
         addTilesRowIfPresent(layout, agentData);
         addStrengthsIfPresent(layout, agentData, jsonData);
         addWeaknessesIfPresent(layout, agentData, jsonData);
+        addScenariosIfPresent(layout, agentData);
+        addThesisBreakersIfPresent(layout, agentData);
         addEvidenceIfPresent(layout, agentData, jsonData);
         addMetricsIfPresent(layout, agentData);
         addSummaryIfPresent(layout, agentData, jsonData);
@@ -630,6 +633,33 @@ public class AgentDataRenderer {
                 .setFlexGrow(0);
 
         grid.addComponentColumn(item -> {
+            String sourceType = item.path("source_type").asString("");
+            if (sourceType.isBlank()) return new Span("-");
+            Span badge = new Span(sourceType);
+            badge.getElement().getThemeList().add("badge");
+            badge.getStyle().set("font-size", "0.75rem").set("font-weight", "600");
+            switch (sourceType.toUpperCase()) {
+                case "REPORTED" -> {
+                    badge.getElement().getThemeList().add("primary");
+                    badge.getStyle().set("background-color", "rgba(50, 150, 250, 0.15)").set("color", "#4fc3f7");
+                }
+                case "CALCULATED" -> {
+                    badge.getStyle().set("background-color", "rgba(156, 39, 176, 0.15)").set("color", "#ba68c8");
+                }
+                case "DERIVED" -> {
+                    badge.getElement().getThemeList().add("contrast");
+                    badge.getStyle().set("background-color", "rgba(255, 152, 0, 0.15)").set("color", "#ffb74d");
+                }
+                case "ESTIMATED" -> {
+                    badge.getElement().getThemeList().add("success");
+                    badge.getStyle().set("background-color", "rgba(76, 175, 80, 0.15)").set("color", "#81c784");
+                }
+                default -> badge.getElement().getThemeList().add("contrast");
+            }
+            return badge;
+        }).setHeader("Type").setAutoWidth(true).setFlexGrow(0);
+
+        grid.addComponentColumn(item -> {
             String sig = item.path("significance").asString("");
             if (sig.isBlank()) return new Span("-");
 
@@ -745,5 +775,139 @@ public class AgentDataRenderer {
         scroller.setWidthFull();
         scroller.getStyle().set("overflow-x", "hidden");
         return scroller;
+    }
+
+    private void addScenariosIfPresent(VerticalLayout layout, JsonNode agentData) {
+        if (agentData.has("scenarios")) {
+            layout.add(renderScenariosNode(agentData.get("scenarios")));
+        }
+    }
+
+    private void addThesisBreakersIfPresent(VerticalLayout layout, JsonNode agentData) {
+        if (agentData.has("thesis_breakers")) {
+            layout.add(renderThesisBreakersNode(agentData.get("thesis_breakers")));
+        }
+    }
+
+    private Component renderThesisBreakersNode(JsonNode breakersNode) {
+        if (breakersNode == null || !breakersNode.isArray() || breakersNode.isEmpty()) return new Span();
+        VerticalLayout container = new VerticalLayout();
+        container.setPadding(true);
+        container.setSpacing(true);
+        container.setWidthFull();
+        container.getStyle()
+                .set("background", "rgba(255, 171, 0, 0.06)")
+                .set("border", "1px solid rgba(255, 171, 0, 0.25)")
+                .set("border-radius", "8px")
+                .set("margin-top", "16px")
+                .set("margin-bottom", "16px");
+
+        HorizontalLayout titleRow = new HorizontalLayout();
+        titleRow.setAlignItems(FlexComponent.Alignment.CENTER);
+        titleRow.getStyle().set("gap", "8px");
+
+        com.vaadin.flow.component.icon.Icon warningIcon = VaadinIcon.WARNING.create();
+        warningIcon.setColor("#ffb300");
+        warningIcon.setSize("18px");
+
+        H5 title = new H5("Thesis Breakers & Monitoring Triggers");
+        title.getStyle().set("margin", "0").set("color", "#ffb300").set("font-weight", "bold");
+        titleRow.add(warningIcon, title);
+        container.add(titleRow);
+
+        breakersNode.forEach(item -> {
+            HorizontalLayout itemRow = new HorizontalLayout();
+            itemRow.setAlignItems(FlexComponent.Alignment.START);
+            itemRow.getStyle().set("gap", "8px");
+
+            Span dot = new Span("•");
+            dot.getStyle().set("color", "#ffb300").set("font-weight", "bold");
+
+            Span text = new Span(item.asString(""));
+            text.getStyle().set("font-size", "0.9rem").set("color", "var(--lumo-body-text-color)");
+            itemRow.add(dot, text);
+            container.add(itemRow);
+        });
+
+        return container;
+    }
+
+    private Component renderScenariosNode(JsonNode scenariosNode) {
+        if (scenariosNode == null || !scenariosNode.isObject() || scenariosNode.isEmpty()) return new Span();
+        VerticalLayout container = new VerticalLayout();
+        container.setPadding(false);
+        container.setSpacing(false);
+        container.setWidthFull();
+        container.getStyle().set("margin-top", "20px").set("margin-bottom", "20px");
+
+        H4 headerTitle = new H4("Investment Scenarios");
+        headerTitle.getStyle()
+                .set("margin-top", "0")
+                .set("margin-bottom", "14px")
+                .set("border-bottom", "1px solid var(--lumo-contrast-10pct)")
+                .set("padding-bottom", "8px")
+                .set("font-size", "1.1rem")
+                .set("color", "var(--lumo-header-text-color)");
+        container.add(headerTitle);
+
+        HorizontalLayout cardsLayout = new HorizontalLayout();
+        cardsLayout.setWidthFull();
+        cardsLayout.getStyle().set("gap", "16px").set("flex-wrap", "wrap");
+
+        if (scenariosNode.has("bull")) {
+            cardsLayout.add(createScenarioCardNode("Bull Case", scenariosNode.get("bull"), "#81c784", "rgba(76, 175, 80, 0.08)"));
+        }
+        if (scenariosNode.has("base")) {
+            cardsLayout.add(createScenarioCardNode("Base Case", scenariosNode.get("base"), "#64b5f6", "rgba(33, 150, 243, 0.08)"));
+        }
+        if (scenariosNode.has("bear")) {
+            cardsLayout.add(createScenarioCardNode("Bear Case", scenariosNode.get("bear"), "#e57373", "rgba(244, 67, 54, 0.08)"));
+        }
+
+        container.add(cardsLayout);
+        return container;
+    }
+
+    private Component createScenarioCardNode(String title, JsonNode caseNode, String accentColor, String bgTint) {
+        VerticalLayout card = new VerticalLayout();
+        card.setPadding(true);
+        card.setSpacing(true);
+        card.getStyle()
+                .set("flex", "1 1 250px")
+                .set("background", bgTint)
+                .set("border", "1px solid " + accentColor)
+                .set("border-radius", "8px");
+
+        H5 cardTitle = new H5(title);
+        cardTitle.getStyle().set("margin", "0").set("color", accentColor).set("font-weight", "bold");
+        card.add(cardTitle);
+
+        if (caseNode.has("description")) {
+            Span desc = new Span(caseNode.path("description").asString(""));
+            desc.getStyle().set("font-size", "0.85rem").set("line-height", "1.4");
+            card.add(desc);
+        }
+
+        if (caseNode.has("key_assumption")) {
+            Div assumptionBox = new Div();
+            assumptionBox.getStyle().set("font-size", "0.8rem").set("color", "var(--lumo-secondary-text-color)");
+            assumptionBox.setText("Key Assumption: " + caseNode.path("key_assumption").asString(""));
+            card.add(assumptionBox);
+        }
+
+        String moveText = caseNode.path("implied_upside").asString("");
+        if (moveText.isBlank()) moveText = caseNode.path("implied_move").asString("");
+        if (moveText.isBlank()) moveText = caseNode.path("implied_downside").asString("");
+
+        if (!moveText.isBlank()) {
+            Span moveSpan = new Span(moveText);
+            moveSpan.getStyle()
+                    .set("font-weight", "bold")
+                    .set("color", accentColor)
+                    .set("font-size", "0.9rem");
+            card.add(moveSpan);
+        }
+
+        return card;
     }
 }

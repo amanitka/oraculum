@@ -32,7 +32,7 @@ public class AnalysisOverviewRenderer {
         container.add(createSnapshotHeader(snapshot, analysis));
 
         if (snapshot.thesis() != null && !snapshot.thesis().isBlank()) {
-            container.add(createSnapshotThesis(snapshot.thesis()));
+            container.add(createSnapshotThesis(snapshot.thesis(), analysis));
         }
 
         if (snapshot.factorScores() != null && !snapshot.factorScores().isEmpty()) {
@@ -42,6 +42,14 @@ public class AnalysisOverviewRenderer {
         Component points = createSnapshotPoints(snapshot, analysis);
         if (points != null) {
             container.add(points);
+        }
+
+        if (snapshot.scenarios() != null) {
+            container.add(createSnapshotScenarios(snapshot.scenarios(), analysis));
+        }
+
+        if (snapshot.thesisBreakers() != null && !snapshot.thesisBreakers().isEmpty()) {
+            container.add(createSnapshotThesisBreakers(snapshot.thesisBreakers(), analysis));
         }
 
         Component footer = createSnapshotFooter(snapshot, analysis);
@@ -132,7 +140,7 @@ public class AnalysisOverviewRenderer {
         return layout;
     }
 
-    private Component createSnapshotThesis(String thesis) {
+    private Component createSnapshotThesis(String thesis, CompanyAnalysisDto analysis) {
         Div thesisCard = new Div();
         thesisCard.setWidthFull();
         thesisCard.getStyle()
@@ -142,14 +150,15 @@ public class AnalysisOverviewRenderer {
                 .set("padding", "12px 16px")
                 .set("margin-bottom", "16px");
 
-        Paragraph p = new Paragraph(thesis);
-        p.getStyle()
+        String jsonData = analysis != null ? analysis.getAnalysisData() : null;
+        Component contentComponent = markdownRenderer.renderMarkdownWithCitations(thesis, jsonData);
+        contentComponent.getStyle()
                 .set("margin", "0")
                 .set("font-size", "0.95rem")
                 .set("line-height", "1.6")
                 .set("color", "var(--lumo-header-text-color)");
 
-        thesisCard.add(p);
+        thesisCard.add(contentComponent);
         return thesisCard;
     }
 
@@ -329,5 +338,130 @@ public class AnalysisOverviewRenderer {
 
         box.add(iconSpan, titleSpan, contentComponent);
         return box;
+    }
+
+    private Component createSnapshotThesisBreakers(List<String> thesisBreakers, CompanyAnalysisDto analysis) {
+        if (thesisBreakers == null || thesisBreakers.isEmpty()) return new Span();
+        VerticalLayout container = new VerticalLayout();
+        container.setPadding(true);
+        container.setSpacing(true);
+        container.setWidthFull();
+        container.getStyle()
+                .set("background", "rgba(255, 171, 0, 0.06)")
+                .set("border", "1px solid rgba(255, 171, 0, 0.25)")
+                .set("border-radius", "8px")
+                .set("margin-top", "16px")
+                .set("margin-bottom", "16px");
+
+        HorizontalLayout titleRow = new HorizontalLayout();
+        titleRow.setAlignItems(FlexComponent.Alignment.CENTER);
+        titleRow.getStyle().set("gap", "8px");
+
+        com.vaadin.flow.component.icon.Icon warningIcon = com.vaadin.flow.component.icon.VaadinIcon.WARNING.create();
+        warningIcon.setColor("#ffb300");
+        warningIcon.setSize("18px");
+
+        H5 title = new H5("Thesis Breakers & Monitoring Triggers");
+        title.getStyle().set("margin", "0").set("color", "#ffb300").set("font-weight", "bold");
+        titleRow.add(warningIcon, title);
+        container.add(titleRow);
+
+        String jsonData = analysis != null ? analysis.getAnalysisData() : null;
+        for (String breaker : thesisBreakers) {
+            HorizontalLayout itemRow = new HorizontalLayout();
+            itemRow.setAlignItems(FlexComponent.Alignment.START);
+            itemRow.getStyle().set("gap", "8px");
+
+            Span dot = new Span("•");
+            dot.getStyle().set("color", "#ffb300").set("font-weight", "bold");
+
+            Component textComp = markdownRenderer.renderMarkdownWithCitations(breaker, jsonData);
+            textComp.getStyle().set("font-size", "0.9rem").set("color", "var(--lumo-body-text-color)");
+            itemRow.add(dot, textComp);
+            container.add(itemRow);
+        }
+
+        return container;
+    }
+
+    private Component createSnapshotScenarios(AnalysisResult.ScenariosResult scenarios, CompanyAnalysisDto analysis) {
+        if (scenarios == null) return new Span();
+        VerticalLayout container = new VerticalLayout();
+        container.setPadding(false);
+        container.setSpacing(false);
+        container.setWidthFull();
+        container.getStyle().set("margin-top", "20px").set("margin-bottom", "20px");
+
+        H4 headerTitle = new H4("Investment Scenarios");
+        headerTitle.getStyle()
+                .set("margin-top", "0")
+                .set("margin-bottom", "14px")
+                .set("border-bottom", "1px solid var(--lumo-contrast-10pct)")
+                .set("padding-bottom", "8px")
+                .set("font-size", "1.15rem")
+                .set("color", "var(--lumo-header-text-color)");
+        container.add(headerTitle);
+
+        HorizontalLayout cardsLayout = new HorizontalLayout();
+        cardsLayout.setWidthFull();
+        cardsLayout.getStyle().set("gap", "16px").set("flex-wrap", "wrap");
+
+        if (scenarios.bull() != null) {
+            cardsLayout.add(createScenarioCard("Bull Case", scenarios.bull().description(), scenarios.bull().keyAssumption(), scenarios.bull().impliedUpside(), "#81c784", "rgba(76, 175, 80, 0.08)", analysis));
+        }
+        if (scenarios.base() != null) {
+            cardsLayout.add(createScenarioCard("Base Case", scenarios.base().description(), scenarios.base().keyAssumption(), scenarios.base().impliedMove(), "#64b5f6", "rgba(33, 150, 243, 0.08)", analysis));
+        }
+        if (scenarios.bear() != null) {
+            cardsLayout.add(createScenarioCard("Bear Case", scenarios.bear().description(), scenarios.bear().keyAssumption(), scenarios.bear().impliedDownside(), "#e57373", "rgba(244, 67, 54, 0.08)", analysis));
+        }
+
+        container.add(cardsLayout);
+        return container;
+    }
+
+    private Component createScenarioCard(String title, String descText, String assumptionText, String moveText, String accentColor, String bgTint, CompanyAnalysisDto analysis) {
+        VerticalLayout card = new VerticalLayout();
+        card.setPadding(true);
+        card.setSpacing(true);
+        card.getStyle()
+                .set("flex", "1 1 250px")
+                .set("background", bgTint)
+                .set("border", "1px solid " + accentColor)
+                .set("border-radius", "8px");
+
+        H5 cardTitle = new H5(title);
+        cardTitle.getStyle().set("margin", "0").set("color", accentColor).set("font-weight", "bold");
+        card.add(cardTitle);
+
+        String jsonData = analysis != null ? analysis.getAnalysisData() : null;
+
+        if (descText != null && !descText.isBlank()) {
+            Component descComp = markdownRenderer.renderMarkdownWithCitations(descText, jsonData);
+            descComp.getStyle().set("font-size", "0.85rem").set("line-height", "1.4");
+            card.add(descComp);
+        }
+
+        if (assumptionText != null && !assumptionText.isBlank()) {
+            HorizontalLayout assumptionLayout = new HorizontalLayout();
+            assumptionLayout.setSpacing(false);
+            Span titleSpan = new Span("Key Assumption: ");
+            titleSpan.getStyle().set("font-size", "0.8rem").set("font-weight", "600").set("color", "var(--lumo-secondary-text-color)");
+            Component assumptionComp = markdownRenderer.renderMarkdownWithCitations(assumptionText, jsonData);
+            assumptionComp.getStyle().set("font-size", "0.8rem").set("color", "var(--lumo-secondary-text-color)");
+            assumptionLayout.add(titleSpan, assumptionComp);
+            card.add(assumptionLayout);
+        }
+
+        if (moveText != null && !moveText.isBlank()) {
+            Component moveComp = markdownRenderer.renderMarkdownWithCitations(moveText, jsonData);
+            moveComp.getStyle()
+                    .set("font-weight", "bold")
+                    .set("color", accentColor)
+                    .set("font-size", "0.9rem");
+            card.add(moveComp);
+        }
+
+        return card;
     }
 }

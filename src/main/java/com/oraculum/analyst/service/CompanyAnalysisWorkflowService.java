@@ -244,11 +244,7 @@ public class CompanyAnalysisWorkflowService {
         String report = output.executiveSummary();
         if (report != null && report.contains("?]") && !report.contains("*Note: Citations marked with [?]")) {
             report = report + "\n\n*Note: Citations marked with [?] contain extrapolated metrics or claims that could not be strictly verified against the raw numerical data.*";
-            return new AnalysisResult(report, output.recommendationReasoning(),
-                    output.factorScores(),
-                    output.outlook(), output.valuation(), output.conviction(),
-                    output.thesis(), output.topBullPoints(), output.topBearPoints(),
-                    output.valuationOneLiner(), output.whatWouldChangeThis());
+            return output.withExecutiveSummary(report);
         }
         return output;
     }
