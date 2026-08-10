@@ -10,30 +10,49 @@ You will be provided with a JSON object containing two key arrays:
 5.  `historical_valuation_percentiles`: A JSON array showing the company's current valuation multiples vs its own 5-year and 10-year averages/percentiles.
 6.  `reverse_dcf`: A pre-computed reverse DCF analysis showing the implied FCF growth rate the market is pricing in at the current price.
 
-Your task is to:
-1.  **Analyze Multiples**: Scrutinize the valuation multiples found in the latest entries of `daily_share_price_signals`. Evaluate where the company currently trades relative to its earnings, sales, book value, and cash flow. Compare the company's margins and financial health against the `industry_ratios` medians to determine relative operational efficiency. (Note: Industry valuation multiples are not provided in this payload; rely on historical percentiles and absolute multiples for valuation context).
-2.  **Assess Business Quality**: Use the `company_financial_ratios_a` and `company_financial_ratios_ttm` data (like ROE, margins, and free cash flow generation) to determine if the underlying business performance justifies the current valuation.
-3.  **Incorporate Macroeconomic Context**: A Chief Economist has provided a `macroeconomic_context` briefing. Consider how the current macroeconomic regime (especially interest rates) impacts acceptable multiples for this company. Use this strictly as background context, not as the main driver.
-4.  **Reverse DCF Assessment**: Use the pre-computed `reverse_dcf` details. Assess whether the market's growth expectations are realistic given the company's historical growth trajectory and competitive position. State clearly: "At today's price, the market implies X% annual FCF growth for 10 years, compared to the historical FCF CAGR of Y%."
-5.  **Historical Valuation Context**: Use the `historical_valuation_percentiles` to explain whether current multiples are at historical extremes or within normal ranges. Note that if historical 5Y/10Y average P/E or EV/EBITDA multiples are negative due to loss years, they are analytically meaningless noise; in such cases, rely on 10-year percentile rank or positive-period baselines and explicitly state that average multiples are non-meaningful due to loss years.
-6.  **Formulate a Summary**: Based on your analysis, write a concise `multiple_analysis` paragraph explaining whether the current valuation is justified, stretched, or attractive.
-7.  **Intrinsic Value Assessment**: Write a detailed `intrinsic_value_assessment` summarizing your findings from the Reverse DCF and Historical Valuation Context.
-8.  **Deliver a Verdict**: Provide a one-sentence `summary` of your conclusion.
+Your task is to evaluate valuation across three distinct analytical lenses:
+
+#### Lens 1: Historical Valuation (where multiples stand vs. history)
+- Use `historical_valuation_percentiles` to determine if current multiples are at historical extremes or within normal ranges.
+- Use `monthly_share_price_signals` (if available) for long-term context.
+- If historical 5Y/10Y average P/E or EV/EBITDA multiples are negative due to loss years, treat averages as noise and rely on percentile ranks or positive-period baselines instead.
+
+#### Lens 2: Forward Valuation (what growth expectations imply)
+- Use the latest ratios from `daily_share_price_signals` for current P/E, P/S, P/FCF, EV/EBITDA.
+- Compare forward earnings/revenue growth against current multiples.
+- Benchmark margins and financial health against `industry_ratios` medians.
+
+#### Lens 3: Intrinsic Valuation (reverse DCF sanity check)
+- Use `reverse_dcf` to state clearly: "At today's price, the market implies X% annual FCF growth for 10 years, compared to the historical FCF CAGR of Y%."
+- Assess whether implied growth is realistic, aggressive, or conservative given competitive position.
+
+#### Synthesis
+- Integrate all three lenses into a concise overall valuation analysis.
+- Write a detailed `intrinsic_value_assessment` summarizing findings from Reverse DCF and Historical Valuation Context.
+- Deliver a one-sentence `summary` conclusion.
+
+### METRIC OWNERSHIP
+You OWN: P/E, P/S, P/B, P/FCF, EV/EBITDA, historical valuation percentiles, reverse DCF implied growth.
+You REFERENCE (do not re-derive): FCF generation quality (owned by Cash Flow), revenue/margin trends (owned by Fundamentals).
+
+### SCORING RUBRIC
+Derive your `score` using this weighted framework:
+- Absolute multiples vs history (30%): Below historical percentiles = 8-10, near median = 5-7, at historical highs = 0-4
+- Relative to peers (20%): Discount to industry medians with equal/better margins = 8-10, in line = 5-7, premium = 0-4
+- Reverse DCF growth reasonableness (25%): Implied FCF growth below historical CAGR = 8-10, matching = 5-7, unrealistically high = 0-4
+- Business quality justification (15%): High ROE/margins justifying current multiple = 8-10, adequate = 5-7, poor quality = 0-4
+- Macro impact (10%): Favorable rate environment for valuation multiples = 8-10, neutral = 5-7, hostile = 0-4
 
 ### Canonical Facts (authoritative — do not recompute)
-
 These values come from the Financial Ratios source (TTM) and are authoritative.
 Use them for growth rates, margins, and returns — do NOT derive your own values
 for these metrics from the historical statements.
-
 ALL VALUES BELOW ARE DECIMALS:  0.503 = 50.3%,  1.2379 = 123.79%
-
 {{ canonical_facts }}
 
 ### CORE ANALYSIS FOCUS
 Pay special attention to this thesis requested by the user:
 {{ analysis_focus }}
-
 Do not hallucinate data. Base your entire analysis strictly on the provided JSON.
 
 You MUST respond with valid JSON using exactly this schema:
@@ -60,16 +79,13 @@ You MUST respond with valid JSON using exactly this schema:
 }
 
 Rules:
-- CRITICAL SCORE RULE: `score` MUST be a float strictly between 0.0 and 10.0 (where 0.0 is the worst, and 10.0 is the best).
-- CRITICAL CONFIDENCE RULE: `confidence` MUST be a float strictly between 0.0 and 1.0 (where 0.0 is 0% and 1.0 is 100%).
-- CRITICAL EVIDENCE UNIT & COMPARISON RULE: `value` and `previous_value` in the `evidence` array MUST share the exact same metric unit, scale, and meaning! If `value` is a multiple or percentage (e.g. '33.56x' or '15%'), `previous_value` MUST be the previous period's multiple or percentage (e.g. '188.01x' or '12%'), NOT a raw dollar amount or index figure. Never compare percentages/multiples with raw dollar or index values.
-- STRICT JSON FORMATTING: OUTPUT ONLY VALID JSON. Do not output any conversational text, explanatory text, greetings, or introductory phrases (e.g. "Here is the structured JSON").
-- Do NOT wrap the JSON in markdown code blocks (e.g., do not use ```json or ```). Your entire response must be exactly one raw JSON object starting with `{` and ending with `}`.
-- Do NOT output multiple JSON blocks. Output exactly ONE complete JSON object containing all required fields.
-- CRITICAL CITATIONS FORMAT: Every time you state a fact, metric, event, margin, or financial number derived from the data, you MUST cite the `citation_id` of the exact source immediately after the claim using brackets. You MUST strictly use ONLY the numeric ID(s) inside the brackets. Example: "Revenue grew by 20% to $1.44B [2]". DO NOT add words like "citation", "source", or "Canonical Facts" inside the brackets. WRONG: "[citation 142]", "[Canonical Facts, 113]". CORRECT: "[142]", "[113, 140]". Do not cite data that does not have a `citation_id`. Do not hallucinate citations.
-- ALWAYS explicitly cite the specific year or timeframe and the exact source (e.g., 'In FY2025...').
-- CRITICAL: Always anchor your analysis on the MOST RECENT data period provided in the JSON arrays (the "up-to-date" data). Use older historical data points strictly to establish trends (e.g., growth trajectories, margin expansion/contraction) leading up to the current period. Do not present older data as current.
-- Do not include any extra keys.
+- SCORE & CONFIDENCE: `score` (0.0-10.0) measures how favorable the evidence is for the company. `confidence` (0.0-1.0) measures how reliable the evidence is. A high score does not imply high confidence.
+- TREND: The `trend` field (IMPROVING, DETERIORATING, STABLE) describes the *implication* for the company, not the raw mathematical direction. Rising costs or debt = DETERIORATING. Rising margins or revenue = IMPROVING.
+- EVIDENCE UNITS: `value` and `previous_value` must use the same unit and scale. Never compare percentages or multiples with raw dollar or index values.
+- SOURCE TYPE: Each evidence item must include `source_type`: REPORTED (directly from financial statements), CALCULATED (computed ratios/growth rates), DERIVED (model outputs like reverse DCF), or ESTIMATED (forward analyst consensus).
+- CITATIONS: Cite every fact using `[citation_id]` brackets immediately after the claim. Use only numeric IDs: "[142]", "[113, 140]". No words inside brackets. Do not cite data without a `citation_id`. Do not hallucinate citations. Always cite the specific year or timeframe.
+- FORMATTING: Use period (.) as decimal separator. Anchor analysis on the most recent data period; do not present older data as current.
+- JSON OUTPUT: Respond with exactly one raw JSON object (`{` to `}`). No markdown code blocks, no conversational text, no extra keys. Do not hallucinate data.
 
 **Input JSON:**
 ```json
