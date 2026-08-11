@@ -60,24 +60,37 @@ public class AnalysisResultRenderer {
             return tabSheet;
         }
 
-        tabSheet.add("Report", createUnifiedReportTab(analysis));
+        tabSheet.add("Overview", createOverviewTab(analysis));
+        tabSheet.add("Scenarios", createScenariosTab(analysis));
+        tabSheet.add("Report", createReportTab(analysis));
         tabSheet.add("Details", createWorkflowDetailsTab(analysis));
         return tabSheet;
     }
 
-    private Component createUnifiedReportTab(CompanyAnalysisDto analysis) {
+    private Component createOverviewTab(CompanyAnalysisDto analysis) {
         VerticalLayout layout = createBaseContainer();
-
         if (analysis.getAnalysisResult() != null) {
-            Component overviewCard = analysisOverviewRenderer.renderAnalysisOverview(analysis.getAnalysisResult(), analysis);
-            if (overviewCard != null) {
-                layout.add(overviewCard);
-            }
+            Component overviewCard = analysisOverviewRenderer.renderOverviewTab(analysis.getAnalysisResult(), analysis);
+            if (overviewCard != null) layout.add(overviewCard);
+        } else if (analysis.getAnalysisData() != null && !analysis.getAnalysisData().isBlank()) {
+            layout.add(renderLegacyJsonReportFallback(analysis.getAnalysisData()));
         }
+        return wrapInScroller(layout);
+    }
 
+    private Component createScenariosTab(CompanyAnalysisDto analysis) {
+        VerticalLayout layout = createBaseContainer();
+        if (analysis.getAnalysisResult() != null) {
+            Component scenariosCard = analysisOverviewRenderer.renderScenariosTab(analysis.getAnalysisResult(), analysis);
+            if (scenariosCard != null) layout.add(scenariosCard);
+        }
+        return wrapInScroller(layout);
+    }
+
+    private Component createReportTab(CompanyAnalysisDto analysis) {
+        VerticalLayout layout = createBaseContainer();
         AnalysisResult result = analysis.getAnalysisResult();
         String jsonData = analysis.getAnalysisData();
-
         if (result != null) {
             if (result.executiveSummary() != null && !result.executiveSummary().isBlank()) {
                 addReportSection(layout, "Executive Summary", result.executiveSummary(), jsonData);
@@ -85,10 +98,7 @@ public class AnalysisResultRenderer {
             if (result.recommendationReasoning() != null && !result.recommendationReasoning().isBlank()) {
                 addReportSection(layout, "Valuation Justification", result.recommendationReasoning(), jsonData);
             }
-        } else if (jsonData != null && !jsonData.isBlank()) {
-            layout.add(renderLegacyJsonReportFallback(jsonData));
         }
-
         return wrapInScroller(layout);
     }
 

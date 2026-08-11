@@ -25,7 +25,11 @@ You MUST respond with valid JSON using exactly this schema:
 {
   "headline": "string (One compelling sentence summarizing the primary finding)",
   "score": 0.0,
-  "confidence": 0.0,
+  "confidence": {
+    "data": 0.0,
+    "interpretation": 0.0,
+    "overall": 0.0
+  },
   "confidence_reasons": ["string (Reason 1)", "string (Reason 2)"],
   "strengths": ["string (Strength 1)", "string (Strength 2)"],
   "weaknesses": ["string (Weakness 1)", "string (Weakness 2)"],

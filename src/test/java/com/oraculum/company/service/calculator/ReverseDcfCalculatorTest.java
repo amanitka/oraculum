@@ -39,15 +39,15 @@ class ReverseDcfCalculatorTest {
         ReverseDcfDto result = calculator.calculate(List.of(latestDaily), ratios);
 
         assertThat(result).isNotNull();
-        assertThat(result.currentMarketCap()).isEqualTo(10_000_000_000f);
-        assertThat(result.currentFcf()).isEqualTo(500_000_000f);
-        assertThat(result.fcfYieldPct()).isEqualTo(5.0f);
-        assertThat(result.discountRatePct()).isEqualTo(10.0f);
+        assertThat(result.currentMarketCap()).isEqualTo(10_000_000_000d);
+        assertThat(result.currentFcf()).isEqualTo(500_000_000d);
+        assertThat(result.fcfYieldPct()).isEqualTo(5.0d);
+        assertThat(result.discountRatePct()).isEqualTo(10.0d);
         assertThat(result.projectionYears()).isEqualTo(10);
-        assertThat(result.terminalGrowthRatePct()).isEqualTo(3.0f);
+        assertThat(result.terminalGrowthRatePct()).isEqualTo(3.0d);
 
         assertThat(result.impliedFcfGrowthRatePct()).isNotNull();
-        assertThat(result.impliedFcfGrowthRatePct()).isBetween(-50f, 80f);
+        assertThat(result.impliedFcfGrowthRatePct()).isBetween(-50d, 80d);
         assertThat(result.interpretation()).contains("At the current market capitalization of $10.00B");
         assertThat(result.interpretation()).contains("No historical FCF CAGR comparison available");
     }
@@ -76,7 +76,7 @@ class ReverseDcfCalculatorTest {
         ReverseDcfDto result = calculator.calculate(List.of(latestDaily), ratios);
 
         assertThat(result).isNotNull();
-        assertThat(result.historicalFcfCagrPct()).isCloseTo(20.0f, org.assertj.core.api.Assertions.within(0.1f));
+        assertThat(result.historicalFcfCagrPct()).isCloseTo(20.0d, org.assertj.core.api.Assertions.within(0.1d));
         assertThat(result.interpretation()).contains("For comparison, the company's historical annual FCF growth (CAGR) was 20.0%");
     }
 }

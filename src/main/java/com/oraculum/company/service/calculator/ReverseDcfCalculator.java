@@ -6,47 +6,69 @@ import com.oraculum.company.api.dto.ReverseDcfDto;
 import com.oraculum.company.api.dto.SharePriceSignalDto;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 @Component
 public class ReverseDcfCalculator {
 
-    private static final float DEFAULT_DISCOUNT_RATE = 0.10f;
-    private static final float DEFAULT_TERMINAL_GROWTH = 0.03f;
+    private static final double DEFAULT_DISCOUNT_RATE = 0.10d;
+    private static final double DEFAULT_TERMINAL_GROWTH = 0.03d;
     private static final int DEFAULT_PROJECTION_YEARS = 10;
+
+    // Bounds for the implied-growth-rate solver. Kept wide, but the solver now
+    // reports whether the answer landed on a bound rather than silently
+    // returning a clipped value as if it were precise.
+    private static final double SOLVER_LOW = -0.50d;
+    private static final double SOLVER_HIGH = 0.80d;
+    private static final double SOLVER_TOLERANCE = 0.0001d;
+    private static final double BOUND_EPSILON = 0.001d; // within 0.1pp of a bound counts as "clipped"
+
+    // Historical CAGR uses at most this many most-recent annual periods, not
+    // the single earliest record available. Anchoring on whichever year
+    // happens to be oldest (often a small, early-stage, or depressed base)
+    // systematically inflates the CAGR and makes "historical growth" look
+    // more favorable than it should for mature, high-growth names. A
+    // trailing window is still a simplification, but it's far less sensitive
+    // to which single data point happens to sit at the edge of history.
+    private static final int CAGR_TRAILING_WINDOW_YEARS = 5;
 
     public ReverseDcfDto calculate(List<SharePriceSignalDto> dailySignals, Map<StatementVariant, List<CompanyFinancialRatiosDto>> ratios) {
         if (dailySignals == null || dailySignals.isEmpty() || ratios == null || ratios.isEmpty()) {
             return null;
         }
 
-        Float marketCap = dailySignals.getFirst().marketCapitalization();
-        Float currentFcf = extractLatestTtmFcf(ratios.get(StatementVariant.TTM));
+        Float marketCapBoxed = dailySignals.getFirst().marketCapitalization();
+        Float currentFcfBoxed = extractLatestTtmFcf(ratios.get(StatementVariant.TTM));
         List<CompanyFinancialRatiosDto> annualRatios = ratios.get(StatementVariant.ANNUAL);
 
-        if (marketCap == null || currentFcf == null || marketCap <= 0 || currentFcf <= 0) {
+        if (marketCapBoxed == null || currentFcfBoxed == null || marketCapBoxed <= 0 || currentFcfBoxed <= 0) {
             return null;
         }
 
-        float fcfYield = currentFcf / marketCap;
-        float impliedG = solveImpliedGrowthRate(marketCap, currentFcf, DEFAULT_DISCOUNT_RATE, DEFAULT_PROJECTION_YEARS, DEFAULT_TERMINAL_GROWTH);
-        Float historicalCagr = computeHistoricalFcfCagr(annualRatios);
+        double marketCap = marketCapBoxed;
+        double currentFcf = currentFcfBoxed;
 
-        String interpretation = buildInterpretation(impliedG, historicalCagr, marketCap, currentFcf);
+        double fcfYield = currentFcf / marketCap;
+        SolverResult solverResult = solveImpliedGrowthRate(marketCap, currentFcf, DEFAULT_DISCOUNT_RATE, DEFAULT_PROJECTION_YEARS, DEFAULT_TERMINAL_GROWTH);
+        HistoricalCagrResult historicalCagr = computeHistoricalFcfCagr(annualRatios);
+
+        String interpretation = buildInterpretation(solverResult, historicalCagr, marketCap, currentFcf);
+
+        String historicalPeriodSpan = historicalCagr != null ?
+                String.format(Locale.US, "FY%d to FY%d (%d-year period)", historicalCagr.startFiscalYear(), historicalCagr.endFiscalYear(), historicalCagr.yearsSpanned())
+                : null;
 
         return new ReverseDcfDto(
                 marketCap,
                 currentFcf,
-                fcfYield * 100,
-                DEFAULT_DISCOUNT_RATE * 100,
+                fcfYield * 100.0,
+                DEFAULT_DISCOUNT_RATE * 100.0,
                 DEFAULT_PROJECTION_YEARS,
-                DEFAULT_TERMINAL_GROWTH * 100,
-                impliedG * 100,
-                historicalCagr != null ? historicalCagr * 100 : null,
+                DEFAULT_TERMINAL_GROWTH * 100.0,
+                solverResult.impliedGrowth() * 100.0,
+                historicalCagr != null ? historicalCagr.cagr() * 100.0 : null,
+                historicalPeriodSpan,
+                solverResult.isClipped(),
                 interpretation
         );
     }
@@ -58,16 +80,16 @@ public class ReverseDcfCalculator {
         return sorted.getFirst().freeCashFlow();
     }
 
-    private float solveImpliedGrowthRate(float marketCap, float fcf, float r, int n, float gTerminal) {
-        float low = -0.50f;
-        float high = 0.80f;
-        float tolerance = 0.0001f;
+    private SolverResult solveImpliedGrowthRate(double marketCap, double fcf, double r, int n, double gTerminal) {
+        double low = SOLVER_LOW;
+        double high = SOLVER_HIGH;
+        double mid = (low + high) / 2;
 
         for (int i = 0; i < 100; i++) {
-            float mid = (low + high) / 2;
-            float val = computeModelValue(fcf, mid, r, n, gTerminal);
-            if (Math.abs(val - marketCap) < tolerance * marketCap) {
-                return mid;
+            mid = (low + high) / 2;
+            double val = computeModelValue(fcf, mid, r, n, gTerminal);
+            if (Math.abs(val - marketCap) < SOLVER_TOLERANCE * marketCap) {
+                break;
             }
             if (val > marketCap) {
                 high = mid;
@@ -75,26 +97,29 @@ public class ReverseDcfCalculator {
                 low = mid;
             }
         }
-        return (low + high) / 2;
+
+        boolean clippedLow = Math.abs(mid - SOLVER_LOW) < BOUND_EPSILON;
+        boolean clippedHigh = Math.abs(mid - SOLVER_HIGH) < BOUND_EPSILON;
+        return new SolverResult(mid, clippedLow, clippedHigh);
     }
 
-    private float computeModelValue(float fcf, float g, float r, int n, float gTerminal) {
-        float sum = 0f;
-        float tempFcf = fcf;
-        float discountFactor = 1 + r;
+    private double computeModelValue(double fcf, double g, double r, int n, double gTerminal) {
+        double sum = 0d;
+        double tempFcf = fcf;
+        double discountFactor = 1 + r;
 
         for (int i = 1; i <= n; i++) {
             tempFcf *= (1 + g);
-            sum += (float) (tempFcf / Math.pow(discountFactor, i));
+            sum += tempFcf / Math.pow(discountFactor, i);
         }
 
         double terminalVal = (tempFcf * (1 + gTerminal)) / (r - gTerminal);
-        sum += (float) (terminalVal / Math.pow(discountFactor, n));
+        sum += terminalVal / Math.pow(discountFactor, n);
 
         return sum;
     }
 
-    private Float computeHistoricalFcfCagr(List<CompanyFinancialRatiosDto> annualRatios) {
+    private HistoricalCagrResult computeHistoricalFcfCagr(List<CompanyFinancialRatiosDto> annualRatios) {
         if (annualRatios == null || annualRatios.isEmpty()) return null;
 
         List<CompanyFinancialRatiosDto> sorted = annualRatios.stream()
@@ -105,28 +130,55 @@ public class ReverseDcfCalculator {
 
         if (sorted.size() < 2) return null;
 
-        CompanyFinancialRatiosDto oldest = sorted.getFirst();
-        CompanyFinancialRatiosDto newest = sorted.getLast();
+        // Use only the most recent CAGR_TRAILING_WINDOW_YEARS+1 data points
+        // (enough for CAGR_TRAILING_WINDOW_YEARS of growth) instead of
+        // anchoring on the single oldest record available.
+        int windowSize = Math.min(sorted.size(), CAGR_TRAILING_WINDOW_YEARS + 1);
+        List<CompanyFinancialRatiosDto> trailingWindow = sorted.subList(sorted.size() - windowSize, sorted.size());
 
-        float oldestFcf = oldest.freeCashFlow();
-        float newestFcf = newest.freeCashFlow();
+        CompanyFinancialRatiosDto oldest = trailingWindow.getFirst();
+        CompanyFinancialRatiosDto newest = trailingWindow.getLast();
+
+        double oldestFcf = oldest.freeCashFlow();
+        double newestFcf = newest.freeCashFlow();
         int years = newest.fiscalYear() - oldest.fiscalYear();
 
         if (years <= 0 || oldestFcf <= 0 || newestFcf <= 0) return null;
 
-        return (float) (Math.pow((double) newestFcf / oldestFcf, 1.0 / years) - 1.0);
+        double cagr = Math.pow(newestFcf / oldestFcf, 1.0 / years) - 1.0;
+        return new HistoricalCagrResult(cagr, oldest.fiscalYear(), newest.fiscalYear(), years);
     }
 
-    private String buildInterpretation(float impliedG, Float historicalCagr, float marketCap, float fcf) {
-        String base = String.format(java.util.Locale.US, "At the current market capitalization of $%.2fB and TTM Free Cash Flow of $%.2fB (FCF Yield: %.2f%%), " +
-                "the market implies that the company must grow its Free Cash Flow at an average annual rate of %.1f%% for the next %d years (assuming a %.1f%% discount rate and %.1f%% terminal growth).",
-                marketCap / 1_000_000_000f, fcf / 1_000_000_000f, (fcf / marketCap) * 100, impliedG * 100, DEFAULT_PROJECTION_YEARS, DEFAULT_DISCOUNT_RATE * 100, DEFAULT_TERMINAL_GROWTH * 100);
+    private String buildInterpretation(SolverResult solverResult, HistoricalCagrResult historicalCagr, double marketCap, double fcf) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(String.format(Locale.US,
+                "At the current market capitalization of $%.2fB and TTM Free Cash Flow of $%.2fB (FCF Yield: %.2f%%), " +
+                        "the market implies that the company must grow its Free Cash Flow at an average annual rate of %.1f%% for the next %d years (assuming a %.1f%% discount rate and %.1f%% terminal growth).",
+                marketCap / 1_000_000_000d, fcf / 1_000_000_000d, (fcf / marketCap) * 100,
+                solverResult.impliedGrowth * 100, DEFAULT_PROJECTION_YEARS, DEFAULT_DISCOUNT_RATE * 100, DEFAULT_TERMINAL_GROWTH * 100));
+
+        if (solverResult.isClipped()) {
+            sb.append(String.format(Locale.US,
+                    " Note: this figure sits at the edge of the modeled range (%.0f%% to %.0f%%) and should be treated as directional rather than precise.",
+                    SOLVER_LOW * 100, SOLVER_HIGH * 100));
+        }
 
         if (historicalCagr != null) {
-            base += String.format(java.util.Locale.US, " For comparison, the company's historical annual FCF growth (CAGR) was %.1f%% over the analyzed period.", historicalCagr * 100);
+            sb.append(String.format(Locale.US,
+                    " For comparison, the company's historical annual FCF growth (CAGR) was %.1f%% from FY%d to FY%d (%d-year period).",
+                    historicalCagr.cagr * 100, historicalCagr.startFiscalYear, historicalCagr.endFiscalYear, historicalCagr.yearsSpanned));
         } else {
-            base += " (No historical FCF CAGR comparison available due to insufficient positive annual FCF history).";
+            sb.append(" (No historical FCF CAGR comparison available due to insufficient positive annual FCF history).");
         }
-        return base;
+        return sb.toString();
+    }
+
+    private record SolverResult(double impliedGrowth, boolean clippedToLowerBound, boolean clippedToUpperBound) {
+        boolean isClipped() {
+            return clippedToLowerBound || clippedToUpperBound;
+        }
+    }
+
+    private record HistoricalCagrResult(double cagr, int startFiscalYear, int endFiscalYear, int yearsSpanned) {
     }
 }

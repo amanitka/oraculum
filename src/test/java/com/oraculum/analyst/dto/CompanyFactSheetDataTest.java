@@ -30,7 +30,7 @@ class CompanyFactSheetDataTest {
     @Test
     void getReverseDcfAnalysis_returnsSerializedResult() {
         ReverseDcfDto reverseDcfResult = new ReverseDcfDto(
-                10_000_000_000f, 500_000_000f, 5.0f, 10.0f, 10, 3.0f, 12.5f, 15.0f, "Test Interpretation"
+                10_000_000_000d, 500_000_000d, 5.0d, 10.0d, 10, 3.0d, 12.5d, 15.0d, "FY2020 to FY2025 (5-year period)", false, "Test Interpretation"
         );
 
         CompanyFactSheetData data = CompanyFactSheetData.builder()

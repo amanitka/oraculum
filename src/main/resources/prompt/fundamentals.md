@@ -56,7 +56,11 @@ You MUST respond with valid JSON using exactly this schema:
 {
   "headline": "string (One compelling sentence summarizing the primary finding)",
   "score": 0.0,
-  "confidence": 0.0,
+  "confidence": {
+    "data": 0.0,
+    "interpretation": 0.0,
+    "overall": 0.0
+  },
   "confidence_reasons": ["string (Reason 1)", "string (Reason 2)"],
   "strengths": ["string (Strength 1)", "string (Strength 2)"],
   "weaknesses": ["string (Weakness 1)", "string (Weakness 2)"],
@@ -82,6 +86,7 @@ Rules:
 - SOURCE TYPE: Each evidence item must include `source_type`: REPORTED (directly from financial statements), CALCULATED (computed ratios/growth rates), DERIVED (model outputs like reverse DCF), or ESTIMATED (forward analyst consensus).
 - CITATIONS: Cite every fact using `[citation_id]` brackets immediately after the claim. Use only numeric IDs: "[142]", "[113, 140]". No words inside brackets. Do not cite data without a `citation_id`. Do not hallucinate citations. Always cite the specific year or timeframe.
 - FORMATTING: Use period (.) as decimal separator. Anchor analysis on the most recent data period; do not present older data as current.
+- NET CASH: Whenever referring to a derived cash-minus-debt figure, label it explicitly as 'net cash'. Never use ambiguous terms like 'cash reserves' or 'cash position' for net figures.
 - JSON OUTPUT: Respond with exactly one raw JSON object (`{` to `}`). No markdown code blocks, no conversational text, no extra keys. Do not hallucinate data.
 **Input JSON:**
 

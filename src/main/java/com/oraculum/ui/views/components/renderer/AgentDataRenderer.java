@@ -29,8 +29,9 @@ public class AgentDataRenderer {
             "headline", "score", "confidence", "confidence_reasons", "recommendation",
             "outlook", "conviction", "management_sentiment", "sentiment", "managementSentiment",
             "strengths", "key_drivers", "weaknesses", "key_risks", "evidence",
+            "business_risks", "financial_risks", "macro_risks", "sentiment_signals",
             "metrics", "factor_scores", "summary", "executive_summary", "recommendation_reasoning",
-            "thesis_breakers", "scenarios", "what_would_change_this", "thesis", "top_bull_points", "top_bear_points", "valuation_one_liner"
+            "thesis_breakers", "scenarios", "what_would_change_this", "thesis", "top_bull_points", "top_bear_points", "valuation_one_liner", "valuation_dimensions"
     );
 
     private final MarkdownRenderer markdownRenderer;
@@ -50,10 +51,12 @@ public class AgentDataRenderer {
         addTilesRowIfPresent(layout, agentData);
         addStrengthsIfPresent(layout, agentData, jsonData);
         addWeaknessesIfPresent(layout, agentData, jsonData);
+        addRiskBucketsIfPresent(layout, agentData, jsonData);
         addScenariosIfPresent(layout, agentData);
         addThesisBreakersIfPresent(layout, agentData);
         addEvidenceIfPresent(layout, agentData, jsonData);
         addMetricsIfPresent(layout, agentData);
+        addValuationDimensionsIfPresent(layout, agentData);
         addSummaryIfPresent(layout, agentData, jsonData);
         addCustomFieldsIfPresent(layout, agentData, jsonData);
 
@@ -126,6 +129,27 @@ public class AgentDataRenderer {
         }
     }
 
+    private void addRiskBucketsIfPresent(VerticalLayout layout, JsonNode agentData, String jsonData) {
+        if (agentData.has("business_risks")) {
+            layout.add(renderWeaknesses(agentData.get("business_risks"), "Business Risks", jsonData));
+        }
+        if (agentData.has("financial_risks")) {
+            layout.add(renderWeaknesses(agentData.get("financial_risks"), "Financial Risks", jsonData));
+        }
+        if (agentData.has("macro_risks")) {
+            layout.add(renderWeaknesses(agentData.get("macro_risks"), "Macro Risks", jsonData));
+        }
+        if (agentData.has("sentiment_signals")) {
+            layout.add(renderInfoList(agentData.get("sentiment_signals"), "Sentiment Signals", jsonData));
+        }
+    }
+
+    private void addValuationDimensionsIfPresent(VerticalLayout layout, JsonNode agentData) {
+        if (agentData.has("valuation_dimensions")) {
+            layout.add(renderMetrics(agentData.get("valuation_dimensions"), "Valuation Dimensions"));
+        }
+    }
+
     private void addEvidenceIfPresent(VerticalLayout layout, JsonNode agentData, String jsonData) {
         if (agentData.has("evidence")) {
             layout.add(renderEvidence(agentData.get("evidence"), jsonData));
@@ -173,7 +197,7 @@ public class AgentDataRenderer {
                     .set("letter-spacing", "0.5px")
                     .set("color", "var(--lumo-secondary-text-color)");
 
-            Span statusBadge = new Span(isConsistent ? "✔ CONSISTENT" : "⚠️ CONTRADICTION DETECTED");
+            Span statusBadge = new Span(isConsistent ? "CONSISTENT" : "CONTRADICTION DETECTED");
             statusBadge.getElement().getThemeList().add("badge");
             statusBadge.getElement().getThemeList().add(isConsistent ? "success" : "error");
             statusBadge.getStyle().set("font-size", "0.85rem").set("padding", "4px 10px");
@@ -497,21 +521,16 @@ public class AgentDataRenderer {
         main.setSpacing(false);
         main.getStyle().set("gap", "12px");
 
-        double confVal = confidence.asDouble(0.0);
-        String badgeText;
-        if (confVal > 1.0) {
-            badgeText = (int) confVal + "%";
-            confVal = confVal / 100.0;
+        if (confidence.isObject()) {
+            HorizontalLayout confGrid = new HorizontalLayout();
+            confGrid.setSpacing(true);
+            confGrid.add(createConfidenceBadge("Data: ", confidence.path("data").asDouble(0.0)));
+            confGrid.add(createConfidenceBadge("Interpretation: ", confidence.path("interpretation").asDouble(0.0)));
+            confGrid.add(createConfidenceBadge("Overall: ", confidence.path("overall").asDouble(0.0)));
+            main.add(confGrid);
         } else {
-            badgeText = (int) (confVal * 100) + "%";
+            main.add(createConfidenceBadge(null, confidence.asDouble(0.0)));
         }
-        Span badge = new Span(badgeText);
-        badge.getElement().getThemeList().add("badge");
-        if (confVal >= 0.8) badge.getElement().getThemeList().add("success");
-        else if (confVal >= 0.5) badge.getElement().getThemeList().add("contrast");
-        else badge.getElement().getThemeList().add("error");
-
-        main.add(badge);
 
         if (reasons != null && reasons.isArray() && !reasons.isEmpty()) {
             UnorderedList reasonsList = new UnorderedList();
@@ -522,6 +541,31 @@ public class AgentDataRenderer {
             main.add(reasonsList);
         }
         return main;
+    }
+
+    private Component createConfidenceBadge(String label, double confVal) {
+        String badgeText;
+        if (confVal > 1.0) {
+            badgeText = (int) confVal + "%";
+            confVal = confVal / 100.0;
+        } else {
+            badgeText = (int) (confVal * 100) + "%";
+        }
+        
+        Span badge = new Span();
+        if (label != null) {
+            Span labelSpan = new Span(label);
+            labelSpan.getStyle().set("margin-right", "4px").set("font-weight", "normal");
+            badge.add(labelSpan);
+        }
+        badge.add(new Span(badgeText));
+        
+        badge.getElement().getThemeList().add("badge");
+        if (confVal >= 0.8) badge.getElement().getThemeList().add("success");
+        else if (confVal >= 0.5) badge.getElement().getThemeList().add("contrast");
+        else badge.getElement().getThemeList().add("error");
+        
+        return badge;
     }
 
     private Component renderStrengths(JsonNode value, String title, String jsonData) {
@@ -576,6 +620,37 @@ public class AgentDataRenderer {
             row.getStyle().set("margin-bottom", "16px");
             com.vaadin.flow.component.icon.Icon icon = VaadinIcon.WARNING.create();
             icon.setColor("var(--lumo-error-color)");
+            icon.setSize("16px");
+            icon.getStyle().set("margin-top", "4px").set("flex-shrink", "0");
+            Component textComp = markdownRenderer.renderMarkdownWithCitations(item.asString(), jsonData);
+            textComp.getStyle().set("line-height", "1.6");
+            row.add(icon, textComp);
+            layout.add(row);
+        }
+        return layout;
+    }
+
+    private Component renderInfoList(JsonNode value, String title, String jsonData) {
+        if (value == null || value.isEmpty()) return new Span();
+        VerticalLayout layout = new VerticalLayout();
+        layout.setPadding(false);
+        layout.setSpacing(false);
+        layout.getStyle().set("margin-bottom", "20px");
+
+        H4 header = new H4(title);
+        header.getStyle()
+                .set("margin-top", "24px")
+                .set("margin-bottom", "16px")
+                .set("border-bottom", "1px solid var(--lumo-contrast-10pct)")
+                .set("padding-bottom", "8px");
+        layout.add(header);
+
+        for (JsonNode item : value) {
+            HorizontalLayout row = new HorizontalLayout();
+            row.setAlignItems(FlexComponent.Alignment.START);
+            row.getStyle().set("margin-bottom", "16px");
+            com.vaadin.flow.component.icon.Icon icon = VaadinIcon.INFO_CIRCLE.create();
+            icon.setColor("var(--lumo-primary-color)");
             icon.setSize("16px");
             icon.getStyle().set("margin-top", "4px").set("flex-shrink", "0");
             Component textComp = markdownRenderer.renderMarkdownWithCitations(item.asString(), jsonData);
@@ -732,17 +807,27 @@ public class AgentDataRenderer {
         for (Map.Entry<String, JsonNode> entry : value.properties()) {
             Div chip = new Div();
             chip.getStyle()
+                    .set("display", "flex")
+                    .set("flex-direction", "column")
                     .set("background", "rgba(var(--lumo-contrast-rgb), 0.04)")
                     .set("border", "1px solid var(--lumo-contrast-15pct)")
-                    .set("border-radius", "6px")
-                    .set("padding", "8px 12px")
-                    .set("font-size", "0.85rem");
+                    .set("border-radius", "8px")
+                    .set("padding", "12px 16px")
+                    .set("min-width", "140px")
+                    .set("gap", "4px");
 
-            Span keySpan = new Span(RendererUtil.formatKeyTitle(entry.getKey()) + ": ");
-            keySpan.getStyle().set("color", "var(--lumo-secondary-text-color)");
+            Span keySpan = new Span(RendererUtil.formatKeyTitle(entry.getKey()));
+            keySpan.getStyle()
+                    .set("color", "var(--lumo-secondary-text-color)")
+                    .set("font-size", "0.75rem")
+                    .set("text-transform", "uppercase")
+                    .set("letter-spacing", "0.5px");
 
             Span valSpan = new Span(entry.getValue().asString());
-            valSpan.getStyle().set("font-weight", "bold").set("color", "var(--lumo-primary-text-color)");
+            valSpan.getStyle()
+                    .set("font-weight", "bold")
+                    .set("color", "var(--lumo-primary-text-color)")
+                    .set("font-size", "1.15rem");
 
             chip.add(keySpan, valSpan);
             flex.add(chip);

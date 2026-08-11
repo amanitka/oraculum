@@ -23,13 +23,13 @@ public class AnalysisOverviewRenderer {
 
     private final MarkdownRenderer markdownRenderer;
 
-    public Component renderAnalysisOverview(AnalysisResult snapshot, CompanyAnalysisDto analysis) {
+    public Component renderOverviewTab(AnalysisResult snapshot, CompanyAnalysisDto analysis) {
         if (snapshot == null) return null;
 
         Div container = new Div();
         container.addClassNames(LumoUtility.Width.FULL);
 
-        container.add(createSnapshotHeader(snapshot, analysis));
+        container.add(createSnapshotHeader(snapshot));
 
         if (snapshot.thesis() != null && !snapshot.thesis().isBlank()) {
             container.add(createSnapshotThesis(snapshot.thesis(), analysis));
@@ -44,14 +44,6 @@ public class AnalysisOverviewRenderer {
             container.add(points);
         }
 
-        if (snapshot.scenarios() != null) {
-            container.add(createSnapshotScenarios(snapshot.scenarios(), analysis));
-        }
-
-        if (snapshot.thesisBreakers() != null && !snapshot.thesisBreakers().isEmpty()) {
-            container.add(createSnapshotThesisBreakers(snapshot.thesisBreakers(), analysis));
-        }
-
         Component footer = createSnapshotFooter(snapshot, analysis);
         if (footer != null) {
             container.add(footer);
@@ -60,20 +52,28 @@ public class AnalysisOverviewRenderer {
         return container;
     }
 
-    private Component createSnapshotHeader(AnalysisResult snapshot, CompanyAnalysisDto analysis) {
+    public Component renderScenariosTab(AnalysisResult snapshot, CompanyAnalysisDto analysis) {
+        if (snapshot == null) return null;
+
+        Div container = new Div();
+        container.addClassNames(LumoUtility.Width.FULL);
+
+        if (snapshot.scenarios() != null) {
+            container.add(createSnapshotScenarios(snapshot.scenarios(), analysis));
+        }
+
+        if (snapshot.thesisBreakers() != null && !snapshot.thesisBreakers().isEmpty()) {
+            container.add(createSnapshotThesisBreakers(snapshot.thesisBreakers(), analysis));
+        }
+
+        return container;
+    }
+
+    private Component createSnapshotHeader(AnalysisResult snapshot) {
         VerticalLayout container = new VerticalLayout();
         container.setPadding(false);
         container.setSpacing(false);
         container.setWidthFull();
-
-        H4 headerTitle = new H4("Overview");
-        headerTitle.getStyle()
-                .set("margin-top", "0")
-                .set("margin-bottom", "20px")
-                .set("border-bottom", "1px solid var(--lumo-contrast-10pct)")
-                .set("padding-bottom", "10px")
-                .set("font-size", "1.15rem")
-                .set("color", "var(--lumo-header-text-color)");
 
         HorizontalLayout topRow = new HorizontalLayout();
         topRow.setWidthFull();
@@ -109,7 +109,7 @@ public class AnalysisOverviewRenderer {
         }
 
         topRow.add(badges, buildConvictionMeter(snapshot.conviction()));
-        container.add(headerTitle, topRow);
+        container.add(topRow);
         return container;
     }
 
@@ -390,44 +390,34 @@ public class AnalysisOverviewRenderer {
         container.setPadding(false);
         container.setSpacing(false);
         container.setWidthFull();
-        container.getStyle().set("margin-top", "20px").set("margin-bottom", "20px");
-
-        H4 headerTitle = new H4("Investment Scenarios");
-        headerTitle.getStyle()
-                .set("margin-top", "0")
-                .set("margin-bottom", "14px")
-                .set("border-bottom", "1px solid var(--lumo-contrast-10pct)")
-                .set("padding-bottom", "8px")
-                .set("font-size", "1.15rem")
-                .set("color", "var(--lumo-header-text-color)");
-        container.add(headerTitle);
+        container.getStyle().set("margin-top", "0").set("margin-bottom", "20px");
 
         HorizontalLayout cardsLayout = new HorizontalLayout();
         cardsLayout.setWidthFull();
         cardsLayout.getStyle().set("gap", "16px").set("flex-wrap", "wrap");
 
         if (scenarios.bull() != null) {
-            cardsLayout.add(createScenarioCard("Bull Case", scenarios.bull().description(), scenarios.bull().keyAssumption(), scenarios.bull().impliedUpside(), "#81c784", "rgba(76, 175, 80, 0.08)", analysis));
+            cardsLayout.add(createScenarioCard("Bull Case", scenarios.bull().description(), scenarios.bull().keyAssumption(), scenarios.bull().impliedUpside(), "#2ecc71", "rgba(46, 204, 113, 0.05)", "rgba(46, 204, 113, 0.2)", analysis));
         }
         if (scenarios.base() != null) {
-            cardsLayout.add(createScenarioCard("Base Case", scenarios.base().description(), scenarios.base().keyAssumption(), scenarios.base().impliedMove(), "#64b5f6", "rgba(33, 150, 243, 0.08)", analysis));
+            cardsLayout.add(createScenarioCard("Base Case", scenarios.base().description(), scenarios.base().keyAssumption(), scenarios.base().impliedMove(), "#3498db", "rgba(52, 152, 219, 0.05)", "rgba(52, 152, 219, 0.2)", analysis));
         }
         if (scenarios.bear() != null) {
-            cardsLayout.add(createScenarioCard("Bear Case", scenarios.bear().description(), scenarios.bear().keyAssumption(), scenarios.bear().impliedDownside(), "#e57373", "rgba(244, 67, 54, 0.08)", analysis));
+            cardsLayout.add(createScenarioCard("Bear Case", scenarios.bear().description(), scenarios.bear().keyAssumption(), scenarios.bear().impliedDownside(), "#e74c3c", "rgba(231, 76, 60, 0.05)", "rgba(231, 76, 60, 0.2)", analysis));
         }
 
         container.add(cardsLayout);
         return container;
     }
 
-    private Component createScenarioCard(String title, String descText, String assumptionText, String moveText, String accentColor, String bgTint, CompanyAnalysisDto analysis) {
+    private Component createScenarioCard(String title, String descText, String assumptionText, String moveText, String accentColor, String bgTint, String borderColor, CompanyAnalysisDto analysis) {
         VerticalLayout card = new VerticalLayout();
         card.setPadding(true);
         card.setSpacing(true);
         card.getStyle()
                 .set("flex", "1 1 250px")
                 .set("background", bgTint)
-                .set("border", "1px solid " + accentColor)
+                .set("border", "1px solid " + borderColor)
                 .set("border-radius", "8px");
 
         H5 cardTitle = new H5(title);
@@ -443,12 +433,13 @@ public class AnalysisOverviewRenderer {
         }
 
         if (assumptionText != null && !assumptionText.isBlank()) {
-            HorizontalLayout assumptionLayout = new HorizontalLayout();
+            VerticalLayout assumptionLayout = new VerticalLayout();
             assumptionLayout.setSpacing(false);
-            Span titleSpan = new Span("Key Assumption: ");
+            assumptionLayout.setPadding(false);
+            Span titleSpan = new Span("Key Assumption:");
             titleSpan.getStyle().set("font-size", "0.8rem").set("font-weight", "600").set("color", "var(--lumo-secondary-text-color)");
             Component assumptionComp = markdownRenderer.renderMarkdownWithCitations(assumptionText, jsonData);
-            assumptionComp.getStyle().set("font-size", "0.8rem").set("color", "var(--lumo-secondary-text-color)");
+            assumptionComp.getStyle().set("font-size", "0.8rem").set("color", "var(--lumo-secondary-text-color)").set("margin-top", "4px");
             assumptionLayout.add(titleSpan, assumptionComp);
             card.add(assumptionLayout);
         }
