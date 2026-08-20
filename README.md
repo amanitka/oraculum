@@ -14,14 +14,23 @@ Oraculum acts as your personal AI stock analyst. It orchestrates a multi-agent s
 * **Screener View**  
   <a href="docs/images/screener.png"><img src="docs/images/screener.png" width="400" alt="Screener View"></a>
 
-* **Company Overview**  
-  <a href="docs/images/company.png"><img src="docs/images/company.png" width="400" alt="Company Overview"></a>
+* **Company**  
+  <a href="docs/images/company_valuation.png"><img src="docs/images/company_valuation.png" width="400" alt="Company Valuation"></a>
+  <a href="docs/images/company_ratios.png"><img src="docs/images/company_ratios.png" width="400" alt="Company Ratios"></a>
 
-* **Analysis Progress & Multi-Agent UI**  
-  <a href="docs/images/analysis.png"><img src="docs/images/analysis.png" width="400" alt="Analysis UI"></a>
+* **Analysis Overview**  
+  <a href="docs/images/analysis_overview.png"><img src="docs/images/analysis_overview.png" width="400" alt="Analysis UI"></a>
 
-* **Analysis Detail & AI Report**  
-  <a href="docs/images/analysis_detail.png"><img src="docs/images/analysis_detail.png" width="400" alt="Analysis Detail"></a>
+* **Analysis Scenarios**  
+  <a href="docs/images/analysis_scenarios.png"><img src="docs/images/analysis_scenarios.png" width="400" alt="Analysis UI"></a>
+
+* **Analysis Report**  
+  <a href="docs/images/analysis_report.png"><img src="docs/images/analysis_report.png" width="400" alt="Analysis UI"></a>
+
+* **Analysis Detail**  
+  <a href="docs/images/analysis_detail_I.png"><img src="docs/images/analysis_detail_I.png" width="400" alt="Analysis UI"></a>
+  <a href="docs/images/analysis_detail_II.png"><img src="docs/images/analysis_detail_II.png" width="400" alt="Analysis UI"></a>
+
 
 ---
 
@@ -42,6 +51,10 @@ flowchart LR
         Database["Database Module"]
         LLM["LLM Module"]
         Audit["Audit Module"]
+        Economy["Economy Module"]
+        User["User Module"]
+        Security["Security Module"]
+        Common["Common Module"]
     end
     
     subgraph Data Ingestion
@@ -53,6 +66,8 @@ flowchart LR
     subgraph External APIs
         SimFin["SimFin API"]
         OpenInsider["OpenInsider"]
+        SEC_EDGAR["SEC EDGAR"]
+        FRED["FRED API"]
         AI_Models["OpenAI / Gemini / Groq"]
     end
 
@@ -71,6 +86,7 @@ flowchart LR
     Kafka -- "Consume" --> PythonHarvester
     PythonHarvester -- "Fetch" --> SimFin
     PythonHarvester -- "Fetch" --> OpenInsider
+    PythonHarvester -- "Fetch" --> SEC_EDGAR
     PythonHarvester -- "Write" --> ExchangeDir
     PythonHarvester -- "Ready Event" --> Kafka
     
@@ -95,8 +111,9 @@ flowchart LR
 2. **Event-Driven DuckDB ETL:** A highly optimized pipeline where Python converts CSVs to Parquet chunks and emits Redpanda events. A Java listener then uses embedded DuckDB to stream these Parquet files at native C++ speeds directly into PostgreSQL staging tables, before executing native SQL UPSERTs to merge the data. This completely bypasses traditional Java serialization bottlenecks.
 3. **Advanced PostgreSQL Analytics:** Features complex materialized views calculating Piotroski F-Scores, Graham Deep Value metrics, Multi-Window Sentiment decay, and GARP screens natively in SQL. Uses table partitioning for high-volume time-series data.
 4. **Resilient AI Routing:** The `LLM Module` implements circuit breakers and fallback routing (OpenAI → Gemini → Groq) via Resilience4j to ensure high availability for analysis tasks.
-5. **Python Harvester:** An asynchronous FastStream microservice that connects to the SimFin SDK and OpenInsider, writing massive financial datasets to Parquet files and notifying the Java backend via Redpanda.
-6. **Reactive UI:** Built with Vaadin, featuring `@Push` WebSockets for real-time AI progress visualization and dynamic JSONB-driven grids for varying financial statement templates.
+5. **Python Harvester:** An asynchronous FastStream microservice that connects to the SimFin SDK, OpenInsider, and SEC EDGAR. It writes massive financial datasets and institutional holdings (13F) to Parquet files and notifies the Java backend via Redpanda.
+6. **Reactive UI:** Built with Vaadin, featuring `@Push` WebSockets for real-time AI progress visualization, dynamic JSONB-driven grids, and role-based administration features nested within user profile popovers.
+7. **JIT SEC Processing:** Employs a Just-In-Time pipeline to summarize SEC documents (10-K, 10-Q, 8-K), ensuring AI agents receive optimized context windows to avoid LLM degradation.
 
 ## 🤖 Multi-Agent AI System
 
@@ -120,10 +137,9 @@ A major challenge with AI in finance is data hallucination. Oraculum solves this
 
 ## 📄 Sample Output & Agent Trace
 
-Curious how the multi-agent system thinks and resolves data conflicts? Check out the raw outputs from a real analysis run on Micron Technology (MU):
+Curious how the multi-agent system thinks and resolves data conflicts? Check out the raw outputs from a real analysis run on AMD:
 
-* [Example Synthesizer Report (Markdown)](docs/samples/MU_analysis_report.md)
-* [Raw Agent Trace (JSON)](docs/samples/MU_analysis_agent_trace.json) - *Shows the full state progression, Critic interventions, and ground-truth citations.*
+* [Raw Agent Trace (JSON)](docs/samples/analysis.json) - *Shows the full state progression, Critic interventions, and ground-truth citations.*
 
 ## 🚀 Getting Started
 
@@ -173,6 +189,10 @@ java --enable-native-access=ALL-UNNAMED -jar target/oraculum-0.0.1-SNAPSHOT.jar
 * **`harvester`**: Request publishers and API rate limit trackers.
 * **`llm`**: Generic chat client wrappers with Resilience4j circuit breakers.
 * **`audit`**: Asynchronous tracking of all AI tokens consumed and data loads completed.
+* **`economy`**: Macroeconomic data ingestion and analysis (e.g. FRED yield curves, inflation, unemployment).
+* **`user`**: User management, usage tracking, and quotas.
+* **`security`**: Authentication, authorization (OAuth2), and role-based access control.
+* **`common`**: Shared domain models and utilities.
 
 ---
 *Disclaimer: Oraculum is a personal project intended for educational and analytical purposes. It does not constitute financial advice.*
