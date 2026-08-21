@@ -5,7 +5,19 @@ An AI-powered quantitative investment analysis platform built with Spring Moduli
 Oraculum acts as your personal AI stock analyst. It orchestrates a multi-agent system to synthesize macroeconomic indicators, fundamental financial data, technical share price signals, insider trading activity, and real-time news sentiment into comprehensive, actionable investment recommendations.
 
 > [!NOTE]
-> Oraculum was built as an advanced personal project to explore Agentic AI orchestration, high-performance data engineering, and modern Java modularity. 
+> Oraculum was built as a personal quantitative investment analysis platform to automate stock research, screen for high-conviction value opportunities, and orchestrate multi-agent AI analysis with strict financial data provenance. 
+
+---
+
+## ✨ Key Features
+
+- 📊 **Quantitative Screener**: Natively screens stocks in PostgreSQL using Piotroski F-Score, Graham Deep Value (NCAV/NNWC), GARP, and Multi-Window Sentiment decay metrics.
+- 🤖 **Recursive Multi-Agent AI Analyst**: 9 specialized AI agents, an automated Critic feedback loop, and a Synthesizer analyst working together in a structured state machine.
+- 🔍 **Strict Data Provenance**: Every metric cited by an AI agent includes a numeric citation (`[citation_id]`) linked directly to ground-truth data payloads preserved in the analysis trace JSON, enabling instant auditability and verification that the LLM is not hallucinating.
+- ⚡ **High-Throughput ETL Pipeline**: Asynchronous Python FastStream microservice + Redpanda (Kafka) + embedded DuckDB Parquet streaming directly into PostgreSQL.
+- 📄 **SEC Document Summarization**: On-demand JIT processing or offline batch processing via local LLMs (LM Studio on local GPU hardware) for 10-K, 10-Q, 8-K, and Ex-99.1 filings, supplying qualitative context without cloud API fees or bloated context windows.
+- 🛡️ **Resilient Multi-Provider LLM Routing**: Resilience4j circuit breakers providing automated fallback routing across OpenAI, Gemini, Groq, and local LMStudio models.
+- 🌐 **Reactive Real-Time UI**: Vaadin-based reactive frontend with `@Push` WebSockets for real-time AI progress updates and interactive JSONB data grids.
 
 ---
 
@@ -113,18 +125,47 @@ flowchart LR
 4. **Resilient AI Routing:** The `LLM Module` implements circuit breakers and fallback routing (OpenAI → Gemini → Groq) via Resilience4j to ensure high availability for analysis tasks.
 5. **Python Harvester:** An asynchronous FastStream microservice that connects to the SimFin SDK, OpenInsider, and SEC EDGAR. It writes massive financial datasets and institutional holdings (13F) to Parquet files and notifies the Java backend via Redpanda.
 6. **Reactive UI:** Built with Vaadin, featuring `@Push` WebSockets for real-time AI progress visualization, dynamic JSONB-driven grids, and role-based administration features nested within user profile popovers.
-7. **JIT SEC Processing:** Employs a Just-In-Time pipeline to summarize SEC documents (10-K, 10-Q, 8-K), ensuring AI agents receive optimized context windows to avoid LLM degradation.
+7. **JIT & Offline Batch SEC Processing:** Supports both live JIT processing during analysis runs and background offline batch processing using local LLMs (LM Studio running on dedicated local GPU hardware). This distills massive SEC filings (10-K, 10-Q, 8-K, Ex-99.1) into concise, sentiment-scored summaries while eliminating cloud LLM token costs.
+
+### 💡 Core Engineering & Architectural Decisions
+
+Building a reliable personal investment system required solving complex financial data engineering and AI reliability challenges. Here are the core technical decisions behind Oraculum:
+
+1. **Modular Monolith vs. Microservices (Domain Boundary Isolation)**
+   - *Challenge:* Maintaining a clean, scalable codebase as new domains (insider trading, macro indicators, document processing) are added.
+   - *Solution:* Oraculum implements **Spring Modulith**. Domain modules (`analyst`, `company`, `load`, `harvester`, `economy`) have strict package-private boundary isolation. Inter-module communication relies on Spring Application Events and exposed API interfaces. Boundary integrity is automatically verified in unit tests via `ApplicationModules.of(...).verify()`.
+
+2. **High-Throughput Ingestion (Bypassing JVM ORM Bottlenecks)**
+   - *Challenge:* Traditional JPA/Hibernate bulk inserts suffer severe JVM garbage collection pauses and serialization overhead when processing large financial time-series datasets.
+   - *Solution:* Heterogeneous event-driven pipeline. An asynchronous Python FastStream worker writes Parquet chunks to disk and emits Redpanda (Kafka) events. A Java consumer uses **embedded DuckDB** to query Parquet files at C++ native speed and stream rows directly into PostgreSQL staging tables, executing atomic SQL `UPSERT` merges.
+
+3. **Deterministic Agentic Workflow & Automated Feedback Loop**
+   - *Challenge:* Financial analysis requires multiple expert perspectives (macro, fundamental, technical, valuation, risk) working together without producing conflicting recommendations.
+   - *Solution:* Structured state machine with priority execution order and a **Critic Agent review loop**. If `CriticAgent` detects logical inconsistencies or evidence misalignment, it issues targeted rerun instructions to specific specialists before transferring state to the `SynthesizerAgent`.
+
+4. **Hallucination Detection & Data Provenance in Financial LLMs**
+   - *Challenge:* Large language models inherently risk hallucinating numbers or confusing fiscal periods, which is dangerous when personal money is involved.
+   - *Solution:* **Auditable Data Provenance**. Every data record in the agent fact sheet is assigned a unique `citation_id` by `CitationRegistry`. Prompt contracts enforce bracketed citation numbers (`[142]`). The post-processing `CitationIntegrityService` audits every citation against the ground-truth input payloads preserved in the analysis trace JSON and flags any unverified claim with a `[?]` marker in the final report, making hallucinations transparent and verifiable.
+
+5. **Fault-Tolerant Multi-Provider LLM Fallback**
+   - *Challenge:* Cloud AI APIs (OpenAI, Gemini, Groq) experience rate limits and transient outages, which shouldn't interrupt active research sessions.
+   - *Solution:* The `llm` module wraps provider calls using **Resilience4j Circuit Breakers** with fallback chains (`OpenAI → Gemini → Groq → Local LMStudio`). If a primary tier fails or hits rate limits, execution gracefully degrades down the chain without halting the user's analysis workflow.
 
 ## 🤖 Multi-Agent AI System
 
-Oraculum doesn't just pass numbers to an LLM; it orchestrates a team of specialized AI agents working together in a recursive workflow:
+**0. Document Preprocessing (JIT & Offline Batch)**
+- 📄 **SEC Document Processing Agent**: Performs Just-In-Time (JIT) extraction during live analysis or offline batch processing (using local LLMs via LM Studio on local GPU hardware) on raw SEC filings (10-K/10-Q MD&A, Item 1A Risk Factors, Ex-99.1 earnings releases) to distill massive unstructured text into concise qualitative summaries and sentiment scores before specialist analysis.
 
 **1. The Specialists**
-- 📊 **Fundamentals Agent**: Analyzes ROCE, margins, cash flows, and balance sheet health.
-- 🗞️ **News Agent**: Evaluates real-time news for market sentiment and materiality.
-- 🕴️ **Insider Agent**: Detects cluster buys and executive confidence signals.
-- 📈 **Share Price Agent**: Analyzes technicals, moving averages, and volume velocity.
-- 🌍 **Macroeconomic Agent**: Evaluates broader economic indicators (e.g., inflation, treasury yields, GDP) and their systemic impact on the company's sector.
+- 🌍 **Macroeconomic Agent**: Evaluates broader economic indicators (e.g., inflation, treasury yields, GDP, interest rates) and their systemic impact on the company's sector.
+- 📊 **Fundamentals Agent**: Analyzes multi-year revenue growth, profitability margins (gross, operating, net), return metrics (ROE/ROA), and sequential financial health trends.
+- 💵 **Cash Flow Agent**: Evaluates operating cash flow generation, free cash flow (FCF) trajectory/yield, capital expenditure (capex) intensity, and cash conversion efficiency.
+- ⚖️ **Valuation Agent**: Benchmarks historical and current valuation multiples (P/E, P/S, EV/EBITDA, P/FCF) against industry peers and performs reverse DCF modeling to determine market-implied growth expectations.
+- 📈 **Share Price Agent**: Analyzes technical indicators, moving average crossovers, relative price strength, volume velocity, and price momentum.
+- 🛡️ **Risk Agent**: Assesses balance sheet leverage, debt service coverage, liquidity ratios, bankruptcy indicators, and qualitative SEC risk factors.
+- 🗞️ **News Agent**: Evaluates real-time news headlines, press releases, market sentiment, and qualitative catalyst materiality.
+- 🕴️ **Insider Agent**: Detects cluster buying, executive insider transaction patterns, Form 4 filings, and management conviction signals.
+- 🎯 **Earnings Estimates Agent**: Analyzes Wall Street consensus forward EPS and revenue projections, analyst revision momentum (7-day and 30-day net revisions), and consensus spread width.
 
 **2. The Review Loop**
 - 🧐 **Critic Agent**: Reviews the raw outputs of the specialist agents for logical inconsistencies, bias, or conflicting conclusions. If it finds issues, it instructs specific specialists to re-evaluate their data, creating a powerful feedback loop.
@@ -133,7 +174,7 @@ Oraculum doesn't just pass numbers to an LLM; it orchestrates a team of speciali
 - 🧠 **Synthesizer (Final Analyst)**: Once the Critic is satisfied, the Synthesizer compiles all the verified specialist signals to deliver a final investment thesis with a conviction score and target price.
 
 ### 🔍 Traceability & Hallucination Prevention
-A major challenge with AI in finance is data hallucination. Oraculum solves this by enforcing strict **Data Provenance**. Every metric cited by an agent (e.g., `[87]`, `[39]`) is a hard-linked citation back to a specific, immutable row in the PostgreSQL database (such as a Trailing-Twelve-Month cash flow record). These citations are passed all the way through to the final report, allowing the human user to easily audit the AI's claims and instantly verify the exact source data that led to the investment thesis.
+A major risk with AI in finance is data hallucination. Oraculum addresses this by enforcing strict **Data Provenance**. Every metric cited by an agent (e.g., `[87]`, `[39]`) is a hard-linked citation pointing directly to the ground-truth input data payload preserved in the analysis JSON trace (`analysis.json`). A post-processing `CitationIntegrityService` verifies these citations against the raw inputs and flags unverified or extrapolated claims with `[?]` badges, allowing users to easily audit the AI's output and verify that the LLM is not hallucinating.
 
 ## 📄 Sample Output & Agent Trace
 
