@@ -12,6 +12,7 @@ Oraculum acts as your personal AI stock analyst. It orchestrates a multi-agent s
 ## ✨ Key Features
 
 - 📊 **Quantitative Screener**: Natively screens stocks in PostgreSQL using Piotroski F-Score, Graham Deep Value (NCAV/NNWC), GARP, and Multi-Window Sentiment decay metrics.
+- 🔢 **Deterministic Ground-Truth Computation**: AI agents never perform raw financial arithmetic. All fundamental ratios, technical signals, streak analytics, and Graham value metrics are computed natively via PostgreSQL Views/Materialized Views, while complex valuation models (such as Reverse DCF implied growth) run deterministically in Java before injection into agent fact sheets—minimizing hallucination risks.
 - 🤖 **Recursive Multi-Agent AI Analyst**: 9 specialized AI agents, an automated Critic feedback loop, and a Synthesizer analyst working together in a structured state machine.
 - 🔍 **Strict Data Provenance**: Every metric cited by an AI agent includes a numeric citation (`[citation_id]`) linked directly to ground-truth data payloads preserved in the analysis trace JSON, enabling instant auditability and verification that the LLM is not hallucinating.
 - ⚡ **High-Throughput ETL Pipeline**: Asynchronous Python FastStream microservice + Redpanda (Kafka) + embedded DuckDB Parquet streaming directly into PostgreSQL.
@@ -151,6 +152,13 @@ Building a reliable personal investment system required solving complex financia
    - *Challenge:* Cloud AI APIs (OpenAI, Gemini, Groq) experience rate limits and transient outages, which shouldn't interrupt active research sessions.
    - *Solution:* The `llm` module wraps provider calls using **Resilience4j Circuit Breakers** with fallback chains (`OpenAI → Gemini → Groq → Local LMStudio`). If a primary tier fails or hits rate limits, execution gracefully degrades down the chain without halting the user's analysis workflow.
 
+6. **Deterministic Financial Computation vs. LLM Arithmetic (Minimizing Hallucinations)**
+   - *Challenge:* Large language models are inherently prone to arithmetic drift, rounding mistakes, and formula misapplications when tasked with computing financial ratios or valuation models.
+   - *Solution:* Oraculum implements a strict separation between **deterministic computation** and **qualitative AI reasoning** to limit hallucinations to an absolute minimum:
+     - **Database Layer (SQL Views & MViews):** Native PostgreSQL views compute point-in-time fundamental metrics (ROCE, ROE, margins, NCAV/NNWC), YoY and sequential streaks, 9-point financial trend scores, technical indicators (50d/200d MAs, volume velocity), and Graham margin-of-safety metrics while normalizing vendor sign conventions and preventing lookahead bias.
+     - **Java Domain Layer:** Algorithmic solvers (such as `ReverseDcfCalculator`) iteratively compute market-implied 10-year FCF growth rates and historical valuation percentiles.
+     - **AI Agent Layer:** Agents consume pre-computed facts registered in `CompanyFactSheetData` with assigned `[citation_id]` tags. Agents focus 100% on qualitative interpretation, catalyst materiality, peer comparison, and thesis synthesis rather than arithmetic.
+
 ## 🤖 Multi-Agent AI System
 
 **0. Document Preprocessing (JIT & Offline Batch)**
@@ -174,7 +182,9 @@ Building a reliable personal investment system required solving complex financia
 - 🧠 **Synthesizer (Final Analyst)**: Once the Critic is satisfied, the Synthesizer compiles all the verified specialist signals to deliver a final investment thesis with a conviction score and target price.
 
 ### 🔍 Traceability & Hallucination Prevention
-A major risk with AI in finance is data hallucination. Oraculum addresses this by enforcing strict **Data Provenance**. Every metric cited by an agent (e.g., `[87]`, `[39]`) is a hard-linked citation pointing directly to the ground-truth input data payload preserved in the analysis JSON trace (`analysis.json`). A post-processing `CitationIntegrityService` verifies these citations against the raw inputs and flags unverified or extrapolated claims with `[?]` badges, allowing users to easily audit the AI's output and verify that the LLM is not hallucinating.
+A major risk with AI in finance is data hallucination and math errors. Oraculum addresses this to limit hallucinations to an absolute minimum through two core mechanisms:
+1. **Deterministic Pre-Computation:** LLM agents do not perform ad-hoc arithmetic. All valuation metrics, financial ratios, growth streaks, and Reverse DCF models are computed beforehand in PostgreSQL views and Java domain services, supplying agents with pre-verified ground truth.
+2. **Auditable Data Provenance:** Every metric cited by an agent (e.g., `[87]`, `[39]`) is a hard-linked citation pointing directly to the ground-truth input data payload preserved in the analysis JSON trace (`analysis.json`). A post-processing `CitationIntegrityService` verifies these citations against the raw inputs and flags unverified or extrapolated claims with `[?]` badges, allowing users to easily audit the AI's output.
 
 ## 📄 Sample Output & Agent Trace
 

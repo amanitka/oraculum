@@ -4,6 +4,7 @@ import com.oraculum.analyst.api.CompanyAnalysisApi;
 import com.oraculum.analyst.api.dto.CompanyAnalysisViewDto;
 import com.oraculum.ui.MainLayout;
 import com.oraculum.ui.ViewHelper;
+import com.oraculum.ui.factory.CompanyDetailsButtonFactory;
 import com.oraculum.ui.views.components.AnalysisResultRenderer;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -28,11 +29,14 @@ public class AnalysisDetailView extends VerticalLayout implements HasUrlParamete
 
     private final CompanyAnalysisApi companyAnalysisApi;
     private final AnalysisResultRenderer analysisResultRenderer;
+    private final CompanyDetailsButtonFactory companyDetailsButtonFactory;
 
     public AnalysisDetailView(CompanyAnalysisApi companyAnalysisApi,
-                              AnalysisResultRenderer analysisResultRenderer) {
+                              AnalysisResultRenderer analysisResultRenderer,
+                              CompanyDetailsButtonFactory companyDetailsButtonFactory) {
         this.companyAnalysisApi = companyAnalysisApi;
         this.analysisResultRenderer = analysisResultRenderer;
+        this.companyDetailsButtonFactory = companyDetailsButtonFactory;
 
         setWidthFull();
         getStyle().set("padding-top", "2rem").set("padding-bottom", "2rem").set("overflow-x", "hidden").set("box-sizing", "border-box");
@@ -65,6 +69,14 @@ public class AnalysisDetailView extends VerticalLayout implements HasUrlParamete
     }
 
     private void renderView(CompanyAnalysisViewDto analysis) {
+        add(createTopBar(analysis));
+
+        var resultComponent = analysisResultRenderer.renderAnalysisResult(analysis);
+        resultComponent.getElement().getStyle().set("padding-top", "2rem");
+        add(resultComponent);
+    }
+
+    private HorizontalLayout createTopBar(CompanyAnalysisViewDto analysis) {
         HorizontalLayout topBar = new HorizontalLayout();
         topBar.setWidthFull();
         topBar.setAlignItems(FlexComponent.Alignment.CENTER);
@@ -72,6 +84,11 @@ public class AnalysisDetailView extends VerticalLayout implements HasUrlParamete
         topBar.addClassNames(LumoUtility.Padding.Vertical.SMALL, LumoUtility.Padding.Horizontal.MEDIUM);
         topBar.getStyle().set("border-bottom", "1px solid var(--lumo-contrast-10pct)");
 
+        topBar.add(createLeftHeaderGroup(analysis), createRightHeaderGroup(analysis));
+        return topBar;
+    }
+
+    private HorizontalLayout createLeftHeaderGroup(CompanyAnalysisViewDto analysis) {
         Button backButton = new Button("Back to Analyses", VaadinIcon.ARROW_LEFT.create(), _ -> UI.getCurrent().navigate(AnalysisView.class));
         backButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
 
@@ -82,23 +99,25 @@ public class AnalysisDetailView extends VerticalLayout implements HasUrlParamete
         H3 title = new H3(titleText);
         title.getStyle().set("margin", "0").set("font-size", "1.25rem");
 
-        HorizontalLayout badges = new HorizontalLayout();
-        badges.setAlignItems(FlexComponent.Alignment.CENTER);
-
-        if (analysis.getAnalysisResult() != null && analysis.getAnalysisResult().valuation() != null) {
-            badges.add(ViewHelper.valuationBadge(analysis.getAnalysisResult().valuation()));
-        }
-
         HorizontalLayout leftGroup = new HorizontalLayout(backButton, title);
         leftGroup.setAlignItems(FlexComponent.Alignment.CENTER);
         leftGroup.getStyle().set("gap", "16px");
+        return leftGroup;
+    }
 
-        topBar.add(leftGroup, badges);
-        add(topBar);
+    private HorizontalLayout createRightHeaderGroup(CompanyAnalysisViewDto analysis) {
+        HorizontalLayout rightGroup = new HorizontalLayout();
+        rightGroup.setAlignItems(FlexComponent.Alignment.CENTER);
+        rightGroup.getStyle().set("gap", "12px");
 
-        var resultComponent = analysisResultRenderer.renderAnalysisResult(analysis);
-        resultComponent.getElement().getStyle().set("padding-top", "2rem");
-        add(resultComponent);
+        Button companyOverviewBtn = companyDetailsButtonFactory.createButton(analysis.getCompanyId(), true);
+        companyOverviewBtn.setText("Company Overview");
+        rightGroup.add(companyOverviewBtn);
+
+        if (analysis.getAnalysisResult() != null && analysis.getAnalysisResult().valuation() != null) {
+            rightGroup.add(ViewHelper.valuationBadge(analysis.getAnalysisResult().valuation()));
+        }
+        return rightGroup;
     }
 
     private void showNotFound(String message) {
