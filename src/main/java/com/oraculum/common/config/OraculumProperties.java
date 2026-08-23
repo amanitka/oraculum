@@ -3,6 +3,8 @@ package com.oraculum.common.config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.nio.file.Path;
+import java.util.List;
+
 
 @ConfigurationProperties(prefix = "oraculum")
 public record OraculumProperties(Data data,
@@ -12,7 +14,8 @@ public record OraculumProperties(Data data,
 
     public record Data(SharePrice sharePrice,
                        News news,
-                       InsiderTransactions insiderTransactions) {
+                       InsiderTransactions insiderTransactions,
+                       Sec13F sec13f) {
 
         public record SharePrice(int incrementalWindowDays) {
         }
@@ -22,7 +25,11 @@ public record OraculumProperties(Data data,
 
         public record InsiderTransactions(String cron) {
         }
+
+        public record Sec13F(String bulkCron, List<String> tier1Ciks) {
+        }
     }
+
 
     public record Database(String host,
                            int port,

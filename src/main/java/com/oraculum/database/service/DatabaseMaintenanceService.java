@@ -1,7 +1,6 @@
 package com.oraculum.database.service;
 
 import com.oraculum.database.domain.PartitionConfig;
-import com.oraculum.database.domain.PartitionType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -29,8 +28,12 @@ public class DatabaseMaintenanceService {
         log.info("Starting scheduled database partition management (creation & purging)...");
         try {
             for (PartitionConfig config : PartitionConfig.values()) {
-                String createFunction = config.getType() == PartitionType.MONTHLY ? "create_monthly_partitions" : "create_yearly_partitions";
-                
+                String createFunction = switch (config.getType()) {
+                    case MONTHLY   -> "create_monthly_partitions";
+                    case YEARLY    -> "create_yearly_partitions";
+                    case QUARTERLY -> "create_quarterly_partitions";
+                };
+
                 String createSql = String.format(
                     "SELECT %s('%s', (NOW() - INTERVAL '1 month')::DATE, (NOW() + INTERVAL '%d months')::DATE);",
                     createFunction, config.getTableName(), config.getMonthsAhead()
@@ -45,6 +48,7 @@ public class DatabaseMaintenanceService {
                 jdbcTemplate.execute(purgeSql);
                 log.info("Purged old partitions for {} (older than {} months)", config.getTableName(), config.getMonthsToKeep());
             }
+
             log.info("Database partition management completed successfully.");
         } catch (Exception e) {
             log.error("Error during database partition management", e);

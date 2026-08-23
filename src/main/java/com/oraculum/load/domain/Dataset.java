@@ -8,8 +8,11 @@ public final class Dataset {
     public static final String INCOME_STATEMENT = "income_statement";
     public static final String INSIDER_TRANSACTION = "insider_transaction";
     public static final String SHARE_PRICE = "share_price";
+    public static final String SEC_13F_HOLDING = "sec_13f_holding";
+    public static final String SEC_13F_FILER = "sec_13f_filer";
 
     private Dataset() {
         // Prevent instantiation
     }
 }
+

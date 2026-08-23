@@ -9,7 +9,7 @@ import java.util.List;
  * Represents a message indicating that a new data file is ready for processing.
  * This record is used for deserializing JSON messages from Kafka.
  *
- * @param eventType     The type of the event (e.g., "simfin.data_file_ready").
+ * @param eventType     The type of the event (e.g., "oraculum.data_file_ready").
  * @param dataset       The name of the dataset the file belongs to (e.g., "share_price"). This is used as a key to
  *                      find the correct loader.
  * @param fileName      Data file name.
@@ -40,7 +40,8 @@ public record DataFileReadyEvent(@JsonProperty("event_type")
                                  @JsonProperty("file_statuses")
                                  List<DataFileStatus> fileStatuses,
                                  @JsonProperty("created_at")
-                                 ZonedDateTime createdAt) {
+                                 ZonedDateTime createdAt)
+        implements HarvesterOutputEvent {
     public DataFileReadyEvent {
         if (fileStatuses == null) {
             fileStatuses = List.of();

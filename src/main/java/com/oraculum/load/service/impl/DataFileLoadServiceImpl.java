@@ -2,6 +2,7 @@ package com.oraculum.load.service.impl;
 
 import com.oraculum.audit.api.LoadLogApi;
 import com.oraculum.audit.api.dto.LoadLogDto;
+import com.oraculum.load.dto.DataBatchCompleteEvent;
 import com.oraculum.load.dto.DataFileReadyEvent;
 import com.oraculum.load.service.DataFileLoadService;
 import com.oraculum.load.service.ParquetFileLoadService;
@@ -71,5 +72,11 @@ public class DataFileLoadServiceImpl implements DataFileLoadService {
             return;
         }
         processEventByLoader(event, loader);
+    }
+
+    @Override
+    public void processBatchCompleteEvent(DataBatchCompleteEvent event) {
+        log.info("Processing batch complete event for dataset '{}' (correlationId={})",
+                event.dataset(), event.correlationId());
     }
 }
