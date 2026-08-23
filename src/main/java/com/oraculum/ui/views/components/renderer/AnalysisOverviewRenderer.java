@@ -13,15 +13,45 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
 public class AnalysisOverviewRenderer {
 
     private final MarkdownRenderer markdownRenderer;
+
+    static Map<String, Double> normalizeFactorScores(Map<String, Double> factorScores) {
+        if (factorScores == null || factorScores.isEmpty()) {
+            return Map.of();
+        }
+        double maxScore = factorScores.values().stream()
+                .filter(Objects::nonNull)
+                .mapToDouble(Double::doubleValue)
+                .max()
+                .orElse(0.0);
+
+        double multiplier = calculateMultiplier(maxScore);
+        Map<String, Double> normalized = new LinkedHashMap<>();
+        factorScores.forEach((key, val) -> {
+            double value = val != null ? val * multiplier : 0.0;
+            normalized.put(key, Math.clamp(value, 0.0, 10.0));
+        });
+        return normalized;
+    }
+
+    private static double calculateMultiplier(double maxScore) {
+        if (maxScore > 0.0 && maxScore <= 1.0) {
+            return 10.0;
+        } else if (maxScore > 10.0) {
+            return 0.1;
+        }
+        return 1.0;
+    }
 
     public Component renderOverviewTab(AnalysisResult snapshot, CompanyAnalysisDto analysis) {
         if (snapshot == null) return null;
@@ -170,7 +200,8 @@ public class AnalysisOverviewRenderer {
                 .set("margin-bottom", "16px")
                 .set("flex-wrap", "wrap");
 
-        factorScores.forEach((factor, score) -> {
+        Map<String, Double> normalizedScores = normalizeFactorScores(factorScores);
+        normalizedScores.forEach((factor, score) -> {
             Div tile = new Div();
             tile.getStyle()
                     .set("flex", "1 1 180px")
@@ -194,38 +225,12 @@ public class AnalysisOverviewRenderer {
         return scoresLayout;
     }
 
-    private HorizontalLayout renderScoreBarMeter(double rawScore) {
-        double score = rawScore > 10.0 ? rawScore / 10.0 : rawScore;
+    private HorizontalLayout renderScoreBarMeter(double score) {
         HorizontalLayout layout = new HorizontalLayout();
         layout.setAlignItems(FlexComponent.Alignment.CENTER);
         layout.getStyle().set("gap", "8px");
 
-        HorizontalLayout bars = new HorizontalLayout();
-        bars.setSpacing(false);
-        bars.getStyle().set("gap", "3px").set("align-items", "center");
-
-        int fullBlocks = (int) Math.round(score);
-        for (int i = 1; i <= 10; i++) {
-            Span bar = new Span();
-            bar.getStyle()
-                    .set("width", "8px")
-                    .set("height", "13px")
-                    .set("border-radius", "2px");
-
-            if (i <= fullBlocks) {
-                if (i <= 3) {
-                    bar.getStyle().set("background", "var(--lumo-error-color)");
-                } else if (i <= 7) {
-                    bar.getStyle().set("background", "var(--lumo-warning-color)");
-                } else {
-                    bar.getStyle().set("background", "var(--lumo-success-color)");
-                }
-            } else {
-                bar.getStyle().set("background", "rgba(255, 255, 255, 0.12)");
-            }
-            bars.add(bar);
-        }
-
+        HorizontalLayout bars = buildBars(score);
         Span scoreText = new Span(String.format(Locale.US, "%.1f", score));
         scoreText.getStyle()
                 .set("font-size", "0.85rem")
@@ -234,6 +239,39 @@ public class AnalysisOverviewRenderer {
 
         layout.add(bars, scoreText);
         return layout;
+    }
+
+    private HorizontalLayout buildBars(double score) {
+        HorizontalLayout bars = new HorizontalLayout();
+        bars.setSpacing(false);
+        bars.getStyle().set("gap", "3px").set("align-items", "center");
+
+        int fullBlocks = (int) Math.round(score);
+        for (int i = 1; i <= 10; i++) {
+            bars.add(createBarSegment(i, fullBlocks));
+        }
+        return bars;
+    }
+
+    private Span createBarSegment(int index, int fullBlocks) {
+        Span bar = new Span();
+        bar.getStyle()
+                .set("width", "8px")
+                .set("height", "13px")
+                .set("border-radius", "2px");
+
+        if (index <= fullBlocks) {
+            if (index <= 3) {
+                bar.getStyle().set("background", "var(--lumo-error-color)");
+            } else if (index <= 7) {
+                bar.getStyle().set("background", "var(--lumo-warning-color)");
+            } else {
+                bar.getStyle().set("background", "var(--lumo-success-color)");
+            }
+        } else {
+            bar.getStyle().set("background", "rgba(255, 255, 255, 0.12)");
+        }
+        return bar;
     }
 
     private Component createSnapshotPoints(AnalysisResult snapshot, CompanyAnalysisDto analysis) {

@@ -102,6 +102,8 @@ You MUST respond with exactly one raw JSON object matching this schema:
 **Conviction**
 - `conviction` must be an integer from 1 to 5.
 - Reflects confidence in the analytical conclusion based on data quality and signal clarity — not a recommendation strength.
+**Factor scores**
+- Each factor score (`fundamental_health`, `valuation`, `growth_prospects`, `risk_profile`) must be a floating-point number on a scale from **0.0 to 10.0** (e.g. `7.8`), where 10.0 represents the highest/strongest score and 0.0 represents the lowest/weakest.
 **Executive snapshot fields**
 - `thesis`: 2–3 sentences maximum. State the analytical conclusion and risk/reward balance — the "so what". Do NOT repeat specific data points already in `top_bull_points` or `top_bear_points`.
 - `top_bull_points` and `top_bear_points`: exactly 3 items each. Each must be one concise sentence referencing a specific metric from the report.

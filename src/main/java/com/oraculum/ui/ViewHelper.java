@@ -52,7 +52,7 @@ public final class ViewHelper {
      */
     public static TextField createFilterField(String placeholder, Consumer<String> filterAction) {
         TextField filter = new TextField();
-        filter.setPlaceholder("Filter " + placeholder);
+        filter.setPlaceholder(placeholder != null ? placeholder : "Filter");
         filter.setClearButtonVisible(true);
         filter.setWidthFull();
         filter.addThemeVariants(TextFieldVariant.LUMO_SMALL);
@@ -78,6 +78,7 @@ public final class ViewHelper {
     public static Span statusBadge(AnalysisStatus status) {
         String text = status != null ? status.getDisplayName() : "Pending";
         Span badge = new Span(text);
+        badge.getStyle().set("white-space", "nowrap");
         String theme = "badge";
         if (status != null) {
             if (status == AnalysisStatus.COMPLETED) theme += " success";
@@ -97,6 +98,7 @@ public final class ViewHelper {
     public static Span outlookBadge(AnalysisOutlook outlook) {
         String text = outlook != null ? outlook.getDisplayName() : "Pending";
         Span badge = new Span(text);
+        badge.getStyle().set("white-space", "nowrap");
         String theme = "badge";
         if (outlook != null) {
             if (outlook == AnalysisOutlook.BULLISH) theme += " success";
@@ -115,6 +117,7 @@ public final class ViewHelper {
     public static Span valuationBadge(ValuationAssessment valuation) {
         String text = valuation != null ? valuation.getDisplayLabel() : "Pending";
         Span badge = new Span(text);
+        badge.getStyle().set("white-space", "nowrap");
         String theme = "badge";
         if (valuation != null) {
             if (valuation == ValuationAssessment.UNDERVALUED) theme += " success primary";

@@ -201,35 +201,65 @@ public class AnalysisView extends VerticalLayout {
             } else {
                 return new com.vaadin.flow.component.html.Span(item.getTicker());
             }
-        }).setHeader("Ticker").setKey("ticker").setComparator(Comparator.comparing(CompanyAnalysisViewDto::getTicker)).setSortable(true).setAutoWidth(true);
+        }).setHeader("Ticker")
+                .setKey("ticker")
+                .setComparator(Comparator.comparing(CompanyAnalysisViewDto::getTicker))
+                .setSortable(true)
+                .setWidth("130px")
+                .setFlexGrow(0);
 
-        g.addColumn(CompanyAnalysisViewDto::getCompanyName).setHeader("Company").setKey("companyName").setSortable(true).setFlexGrow(2);
+        g.addColumn(CompanyAnalysisViewDto::getCompanyName)
+                .setHeader("Company")
+                .setKey("companyName")
+                .setSortable(true)
+                .setWidth("240px")
+                .setFlexGrow(0);
 
-        g.addColumn(CompanyAnalysisViewDto::getMarket).setHeader("Market").setKey("market").setSortable(true);
+        g.addColumn(CompanyAnalysisViewDto::getMarket)
+                .setHeader("Market")
+                .setKey("market")
+                .setSortable(true)
+                .setWidth("110px")
+                .setFlexGrow(0);
 
         g.addColumn(new ComponentRenderer<>(a -> {
                     if (a.getStatus() == AnalysisStatus.QUEUED || a.getStatus() == AnalysisStatus.RUNNING) {
                         return new ProgressCell(a, broadcaster, this::refreshGridData);
                     }
                     return ViewHelper.statusBadge(a.getStatus());
-                })).setHeader("Status").setKey("status")
+                })).setHeader("Status")
+                .setKey("status")
                 .setComparator(Comparator.comparing(CompanyAnalysisViewDto::getStatus, Comparator.nullsLast(Comparator.naturalOrder())))
                 .setSortable(true)
-                .setAutoWidth(true);
+                .setWidth("125px")
+                .setFlexGrow(0);
 
         g.addColumn(new ComponentRenderer<>(a -> AnalysisResultFieldHelper.outlookBadge(a.getAnalysisResult())))
-                .setHeader("Outlook").setKey("outlook")
-                .setSortable(false);
+                .setHeader("Outlook")
+                .setKey("outlook")
+                .setSortable(false)
+                .setWidth("120px")
+                .setFlexGrow(0);
 
         g.addColumn(new ComponentRenderer<>(a -> AnalysisResultFieldHelper.valuationBadge(a.getAnalysisResult())))
-                .setHeader("Valuation").setKey("valuation")
-                .setSortable(false);
+                .setHeader("Valuation")
+                .setKey("valuation")
+                .setSortable(false)
+                .setWidth("155px")
+                .setFlexGrow(0);
 
         g.addColumn(new ComponentRenderer<>(a -> AnalysisResultFieldHelper.convictionSpan(a.getAnalysisResult())))
-                .setHeader("Conviction").setKey("conviction")
-                .setSortable(false);
+                .setHeader("Conviction")
+                .setKey("conviction")
+                .setSortable(false)
+                .setWidth("110px")
+                .setFlexGrow(0);
 
-        g.addColumn(CompanyAnalysisViewDto::getAnalysisDate).setHeader("Analysis Date").setSortable(true);
+        g.addColumn(CompanyAnalysisViewDto::getAnalysisDate)
+                .setHeader("Analysis Date")
+                .setSortable(true)
+                .setWidth("140px")
+                .setFlexGrow(0);
 
         g.addColumn(new ComponentRenderer<>(a -> {
             Button reportBtn = new Button(VaadinIcon.EYE.create());
@@ -243,7 +273,9 @@ public class AnalysisView extends VerticalLayout {
             HorizontalLayout actions = new HorizontalLayout(reportBtn, companyBtn);
             actions.setSpacing(true);
             return actions;
-        })).setHeader("Actions");
+        })).setHeader("Actions")
+                .setWidth("90px")
+                .setFlexGrow(0);
 
         g.addItemDoubleClickListener(event -> showAnalysisDetails(event.getItem()));
 
@@ -263,17 +295,17 @@ public class AnalysisView extends VerticalLayout {
                 historyGrid.addThemeVariants(GridVariant.LUMO_COMPACT, GridVariant.LUMO_NO_BORDER);
                 historyGrid.setAllRowsVisible(true);
 
-                historyGrid.addColumn(CompanyAnalysisViewDto::getAnalysisDate).setHeader("Date").setAutoWidth(true);
-                historyGrid.addColumn(new ComponentRenderer<>(a -> ViewHelper.statusBadge(a.getStatus()))).setHeader("Status").setAutoWidth(true);
-                historyGrid.addColumn(new ComponentRenderer<>(a -> AnalysisResultFieldHelper.outlookBadge(a.getAnalysisResult()))).setHeader("Outlook").setAutoWidth(true);
-                historyGrid.addColumn(new ComponentRenderer<>(a -> AnalysisResultFieldHelper.valuationBadge(a.getAnalysisResult()))).setHeader("Valuation").setAutoWidth(true);
-                historyGrid.addColumn(new ComponentRenderer<>(a -> AnalysisResultFieldHelper.convictionSpan(a.getAnalysisResult()))).setHeader("Conviction").setAutoWidth(true);
+                historyGrid.addColumn(CompanyAnalysisViewDto::getAnalysisDate).setHeader("Date").setWidth("140px").setFlexGrow(0);
+                historyGrid.addColumn(new ComponentRenderer<>(a -> ViewHelper.statusBadge(a.getStatus()))).setHeader("Status").setWidth("125px").setFlexGrow(0);
+                historyGrid.addColumn(new ComponentRenderer<>(a -> AnalysisResultFieldHelper.outlookBadge(a.getAnalysisResult()))).setHeader("Outlook").setWidth("120px").setFlexGrow(0);
+                historyGrid.addColumn(new ComponentRenderer<>(a -> AnalysisResultFieldHelper.valuationBadge(a.getAnalysisResult()))).setHeader("Valuation").setWidth("155px").setFlexGrow(0);
+                historyGrid.addColumn(new ComponentRenderer<>(a -> AnalysisResultFieldHelper.convictionSpan(a.getAnalysisResult()))).setHeader("Conviction").setWidth("110px").setFlexGrow(0);
                 historyGrid.addColumn(new ComponentRenderer<>(a -> {
                     Button viewBtn = new Button("View", VaadinIcon.EYE.create());
                     viewBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
                     viewBtn.addClickListener(_ -> showAnalysisDetails(a));
                     return viewBtn;
-                })).setHeader("Actions");
+                })).setHeader("Actions").setWidth("90px").setFlexGrow(0);
 
                 // Skip the first one since it's the latest which is already shown in the parent row
                 historyGrid.setItems(history.stream().skip(1).toList());
@@ -295,6 +327,10 @@ public class AnalysisView extends VerticalLayout {
 
         ViewHelper.addFilter(grid, filterRow, "ticker", "Ticker", v -> {
             filter.ticker = v;
+            dataView.refreshAll();
+        });
+        ViewHelper.addFilter(grid, filterRow, "companyName", "Company", v -> {
+            filter.companyName = v;
             dataView.refreshAll();
         });
         ViewHelper.addFilter(grid, filterRow, "market", "Market", v -> {
@@ -330,13 +366,14 @@ public class AnalysisView extends VerticalLayout {
     }
 
     private static class AnalysisFilter {
-        String ticker, market, status, outlook, valuation;
+        String ticker, companyName, market, status, outlook, valuation;
 
         boolean test(CompanyAnalysisViewDto a) {
             AnalysisResult res = a.getAnalysisResult();
             String outlookText = res != null && res.outlook() != null ? res.outlook().getDisplayName() : null;
             String valuationText = res != null && res.valuation() != null ? res.valuation().getDisplayLabel() : null;
             return ViewHelper.matches(a.getTicker(), ticker)
+                    && ViewHelper.matches(a.getCompanyName(), companyName)
                     && ViewHelper.matches(a.getMarket(), market)
                     && ViewHelper.matches(a.getStatus() != null ? a.getStatus().getDisplayName() : "Pending", status)
                     && ViewHelper.matches(outlookText, outlook)
