@@ -166,4 +166,14 @@ public class HarvesterBatchService implements HarvesterBatchApi {
         log.info("Broadcasting macroeconomic refresh requested event");
         eventPublisher.publishEvent(new FetchMacroeconomicRequestEvent());
     }
+
+    @Override
+    public void refresh13FBulk(int year, int quarter) {
+        log.info("Requesting SEC 13F bulk download for {}Q{}", year, quarter);
+        publishRequest(Fetch13FBulkRequest.builder()
+                .year(year)
+                .quarter(quarter)
+                .build());
+    }
 }
+

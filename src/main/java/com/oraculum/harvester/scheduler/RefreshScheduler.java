@@ -102,5 +102,16 @@ public class RefreshScheduler {
             log.error("Scheduled SEC documents refresh failed", e);
         }
     }
+
+    @Scheduled(cron = "${oraculum.data.sec-13f.bulk-cron}")
+    public void refreshSec13F() {
+        log.info("Starting scheduled SEC 13F bulk download...");
+        try {
+            refreshService.refresh13FBulk();
+        } catch (Exception e) {
+            log.error("Scheduled SEC 13F bulk refresh failed", e);
+        }
+    }
 }
+
 

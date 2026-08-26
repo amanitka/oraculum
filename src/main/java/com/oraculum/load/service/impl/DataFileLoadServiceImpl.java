@@ -76,7 +76,18 @@ public class DataFileLoadServiceImpl implements DataFileLoadService {
 
     @Override
     public void processBatchCompleteEvent(DataBatchCompleteEvent event) {
-        log.info("Processing batch complete event for dataset '{}' (correlationId={})",
-                event.dataset(), event.correlationId());
+        log.info("Batch complete for dataset '{}' (correlationId={}, parts={})",
+                event.dataset(), event.correlationId(), event.totalParts());
+        ParquetFileLoadService loader = fileLoaders.get(event.dataset());
+        if (loader == null) {
+            log.warn("No loader found for dataset '{}' on batch complete. Skipping.", event.dataset());
+            return;
+        }
+        try {
+            loader.postBatchComplete(event);
+        } catch (Exception e) {
+            log.error("Batch post-processing failed for dataset '{}'", event.dataset(), e);
+        }
     }
 }
+

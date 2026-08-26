@@ -72,3 +72,52 @@ SELECT create_monthly_partitions('t_llm_execution_log', (NOW() - INTERVAL '1 mon
 SELECT create_yearly_partitions('t_insider_transaction_ticker', (NOW() - INTERVAL '3 years')::DATE, (NOW() + INTERVAL '1 years')::DATE);
 SELECT create_yearly_partitions('t_ticker_document_raw', (NOW() - INTERVAL '10 years')::DATE, (NOW() + INTERVAL '2 years')::DATE);
 SELECT create_yearly_partitions('t_ticker_document', (NOW() - INTERVAL '10 years')::DATE, (NOW() + INTERVAL '2 years')::DATE);
+
+-- ── Quarterly partition helper ────────────────────────────────────────────────
+-- Single source of truth for quarterly partition names — used by both
+-- create_quarterly_partitions() and sp_compute_sec_holding_delta().
+-- Naming convention: <table>_<YYYY>_q<Q>  e.g. t_sec_holding_2026_q1
+CREATE OR REPLACE FUNCTION quarterly_partition_name(p_table TEXT, p_date DATE)
+RETURNS TEXT AS $$
+BEGIN
+    RETURN p_table || '_' || to_char(p_date, 'YYYY') || '_q' || to_char(date_part('quarter', p_date)::INT, 'FM9');
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+-- ── create_quarterly_partitions ───────────────────────────────────────────────
+CREATE OR REPLACE FUNCTION create_quarterly_partitions(p_table_name TEXT, p_start_date DATE, p_end_date DATE)
+RETURNS void AS $$
+DECLARE
+    v_quarter_start DATE;
+    v_partition_name TEXT;
+    v_partition_end  DATE;
+BEGIN
+    -- Snap to the first day of the quarter containing p_start_date
+    v_quarter_start := date_trunc('quarter', p_start_date)::DATE;
+    WHILE v_quarter_start <= p_end_date LOOP
+        v_partition_name := quarterly_partition_name(p_table_name, v_quarter_start);
+        v_partition_end  := (v_quarter_start + INTERVAL '3 months')::DATE;
+
+        IF NOT EXISTS (
+            SELECT 1
+            FROM pg_class c
+            JOIN pg_namespace n ON n.oid = c.relnamespace
+            WHERE c.relname = v_partition_name
+              AND n.nspname = 'public'
+        ) THEN
+            EXECUTE format(
+                'CREATE TABLE %I PARTITION OF %I FOR VALUES FROM (%L) TO (%L)',
+                v_partition_name, p_table_name,
+                v_quarter_start::TEXT, v_partition_end::TEXT
+            );
+        END IF;
+
+        v_quarter_start := v_partition_end;
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+-- SEC 13F: 1 year back, 1 year ahead
+SELECT create_quarterly_partitions('t_sec_holding',       (NOW() - INTERVAL '1 year')::DATE, (NOW() + INTERVAL '1 year')::DATE);
+SELECT create_quarterly_partitions('t_sec_holding_delta',  (NOW() - INTERVAL '1 year')::DATE, (NOW() + INTERVAL '1 year')::DATE);
+
