@@ -1,9 +1,5 @@
 package com.oraculum.llm.config;
 
-import com.openai.client.OpenAIClient;
-import com.openai.client.OpenAIClientAsync;
-import com.openai.client.okhttp.OpenAIOkHttpClient;
-import com.openai.client.okhttp.OpenAIOkHttpClientAsync;
 import com.oraculum.llm.api.dto.LlmProviderType;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.openai.OpenAiChatModel;
@@ -23,26 +19,19 @@ public class LlmClientConfig {
         if (provider == null) {
             throw new IllegalStateException("Missing credentials for provider: " + providerName);
         }
+
         Duration timeout = properties.common().timeout() != null
                 ? Duration.ofSeconds(properties.common().timeout())
                 : Duration.ofSeconds(300);
-        OpenAIClient openAiClient = OpenAIOkHttpClient.builder()
+
+        OpenAiChatOptions options = OpenAiChatOptions.builder()
                 .apiKey(provider.apiKey())
                 .baseUrl(provider.baseUrl())
+                .temperature(properties.common().temperature())
                 .timeout(timeout)
                 .build();
-
-        OpenAIClientAsync openAiClientAsync = OpenAIOkHttpClientAsync.builder()
-                .apiKey(provider.apiKey())
-                .baseUrl(provider.baseUrl())
-                .timeout(timeout)
-                .build();
-
-        OpenAiChatOptions options = OpenAiChatOptions.builder().temperature(properties.common().temperature()).timeout(timeout).build();
 
         return OpenAiChatModel.builder()
-                .openAiClient(openAiClient)
-                .openAiClientAsync(openAiClientAsync)
                 .options(options)
                 .build();
     }
@@ -50,6 +39,7 @@ public class LlmClientConfig {
     @Bean
     public Map<LlmProviderType, ChatClient> chatClients(LlmProperties properties) {
         Map<LlmProviderType, ChatClient> clients = new HashMap<>();
+
         properties.providers().forEach((providerName, _) -> {
             OpenAiChatModel chatModel = buildChatModel(properties, providerName);
             clients.put(providerName, ChatClient.builder(chatModel).build());

@@ -17,11 +17,9 @@ import java.time.ZonedDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 
 @ExtendWith(MockitoExtension.class)
 class SecFilerFileLoadServiceImplTest {
@@ -72,18 +70,19 @@ class SecFilerFileLoadServiceImplTest {
         assertThat(capturedDto.parquetFilePath()).isEqualTo("filers-path.parquet");
         assertThat(capturedDto.hasStatementData()).isFalse();
         assertThat(capturedDto.loadSql()).contains("INSERT INTO t_sec_filer");
-        assertThat(capturedDto.loadSql()).contains("ON CONFLICT (cik) DO UPDATE");
+        assertThat(capturedDto.loadSql()).contains("ON CONFLICT (cik)\n" + "DO UPDATE SET");
     }
 
     @Test
     void postProcess_promotesTier1Ciks() {
         when(properties.data().sec13f().tier1Ciks()).thenReturn(List.of("0001067983", "0001649339"));
         when(jdbcTemplate.update(eq("""
-            UPDATE t_sec_filer
-               SET tier = 1, updated_at = NOW()
-             WHERE cik = ANY(?)
-               AND tier <> 1;
-            """), any(PreparedStatementSetter.class))).thenReturn(2);
+                UPDATE t_sec_filer
+                   SET tier = 1,
+                       updated_at = NOW()
+                 WHERE cik = ANY(?)
+                   AND tier != 1;
+                """), any(PreparedStatementSetter.class))).thenReturn(2);
 
         DataFileReadyEvent event = new DataFileReadyEvent(
                 "oraculum.data_file_ready",
@@ -101,7 +100,8 @@ class SecFilerFileLoadServiceImplTest {
 
         loadService.postProcess(event);
 
-        verify(jdbcTemplate).update(any(String.class), any(PreparedStatementSetter.class));
+        verify(jdbcTemplate).update(contains("UPDATE t_sec_filer"), any(PreparedStatementSetter.class));
+
     }
 
     @Test

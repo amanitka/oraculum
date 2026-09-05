@@ -3,9 +3,6 @@
 -- Range-partitioned by report_period (quarterly).
 -- Populated by SecHoldingDeltaService in Java after every bulk load.
 -- ============================================================
-
-DROP PROCEDURE IF EXISTS sp_compute_sec_holding_delta(DATE, DATE);
-
 CREATE TABLE t_sec_holding_delta (
     id                    BIGSERIAL,
     cik                   VARCHAR(10)   NOT NULL,
@@ -21,6 +18,7 @@ CREATE TABLE t_sec_holding_delta (
     is_new_position       BOOLEAN       NOT NULL DEFAULT FALSE,
     is_closed_position    BOOLEAN       NOT NULL DEFAULT FALSE,
     created_at            TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id, report_period),
     CONSTRAINT uq_sec_holding_delta UNIQUE (cik, cusip, report_period)
 ) PARTITION BY RANGE (report_period);
 
