@@ -36,7 +36,7 @@ public class SecFilerFileLoadServiceImpl implements ParquetFileLoadService {
                last_processed_accession,
                created_at,
                updated_at)
-            SELECT
+            SELECT DISTINCT ON (src.cik)
                src.cik,
                src.manager_name,
                TRUE,
@@ -46,6 +46,7 @@ public class SecFilerFileLoadServiceImpl implements ParquetFileLoadService {
                CURRENT_TIMESTAMP,
                CURRENT_TIMESTAMP
             FROM %s AS src
+            ORDER BY src.cik, CAST(src.filing_date AS DATE) DESC, src.accession_number DESC
             ON CONFLICT (cik)
             DO UPDATE SET
                manager_name               = EXCLUDED.manager_name,
@@ -81,11 +82,16 @@ public class SecFilerFileLoadServiceImpl implements ParquetFileLoadService {
     }
 
     /**
-     * Promotes known institutional managers to TIER_1 after the filer data lands.
-     * Safe to call repeatedly — the UPDATE only touches rows where tier differs.
+     * Promotes known institutional managers to TIER_1 after the filer data lands
+     * and refreshes optimizer statistics on t_sec_filer.
      */
     @Override
     public void postProcess(DataFileReadyEvent event) {
+        promoteTier1Filers();
+        analyzeTable();
+    }
+
+    private void promoteTier1Filers() {
         List<String> tier1Ciks = properties.data().sec13f().tier1Ciks();
         if (tier1Ciks.isEmpty()) {
             return;
@@ -94,5 +100,12 @@ public class SecFilerFileLoadServiceImpl implements ParquetFileLoadService {
         int promoted = jdbcTemplate.update(PROMOTE_TIER1_SQL,
                 (ps) -> ps.setArray(1, ps.getConnection().createArrayOf("text", cikArray)));
         log.info("Promoted {} filer(s) to Tier 1", promoted);
+    }
+
+    private void analyzeTable() {
+        log.info("Analyzing table '{}' to refresh query planner statistics...", TARGET_TABLE);
+        long start = System.currentTimeMillis();
+        jdbcTemplate.execute("ANALYZE " + TARGET_TABLE);
+        log.info("Analyzed table '{}' in {} ms", TARGET_TABLE, (System.currentTimeMillis() - start));
     }
 }

@@ -8,6 +8,7 @@ import com.oraculum.load.service.ParquetFileLoadService;
 import com.oraculum.load.service.SecHoldingDeltaService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -27,7 +28,7 @@ public class SecHoldingFileLoadServiceImpl implements ParquetFileLoadService {
 
     private static final String TARGET_TABLE = "t_sec_holding";
 
-    private static final String UPSERT_SQL = """
+    private static final String INSERT_SQL = """
             INSERT INTO t_sec_holding
               (cik,
                accession_number,
@@ -64,26 +65,43 @@ public class SecHoldingFileLoadServiceImpl implements ParquetFileLoadService {
                COALESCE(CAST(src.voting_auth_shared AS BIGINT), 0),
                COALESCE(CAST(src.voting_auth_none   AS BIGINT), 0),
                CURRENT_TIMESTAMP
-            FROM %s AS src
-            ON CONFLICT (accession_number, cusip, COALESCE(option_type, ''), report_period)
-            DO NOTHING;
+            FROM %s AS src;
             """;
-
 
     private final PostgresParquetFileLoader postgresParquetFileLoader;
     private final SecHoldingDeltaService secHoldingDeltaService;
+    private final JdbcTemplate jdbcTemplate;
 
     @Override
     public void merge(DataFileReadyEvent event) {
+        boolean isFirstPart = isFirstChunk(event);
         var staging = PostgresParquetFileLoader.getStagingTableName(TARGET_TABLE);
         var dto = LoadParquetDto.builder()
                 .targetTableName(TARGET_TABLE)
                 .stagingTableName(staging)
                 .parquetFilePath(postgresParquetFileLoader.resolveAndValidatePath(event))
-                .loadSql(UPSERT_SQL.formatted(staging))
+                .loadSql(INSERT_SQL.formatted(staging))
                 .hasStatementData(false)
+                .preLoadAction(stagingTable -> truncatePartitionIfFirstChunk(stagingTable, isFirstPart))
                 .build();
         postgresParquetFileLoader.loadParquetIntoTargetTable(dto);
+    }
+
+    private boolean isFirstChunk(DataFileReadyEvent event) {
+        return Boolean.TRUE.equals(event.isFirstPart());
+    }
+
+    private void truncatePartitionIfFirstChunk(String stagingTable, boolean isFirstPart) {
+        if (!isFirstPart) {
+            return;
+        }
+        String sql = "SELECT quarterly_partition_name('t_sec_holding', CAST(report_period AS DATE)) FROM "
+                + stagingTable + " WHERE report_period IS NOT NULL LIMIT 1";
+        String partitionName = jdbcTemplate.queryForObject(sql, String.class);
+        if (partitionName != null) {
+            log.info("First chunk detected: truncating existing partition '{}'", partitionName);
+            jdbcTemplate.execute("TRUNCATE TABLE " + partitionName);
+        }
     }
 
     @Override

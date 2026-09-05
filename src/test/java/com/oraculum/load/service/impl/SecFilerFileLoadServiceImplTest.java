@@ -101,11 +101,11 @@ class SecFilerFileLoadServiceImplTest {
         loadService.postProcess(event);
 
         verify(jdbcTemplate).update(contains("UPDATE t_sec_filer"), any(PreparedStatementSetter.class));
-
+        verify(jdbcTemplate).execute("ANALYZE t_sec_filer");
     }
 
     @Test
-    void postProcess_whenNoTier1Ciks_doesNothing() {
+    void postProcess_whenNoTier1Ciks_doesNotUpdateTier_butAnalyzesTable() {
         when(properties.data().sec13f().tier1Ciks()).thenReturn(List.of());
 
         DataFileReadyEvent event = new DataFileReadyEvent(
@@ -125,5 +125,6 @@ class SecFilerFileLoadServiceImplTest {
         loadService.postProcess(event);
 
         verify(jdbcTemplate, never()).update(any(String.class), any(PreparedStatementSetter.class));
+        verify(jdbcTemplate).execute("ANALYZE t_sec_filer");
     }
 }

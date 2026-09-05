@@ -21,9 +21,6 @@ CREATE TABLE t_sec_holding (
     voting_auth_shared    BIGINT        NOT NULL DEFAULT 0,
     voting_auth_none      BIGINT        NOT NULL DEFAULT 0,
     created_at            TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (id, report_period),
-    CONSTRAINT uq_sec_holding UNIQUE NULLS NOT DISTINCT (accession_number, cusip, option_type, report_period)
+    PRIMARY KEY (id, report_period)
 ) PARTITION BY RANGE (report_period);
 
-CREATE INDEX ix_sec_holding_cik   ON t_sec_holding (cik, report_period);
-CREATE INDEX ix_sec_holding_cusip ON t_sec_holding (cusip, report_period);

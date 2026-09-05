@@ -3,6 +3,7 @@ package com.oraculum.database.service;
 import com.oraculum.database.domain.PartitionConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +14,19 @@ import org.springframework.stereotype.Service;
 public class DatabaseMaintenanceService {
 
     private final JdbcTemplate jdbcTemplate;
+
+    private static @NonNull String getCreateSql(PartitionConfig config) {
+        String createFunction = switch (config.getType()) {
+            case MONTHLY -> "create_monthly_partitions";
+            case YEARLY -> "create_yearly_partitions";
+            case QUARTERLY -> "create_quarterly_partitions";
+        };
+
+        return String.format(
+                "SELECT %s('%s', (NOW() - INTERVAL '%d months')::DATE, (NOW() + INTERVAL '%d months')::DATE);",
+                createFunction, config.getTableName(), config.getMonthsToKeep(), config.getMonthsAhead()
+        );
+    }
 
     public void runVacuum() {
         log.info("Starting database VACUUM ANALYZE...");
@@ -28,23 +42,13 @@ public class DatabaseMaintenanceService {
         log.info("Starting scheduled database partition management (creation & purging)...");
         try {
             for (PartitionConfig config : PartitionConfig.values()) {
-                String createFunction = switch (config.getType()) {
-                    case MONTHLY   -> "create_monthly_partitions";
-                    case YEARLY    -> "create_yearly_partitions";
-                    case QUARTERLY -> "create_quarterly_partitions";
-                };
-
-                String createSql = String.format(
-                    "SELECT %s('%s', (NOW() - INTERVAL '1 month')::DATE, (NOW() + INTERVAL '%d months')::DATE);",
-                    createFunction, config.getTableName(), config.getMonthsAhead()
-                );
+                String createSql = getCreateSql(config);
                 jdbcTemplate.execute(createSql);
-                log.info("Pre-created partitions for {} ({} months ahead)", config.getTableName(), config.getMonthsAhead());
+                log.info("Pre-created partitions for {} ({} months back to {} months ahead)", config.getTableName(), config.getMonthsToKeep(), config.getMonthsAhead());
 
                 String purgeSql = String.format(
-                    "SELECT purge_old_partitions('%s', (NOW() - INTERVAL '%d months')::DATE);",
-                    config.getTableName(), config.getMonthsToKeep()
-                );
+                        "SELECT purge_old_partitions('%s', (NOW() - INTERVAL '%d months')::DATE);",
+                        config.getTableName(), config.getMonthsToKeep());
                 jdbcTemplate.execute(purgeSql);
                 log.info("Purged old partitions for {} (older than {} months)", config.getTableName(), config.getMonthsToKeep());
             }

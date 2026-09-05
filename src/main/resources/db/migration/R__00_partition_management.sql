@@ -117,7 +117,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- SEC 13F: 1 year back, 1 year ahead
-SELECT create_quarterly_partitions('t_sec_holding',       (NOW() - INTERVAL '1 year')::DATE, (NOW() + INTERVAL '1 year')::DATE);
-SELECT create_quarterly_partitions('t_sec_holding_delta',  (NOW() - INTERVAL '1 year')::DATE, (NOW() + INTERVAL '1 year')::DATE);
+-- SEC 13F: 3 years back, 2 years ahead
+SELECT create_quarterly_partitions('t_sec_holding',       (NOW() - INTERVAL '3 years')::DATE, (NOW() + INTERVAL '2 years')::DATE);
+SELECT create_quarterly_partitions('t_sec_holding_delta',  (NOW() - INTERVAL '3 years')::DATE, (NOW() + INTERVAL '2 years')::DATE);
 

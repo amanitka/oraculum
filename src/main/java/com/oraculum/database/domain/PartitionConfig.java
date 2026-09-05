@@ -13,8 +13,8 @@ public enum PartitionConfig {
     LLM_EXECUTION_LOG("t_llm_execution_log", PartitionType.MONTHLY, 12, 12),
     TICKER_DOCUMENT_FILE("t_ticker_document_raw", PartitionType.YEARLY, 24, 120),
     TICKER_DOCUMENT("t_ticker_document", PartitionType.YEARLY, 24, 120),
-    SEC_HOLDING("t_sec_holding", PartitionType.QUARTERLY, 3, 14),
-    SEC_HOLDING_DELTA("t_sec_holding_delta", PartitionType.QUARTERLY, 3, 14);
+    SEC_HOLDING("t_sec_holding", PartitionType.QUARTERLY, 24, 36),
+    SEC_HOLDING_DELTA("t_sec_holding_delta", PartitionType.QUARTERLY, 24, 36);
 
 
     private final String tableName;

@@ -37,6 +37,8 @@ public record DataFileReadyEvent(@JsonProperty("event_type")
                                  String fileChecksum,
                                  @JsonProperty("record_count")
                                  int recordCount,
+                                 @JsonProperty("is_first_part")
+                                 Boolean isFirstPart,
                                  @JsonProperty("file_statuses")
                                  List<DataFileStatus> fileStatuses,
                                  @JsonProperty("created_at")
@@ -46,5 +48,13 @@ public record DataFileReadyEvent(@JsonProperty("event_type")
         if (fileStatuses == null) {
             fileStatuses = List.of();
         }
+    }
+
+    public DataFileReadyEvent(String eventType, String dataset, String fileName, String template,
+                              String variant, int schemaVersion, String correlationId,
+                              String fileChecksum, int recordCount, List<DataFileStatus> fileStatuses,
+                              ZonedDateTime createdAt) {
+        this(eventType, dataset, fileName, template, variant, schemaVersion, correlationId,
+                fileChecksum, recordCount, null, fileStatuses, createdAt);
     }
 }

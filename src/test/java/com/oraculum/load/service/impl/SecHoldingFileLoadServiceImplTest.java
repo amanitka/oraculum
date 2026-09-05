@@ -15,6 +15,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 
+import org.springframework.jdbc.core.JdbcTemplate;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -29,6 +31,9 @@ class SecHoldingFileLoadServiceImplTest {
     @Mock
     private SecHoldingDeltaService secHoldingDeltaService;
 
+    @Mock
+    private JdbcTemplate jdbcTemplate;
+
     @Captor
     private ArgumentCaptor<LoadParquetDto> dtoCaptor;
 
@@ -36,7 +41,7 @@ class SecHoldingFileLoadServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        loadService = new SecHoldingFileLoadServiceImpl(postgresParquetFileLoader, secHoldingDeltaService);
+        loadService = new SecHoldingFileLoadServiceImpl(postgresParquetFileLoader, secHoldingDeltaService, jdbcTemplate);
     }
 
     @Test
@@ -66,7 +71,41 @@ class SecHoldingFileLoadServiceImplTest {
         assertThat(capturedDto.parquetFilePath()).isEqualTo("holdings-path.parquet");
         assertThat(capturedDto.hasStatementData()).isFalse();
         assertThat(capturedDto.loadSql()).contains("INSERT INTO t_sec_holding");
-        assertThat(capturedDto.loadSql()).contains("ON CONFLICT (accession_number, cusip, COALESCE(option_type, ''), report_period)");
+        assertThat(capturedDto.loadSql()).doesNotContain("ON CONFLICT");
+        assertThat(capturedDto.preLoadAction()).isNotNull();
+
+        capturedDto.preLoadAction().accept("staging_t_sec_holding_test");
+        verify(jdbcTemplate, org.mockito.Mockito.never()).execute(anyString());
+    }
+
+    @Test
+    void merge_whenFirstChunk_executesTruncatePartitions() {
+        DataFileReadyEvent event = new DataFileReadyEvent(
+                "oraculum.data_file_ready",
+                "sec_13f_holding",
+                "custom_chunk_name.parquet",
+                null,
+                null,
+                1,
+                "corr-1",
+                "chk123",
+                50,
+                true,
+                null,
+                ZonedDateTime.now()
+        );
+        when(postgresParquetFileLoader.resolveAndValidatePath(any())).thenReturn("custom_chunk_name.parquet");
+
+        when(jdbcTemplate.queryForObject(org.mockito.ArgumentMatchers.contains("quarterly_partition_name"), org.mockito.ArgumentMatchers.eq(String.class)))
+                .thenReturn("t_sec_holding_2025_q4");
+
+        loadService.merge(event);
+
+        verify(postgresParquetFileLoader).loadParquetIntoTargetTable(dtoCaptor.capture());
+        LoadParquetDto capturedDto = dtoCaptor.getValue();
+        capturedDto.preLoadAction().accept("staging_test");
+
+        verify(jdbcTemplate).execute("TRUNCATE TABLE t_sec_holding_2025_q4");
     }
 
     @Test

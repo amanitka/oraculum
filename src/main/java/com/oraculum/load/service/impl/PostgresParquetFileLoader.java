@@ -145,6 +145,7 @@ public class PostgresParquetFileLoader {
     public void loadParquetIntoTargetTable(LoadParquetDto loadParquetDto) {
         try {
             loadParquetIntoStaging(loadParquetDto);
+            executePreLoadAction(loadParquetDto);
             loadFromStagingTable(loadParquetDto);
         } catch (SQLException e) {
             log.error("Failed during DuckDB staging process for file: {}", loadParquetDto, e);
@@ -154,6 +155,13 @@ public class PostgresParquetFileLoader {
             throw new RuntimeException("Merge process failed during upsert", e);
         } finally {
             dropStagingTable(loadParquetDto);
+        }
+    }
+
+    private void executePreLoadAction(LoadParquetDto loadParquetDto) {
+        if (loadParquetDto.preLoadAction() != null) {
+            log.info("Executing pre-load action for staging table '{}'.", loadParquetDto.stagingTableName());
+            loadParquetDto.preLoadAction().accept(loadParquetDto.stagingTableName());
         }
     }
 }
