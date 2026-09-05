@@ -13,19 +13,19 @@ import java.time.ZonedDateTime;
  * <p>Published on the same topic and with the same Kafka message key as the data events,
  * guaranteeing it is processed strictly after all parts in the same partition.
  *
- * @param dataset         The dataset this batch belongs to (e.g. {@code "sec_13f_holding"}).
- * @param correlationId   Matches the {@code correlationId} of all preceding data parts.
- * @param totalParts      Total number of {@link DataFileReadyEvent}s published in this batch.
- * @param periodOfReport  Quarter end date — passed directly to post-processing procedures.
- * @param createdAt       Timestamp when the event was created.
+ * @param dataset       The dataset this batch belongs to (e.g. {@code "sec_13f_holding"}).
+ * @param correlationId Matches the {@code correlationId} of all preceding data parts.
+ * @param totalParts    Total number of {@link DataFileReadyEvent}s published in this batch.
+ * @param reportPeriod  Quarter end date — passed directly to post-processing procedures.
+ * @param createdAt     Timestamp when the event was created.
  */
 public record DataBatchCompleteEvent(String dataset,
                                      @JsonProperty("correlation_id")
                                      String correlationId,
                                      @JsonProperty("total_parts")
                                      int totalParts,
-                                     @JsonProperty("period_of_report")
-                                     LocalDate periodOfReport,
+                                     @JsonProperty("report_period")
+                                     LocalDate reportPeriod,
                                      @JsonProperty("created_at")
                                      ZonedDateTime createdAt)
         implements HarvesterOutputEvent {

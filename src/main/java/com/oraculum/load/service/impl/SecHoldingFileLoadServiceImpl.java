@@ -5,9 +5,9 @@ import com.oraculum.load.dto.DataBatchCompleteEvent;
 import com.oraculum.load.dto.DataFileReadyEvent;
 import com.oraculum.load.dto.LoadParquetDto;
 import com.oraculum.load.service.ParquetFileLoadService;
+import com.oraculum.load.service.SecHoldingDeltaService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -17,7 +17,7 @@ import java.time.LocalDate;
  *
  * <p>Called N times per quarter — once per Parquet chunk. The
  * {@link #postBatchComplete} hook fires exactly once (triggered by
- * {@code DataBatchCompleteEvent}) and runs {@code sp_compute_sec_holding_delta}
+ * {@code DataBatchCompleteEvent}) and delegates to {@link SecHoldingDeltaService}
  * to refresh quarter-over-quarter position changes.
  */
 @Slf4j
@@ -28,37 +28,50 @@ public class SecHoldingFileLoadServiceImpl implements ParquetFileLoadService {
     private static final String TARGET_TABLE = "t_sec_holding";
 
     private static final String UPSERT_SQL = """
-            INSERT INTO t_sec_holding (
-                cik, accession_number, period_of_report, filing_date,
-                manager_name, issuer_name, class_title, cusip,
-                value_usd, shares_or_prn_amount, shares_or_prn_type, option_type,
-                investment_discretion,
-                voting_auth_sole, voting_auth_shared, voting_auth_none
-            )
+            INSERT INTO t_sec_holding
+              (cik,
+               accession_number,
+               report_period,
+               filing_date,
+               manager_name,
+               issuer_name,
+               class_title,
+               cusip,
+               value_usd,
+               shares_or_prn_amount,
+               shares_or_prn_type,
+               option_type,
+               investment_discretion,
+               voting_auth_sole,
+               voting_auth_shared,
+               voting_auth_none,
+               created_at)
             SELECT
-                src.cik,
-                src.accession_number,
-                CAST(src.period_of_report AS DATE),
-                CAST(src.filing_date     AS DATE),
-                src.manager_name,
-                src.issuer_name,
-                src.class_title,
-                src.cusip,
-                CAST(src.value_usd            AS BIGINT),
-                CAST(src.shares_or_prn_amount AS BIGINT),
-                src.shares_or_prn_type,
-                NULLIF(src.option_type, ''),
-                src.investment_discretion,
-                CAST(src.voting_auth_sole   AS BIGINT),
-                CAST(src.voting_auth_shared AS BIGINT),
-                CAST(src.voting_auth_none   AS BIGINT)
+               src.cik,
+               src.accession_number,
+               CAST(src.report_period AS DATE),
+               CAST(src.filing_date   AS DATE),
+               src.manager_name,
+               src.issuer_name,
+               src.class_title,
+               src.cusip,
+               COALESCE(CAST(src.value_usd            AS BIGINT), 0),
+               COALESCE(CAST(src.shares_or_prn_amount AS BIGINT), 0),
+               src.shares_or_prn_type,
+               NULLIF(src.option_type, ''),
+               src.investment_discretion,
+               COALESCE(CAST(src.voting_auth_sole   AS BIGINT), 0),
+               COALESCE(CAST(src.voting_auth_shared AS BIGINT), 0),
+               COALESCE(CAST(src.voting_auth_none   AS BIGINT), 0),
+               CURRENT_TIMESTAMP
             FROM %s AS src
-            ON CONFLICT (accession_number, cusip, COALESCE(option_type, ''), period_of_report)
+            ON CONFLICT (accession_number, cusip, COALESCE(option_type, ''), report_period)
             DO NOTHING;
             """;
 
+
     private final PostgresParquetFileLoader postgresParquetFileLoader;
-    private final JdbcTemplate jdbcTemplate;
+    private final SecHoldingDeltaService secHoldingDeltaService;
 
     @Override
     public void merge(DataFileReadyEvent event) {
@@ -73,16 +86,9 @@ public class SecHoldingFileLoadServiceImpl implements ParquetFileLoadService {
         postgresParquetFileLoader.loadParquetIntoTargetTable(dto);
     }
 
-    /**
-     * Runs the delta stored procedure once after all chunks have landed.
-     * Previous period = current minus one quarter.
-     */
     @Override
     public void postBatchComplete(DataBatchCompleteEvent event) {
-        LocalDate current  = event.periodOfReport();
-        LocalDate previous = current.minusMonths(3);
-        log.info("Running sp_compute_sec_holding_delta: current={}, previous={}", current, previous);
-        jdbcTemplate.update("CALL sp_compute_sec_holding_delta(?, ?)", current, previous);
-        log.info("sp_compute_sec_holding_delta completed for period {}", current);
+        LocalDate current = event.reportPeriod();
+        secHoldingDeltaService.recalculateDelta(current);
     }
 }

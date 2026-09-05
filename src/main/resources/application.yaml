@@ -113,7 +113,8 @@ oraculum:
     macroeconomic:
       cron: "0 0 6 * * *"
     sec-documents:
-      cron: "0 0 * * * *"
+      daily-cron: "0 30 0,4,8 * * *"
+      stale-cron: "0 0 * * * *"
     sec-13f:
       # 20th of Feb/May/Aug/Nov at 06:00 — ~55 days after each quarter end
       bulk-cron: "0 0 6 20 2,5,8,11 *"
@@ -133,8 +134,6 @@ oraculum:
         - "0001037389"   # Renaissance Technologies
         - "0001167483"   # Tiger Global Management
         - "0001569205"   # ARK Investment Management (Wood)
-
-
 
   database:
     host: ${ORACULUM_DATABASE_HOST}

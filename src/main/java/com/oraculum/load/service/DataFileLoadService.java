@@ -16,7 +16,7 @@ public interface DataFileLoadService {
     /**
      * Handles a batch completion signal, triggering any post-processing that must
      * run exactly once after all parts of a multi-part dataset have been loaded
-     * (e.g. {@code sp_compute_sec_holding_delta}, Tier 1 CIK promotion).
+     * (e.g. recalculating holding deltas, Tier 1 CIK promotion).
      *
      * @param event The batch complete event received from the message queue.
      */

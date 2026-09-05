@@ -74,8 +74,8 @@ SELECT create_yearly_partitions('t_ticker_document_raw', (NOW() - INTERVAL '10 y
 SELECT create_yearly_partitions('t_ticker_document', (NOW() - INTERVAL '10 years')::DATE, (NOW() + INTERVAL '2 years')::DATE);
 
 -- ── Quarterly partition helper ────────────────────────────────────────────────
--- Single source of truth for quarterly partition names — used by both
--- create_quarterly_partitions() and sp_compute_sec_holding_delta().
+-- Single source of truth for quarterly partition names — used by
+-- create_quarterly_partitions() and SecHoldingDeltaService.
 -- Naming convention: <table>_<YYYY>_q<Q>  e.g. t_sec_holding_2026_q1
 CREATE OR REPLACE FUNCTION quarterly_partition_name(p_table TEXT, p_date DATE)
 RETURNS TEXT AS $$

@@ -92,16 +92,26 @@ public class RefreshScheduler {
         }
     }
 
-    @Scheduled(cron = "${oraculum.data.sec-documents.cron:0 0 * * * *}")
-    public void refreshSecDocuments() {
-        log.info("Starting scheduled SEC documents refresh (Daily + Stale)...");
+    @Scheduled(cron = "${oraculum.data.sec-documents.daily-cron}")
+    public void refreshDailySecDocuments() {
+        log.info("Starting scheduled SEC daily documents refresh...");
         try {
             refreshService.refreshDailyNewSecDocuments(LocalDate.now());
-            refreshService.refreshStaleSecDocuments();
         } catch (Exception e) {
-            log.error("Scheduled SEC documents refresh failed", e);
+            log.error("Scheduled SEC daily documents refresh failed", e);
         }
     }
+
+    @Scheduled(cron = "${oraculum.data.sec-documents.stale-cron}")
+    public void refreshStaleSecDocuments() {
+        log.info("Starting scheduled SEC stale documents refresh...");
+        try {
+            refreshService.refreshStaleSecDocuments();
+        } catch (Exception e) {
+            log.error("Scheduled SEC stale documents refresh failed", e);
+        }
+    }
+
 
     @Scheduled(cron = "${oraculum.data.sec-13f.bulk-cron}")
     public void refreshSec13F() {

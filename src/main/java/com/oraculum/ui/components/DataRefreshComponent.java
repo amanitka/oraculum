@@ -1,16 +1,17 @@
 package com.oraculum.ui.components;
 
+import com.oraculum.analyst.api.event.ProcessPendingSecDocumentsEvent;
 import com.oraculum.company.api.CompanyMetadataApi;
 import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.company.api.dto.TickerKeyDto;
 import com.oraculum.database.api.event.RefreshMaterializedViewsEvent;
-import com.oraculum.analyst.api.event.ProcessPendingSecDocumentsEvent;
 import com.oraculum.harvester.api.HarvesterBatchApi;
 import com.oraculum.ui.ViewHelper;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.grid.Grid;
@@ -123,7 +124,7 @@ public class DataRefreshComponent extends VerticalLayout {
         DatePicker dailyDate = new DatePicker();
         dailyDate.setPlaceholder("Target date (defaults to today)");
         dailyDate.setWidth("200px");
-        
+
         Button btnDailyDocs = createRefreshButton("Daily SEC Documents", () -> {
             LocalDate targetDate = dailyDate.getValue() != null ? dailyDate.getValue() : LocalDate.now();
             harvesterBatchApi.refreshDailyNewSecDocuments(targetDate);
@@ -136,7 +137,44 @@ public class DataRefreshComponent extends VerticalLayout {
                 btnDailyDocs
         ));
 
+        // 5c. SEC 13F Holdings (Quarterly Bulk)
+        IntegerField sec13fYear = new IntegerField();
+        sec13fYear.setPlaceholder("Year (auto)");
+        sec13fYear.setMin(2013);
+        sec13fYear.setMax(LocalDate.now().getYear());
+        sec13fYear.setWidth("120px");
+        sec13fYear.setClearButtonVisible(true);
+
+        ComboBox<Integer> sec13fQuarter = new ComboBox<>();
+        sec13fQuarter.setItems(1, 2, 3, 4);
+        sec13fQuarter.setItemLabelGenerator(q -> "Q" + q);
+        sec13fQuarter.setPlaceholder("Quarter (auto)");
+        sec13fQuarter.setWidth("130px");
+        sec13fQuarter.setClearButtonVisible(true);
+
+        HorizontalLayout sec13fParams = new HorizontalLayout(sec13fYear, sec13fQuarter);
+        sec13fParams.setAlignItems(Alignment.CENTER);
+        sec13fParams.setSpacing(true);
+
+        Button btnSec13F = createRefreshButton("SEC 13F Holdings", () -> {
+            Integer yr = sec13fYear.getValue();
+            Integer qtr = sec13fQuarter.getValue();
+            if (yr != null && qtr != null) {
+                harvesterBatchApi.refresh13FBulk(yr, qtr);
+            } else {
+                harvesterBatchApi.refresh13FBulk();
+            }
+        });
+
+        items.add(new RefreshRow(
+                "SEC 13F Holdings",
+                "Downloads quarterly institutional holdings (Form 13F bulk dataset). Defaults to latest completed quarter.",
+                sec13fParams,
+                btnSec13F
+        ));
+
         // 6. Share Prices
+
         Checkbox incremental = new Checkbox("Incremental", true);
         DatePicker fromDate = new DatePicker();
         fromDate.setPlaceholder("Auto date");

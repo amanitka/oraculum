@@ -15,7 +15,8 @@ public record OraculumProperties(Data data,
     public record Data(SharePrice sharePrice,
                        News news,
                        InsiderTransactions insiderTransactions,
-                       Sec13F sec13f) {
+                       Sec13F sec13f,
+                       SecDocuments secDocuments) {
 
         public record SharePrice(int incrementalWindowDays) {
         }
@@ -28,8 +29,10 @@ public record OraculumProperties(Data data,
 
         public record Sec13F(String bulkCron, List<String> tier1Ciks) {
         }
-    }
 
+        public record SecDocuments(String dailyCron, String staleCron) {
+        }
+    }
 
     public record Database(String host,
                            int port,
