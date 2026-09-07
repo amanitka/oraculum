@@ -1,48 +1,60 @@
 # Oraculum
 
-An AI-powered quantitative investment analysis platform built with Spring Modulith, DuckDB, Redpanda, and Vaadin. 
+[![Java 25](https://img.shields.io/badge/Java-25-ED8B00?logo=openjdk&logoColor=white)](https://openjdk.org/)
+[![Spring Modulith](https://img.shields.io/badge/Spring%20Modulith-2.1.1-6DB33F?logo=spring&logoColor=white)](https://spring.io/projects/spring-modulith)
+[![Spring AI](https://img.shields.io/badge/Spring%20AI-2.0.1-6DB33F?logo=spring&logoColor=white)](https://spring.io/projects/spring-ai)
+[![Redpanda](https://img.shields.io/badge/Streaming-Redpanda%20%2F%20Kafka-FF4B4B?logo=apachekafka&logoColor=white)](https://redpanda.com/)
+[![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![DuckDB](https://img.shields.io/badge/Analytics-DuckDB-FFF000?logo=duckdb&logoColor=black)](https://duckdb.org/)
+[![Vaadin 25](https://img.shields.io/badge/Frontend-Vaadin%2025-00B4F0?logo=vaadin&logoColor=white)](https://vaadin.com/)
+[![Security](https://img.shields.io/badge/Security-OAuth2%20%2F%20Keycloak-009688?logo=keycloak&logoColor=white)](https://www.keycloak.org/)
+[![Runtime](https://img.shields.io/badge/Runtime-K3s%20%2F%20Docker-326CE5?logo=kubernetes&logoColor=white)](https://k3s.io/)
+[![Architecture](https://img.shields.io/badge/Architecture-Modular%20Monolith-7952B3)](#architecture)
 
-Oraculum acts as your personal AI stock analyst. It orchestrates a multi-agent system to synthesize macroeconomic indicators, fundamental financial data, technical share price signals, insider trading activity, and real-time news sentiment into comprehensive, actionable investment recommendations.
+An AI-powered quantitative investment analysis platform built with **Java 25**, **Spring Modulith**, **DuckDB**, **PostgreSQL**, **Redpanda**, and **Vaadin**.
+
+Oraculum acts as your personal AI stock analyst. It orchestrates a multi-agent system to synthesize macroeconomic indicators, fundamental financial data, technical share price signals, insider trading activity, and real-time news sentiment into comprehensive, actionable investment recommendations with **deterministic data provenance** and **hallucination mitigation**.
 
 > [!NOTE]
-> Oraculum was built as a personal quantitative investment analysis platform to automate stock research, screen for high-conviction value opportunities, and orchestrate multi-agent AI analysis with strict financial data provenance. 
+> Oraculum was built as a personal quantitative investment analysis platform to automate institutional-grade stock research, screen for high-conviction value opportunities, and orchestrate multi-agent AI analysis with strict financial data auditability.
 
 ---
 
 ## ✨ Key Features
 
 - 📊 **Quantitative Screener**: Natively screens stocks in PostgreSQL using Piotroski F-Score, Graham Deep Value (NCAV/NNWC), GARP, and Multi-Window Sentiment decay metrics.
-- 🔢 **Deterministic Ground-Truth Computation**: AI agents never perform raw financial arithmetic. All fundamental ratios, technical signals, streak analytics, and Graham value metrics are computed natively via PostgreSQL Views/Materialized Views, while complex valuation models (such as Reverse DCF implied growth) run deterministically in Java before injection into agent fact sheets—minimizing hallucination risks.
+- 🔢 **Deterministic Ground-Truth Computation**: AI agents never perform raw financial arithmetic. All fundamental ratios, technical signals, streak analytics, and Graham value metrics are computed natively via PostgreSQL Materialized Views, while complex valuation models (such as Reverse DCF implied growth) run deterministically in Java before injection into agent fact sheets—eliminating hallucination risks.
 - 🤖 **Recursive Multi-Agent AI Analyst**: 9 specialized AI agents, an automated Critic feedback loop, and a Synthesizer analyst working together in a structured state machine.
-- 🔍 **Strict Data Provenance**: Every metric cited by an AI agent includes a numeric citation (`[citation_id]`) linked directly to ground-truth data payloads preserved in the analysis trace JSON, enabling instant auditability and verification that the LLM is not hallucinating.
-- ⚡ **High-Throughput ETL Pipeline**: Asynchronous Python FastStream microservice + Redpanda (Kafka) + embedded DuckDB Parquet streaming directly into PostgreSQL.
-- 📄 **SEC Document Summarization**: On-demand JIT processing or offline batch processing via local LLMs (LM Studio on local GPU hardware) for 10-K, 10-Q, 8-K, and Ex-99.1 filings, supplying qualitative context without cloud API fees or bloated context windows.
-- 🛡️ **Resilient Multi-Provider LLM Routing**: Resilience4j circuit breakers providing automated fallback routing across OpenAI, Gemini, Groq, and local LMStudio models.
+- 🔍 **Interactive Data Provenance**: Every metric cited by an AI agent includes a numeric citation (`[citation_id]`) linked directly to ground-truth data payloads preserved in the analysis trace JSON. Users can click any citation in the UI to inspect the exact underlying database row, enabling instant auditability and verification.
+- ⚡ **High-Throughput ETL Pipeline**: Asynchronous Python FastStream microservice + Redpanda (Kafka) + embedded DuckDB Parquet streaming directly into PostgreSQL, bypassing traditional JVM ORM serialization overhead.
+- 📄 **SEC Document Summarization**: On-demand JIT processing or offline batch processing via local LLMs (Ollama / LM Studio on local GPU hardware) for 10-K, 10-Q, 8-K, and Ex-99.1 filings, supplying qualitative context without cloud API fees or bloated context windows.
+- 🛡️ **Resilient Multi-Provider LLM Routing**: Resilience4j circuit breakers providing automated fallback routing across OpenAI, Gemini, Groq, and local LM Studio / Ollama models.
+- 🔐 **Enterprise Security & Governance**: Federated Single Sign-On (SSO) via **Keycloak / Google OAuth2**, role-based access control (RBAC), and per-user quota/rate limiting to protect API token consumption.
 - 🌐 **Reactive Real-Time UI**: Vaadin-based reactive frontend with `@Push` WebSockets for real-time AI progress updates and interactive JSONB data grids.
 
 ---
 
-## 📸 Screenshots & UI
+## 📸 Screenshots & UI Gallery
 
-* **Screener View**  
-  <a href="docs/images/screener.png"><img src="docs/images/screener.png" width="400" alt="Screener View"></a>
+| Quantitative Screener | Interactive Analysis Overview |
+| :---: | :---: |
+| [![Screener View](docs/images/screener.png)](docs/images/screener.png) | [![Analysis Overview](docs/images/analysis_overview.png)](docs/images/analysis_overview.png) |
+| *Materialized screens: Piotroski F-Score, Graham Deep Value, GARP* | *Conviction scoring (1–5), Bull/Bear drivers, and reverse DCF context* |
 
-* **Company**  
-  <a href="docs/images/company_valuation.png"><img src="docs/images/company_valuation.png" width="400" alt="Company Valuation"></a>
-  <a href="docs/images/company_ratios.png"><img src="docs/images/company_ratios.png" width="400" alt="Company Ratios"></a>
+| Multi-Agent Scenario Modeling | Institutional-Grade Investment Report |
+| :---: | :---: |
+| [![Analysis Scenarios](docs/images/analysis_scenarios.png)](docs/images/analysis_scenarios.png) | [![Analysis Report](docs/images/analysis_report.png)](docs/images/analysis_report.png) |
+| *Bull/Base/Bear scenarios modeled by specialized agents* | *Executive summary with macroeconomic context and valuation justification* |
 
-* **Analysis Overview**  
-  <a href="docs/images/analysis_overview.png"><img src="docs/images/analysis_overview.png" width="400" alt="Analysis UI"></a>
+| Company Valuation Benchmarks | Financial Ratios & Trend Analytics |
+| :---: | :---: |
+| [![Company Valuation](docs/images/company_valuation.png)](docs/images/company_valuation.png) | [![Company Ratios](docs/images/company_ratios.png)](docs/images/company_ratios.png) |
+| *Historical valuation percentiles and multiple expansion/compression* | *Point-in-time ROCE, ROE, margins, and sequential financial health* |
 
-* **Analysis Scenarios**  
-  <a href="docs/images/analysis_scenarios.png"><img src="docs/images/analysis_scenarios.png" width="400" alt="Analysis UI"></a>
-
-* **Analysis Report**  
-  <a href="docs/images/analysis_report.png"><img src="docs/images/analysis_report.png" width="400" alt="Analysis UI"></a>
-
-* **Analysis Detail**  
-  <a href="docs/images/analysis_detail_I.png"><img src="docs/images/analysis_detail_I.png" width="400" alt="Analysis UI"></a>
-  <a href="docs/images/analysis_detail_II.png"><img src="docs/images/analysis_detail_II.png" width="400" alt="Analysis UI"></a>
+| Specialist Evidence & Clickable Citations | Deep Evidence & Fact Sheet Provenance |
+| :---: | :---: |
+| [![Analysis Detail I](docs/images/analysis_detail_I.png)](docs/images/analysis_detail_I.png) | [![Analysis Detail II](docs/images/analysis_detail_II.png)](docs/images/analysis_detail_II.png) |
+| *Interactive citation badges `[id]` linked directly to raw DB inputs* | *Cash generation, capex intensity, and quantitative audit metrics* |
 
 
 ---
@@ -120,21 +132,22 @@ flowchart LR
 
 ### Core Technologies & Engineering Highlights
 
-1. **Spring Modulith:** Enforces strict logical boundaries between domains (`analyst`, `company`, `load`, etc.) communicating exclusively via Spring Application Events and exposed APIs. Validated by ArchUnit tests.
-2. **Event-Driven DuckDB ETL:** A highly optimized pipeline where Python converts CSVs to Parquet chunks and emits Redpanda events. A Java listener then uses embedded DuckDB to stream these Parquet files at native C++ speeds directly into PostgreSQL staging tables, before executing native SQL UPSERTs to merge the data. This completely bypasses traditional Java serialization bottlenecks.
-3. **Advanced PostgreSQL Analytics:** Features complex materialized views calculating Piotroski F-Scores, Graham Deep Value metrics, Multi-Window Sentiment decay, and GARP screens natively in SQL. Uses table partitioning for high-volume time-series data.
-4. **Resilient AI Routing:** The `LLM Module` implements circuit breakers and fallback routing (OpenAI → Gemini → Groq) via Resilience4j to ensure high availability for analysis tasks.
-5. **Python Harvester:** An asynchronous FastStream microservice that connects to the SimFin SDK, OpenInsider, and SEC EDGAR. It writes massive financial datasets and institutional holdings (13F) to Parquet files and notifies the Java backend via Redpanda.
-6. **Reactive UI:** Built with Vaadin, featuring `@Push` WebSockets for real-time AI progress visualization, dynamic JSONB-driven grids, and role-based administration features nested within user profile popovers.
-7. **JIT & Offline Batch SEC Processing:** Supports both live JIT processing during analysis runs and background offline batch processing using local LLMs (LM Studio running on dedicated local GPU hardware). This distills massive SEC filings (10-K, 10-Q, 8-K, Ex-99.1) into concise, sentiment-scored summaries while eliminating cloud LLM token costs.
+1. **Spring Modulith 2.1 & Java 25:** Enforces strict logical boundaries between domains (`analyst`, `company`, `load`, `harvester`, `security`, `user`, etc.) communicating exclusively via Spring Application Events and exposed APIs. Complete boundary integrity is automatically verified via unit tests (`ApplicationModules.of(OraculumApplication.class).verify()`). Utilizes **Project Loom Virtual Threads** (`spring.threads.virtual.enabled: true`) for high-concurrency, non-blocking I/O.
+2. **Event-Driven DuckDB C++ ETL:** A highly optimized pipeline where the Python Harvester converts financial datasets to Parquet chunks and emits Redpanda events. A Java listener attaches PostgreSQL directly into embedded DuckDB in-memory (`ATTACH '' AS pg (TYPE POSTGRES, SECRET pg_secret)`), streaming Parquet files at C++ native speed directly into PostgreSQL staging tables before executing atomic SQL `UPSERT` merges—completely bypassing JVM ORM serialization overhead.
+3. **Advanced PostgreSQL Analytics & Materialized Views:** Features complex SQL materialized views calculating Piotroski F-Scores, Graham Deep Value metrics, Multi-Window Sentiment decay, and GARP screens natively in SQL. Uses Flyway database migrations with automated table partitioning for high-volume time-series data.
+4. **Institutional 13F Super-Investor Tracking:** Tracks quarterly SEC 13-F filings for Tier-1 institutional managers (e.g., Berkshire Hathaway, Scion Asset Management, Pershing Square, Duquesne, Appaloosa, Baupost, Citadel) with automated delta calculation (`sec_holding_delta`) to surface high-conviction institutional consensus and portfolio changes.
+5. **Resilient AI Routing & Circuit Breakers:** The `llm` module integrates **Spring AI** and implements Resilience4j circuit breakers, retries with exponential backoff, and multi-tier fallback routing (`Local LM Studio / Ollama (GPU) → Gemini → DeepSeek → OpenAI → Groq`) ensuring 100% uptime for analysis runs.
+6. **Interactive Data Provenance & Hallucination Mitigation:** The `CitationIntegrityService` audits every bracketed citation `[citation_id]` against ground-truth fact sheet inputs using reflection over Java Records. In the Vaadin UI (`MarkdownRenderer`), citations are rendered as interactive clickable pills opening a detailed modal with the exact underlying database row, fiscal period, and filing timestamp.
+7. **Enterprise Security & Governance:** Implements Spring Security 6 with federated Single Sign-On (SSO) supporting both **Keycloak** (OIDC) and **Google OAuth2**. Includes an administration panel with role-based access control (RBAC), user whitelist provisioning, and per-user token quota/rate limiting.
+8. **Reactive Real-Time UI:** Built with Vaadin 25 and ApexCharts, featuring `@Push` WebSockets for real-time streaming of multi-agent state progression and interactive financial data grids.
 
 ### 💡 Core Engineering & Architectural Decisions
 
 Building a reliable personal investment system required solving complex financial data engineering and AI reliability challenges. Here are the core technical decisions behind Oraculum:
 
 1. **Modular Monolith vs. Microservices (Domain Boundary Isolation)**
-   - *Challenge:* Maintaining a clean, scalable codebase as new domains (insider trading, macro indicators, document processing) are added.
-   - *Solution:* Oraculum implements **Spring Modulith**. Domain modules (`analyst`, `company`, `load`, `harvester`, `economy`) have strict package-private boundary isolation. Inter-module communication relies on Spring Application Events and exposed API interfaces. Boundary integrity is automatically verified in unit tests via `ApplicationModules.of(...).verify()`.
+   - *Challenge:* Maintaining a clean, scalable codebase as new domains (insider trading, macro indicators, document processing, 13F holdings) are added without microservice operational complexity.
+   - *Solution:* Oraculum implements **Spring Modulith**. Domain modules (`analyst`, `company`, `load`, `harvester`, `economy`, `security`, `user`) have strict package-private boundary isolation. Inter-module communication relies on Spring Application Events and exposed API interfaces. Boundary integrity is automatically verified in unit tests via `ApplicationModules.of(...).verify()`.
 
 2. **High-Throughput Ingestion (Bypassing JVM ORM Bottlenecks)**
    - *Challenge:* Traditional JPA/Hibernate bulk inserts suffer severe JVM garbage collection pauses and serialization overhead when processing large financial time-series datasets.
@@ -144,28 +157,28 @@ Building a reliable personal investment system required solving complex financia
    - *Challenge:* Financial analysis requires multiple expert perspectives (macro, fundamental, technical, valuation, risk) working together without producing conflicting recommendations.
    - *Solution:* Structured state machine with priority execution order and a **Critic Agent review loop**. If `CriticAgent` detects logical inconsistencies or evidence misalignment, it issues targeted rerun instructions to specific specialists before transferring state to the `SynthesizerAgent`.
 
-4. **Hallucination Detection & Data Provenance in Financial LLMs**
+4. **Hallucination Detection & Interactive Data Lineage**
    - *Challenge:* Large language models inherently risk hallucinating numbers or confusing fiscal periods, which is dangerous when personal money is involved.
-   - *Solution:* **Auditable Data Provenance**. Every data record in the agent fact sheet is assigned a unique `citation_id` by `CitationRegistry`. Prompt contracts enforce bracketed citation numbers (`[142]`). The post-processing `CitationIntegrityService` audits every citation against the ground-truth input payloads preserved in the analysis trace JSON and flags any unverified claim with a `[?]` marker in the final report, making hallucinations transparent and verifiable.
+   - *Solution:* **Auditable Data Provenance**. Every data record in the agent fact sheet is assigned a unique `citation_id` by `CitationRegistry`. Prompt contracts enforce bracketed citation numbers (`[142]`). The post-processing `CitationIntegrityService` audits every citation against ground-truth input payloads preserved in the analysis trace JSON and flags any unverified claim with a `[?]` marker and missing sources with `[!]`. In the UI, clicking any citation pill opens an inspector showing the exact raw database record.
 
 5. **Fault-Tolerant Multi-Provider LLM Fallback**
-   - *Challenge:* Cloud AI APIs (OpenAI, Gemini, Groq) experience rate limits and transient outages, which shouldn't interrupt active research sessions.
-   - *Solution:* The `llm` module wraps provider calls using **Resilience4j Circuit Breakers** with fallback chains (`OpenAI → Gemini → Groq → Local LMStudio`). If a primary tier fails or hits rate limits, execution gracefully degrades down the chain without halting the user's analysis workflow.
+   - *Challenge:* Cloud AI APIs experience rate limits and transient outages, while cloud tokens are expensive for heavy tasks.
+   - *Solution:* The `llm` module wraps provider calls using **Resilience4j Circuit Breakers** with automated fallback chains (`Local LM Studio / Ollama (GPU) → Gemini → DeepSeek → OpenAI → Groq`). If a primary tier fails or hits rate limits, execution gracefully degrades down the chain without halting the user's analysis workflow.
 
-6. **Deterministic Financial Computation vs. LLM Arithmetic (Minimizing Hallucinations)**
+6. **Deterministic Financial Computation vs. LLM Arithmetic**
    - *Challenge:* Large language models are inherently prone to arithmetic drift, rounding mistakes, and formula misapplications when tasked with computing financial ratios or valuation models.
-   - *Solution:* Oraculum implements a strict separation between **deterministic computation** and **qualitative AI reasoning** to limit hallucinations to an absolute minimum:
+   - *Solution:* Oraculum implements a strict separation between **deterministic computation** and **qualitative AI reasoning** to eliminate hallucinations:
      - **Database Layer (SQL Views & MViews):** Native PostgreSQL views compute point-in-time fundamental metrics (ROCE, ROE, margins, NCAV/NNWC), YoY and sequential streaks, 9-point financial trend scores, technical indicators (50d/200d MAs, volume velocity), and Graham margin-of-safety metrics while normalizing vendor sign conventions and preventing lookahead bias.
-     - **Java Domain Layer:** Algorithmic solvers (such as `ReverseDcfCalculator`) iteratively compute market-implied 10-year FCF growth rates and historical valuation percentiles.
+     - **Java Domain Layer:** Algorithmic solvers (such as `ReverseDcfCalculator` and `HistoricalValuationCalculator`) iteratively compute market-implied 10-year FCF growth rates and historical valuation percentiles.
      - **AI Agent Layer:** Agents consume pre-computed facts registered in `CompanyFactSheetData` with assigned `[citation_id]` tags. Agents focus 100% on qualitative interpretation, catalyst materiality, peer comparison, and thesis synthesis rather than arithmetic.
 
 ## 🤖 Multi-Agent AI System
 
 **0. Document Preprocessing (JIT & Offline Batch)**
-- 📄 **SEC Document Processing Agent**: Performs Just-In-Time (JIT) extraction during live analysis or offline batch processing (using local LLMs via LM Studio on local GPU hardware) on raw SEC filings (10-K/10-Q MD&A, Item 1A Risk Factors, Ex-99.1 earnings releases) to distill massive unstructured text into concise qualitative summaries and sentiment scores before specialist analysis.
+- 📄 **SEC Document Processing Agent**: Performs Just-In-Time (JIT) extraction during live analysis or offline batch processing (using local LLMs via LM Studio / Ollama on local GPU hardware) on raw SEC filings (10-K/10-Q MD&A, Item 1A Risk Factors, Ex-99.1 earnings releases) to distill massive unstructured text into concise qualitative summaries and sentiment scores before specialist analysis.
 
 **1. The Specialists**
-- 🌍 **Macroeconomic Agent**: Evaluates broader economic indicators (e.g., inflation, treasury yields, GDP, interest rates) and their systemic impact on the company's sector.
+- 🌍 **Macroeconomic Agent**: Evaluates broader economic indicators (e.g., inflation, treasury yields, GDP, interest rates from FRED) and their systemic impact on the company's sector.
 - 📊 **Fundamentals Agent**: Analyzes multi-year revenue growth, profitability margins (gross, operating, net), return metrics (ROE/ROA), and sequential financial health trends.
 - 💵 **Cash Flow Agent**: Evaluates operating cash flow generation, free cash flow (FCF) trajectory/yield, capital expenditure (capex) intensity, and cash conversion efficiency.
 - ⚖️ **Valuation Agent**: Benchmarks historical and current valuation multiples (P/E, P/S, EV/EBITDA, P/FCF) against industry peers and performs reverse DCF modeling to determine market-implied growth expectations.
@@ -176,15 +189,15 @@ Building a reliable personal investment system required solving complex financia
 - 🎯 **Earnings Estimates Agent**: Analyzes Wall Street consensus forward EPS and revenue projections, analyst revision momentum (7-day and 30-day net revisions), and consensus spread width.
 
 **2. The Review Loop**
-- 🧐 **Critic Agent**: Reviews the raw outputs of the specialist agents for logical inconsistencies, bias, or conflicting conclusions. If it finds issues, it instructs specific specialists to re-evaluate their data, creating a powerful feedback loop.
+- 🧐 **Critic Agent**: Reviews the raw outputs of the specialist agents for logical inconsistencies, bias, or conflicting conclusions. If it finds issues, it instructs specific specialists to re-evaluate their data with targeted instructions, creating an automated self-correcting feedback loop.
 
 **3. The Final Thesis**
-- 🧠 **Synthesizer (Final Analyst)**: Once the Critic is satisfied, the Synthesizer compiles all the verified specialist signals to deliver a final investment thesis with a conviction score and target price.
+- 🧠 **Synthesizer (Final Analyst)**: Once the Critic is satisfied, the Synthesizer compiles all verified specialist signals to deliver an institutional-grade investment thesis with a conviction score (1–5), valuation verdict, and key bull/bear drivers.
 
 ### 🔍 Traceability & Hallucination Prevention
-A major risk with AI in finance is data hallucination and math errors. Oraculum addresses this to limit hallucinations to an absolute minimum through two core mechanisms:
+A major risk with AI in finance is data hallucination and math errors. Oraculum eliminates this through two core mechanisms:
 1. **Deterministic Pre-Computation:** LLM agents do not perform ad-hoc arithmetic. All valuation metrics, financial ratios, growth streaks, and Reverse DCF models are computed beforehand in PostgreSQL views and Java domain services, supplying agents with pre-verified ground truth.
-2. **Auditable Data Provenance:** Every metric cited by an agent (e.g., `[87]`, `[39]`) is a hard-linked citation pointing directly to the ground-truth input data payload preserved in the analysis JSON trace (`analysis.json`). A post-processing `CitationIntegrityService` verifies these citations against the raw inputs and flags unverified or extrapolated claims with `[?]` badges, allowing users to easily audit the AI's output.
+2. **Auditable Data Lineage:** Every metric cited by an agent (e.g., `[87]`, `[109]`) is a hard-linked citation pointing directly to the ground-truth input data payload preserved in the analysis JSON trace (`analysis.json`). A post-processing `CitationIntegrityService` verifies these citations against raw inputs, flags unverified claims with `[?]` and missing sources with `[!]`, and renders clickable inspection dialogs in the UI.
 
 ## 📄 Sample Output & Agent Trace
 
@@ -195,10 +208,10 @@ Curious how the multi-agent system thinks and resolves data conflicts? Check out
 ## 🚀 Getting Started
 
 ### Prerequisites
-- JDK 24+
-- Node.js 22+ (for Vaadin frontend build)
-- Docker Compose or K3s (for PostgreSQL and Redpanda)
-- Python 3.14+ and `uv` (for the Harvester)
+- **JDK 25+** (with Project Loom Virtual Threads)
+- **Node.js 22+** (for Vaadin frontend build)
+- **Docker Compose or K3s** (for PostgreSQL and Redpanda)
+- **Python 3.14+ and `uv`** (for the FastStream Harvester)
 
 ### 1. Start Infrastructure
 Run PostgreSQL and Redpanda via Docker Compose or Kubernetes:

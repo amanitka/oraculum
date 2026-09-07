@@ -120,7 +120,6 @@ class SecHoldingFileLoadServiceImplTest {
         );
 
         loadService.postBatchComplete(event);
-
         verify(secHoldingDeltaService).recalculateDelta(reportPeriod);
     }
 }
