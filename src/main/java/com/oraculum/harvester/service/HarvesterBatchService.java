@@ -9,6 +9,7 @@ import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.harvester.api.HarvesterBatchApi;
 import com.oraculum.harvester.api.dto.*;
 import com.oraculum.company.api.dto.TickerKeyDto;
+import com.oraculum.harvester.event.FetchCompanyCusipsRequestEvent;
 import com.oraculum.harvester.event.FetchMacroeconomicRequestEvent;
 import com.oraculum.harvester.event.FetchNewsRequestEvent;
 import com.oraculum.util.DateTimeUtil;
@@ -174,6 +175,12 @@ public class HarvesterBatchService implements HarvesterBatchApi {
                 .year(year)
                 .quarter(quarter)
                 .build());
+    }
+
+    @Override
+    public void refreshCompanyCusips() {
+        log.info("Broadcasting company CUSIP refresh requested event");
+        eventPublisher.publishEvent(new FetchCompanyCusipsRequestEvent());
     }
 }
 

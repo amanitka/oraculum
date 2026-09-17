@@ -5,6 +5,7 @@ import com.oraculum.company.api.CompanyInsiderTransactionApi;
 import com.oraculum.company.api.CompanyMetadataApi;
 import com.oraculum.company.api.CompanySharePriceApi;
 import com.oraculum.harvester.api.dto.*;
+import com.oraculum.harvester.event.FetchCompanyCusipsRequestEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,7 +52,14 @@ class HarvesterBatchServiceTest {
         when(properties.kafka().topics().harvesterRequest()).thenReturn(TOPIC);
         when(properties.data().sharePrice().incrementalWindowDays()).thenReturn(5);
 
-        harvesterBatchService = new HarvesterBatchService(companyMetadataApi, companyInsiderTransactionApi, companySharePriceApi, secDocumentHarvesterService, kafkaTemplate, properties, eventPublisher);
+        harvesterBatchService = new HarvesterBatchService(
+                companyMetadataApi,
+                companyInsiderTransactionApi,
+                companySharePriceApi,
+                secDocumentHarvesterService,
+                kafkaTemplate,
+                properties,
+                eventPublisher);
     }
 
     @Test
@@ -159,5 +167,12 @@ class HarvesterBatchServiceTest {
         FetchSecDocumentsRequest secRequest = (FetchSecDocumentsRequest) request;
         assertThat(secRequest.getItems()).hasSize(1);
         assertThat(secRequest.getItems().getFirst().getTicker()).isEqualTo("AAPL");
+    }
+
+    @Test
+    void refreshCompanyCusips_publishesFetchCompanyCusipsRequestEvent() {
+        harvesterBatchService.refreshCompanyCusips();
+
+        verify(eventPublisher).publishEvent(any(FetchCompanyCusipsRequestEvent.class));
     }
 }

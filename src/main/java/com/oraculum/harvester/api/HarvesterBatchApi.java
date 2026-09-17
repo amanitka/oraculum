@@ -52,5 +52,10 @@ public interface HarvesterBatchApi {
         LocalDate periodEnd = YearMonth.of(ref.getYear(), lastMonthOfQtr).atEndOfMonth();
         refresh13FBulk(periodEnd.getYear(), (periodEnd.getMonthValue() - 1) / 3 + 1);
     }
+
+    /**
+     * Resolves distinct CUSIPs from SEC 13F holdings via OpenFIGI and updates t_company.
+     */
+    void refreshCompanyCusips();
 }
 

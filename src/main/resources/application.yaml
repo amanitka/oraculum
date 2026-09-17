@@ -72,6 +72,13 @@ resilience4j:
         retry-exceptions:
           - org.springframework.web.client.RestClientException
           - java.io.IOException
+      openFigiApi:
+        max-attempts: 3
+        wait-duration: 2s
+        enable-exponential-backoff: true
+        retry-exceptions:
+          - org.springframework.web.client.RestClientException
+          - java.io.IOException
   timelimiter:
     time-limiter-aspect-order: 400
     instances:
@@ -193,6 +200,10 @@ oraculum:
     sec-edgar:
       base-url: "https://www.sec.gov"
       user-agent: ${ORACULUM_SEC_USER_AGENT:Oraculum admin@oraculum.com}
+    open-figi:
+      api-key: ${ORACULUM_OPEN_FIGI_API_KEY}
+      base-url: "https://api.openfigi.com"
+      rate-limit-per-second: ${ORACULUM_OPEN_FIGI_RATE_LIMIT:15}
 
   llm:
     common:

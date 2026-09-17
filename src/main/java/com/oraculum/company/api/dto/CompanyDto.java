@@ -17,6 +17,7 @@ public record CompanyDto(
     Long employeeCount,
     String currency,
     String cik,
+    String cusip,
     OffsetDateTime extractedAt
 ) {
     public static CompanyDto fromEntity(CompanyEntity entity) {
@@ -34,6 +35,7 @@ public record CompanyDto(
             entity.getEmployeeCount(),
             entity.getCurrency(),
             entity.getCik(),
+            entity.getCusip(),
             entity.getExtractedAt()
         );
     }

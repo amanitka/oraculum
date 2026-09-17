@@ -13,6 +13,7 @@ CREATE TABLE public.t_company (
     employee_count BIGINT,
     currency VARCHAR(255),
     cik VARCHAR(255),
+    cusip VARCHAR(9),
     extracted_at TIMESTAMPTZ NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,
@@ -20,3 +21,4 @@ CREATE TABLE public.t_company (
 );
 
 CREATE INDEX ix_company_cik ON public.t_company (cik);
+CREATE INDEX ix_company_cusip ON public.t_company (cusip);

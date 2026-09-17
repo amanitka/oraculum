@@ -4,6 +4,8 @@ import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.company.api.dto.IndustryDto;
 import com.oraculum.company.api.dto.MarketDto;
 
+import com.oraculum.company.api.dto.TickerKeyDto;
+
 import java.util.List;
 import java.util.Map;
 
@@ -19,4 +21,6 @@ public interface CompanyMetadataApi {
     void createOrUpdateIndustry(IndustryDto industry);
 
     void updateCompanyCiks(Map<String, String> tickerToCik);
+
+    void updateCompanyCusips(Map<TickerKeyDto, String> tickerToCusip);
 }

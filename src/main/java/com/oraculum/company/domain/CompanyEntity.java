@@ -55,6 +55,9 @@ public class CompanyEntity {
     @Column(name = "cik")
     private String cik;
 
+    @Column(name = "cusip", length = 9)
+    private String cusip;
+
     @Column(name = "extracted_at", nullable = false)
     private OffsetDateTime extractedAt;
 

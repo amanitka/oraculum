@@ -61,7 +61,8 @@ public record OraculumProperties(Data data,
                             ExchangeCleanup exchangeCleanup,
                             AlphaVantage alphaVantage,
                             Fred fred,
-                            SecEdgar secEdgar) {
+                            SecEdgar secEdgar,
+                            OpenFigi openFigi) {
 
         public String resolveExchangePath(String relativePath) {
             return Path.of(exchangeDirectory).resolve(Path.of(relativePath).getFileName()).normalize().toString();
@@ -85,6 +86,11 @@ public record OraculumProperties(Data data,
 
         public record SecEdgar(String baseUrl,
                                String userAgent) {
+        }
+
+        public record OpenFigi(String apiKey,
+                               String baseUrl,
+                               Integer rateLimitPerSecond) {
         }
     }
 }

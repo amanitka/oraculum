@@ -5,18 +5,20 @@ import com.oraculum.company.api.CompanyMetadataApi;
 import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.company.api.dto.IndustryDto;
 import com.oraculum.company.api.dto.MarketDto;
+import com.oraculum.company.api.dto.TickerKeyDto;
 import com.oraculum.company.domain.CompanyEntity;
 import com.oraculum.company.repository.CompanyRepository;
 import com.oraculum.company.repository.IndustryRepository;
 import com.oraculum.company.repository.MarketRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CompanyMetadataServiceImpl implements CompanyMetadataApi {
@@ -61,9 +63,9 @@ public class CompanyMetadataServiceImpl implements CompanyMetadataApi {
 
     @Override
     @Transactional
-    public void updateCompanyCiks(java.util.Map<String, String> tickerToCik) {
+    public void updateCompanyCiks(Map<String, String> tickerToCik) {
         List<CompanyEntity> companies = companyRepository.findAll();
-        List<CompanyEntity> toUpdate = new java.util.ArrayList<>();
+        List<CompanyEntity> toUpdate = new ArrayList<>();
         for (CompanyEntity company : companies) {
             String secCik = tickerToCik.get(company.getTicker().toUpperCase());
             if (secCik != null && !secCik.equals(company.getCik())) {
@@ -73,6 +75,28 @@ public class CompanyMetadataServiceImpl implements CompanyMetadataApi {
         }
         if (!toUpdate.isEmpty()) {
             companyRepository.saveAll(toUpdate);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void updateCompanyCusips(Map<TickerKeyDto, String> tickerToCusip) {
+        if (tickerToCusip.isEmpty()) {
+            return;
+        }
+        List<CompanyEntity> companies = companyRepository.findAll();
+        List<CompanyEntity> toUpdate = new ArrayList<>();
+        for (CompanyEntity company : companies) {
+            TickerKeyDto key = new TickerKeyDto(company.getTicker().toUpperCase(), company.getMarket().toUpperCase());
+            String cusip = tickerToCusip.get(key);
+            if (!Objects.equals(cusip, company.getCusip())) {
+                company.setCusip(cusip);
+                toUpdate.add(company);
+            }
+        }
+        if (!toUpdate.isEmpty()) {
+            companyRepository.saveAll(toUpdate);
+            log.info("Updated CUSIP for {} companies.", toUpdate.size());
         }
     }
 }
