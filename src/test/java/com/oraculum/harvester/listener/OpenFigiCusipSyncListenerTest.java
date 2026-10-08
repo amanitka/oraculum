@@ -3,7 +3,7 @@ package com.oraculum.harvester.listener;
 import com.oraculum.company.api.CompanyMetadataApi;
 import com.oraculum.company.api.CompanySecApi;
 import com.oraculum.company.api.dto.TickerKeyDto;
-import com.oraculum.harvester.event.FetchCompanyCusipsRequestEvent;
+import com.oraculum.harvester.api.event.FetchCompanyCusipsRequestEvent;
 import com.oraculum.harvester.service.OpenFigiService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,5 +49,15 @@ class OpenFigiCusipSyncListenerTest {
         listener.onFetchCompanyCusips(new FetchCompanyCusipsRequestEvent());
 
         verify(companyMetadataApi).updateCompanyCusips(resolved);
+    }
+
+    @Test
+    void onFetchCompanyCusips_whenExceptionThrown_handlesGracefully() {
+        when(companySecApi.getDistinctHoldingCusips()).thenThrow(new RuntimeException("DB error"));
+
+        listener.onFetchCompanyCusips(new FetchCompanyCusipsRequestEvent());
+
+        verifyNoInteractions(openFigiService);
+        verifyNoInteractions(companyMetadataApi);
     }
 }

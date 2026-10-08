@@ -1,6 +1,7 @@
 package com.oraculum.ui.components;
 
 import com.oraculum.analyst.api.event.ProcessPendingSecDocumentsEvent;
+import com.oraculum.common.constant.MarketConstants;
 import com.oraculum.company.api.CompanyMetadataApi;
 import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.company.api.dto.TickerKeyDto;
@@ -28,7 +29,6 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -37,71 +37,49 @@ public class DataRefreshComponent extends VerticalLayout {
     public DataRefreshComponent(HarvesterBatchApi harvesterBatchApi,
                                 ApplicationEventPublisher eventPublisher,
                                 CompanyMetadataApi companyMetadataApi) {
-
         setWidthFull();
         setPadding(true);
         setSpacing(true);
 
+        add(createCaption());
+        List<RefreshRow> items = createRefreshRows(harvesterBatchApi, eventPublisher, companyMetadataApi);
+        add(createGrid(items));
+    }
+
+    private Paragraph createCaption() {
         Paragraph caption = new Paragraph("Trigger data harvesting and refresh operations across all markets and sources.");
         caption.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.Margin.Bottom.NONE);
-        add(caption);
+        return caption;
+    }
 
-        // Load US companies for the Ticker Documents selector
-        List<CompanyDto> usCompanies = companyMetadataApi.getAllCompanies().stream()
-                .filter(c -> c.market() != null && "US".equalsIgnoreCase(c.market().trim()))
-                .sorted(Comparator.comparing(CompanyDto::ticker))
-                .toList();
+    private List<RefreshRow> createRefreshRows(HarvesterBatchApi harvesterBatchApi,
+                                               ApplicationEventPublisher eventPublisher,
+                                               CompanyMetadataApi companyMetadataApi) {
+        return List.of(
+                createSimpleRow("Market Data", "Refreshes the list of all supported stock markets.", harvesterBatchApi::refreshMarket),
+                createSimpleRow("Industry Data", "Refreshes the list of all industry classifications.", harvesterBatchApi::refreshIndustry),
+                createSimpleRow("Company List", "Refreshes the list of companies across all supported markets.", harvesterBatchApi::refreshCompany),
+                createSimpleRow("Fundamentals", "Refreshes Income, Balance Sheets, and Cash Flow Statements.", harvesterBatchApi::refreshFundamentals),
+                createTickerDocumentsRow(companyMetadataApi, harvesterBatchApi),
+                createDailySecDocumentsRow(harvesterBatchApi),
+                createSec13FRow(harvesterBatchApi),
+                createSharePricesRow(harvesterBatchApi),
+                createSecSummariesRow(eventPublisher),
+                createSimpleRow("News & Sentiment", "Refreshes recent news articles and sentiment data.", harvesterBatchApi::refreshNews),
+                createSimpleRow("Insider Transactions", "Refreshes daily insider trading from OpenInsider.", harvesterBatchApi::refreshInsiderTransactions),
+                createSimpleRow("Macroeconomic Data", "Refreshes yield curves, inflation, unemployment.", harvesterBatchApi::refreshMacroeconomic),
+                createSimpleRow("Materialized Views", "Rebuilds materialized views and refreshes cache (async).", () -> eventPublisher.publishEvent(new RefreshMaterializedViewsEvent())),
+                createSimpleRow("Company CUSIPs", "Resolves and synchronizes CUSIP identifiers for tracked companies via Bloomberg OpenFIGI.", harvesterBatchApi::refreshCompanyCusips)
+        );
+    }
 
-        // Build grid items
-        List<RefreshRow> items = new ArrayList<>();
+    private RefreshRow createSimpleRow(String title, String description, Runnable action) {
+        return new RefreshRow(title, description, null, createRefreshButton(title, action));
+    }
 
-        // 1. Market Data
-        items.add(new RefreshRow(
-                "Market Data",
-                "Refreshes the list of all supported stock markets.",
-                null,
-                createRefreshButton("Market Data", harvesterBatchApi::refreshMarket)
-        ));
-
-        // 2. Industry Data
-        items.add(new RefreshRow(
-                "Industry Data",
-                "Refreshes the list of all industry classifications.",
-                null,
-                createRefreshButton("Industry Data", harvesterBatchApi::refreshIndustry)
-        ));
-
-        // 3. Company List
-        items.add(new RefreshRow(
-                "Company List",
-                "Refreshes the list of companies across all supported markets.",
-                null,
-                createRefreshButton("Company List", harvesterBatchApi::refreshCompany)
-        ));
-
-        // 4. Fundamentals
-        items.add(new RefreshRow(
-                "Fundamentals",
-                "Refreshes Income, Balance Sheets, and Cash Flow Statements.",
-                null,
-                createRefreshButton("Fundamentals", harvesterBatchApi::refreshFundamentals)
-        ));
-
-        // 5. Ticker Documents
-        MultiSelectComboBox<CompanyDto> tickersField = new MultiSelectComboBox<>();
-        tickersField.setPlaceholder("Stale check (or select US companies, max 20)");
-        tickersField.setWidthFull();
-        tickersField.setItems(usCompanies);
-        tickersField.setItemLabelGenerator(c -> c.ticker() + " - " + c.companyName());
-        tickersField.setClearButtonVisible(true);
-        tickersField.addSelectionListener(event -> {
-            if (event.getAllSelectedItems().size() > 20) {
-                tickersField.setValue(event.getOldSelection());
-                Notification.show("Maximum limit of 20 US companies allowed.");
-            }
-        });
-
-        Button btnTickerDocs = createRefreshButton("Ticker Documents", () -> {
+    private RefreshRow createTickerDocumentsRow(CompanyMetadataApi companyMetadataApi, HarvesterBatchApi harvesterBatchApi) {
+        MultiSelectComboBox<CompanyDto> tickersField = createUsTickersField(companyMetadataApi);
+        Button actionButton = createRefreshButton("Ticker Documents", () -> {
             var selected = tickersField.getValue();
             if (selected == null || selected.isEmpty()) {
                 harvesterBatchApi.refreshStaleSecDocuments();
@@ -112,53 +90,65 @@ public class DataRefreshComponent extends VerticalLayout {
                 harvesterBatchApi.refreshSecDocuments(tickers);
             }
         });
+        return new RefreshRow("Ticker Documents (Historical)", "Refreshes SEC filings for US companies (Stale backfill).", tickersField, actionButton);
+    }
 
-        items.add(new RefreshRow(
-                "Ticker Documents (Historical)",
-                "Refreshes SEC filings for US companies (Stale backfill).",
-                tickersField,
-                btnTickerDocs
-        ));
+    private MultiSelectComboBox<CompanyDto> createUsTickersField(CompanyMetadataApi companyMetadataApi) {
+        List<CompanyDto> usCompanies = companyMetadataApi.getAllCompanies().stream()
+                .filter(c -> c.market() != null && MarketConstants.US.equalsIgnoreCase(c.market().trim()))
+                .sorted(Comparator.comparing(CompanyDto::ticker))
+                .toList();
 
-        // 5b. Daily SEC Documents (Fast Check)
+        MultiSelectComboBox<CompanyDto> field = new MultiSelectComboBox<>();
+        field.setPlaceholder("Stale check (or select US companies, max 20)");
+        field.setWidthFull();
+        field.setItems(usCompanies);
+        field.setItemLabelGenerator(c -> c.ticker() + " - " + c.companyName());
+        field.setClearButtonVisible(true);
+        field.addSelectionListener(event -> {
+            if (event.getAllSelectedItems().size() > 20) {
+                field.setValue(event.getOldSelection());
+                Notification.show("Maximum limit of 20 US companies allowed.");
+            }
+        });
+        return field;
+    }
+
+    private RefreshRow createDailySecDocumentsRow(HarvesterBatchApi harvesterBatchApi) {
         DatePicker dailyDate = new DatePicker();
         dailyDate.setPlaceholder("Target date (defaults to today)");
         dailyDate.setWidth("200px");
 
-        Button btnDailyDocs = createRefreshButton("Daily SEC Documents", () -> {
+        Button actionButton = createRefreshButton("Daily SEC Documents", () -> {
             LocalDate targetDate = dailyDate.getValue() != null ? dailyDate.getValue() : LocalDate.now();
             harvesterBatchApi.refreshDailyNewSecDocuments(targetDate);
         });
 
-        items.add(new RefreshRow(
-                "Daily SEC Documents",
-                "Fast check for new SEC documents using the daily master index.",
-                dailyDate,
-                btnDailyDocs
-        ));
+        return new RefreshRow("Daily SEC Documents", "Fast check for new SEC documents using the daily master index.", dailyDate, actionButton);
+    }
 
-        // 5c. SEC 13F Holdings (Quarterly Bulk)
-        IntegerField sec13fYear = new IntegerField();
-        sec13fYear.setPlaceholder("Year (auto)");
-        sec13fYear.setMin(2013);
-        sec13fYear.setMax(LocalDate.now().getYear());
-        sec13fYear.setWidth("120px");
-        sec13fYear.setClearButtonVisible(true);
+    private RefreshRow createSec13FRow(HarvesterBatchApi harvesterBatchApi) {
+        IntegerField yearField = new IntegerField();
+        yearField.setPlaceholder("Year (auto)");
+        yearField.setMin(2013);
+        yearField.setMax(LocalDate.now().getYear());
+        yearField.setWidth("120px");
+        yearField.setClearButtonVisible(true);
 
-        ComboBox<Integer> sec13fQuarter = new ComboBox<>();
-        sec13fQuarter.setItems(1, 2, 3, 4);
-        sec13fQuarter.setItemLabelGenerator(q -> "Q" + q);
-        sec13fQuarter.setPlaceholder("Quarter (auto)");
-        sec13fQuarter.setWidth("130px");
-        sec13fQuarter.setClearButtonVisible(true);
+        ComboBox<Integer> quarterField = new ComboBox<>();
+        quarterField.setItems(1, 2, 3, 4);
+        quarterField.setItemLabelGenerator(q -> "Q" + q);
+        quarterField.setPlaceholder("Quarter (auto)");
+        quarterField.setWidth("130px");
+        quarterField.setClearButtonVisible(true);
 
-        HorizontalLayout sec13fParams = new HorizontalLayout(sec13fYear, sec13fQuarter);
-        sec13fParams.setAlignItems(Alignment.CENTER);
-        sec13fParams.setSpacing(true);
+        HorizontalLayout params = new HorizontalLayout(yearField, quarterField);
+        params.setAlignItems(Alignment.CENTER);
+        params.setSpacing(true);
 
-        Button btnSec13F = createRefreshButton("SEC 13F Holdings", () -> {
-            Integer yr = sec13fYear.getValue();
-            Integer qtr = sec13fQuarter.getValue();
+        Button actionButton = createRefreshButton("SEC 13F Holdings", () -> {
+            Integer yr = yearField.getValue();
+            Integer qtr = quarterField.getValue();
             if (yr != null && qtr != null) {
                 harvesterBatchApi.refresh13FBulk(yr, qtr);
             } else {
@@ -166,15 +156,10 @@ public class DataRefreshComponent extends VerticalLayout {
             }
         });
 
-        items.add(new RefreshRow(
-                "SEC 13F Holdings",
-                "Downloads quarterly institutional holdings (Form 13F bulk dataset). Defaults to latest completed quarter.",
-                sec13fParams,
-                btnSec13F
-        ));
+        return new RefreshRow("SEC 13F Holdings", "Downloads quarterly institutional holdings (Form 13F bulk dataset). Defaults to latest completed quarter.", params, actionButton);
+    }
 
-        // 6. Share Prices
-
+    private RefreshRow createSharePricesRow(HarvesterBatchApi harvesterBatchApi) {
         Checkbox incremental = new Checkbox("Incremental", true);
         DatePicker fromDate = new DatePicker();
         fromDate.setPlaceholder("Auto date");
@@ -183,21 +168,18 @@ public class DataRefreshComponent extends VerticalLayout {
             fromDate.setEnabled(e.getValue());
             if (!e.getValue()) fromDate.setValue(null);
         });
+
         HorizontalLayout priceParams = new HorizontalLayout(incremental, fromDate);
         priceParams.setAlignItems(Alignment.CENTER);
         priceParams.setSpacing(true);
 
-        Button btnSharePrices = createRefreshButton("Share Prices",
+        Button actionButton = createRefreshButton("Share Prices",
                 () -> harvesterBatchApi.refreshSharePrices(incremental.getValue(), fromDate.getValue()));
 
-        items.add(new RefreshRow(
-                "Share Prices",
-                "Refreshes historical daily share prices.",
-                priceParams,
-                btnSharePrices
-        ));
+        return new RefreshRow("Share Prices", "Refreshes historical daily share prices.", priceParams, actionButton);
+    }
 
-        // 7. SEC Document Summaries
+    private RefreshRow createSecSummariesRow(ApplicationEventPublisher eventPublisher) {
         IntegerField limitField = new IntegerField();
         limitField.setValue(50);
         limitField.setMin(1);
@@ -205,9 +187,7 @@ public class DataRefreshComponent extends VerticalLayout {
         limitField.setWidth("100px");
         limitField.setTooltipText("Batch Limit");
 
-        HorizontalLayout secParams = new HorizontalLayout(
-                new Span("Limit:"), limitField
-        );
+        HorizontalLayout secParams = new HorizontalLayout(new Span("Limit:"), limitField);
         secParams.setAlignItems(Alignment.CENTER);
         secParams.setSpacing(true);
 
@@ -219,86 +199,58 @@ public class DataRefreshComponent extends VerticalLayout {
             ViewHelper.showSuccess("Started SEC Document processing in the background (Limit: " + limit + ")");
         });
 
-        items.add(new RefreshRow(
-                "SEC Document Summaries",
-                "Processes pending raw SEC documents using LLM.",
-                secParams,
-                btnProcessSec
-        ));
+        return new RefreshRow("SEC Document Summaries", "Processes pending raw SEC documents using LLM.", secParams, btnProcessSec);
+    }
 
-        // 8. News & Sentiment
-        items.add(new RefreshRow(
-                "News & Sentiment",
-                "Refreshes recent news articles and sentiment data.",
-                null,
-                createRefreshButton("News & Sentiment", harvesterBatchApi::refreshNews)
-        ));
-
-        // 9. Insider Transactions
-        items.add(new RefreshRow(
-                "Insider Transactions",
-                "Refreshes daily insider trading from OpenInsider.",
-                null,
-                createRefreshButton("Insider Transactions", harvesterBatchApi::refreshInsiderTransactions)
-        ));
-
-        // 10. Macroeconomic Data
-        items.add(new RefreshRow(
-                "Macroeconomic Data",
-                "Refreshes yield curves, inflation, unemployment.",
-                null,
-                createRefreshButton("Macroeconomic Data", harvesterBatchApi::refreshMacroeconomic)
-        ));
-
-        // 11. Materialized Views
-        items.add(new RefreshRow(
-                "Materialized Views",
-                "Rebuilds materialized views and refreshes cache (async).",
-                null,
-                createRefreshButton("Materialized Views", () -> eventPublisher.publishEvent(new RefreshMaterializedViewsEvent()))
-        ));
-
-        // Configure Grid
+    private Grid<RefreshRow> createGrid(List<RefreshRow> items) {
         Grid<RefreshRow> grid = new Grid<>();
         grid.setWidthFull();
         grid.setAllRowsVisible(true);
         grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
         grid.addClassName("screener-grid");
 
-        grid.addComponentColumn(row -> {
-            Span title = new Span(row.title());
-            title.addClassName(LumoUtility.FontWeight.BOLD);
-            return title;
-        }).setHeader("Operation").setWidth("200px").setFlexGrow(1);
+        grid.addComponentColumn(this::createTitleColumn)
+                .setHeader("Operation").setWidth("200px").setFlexGrow(1);
 
-        grid.addComponentColumn(row -> {
-            VerticalLayout cell = new VerticalLayout();
-            cell.setPadding(false);
-            cell.setSpacing(false);
+        grid.addComponentColumn(this::createDescriptionColumn)
+                .setHeader("Description & Options").setFlexGrow(4);
 
-            Span desc = new Span(row.description());
-            desc.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontSize.SMALL);
-            cell.add(desc);
-
-            if (row.parameters() != null) {
-                Div wrapper = new Div(row.parameters());
-                wrapper.getStyle().set("margin-top", "var(--lumo-space-s)");
-                wrapper.getStyle().set("width", "100%");
-                cell.add(wrapper);
-            }
-
-            return cell;
-        }).setHeader("Description & Options").setFlexGrow(4);
-
-        grid.addComponentColumn(row -> {
-            HorizontalLayout cell = new HorizontalLayout(row.actionButton());
-            cell.setWidthFull();
-            cell.setJustifyContentMode(JustifyContentMode.END);
-            return cell;
-        }).setHeader("Action").setWidth("140px").setFlexGrow(0);
+        grid.addComponentColumn(this::createActionColumn)
+                .setHeader("Action").setWidth("140px").setFlexGrow(0);
 
         grid.setItems(items);
-        add(grid);
+        return grid;
+    }
+
+    private Span createTitleColumn(RefreshRow row) {
+        Span title = new Span(row.title());
+        title.addClassName(LumoUtility.FontWeight.BOLD);
+        return title;
+    }
+
+    private Component createDescriptionColumn(RefreshRow row) {
+        VerticalLayout cell = new VerticalLayout();
+        cell.setPadding(false);
+        cell.setSpacing(false);
+
+        Span desc = new Span(row.description());
+        desc.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontSize.SMALL);
+        cell.add(desc);
+
+        if (row.parameters() != null) {
+            Div wrapper = new Div(row.parameters());
+            wrapper.getStyle().set("margin-top", "var(--lumo-space-s)");
+            wrapper.getStyle().set("width", "100%");
+            cell.add(wrapper);
+        }
+        return cell;
+    }
+
+    private Component createActionColumn(RefreshRow row) {
+        HorizontalLayout cell = new HorizontalLayout(row.actionButton());
+        cell.setWidthFull();
+        cell.setJustifyContentMode(JustifyContentMode.END);
+        return cell;
     }
 
     private Button createRefreshButton(String actionName, Runnable action) {

@@ -1,5 +1,6 @@
 package com.oraculum.harvester.service;
 
+import com.oraculum.common.config.OraculumProperties;
 import com.oraculum.company.api.dto.TickerKeyDto;
 import com.oraculum.harvester.provider.OpenFigiClient;
 import com.oraculum.harvester.provider.dto.openfigi.OpenFigiMappingResponse;
@@ -25,11 +26,17 @@ class OpenFigiServiceTest {
     @Mock
     private OpenFigiClient openFigiClient;
 
+    @Mock
+    private OraculumProperties properties;
+
+    @Mock
+    private OraculumProperties.Harvester harvester;
+
     private OpenFigiService openFigiService;
 
     @BeforeEach
     void setUp() {
-        openFigiService = new OpenFigiService(openFigiClient);
+        openFigiService = new OpenFigiService(openFigiClient, properties);
     }
 
     @Test
@@ -76,7 +83,11 @@ class OpenFigiServiceTest {
     }
 
     @Test
-    void resolveCusips_whenMoreThanBatchSize_batchesRequests() {
+    void resolveCusips_whenApiKeyPresent_batchesInHundreds() {
+        var openFigiProp = new OraculumProperties.Harvester.OpenFigi("valid-key", "https://api.openfigi.com", 15);
+        when(properties.harvester()).thenReturn(harvester);
+        when(harvester.openFigi()).thenReturn(openFigiProp);
+
         List<String> manyCusips = java.util.stream.IntStream.range(0, 150)
                 .mapToObj(i -> String.format("%09d", i))
                 .toList();
@@ -87,5 +98,23 @@ class OpenFigiServiceTest {
 
         verify(openFigiClient).fetchTickersForCusips(manyCusips.subList(0, 100), "US");
         verify(openFigiClient).fetchTickersForCusips(manyCusips.subList(100, 150), "US");
+    }
+
+    @Test
+    void resolveCusips_whenNoApiKey_batchesInTens() {
+        var openFigiProp = new OraculumProperties.Harvester.OpenFigi(null, "https://api.openfigi.com", 15);
+        when(properties.harvester()).thenReturn(harvester);
+        when(harvester.openFigi()).thenReturn(openFigiProp);
+
+        List<String> twentyCusips = java.util.stream.IntStream.range(0, 20)
+                .mapToObj(i -> String.format("%09d", i))
+                .toList();
+
+        when(openFigiClient.fetchTickersForCusips(anyList(), anyString())).thenReturn(List.of());
+
+        openFigiService.resolveCusips(twentyCusips);
+
+        verify(openFigiClient).fetchTickersForCusips(twentyCusips.subList(0, 10), "US");
+        verify(openFigiClient).fetchTickersForCusips(twentyCusips.subList(10, 20), "US");
     }
 }

@@ -5,7 +5,7 @@ import com.oraculum.company.api.CompanyInsiderTransactionApi;
 import com.oraculum.company.api.CompanyMetadataApi;
 import com.oraculum.company.api.CompanySharePriceApi;
 import com.oraculum.harvester.api.dto.*;
-import com.oraculum.harvester.event.FetchCompanyCusipsRequestEvent;
+import com.oraculum.harvester.api.event.FetchCompanyCusipsRequestEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

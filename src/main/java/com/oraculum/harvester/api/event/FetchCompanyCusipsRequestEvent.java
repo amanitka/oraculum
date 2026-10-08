@@ -1,4 +1,4 @@
-package com.oraculum.harvester.event;
+package com.oraculum.harvester.api.event;
 
 public record FetchCompanyCusipsRequestEvent() {
 }

@@ -1,6 +1,7 @@
 package com.oraculum.harvester.api.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.oraculum.common.constant.MarketConstants;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.jackson.Jacksonized;
@@ -34,7 +35,7 @@ public class FetchSecDocumentsRequest extends HarvesterRequest {
 
         @Builder.Default
         @JsonProperty("market")
-        private final String market = "US";
+        private final String market = MarketConstants.US;
 
         @JsonProperty("document_types")
         private final List<DocumentTypeRequest> documentTypes;

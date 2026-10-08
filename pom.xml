@@ -30,9 +30,9 @@
         <java.version>25</java.version>
         <spring-modulith.version>2.1.1</spring-modulith.version>
         <spring.ai.version>2.0.1</spring.ai.version>
-        <vaadin.version>25.2.1</vaadin.version>
-        <duckdb.version>1.5.5.1</duckdb.version>
-        <lombok.version>1.18.46</lombok.version>
+        <vaadin.version>25.3.1</vaadin.version>
+        <duckdb.version>1.5.6.0</duckdb.version>
+        <lombok.version>1.18.48</lombok.version>
         <commonmark.version>0.28.0</commonmark.version>
         <apexcharts.version>25.0.0</apexcharts.version>
         <resilience4j.version>2.4.0</resilience4j.version>

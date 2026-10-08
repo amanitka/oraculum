@@ -1,5 +1,6 @@
 package com.oraculum.load.service.impl;
 
+import com.oraculum.harvester.api.event.FetchCompanyCusipsRequestEvent;
 import com.oraculum.load.dto.DataBatchCompleteEvent;
 import com.oraculum.load.dto.DataFileReadyEvent;
 import com.oraculum.load.dto.LoadParquetDto;
@@ -11,6 +12,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.LocalDate;
@@ -34,6 +36,9 @@ class SecHoldingFileLoadServiceImplTest {
     @Mock
     private JdbcTemplate jdbcTemplate;
 
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     @Captor
     private ArgumentCaptor<LoadParquetDto> dtoCaptor;
 
@@ -41,7 +46,7 @@ class SecHoldingFileLoadServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        loadService = new SecHoldingFileLoadServiceImpl(postgresParquetFileLoader, secHoldingDeltaService, jdbcTemplate);
+        loadService = new SecHoldingFileLoadServiceImpl(postgresParquetFileLoader, secHoldingDeltaService, jdbcTemplate, eventPublisher);
     }
 
     @Test
@@ -121,5 +126,6 @@ class SecHoldingFileLoadServiceImplTest {
 
         loadService.postBatchComplete(event);
         verify(secHoldingDeltaService).recalculateDelta(reportPeriod);
+        verify(eventPublisher).publishEvent(any(FetchCompanyCusipsRequestEvent.class));
     }
 }

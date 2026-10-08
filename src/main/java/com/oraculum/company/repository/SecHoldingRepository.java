@@ -10,6 +10,12 @@ import java.util.List;
 @Repository
 public interface SecHoldingRepository extends JpaRepository<SecHoldingEntity, SecHoldingEntity.SecHoldingId> {
 
-    @Query("SELECT DISTINCT h.cusip FROM SecHoldingEntity h WHERE h.cusip IS NOT NULL AND TRIM(h.cusip) <> ''")
+    @Query("""
+            SELECT DISTINCT TRIM(h.cusip) FROM SecHoldingEntity h
+            WHERE h.cusip IS NOT NULL
+              AND LENGTH(TRIM(h.cusip)) = 9
+              AND h.optionType IS NULL
+              AND (h.sharesOrPrnType IS NULL OR h.sharesOrPrnType = 'SH')
+            """)
     List<String> findDistinctCusips();
 }

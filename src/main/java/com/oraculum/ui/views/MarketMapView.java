@@ -11,6 +11,7 @@ import com.github.appreciated.apexcharts.config.chart.builder.EventsBuilder;
 import com.github.appreciated.apexcharts.config.plotoptions.builder.TreemapBuilder;
 import com.github.appreciated.apexcharts.helper.Series;
 import com.oraculum.analyst.api.dto.CompanyAnalysisRequest;
+import com.oraculum.common.constant.MarketConstants;
 import com.oraculum.company.api.CompanyScreenerApi;
 import com.oraculum.company.api.dto.CompanyOverviewDto;
 import com.oraculum.company.api.dto.TickerKeyDto;
@@ -88,7 +89,7 @@ public class MarketMapView extends VerticalLayout {
         Tabs tabs = new Tabs(treemapTab, tableTab);
 
         List<String> availableMarkets = getAvailableMarkets(companies);
-        String defaultMarket = availableMarkets.contains("US") ? "US" : (availableMarkets.isEmpty() ? "US" : availableMarkets.getFirst());
+        String defaultMarket = availableMarkets.contains(MarketConstants.US) ? MarketConstants.US : (availableMarkets.isEmpty() ? MarketConstants.US : availableMarkets.getFirst());
 
         ComboBox<String> marketSelect = new ComboBox<>();
         marketSelect.setPlaceholder("Market");
@@ -410,7 +411,7 @@ public class MarketMapView extends VerticalLayout {
     }
 
     private List<String> getAvailableMarkets(List<CompanyOverviewDto> companies) {
-        if (companies == null) return List.of("US");
+        if (companies == null) return List.of(MarketConstants.US);
         List<String> distinct = companies.stream()
                 .map(CompanyOverviewDto::market)
                 .filter(Objects::nonNull)
@@ -418,11 +419,11 @@ public class MarketMapView extends VerticalLayout {
                 .distinct()
                 .sorted()
                 .collect(Collectors.toList());
-        if (distinct.contains("US")) {
-            distinct.remove("US");
-            distinct.addFirst("US");
+        if (distinct.contains(MarketConstants.US)) {
+            distinct.remove(MarketConstants.US);
+            distinct.addFirst(MarketConstants.US);
         }
-        return distinct.isEmpty() ? List.of("US") : distinct;
+        return distinct.isEmpty() ? List.of(MarketConstants.US) : distinct;
     }
 
     private List<CompanyOverviewDto> filterByMarket(List<CompanyOverviewDto> companies, String market) {

@@ -91,6 +91,14 @@ public record OraculumProperties(Data data,
         public record OpenFigi(String apiKey,
                                String baseUrl,
                                Integer rateLimitPerSecond) {
+
+            public boolean hasApiKey() {
+                return apiKey != null && !apiKey.isBlank();
+            }
+
+            public int getBatchSize() {
+                return hasApiKey() ? 100 : 10;
+            }
         }
     }
 }

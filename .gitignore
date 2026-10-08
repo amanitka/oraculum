@@ -35,3 +35,9 @@ build/
 .env
 src/main/frontend/generated
 data/
+
+### Vaadin & Frontend ###
+vite.generated.ts
+vite.generated.js
+package-lock.json
+.package-lock.json

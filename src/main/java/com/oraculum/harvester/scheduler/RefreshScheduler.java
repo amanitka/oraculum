@@ -122,6 +122,16 @@ public class RefreshScheduler {
             log.error("Scheduled SEC 13F bulk refresh failed", e);
         }
     }
+
+    @Scheduled(cron = "${oraculum.data.company-cusip.cron:0 0 5 1 * *}")
+    public void refreshCompanyCusips() {
+        log.info("Starting scheduled backup company CUSIP refresh...");
+        try {
+            refreshService.refreshCompanyCusips();
+        } catch (Exception e) {
+            log.error("Scheduled backup company CUSIP refresh failed", e);
+        }
+    }
 }
 
 

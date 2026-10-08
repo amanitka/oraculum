@@ -1,5 +1,6 @@
 package com.oraculum.load.service.impl;
 
+import com.oraculum.harvester.api.event.FetchCompanyCusipsRequestEvent;
 import com.oraculum.load.domain.Dataset;
 import com.oraculum.load.dto.DataBatchCompleteEvent;
 import com.oraculum.load.dto.DataFileReadyEvent;
@@ -8,6 +9,7 @@ import com.oraculum.load.service.ParquetFileLoadService;
 import com.oraculum.load.service.SecHoldingDeltaService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -71,6 +73,7 @@ public class SecHoldingFileLoadServiceImpl implements ParquetFileLoadService {
     private final PostgresParquetFileLoader postgresParquetFileLoader;
     private final SecHoldingDeltaService secHoldingDeltaService;
     private final JdbcTemplate jdbcTemplate;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public void merge(DataFileReadyEvent event) {
@@ -108,5 +111,7 @@ public class SecHoldingFileLoadServiceImpl implements ParquetFileLoadService {
     public void postBatchComplete(DataBatchCompleteEvent event) {
         LocalDate current = event.reportPeriod();
         secHoldingDeltaService.recalculateDelta(current);
+        log.info("Triggering company CUSIP synchronization after 13F batch complete for period {}", current);
+        eventPublisher.publishEvent(new FetchCompanyCusipsRequestEvent());
     }
 }

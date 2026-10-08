@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.BufferingClientHttpRequestFactory;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 
 import java.time.Duration;
@@ -33,12 +34,16 @@ public class OpenFigiConfig {
 
         builder.baseUrl(openFigiConfig.baseUrl())
                 .defaultHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
-                .defaultHeader("Accept", MediaType.APPLICATION_JSON_VALUE)
-                .defaultHeader("X-OPENFIGI-KEY", openFigiConfig.apiKey())
-                .requestInterceptor((request, body, execution) -> {
-                    RateLimiter.waitForPermission(rateLimiter);
-                    return execution.execute(request, body);
-                });
+                .defaultHeader("Accept", MediaType.APPLICATION_JSON_VALUE);
+
+        if (StringUtils.hasText(openFigiConfig.apiKey())) {
+            builder.defaultHeader("X-OPENFIGI-APIKEY", openFigiConfig.apiKey().trim());
+        }
+
+        builder.requestInterceptor((request, body, execution) -> {
+            RateLimiter.waitForPermission(rateLimiter);
+            return execution.execute(request, body);
+        });
 
         if (LoggerFactory.getLogger(RestClientLoggingInterceptor.class).isDebugEnabled()) {
             builder.requestFactory(new BufferingClientHttpRequestFactory(new SimpleClientHttpRequestFactory()))
