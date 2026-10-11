@@ -34,7 +34,12 @@ SELECT
    -- Net flows & percentage changes
    s.net_value_change_usd,
    s.net_shares_change,
-   ROUND(s.net_shares_change * 100.0 / NULLIF(s.total_inst_shares - s.net_shares_change, 0), 2) AS shares_change_pct,
+   ROUND(
+     CASE 
+       WHEN (s.total_inst_shares - s.net_shares_change) <= 0 AND s.net_shares_change > 0 THEN 100.00
+       WHEN (s.total_inst_shares - s.net_shares_change) <= 0 AND s.net_shares_change < 0 THEN -100.00
+       ELSE LEAST(GREATEST(s.net_shares_change * 100.0 / NULLIF(s.total_inst_shares - s.net_shares_change, 0), -100.00), 9999.00)
+     END, 2) AS shares_change_pct,
    -- Institutional breadth
    s.funds_buying_count,
    s.funds_selling_count,

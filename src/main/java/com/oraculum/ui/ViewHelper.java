@@ -270,7 +270,16 @@ public final class ViewHelper {
         if (changePct == null) {
             return new Span("-");
         }
-        Span span = new Span(String.format(Locale.US, "%+.2f%%", changePct));
+        String text;
+        if (changePct > 999.0f) {
+            text = "> +999%";
+        } else if (changePct < -999.0f) {
+            text = "< -999%";
+        } else {
+            text = String.format(Locale.US, "%+.2f%%", changePct);
+        }
+        Span span = new Span(text);
+        span.getStyle().set("white-space", "nowrap");
         if (changePct > 0) {
             span.addClassName(LumoUtility.TextColor.SUCCESS);
         } else if (changePct < 0) {

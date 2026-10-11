@@ -86,14 +86,14 @@ public class InstitutionalFlowGridComponent extends VerticalLayout {
 
     private void addIdentifierColumns() {
         grid.addColumn(CompanyOverviewDto::ticker)
-                .setHeader("Ticker").setAutoWidth(true).setFrozen(true).setKey("ticker").setSortable(true);
+                .setHeader("Ticker").setWidth("100px").setFlexGrow(0).setFrozen(true).setKey("ticker").setSortable(true);
 
         Grid.Column<CompanyOverviewDto> nameCol = grid.addColumn(CompanyOverviewDto::companyName)
-                .setHeader("Company").setAutoWidth(true).setKey("companyName").setSortable(true);
+                .setHeader("Company").setWidth("220px").setFlexGrow(0).setKey("companyName").setSortable(true);
         nameCol.setTooltipGenerator(CompanyOverviewDto::description);
 
         grid.addColumn(CompanyOverviewDto::sectorName)
-                .setHeader("Sector").setAutoWidth(true).setKey("sector").setSortable(true);
+                .setHeader("Sector").setWidth("160px").setFlexGrow(0).setKey("sector").setSortable(true);
     }
 
     private void addPortfolioValueColumns() {
@@ -122,7 +122,7 @@ public class InstitutionalFlowGridComponent extends VerticalLayout {
                     var flow = currentFlowMap.get(item.companyId());
                     return ViewHelper.priceChangeSpan(flow != null ? flow.sharesChangePct() : null);
                 })).setHeader(ViewHelper.createExplainedHeader("QoQ Flow %", "Percentage change in institutional shares vs previous quarter."))
-                .setWidth("140px").setFlexGrow(0).setSortable(true)
+                .setWidth("160px").setFlexGrow(0).setSortable(true)
                 .setComparator(Comparator.comparing(
                         item -> {
                             var flow = currentFlowMap.get(item.companyId());
@@ -152,7 +152,7 @@ public class InstitutionalFlowGridComponent extends VerticalLayout {
                     var flow = currentFlowMap.get(item.companyId());
                     return flow != null && flow.putCallRatio() != null ? String.format(Locale.US, "%.2f", flow.putCallRatio()) : "-";
                 }).setHeader(ViewHelper.createExplainedHeader("P/C Ratio", "Put to Call option dollar value ratio."))
-                .setWidth("130px").setFlexGrow(0).setSortable(true);
+                .setWidth("140px").setFlexGrow(0).setSortable(true);
 
         grid.addColumn(item -> {
                     var flow = currentFlowMap.get(item.companyId());
