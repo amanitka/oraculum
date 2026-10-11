@@ -47,10 +47,10 @@ public class CompanyDetailsButtonFactory {
     public Button createButton(int companyId, boolean showText) {
         Button btn;
         if (showText) {
-            btn = new Button("View", VaadinIcon.CHART_LINE.create());
+            btn = new Button("View", VaadinIcon.LINE_CHART.create());
             btn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
         } else {
-            btn = new Button(VaadinIcon.CHART_LINE.create());
+            btn = new Button(VaadinIcon.LINE_CHART.create());
             btn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ICON);
             btn.setAriaLabel("View company tearsheet");
             btn.setTooltipText("View company tearsheet");
