@@ -64,18 +64,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Execute Partition Creation
-SELECT create_monthly_partitions('t_share_price', (NOW() - INTERVAL '10 years')::DATE, (NOW() + INTERVAL '2 years')::DATE);
-SELECT create_yearly_partitions('t_news', (NOW() - INTERVAL '5 years')::DATE, (NOW() + INTERVAL '2 years')::DATE);
-SELECT create_yearly_partitions('t_news_ticker', (NOW() - INTERVAL '5 years')::DATE, (NOW() + INTERVAL '2 years')::DATE);
-SELECT create_monthly_partitions('t_llm_execution_log', (NOW() - INTERVAL '1 month')::DATE, (NOW() + INTERVAL '1 year')::DATE);
-SELECT create_yearly_partitions('t_insider_transaction_ticker', (NOW() - INTERVAL '3 years')::DATE, (NOW() + INTERVAL '1 years')::DATE);
-SELECT create_yearly_partitions('t_ticker_document_raw', (NOW() - INTERVAL '10 years')::DATE, (NOW() + INTERVAL '2 years')::DATE);
-SELECT create_yearly_partitions('t_ticker_document', (NOW() - INTERVAL '10 years')::DATE, (NOW() + INTERVAL '2 years')::DATE);
-
 -- ── Quarterly partition helper ────────────────────────────────────────────────
 -- Single source of truth for quarterly partition names — used by
--- create_quarterly_partitions() and SecHoldingDeltaService.
+-- create_quarterly_partitions().
 -- Naming convention: <table>_<YYYY>_q<Q>  e.g. t_sec_holding_2026_q1
 CREATE OR REPLACE FUNCTION quarterly_partition_name(p_table TEXT, p_date DATE)
 RETURNS TEXT AS $$
@@ -117,7 +108,15 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- SEC 13F: 3 years back, 2 years ahead
-SELECT create_quarterly_partitions('t_sec_holding',       (NOW() - INTERVAL '3 years')::DATE, (NOW() + INTERVAL '2 years')::DATE);
-SELECT create_quarterly_partitions('t_sec_holding_delta',  (NOW() - INTERVAL '3 years')::DATE, (NOW() + INTERVAL '2 years')::DATE);
+-- Execute Partition Creation
+SELECT create_monthly_partitions('t_share_price', (NOW() - INTERVAL '10 years')::DATE, (NOW() + INTERVAL '2 years')::DATE);
+SELECT create_yearly_partitions('t_news', (NOW() - INTERVAL '5 years')::DATE, (NOW() + INTERVAL '2 years')::DATE);
+SELECT create_yearly_partitions('t_news_ticker', (NOW() - INTERVAL '5 years')::DATE, (NOW() + INTERVAL '2 years')::DATE);
+SELECT create_monthly_partitions('t_llm_execution_log', (NOW() - INTERVAL '1 month')::DATE, (NOW() + INTERVAL '1 year')::DATE);
+SELECT create_yearly_partitions('t_insider_transaction_ticker', (NOW() - INTERVAL '3 years')::DATE, (NOW() + INTERVAL '1 years')::DATE);
+SELECT create_yearly_partitions('t_ticker_document_raw', (NOW() - INTERVAL '10 years')::DATE, (NOW() + INTERVAL '2 years')::DATE);
+SELECT create_yearly_partitions('t_ticker_document', (NOW() - INTERVAL '10 years')::DATE, (NOW() + INTERVAL '2 years')::DATE);
+SELECT create_quarterly_partitions('t_sec_holding',       (NOW() - INTERVAL '2 years')::DATE, (NOW() + INTERVAL '2 years')::DATE);
+SELECT create_yearly_partitions('t_sec_holding_summary',   (NOW() - INTERVAL '5 years')::DATE, (NOW() + INTERVAL '2 years')::DATE);
+
 

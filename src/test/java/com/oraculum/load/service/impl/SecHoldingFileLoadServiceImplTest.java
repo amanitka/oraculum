@@ -4,7 +4,7 @@ import com.oraculum.harvester.api.event.FetchCompanyCusipsRequestEvent;
 import com.oraculum.load.dto.DataBatchCompleteEvent;
 import com.oraculum.load.dto.DataFileReadyEvent;
 import com.oraculum.load.dto.LoadParquetDto;
-import com.oraculum.load.service.SecHoldingDeltaService;
+import com.oraculum.load.service.SecHoldingSummaryService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,10 +19,8 @@ import java.time.LocalDate;
 import java.time.ZonedDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class SecHoldingFileLoadServiceImplTest {
@@ -31,7 +29,7 @@ class SecHoldingFileLoadServiceImplTest {
     private PostgresParquetFileLoader postgresParquetFileLoader;
 
     @Mock
-    private SecHoldingDeltaService secHoldingDeltaService;
+    private SecHoldingSummaryService secHoldingSummaryService;
 
     @Mock
     private JdbcTemplate jdbcTemplate;
@@ -46,7 +44,12 @@ class SecHoldingFileLoadServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        loadService = new SecHoldingFileLoadServiceImpl(postgresParquetFileLoader, secHoldingDeltaService, jdbcTemplate, eventPublisher);
+        loadService = new SecHoldingFileLoadServiceImpl(
+                postgresParquetFileLoader,
+                secHoldingSummaryService,
+                jdbcTemplate,
+                eventPublisher
+        );
     }
 
     @Test
@@ -80,7 +83,7 @@ class SecHoldingFileLoadServiceImplTest {
         assertThat(capturedDto.preLoadAction()).isNotNull();
 
         capturedDto.preLoadAction().accept("staging_t_sec_holding_test");
-        verify(jdbcTemplate, org.mockito.Mockito.never()).execute(anyString());
+        verify(jdbcTemplate, never()).execute(anyString());
     }
 
     @Test
@@ -101,7 +104,7 @@ class SecHoldingFileLoadServiceImplTest {
         );
         when(postgresParquetFileLoader.resolveAndValidatePath(any())).thenReturn("custom_chunk_name.parquet");
 
-        when(jdbcTemplate.queryForObject(org.mockito.ArgumentMatchers.contains("quarterly_partition_name"), org.mockito.ArgumentMatchers.eq(String.class)))
+        when(jdbcTemplate.queryForObject(contains("quarterly_partition_name"), eq(String.class)))
                 .thenReturn("t_sec_holding_2025_q4");
 
         loadService.merge(event);
@@ -114,7 +117,7 @@ class SecHoldingFileLoadServiceImplTest {
     }
 
     @Test
-    void postBatchComplete_delegatesToDeltaService() {
+    void postBatchComplete_delegatesToSummaryService() {
         LocalDate reportPeriod = LocalDate.of(2026, 3, 31);
         DataBatchCompleteEvent event = new DataBatchCompleteEvent(
                 "sec_13f_holding",
@@ -125,7 +128,7 @@ class SecHoldingFileLoadServiceImplTest {
         );
 
         loadService.postBatchComplete(event);
-        verify(secHoldingDeltaService).recalculateDelta(reportPeriod);
+        verify(secHoldingSummaryService).recalculateSummary(reportPeriod);
         verify(eventPublisher).publishEvent(any(FetchCompanyCusipsRequestEvent.class));
     }
 }

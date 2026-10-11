@@ -24,3 +24,6 @@ CREATE TABLE t_sec_holding (
     PRIMARY KEY (id, report_period)
 ) PARTITION BY RANGE (report_period);
 
+CREATE INDEX ix_sec_holding_cusip ON t_sec_holding (cusip);
+CREATE INDEX ix_sec_holding_cik   ON t_sec_holding (cik);
+

@@ -6,7 +6,7 @@ import com.oraculum.load.dto.DataBatchCompleteEvent;
 import com.oraculum.load.dto.DataFileReadyEvent;
 import com.oraculum.load.dto.LoadParquetDto;
 import com.oraculum.load.service.ParquetFileLoadService;
-import com.oraculum.load.service.SecHoldingDeltaService;
+import com.oraculum.load.service.SecHoldingSummaryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -20,8 +20,9 @@ import java.time.LocalDate;
  *
  * <p>Called N times per quarter — once per Parquet chunk. The
  * {@link #postBatchComplete} hook fires exactly once (triggered by
- * {@code DataBatchCompleteEvent}) and delegates to {@link SecHoldingDeltaService}
- * to refresh quarter-over-quarter position changes.
+ * {@code DataBatchCompleteEvent}) and delegates to
+ * refresh quarter-over-quarter position changes and {@link SecHoldingSummaryService}
+ * to update holding summaries.
  */
 @Slf4j
 @Component(Dataset.SEC_13F_HOLDING)
@@ -71,7 +72,7 @@ public class SecHoldingFileLoadServiceImpl implements ParquetFileLoadService {
             """;
 
     private final PostgresParquetFileLoader postgresParquetFileLoader;
-    private final SecHoldingDeltaService secHoldingDeltaService;
+    private final SecHoldingSummaryService secHoldingSummaryService;
     private final JdbcTemplate jdbcTemplate;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -110,7 +111,7 @@ public class SecHoldingFileLoadServiceImpl implements ParquetFileLoadService {
     @Override
     public void postBatchComplete(DataBatchCompleteEvent event) {
         LocalDate current = event.reportPeriod();
-        secHoldingDeltaService.recalculateDelta(current);
+        secHoldingSummaryService.recalculateSummary(current);
         log.info("Triggering company CUSIP synchronization after 13F batch complete for period {}", current);
         eventPublisher.publishEvent(new FetchCompanyCusipsRequestEvent());
     }
