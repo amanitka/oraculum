@@ -1,6 +1,7 @@
 package com.oraculum.company.api;
 
 import com.oraculum.company.api.dto.CompanyInstitutionalFlowDto;
+import com.oraculum.company.api.dto.SectorInstitutionalFlowTrendDto;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -15,4 +16,6 @@ public interface CompanyInstitutionalFlowApi {
     List<LocalDate> getAvailableReportPeriods();
 
     List<CompanyInstitutionalFlowDto> getInstitutionalFlowHistory(int companyId);
+
+    List<SectorInstitutionalFlowTrendDto> getSectorInstitutionalFlowByPeriod(LocalDate reportPeriod);
 }

@@ -1,8 +1,11 @@
 package com.oraculum.company.service.impl;
 
 import com.oraculum.company.api.dto.CompanyInstitutionalFlowDto;
+import com.oraculum.company.api.dto.SectorInstitutionalFlowTrendDto;
 import com.oraculum.company.domain.CompanyInstitutionalFlowEntity;
+import com.oraculum.company.domain.SectorInstitutionalFlowEntity;
 import com.oraculum.company.repository.CompanyInstitutionalFlowRepository;
+import com.oraculum.company.repository.SectorInstitutionalFlowRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,11 +26,14 @@ class CompanyInstitutionalFlowServiceTest {
     @Mock
     private CompanyInstitutionalFlowRepository repository;
 
+    @Mock
+    private SectorInstitutionalFlowRepository sectorRepository;
+
     private CompanyInstitutionalFlowServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        service = new CompanyInstitutionalFlowServiceImpl(repository);
+        service = new CompanyInstitutionalFlowServiceImpl(repository, sectorRepository);
     }
 
     @Test
@@ -80,6 +86,23 @@ class CompanyInstitutionalFlowServiceTest {
         assertThat(result.get(0).quarterIndex()).isEqualTo(1L);
         assertThat(result.get(1).quarterIndex()).isEqualTo(2L);
         verify(repository).findByCompanyIdOrderByReportPeriodDesc(1);
+    }
+
+    @Test
+    void getSectorInstitutionalFlowByPeriod_shouldReturnDtosFromRepository() {
+        LocalDate period = LocalDate.of(2026, 6, 30);
+        SectorInstitutionalFlowEntity entity =
+                new SectorInstitutionalFlowEntity(
+                        "Technology", period, 500_000_000_000L, 25_000_000_000L, 10_000_000L, 500_000L, 50L);
+        when(sectorRepository.findByReportPeriodOrderByNetValueChangeUsdDesc(period)).thenReturn(List.of(entity));
+
+        List<SectorInstitutionalFlowTrendDto> result = service.getSectorInstitutionalFlowByPeriod(period);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().sectorName()).isEqualTo("Technology");
+        assertThat(result.getFirst().totalInstValueUsd()).isEqualTo(500_000_000_000L);
+        assertThat(result.getFirst().companiesCount()).isEqualTo(50L);
+        verify(sectorRepository).findByReportPeriodOrderByNetValueChangeUsdDesc(period);
     }
 
     private CompanyInstitutionalFlowEntity createTestEntity(int companyId, String ticker, long quarterIndex) {

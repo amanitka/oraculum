@@ -11,6 +11,7 @@ import com.oraculum.ui.MainLayout;
 import com.oraculum.ui.ViewHelper;
 import com.oraculum.ui.components.InstitutionalFlowGridComponent;
 import com.oraculum.ui.components.InstitutionalFlowTreemapComponent;
+import com.oraculum.ui.components.InstitutionalSectorRotationComponent;
 import com.oraculum.ui.components.QuarterStepperComponent;
 import com.oraculum.ui.factory.CompanyDetailsButtonFactory;
 import com.oraculum.ui.service.AnalysisRequestService;
@@ -50,6 +51,7 @@ public class SmartMoneyView extends VerticalLayout {
     private final CompanyInstitutionalFlowApi companyInstitutionalFlowApi;
 
     private final InstitutionalFlowTreemapComponent smartMoneyTreemap = new InstitutionalFlowTreemapComponent();
+    private InstitutionalSectorRotationComponent sectorRotationComponent;
     private InstitutionalFlowGridComponent smartMoneyGrid;
 
     public SmartMoneyView(CompanyScreenerApi companyScreenerApi,
@@ -70,6 +72,7 @@ public class SmartMoneyView extends VerticalLayout {
 
     private void initLayout() {
         this.smartMoneyGrid = new InstitutionalFlowGridComponent(companyDetailsButtonFactory);
+        this.sectorRotationComponent = new InstitutionalSectorRotationComponent(companyInstitutionalFlowApi);
 
         add(createTitle());
 
@@ -83,7 +86,8 @@ public class SmartMoneyView extends VerticalLayout {
 
         Tab treemapTab = new Tab(VaadinIcon.MONEY_EXCHANGE.create(), new Span("13F Flow Map"));
         Tab tableTab = new Tab(VaadinIcon.RECORDS.create(), new Span("Details Table"));
-        Tabs tabs = new Tabs(treemapTab, tableTab);
+        Tab rotationTab = new Tab(VaadinIcon.BAR_CHART.create(), new Span("Sector Rotation"));
+        Tabs tabs = new Tabs(treemapTab, tableTab, rotationTab);
 
         ComboBox<String> metricSelect = createFlowMetricSelect();
 
@@ -92,13 +96,21 @@ public class SmartMoneyView extends VerticalLayout {
         contentArea.setPadding(false);
 
         QuarterStepperComponent[] stepperHolder = new QuarterStepperComponent[1];
+        HorizontalLayout filtersLayout = new HorizontalLayout();
 
         Consumer<Tab> updateView = selectedTab -> {
             contentArea.removeAll();
             LocalDate period = stepperHolder[0] != null ? stepperHolder[0].getSelectedPeriod() : defaultPeriod;
-            Map<Integer, CompanyInstitutionalFlowDto> flowMap = companyInstitutionalFlowApi.getInstitutionalFlowByPeriod(period);
-
             metricSelect.setVisible(selectedTab.equals(treemapTab));
+
+            if (selectedTab.equals(rotationTab)) {
+                sectorRotationComponent.updatePeriod(period);
+                contentArea.add(sectorRotationComponent);
+                getUI().ifPresent(ui -> ui.getPage().executeJs("setTimeout(() => window.dispatchEvent(new Event('resize')), 150);"));
+                return;
+            }
+
+            Map<Integer, CompanyInstitutionalFlowDto> flowMap = companyInstitutionalFlowApi.getInstitutionalFlowByPeriod(period);
 
             if (selectedTab.equals(treemapTab)) {
                 smartMoneyTreemap.updateData(usCompanies, flowMap, metricSelect.getValue());
@@ -116,7 +128,7 @@ public class SmartMoneyView extends VerticalLayout {
         );
         stepperHolder[0] = stepper;
 
-        HorizontalLayout filtersLayout = new HorizontalLayout(stepper, metricSelect);
+        filtersLayout.add(stepper, metricSelect);
         filtersLayout.setAlignItems(FlexComponent.Alignment.CENTER);
         filtersLayout.getStyle().set("gap", "16px");
 

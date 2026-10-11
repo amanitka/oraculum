@@ -61,3 +61,26 @@ SELECT
 FROM public.t_company c
 JOIN public.t_sec_holding_summary s ON s.cusip = c.cusip
 WHERE c.cusip IS NOT NULL;
+
+-- =================================================================
+-- VIEW: v_sector_institutional_flow
+-- Description: Aggregated quarterly institutional ownership and flows by sector.
+--              Built on top of v_company_institutional_flow.
+-- =================================================================
+DROP VIEW IF EXISTS public.v_sector_institutional_flow CASCADE;
+
+DO $$ BEGIN RAISE NOTICE 'Creating view: v_sector_institutional_flow'; END $$;
+
+CREATE VIEW public.v_sector_institutional_flow AS
+SELECT 
+   f.sector_name,
+   f.report_period,
+   COALESCE(SUM(f.total_inst_value_usd), 0)::BIGINT AS total_inst_value_usd,
+   COALESCE(SUM(f.net_value_change_usd), 0)::BIGINT AS net_value_change_usd,
+   COALESCE(SUM(f.total_inst_shares), 0)::BIGINT    AS total_inst_shares,
+   COALESCE(SUM(f.net_shares_change), 0)::BIGINT    AS net_shares_change,
+   COUNT(DISTINCT f.company_id)::BIGINT             AS companies_count
+FROM public.v_company_institutional_flow f
+WHERE f.sector_name IS NOT NULL AND f.sector_name <> ''
+GROUP BY f.sector_name, f.report_period;
+

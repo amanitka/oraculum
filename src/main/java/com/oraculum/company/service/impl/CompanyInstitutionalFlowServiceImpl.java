@@ -2,7 +2,9 @@ package com.oraculum.company.service.impl;
 
 import com.oraculum.company.api.CompanyInstitutionalFlowApi;
 import com.oraculum.company.api.dto.CompanyInstitutionalFlowDto;
+import com.oraculum.company.api.dto.SectorInstitutionalFlowTrendDto;
 import com.oraculum.company.repository.CompanyInstitutionalFlowRepository;
+import com.oraculum.company.repository.SectorInstitutionalFlowRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +19,7 @@ import java.util.stream.Collectors;
 public class CompanyInstitutionalFlowServiceImpl implements CompanyInstitutionalFlowApi {
 
     private final CompanyInstitutionalFlowRepository repository;
+    private final SectorInstitutionalFlowRepository sectorRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -51,6 +54,20 @@ public class CompanyInstitutionalFlowServiceImpl implements CompanyInstitutional
         return repository.findByCompanyIdOrderByReportPeriodDesc(companyId)
                 .stream()
                 .map(CompanyInstitutionalFlowDto::fromEntity)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SectorInstitutionalFlowTrendDto> getSectorInstitutionalFlowByPeriod(LocalDate reportPeriod) {
+        if (reportPeriod == null) {
+            List<LocalDate> periods = getAvailableReportPeriods();
+            if (periods.isEmpty()) return List.of();
+            reportPeriod = periods.getFirst();
+        }
+        return sectorRepository.findByReportPeriodOrderByNetValueChangeUsdDesc(reportPeriod)
+                .stream()
+                .map(SectorInstitutionalFlowTrendDto::fromEntity)
                 .toList();
     }
 }
