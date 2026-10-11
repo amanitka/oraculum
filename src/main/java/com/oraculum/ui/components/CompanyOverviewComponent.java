@@ -43,6 +43,7 @@ public class CompanyOverviewComponent extends VerticalLayout {
     private final CompanyNewsApi companyNewsApi;
     private final CompanyInsiderTransactionApi companyInsiderTransactionApi;
     private final CompanyValuationApi companyValuationApi;
+    private final CompanyInstitutionalFlowApi companyInstitutionalFlowApi;
     private final CompanyDto company;
     private final ObjectMapper objectMapper;
     private final Div chartPlaceholder;
@@ -54,12 +55,14 @@ public class CompanyOverviewComponent extends VerticalLayout {
                                     CompanyNewsApi companyNewsApi,
                                     CompanyInsiderTransactionApi companyInsiderTransactionApi,
                                     CompanyValuationApi companyValuationApi,
+                                    CompanyInstitutionalFlowApi companyInstitutionalFlowApi,
                                     CompanyDto company, ObjectMapper objectMapper) {
         this.companyFinancialDataApi = companyFinancialDataApi;
         this.companySharePriceApi = companySharePriceApi;
         this.companyNewsApi = companyNewsApi;
         this.companyInsiderTransactionApi = companyInsiderTransactionApi;
         this.companyValuationApi = companyValuationApi;
+        this.companyInstitutionalFlowApi = companyInstitutionalFlowApi;
         this.company = company;
         this.objectMapper = objectMapper;
 
@@ -102,6 +105,16 @@ public class CompanyOverviewComponent extends VerticalLayout {
 
         // 8. Insider Tab
         mainTabSheet.add("Insider", createInsiderLayout());
+
+        // 9. Smart Money (13F) Tab
+        mainTabSheet.add("Smart Money (13F)", new CompanyInstitutionalTabComponent(companyInstitutionalFlowApi, company.id()));
+
+        mainTabSheet.addSelectedChangeListener(_ ->
+                getUI().ifPresent(ui -> ui.getPage().executeJs(
+                        "setTimeout(() => window.dispatchEvent(new Event('resize')), 50); " +
+                        "setTimeout(() => window.dispatchEvent(new Event('resize')), 250);"
+                ))
+        );
 
         add(mainTabSheet);
 
@@ -651,6 +664,7 @@ public class CompanyOverviewComponent extends VerticalLayout {
 
         ApexCharts lineChart = ApexChartsBuilder.get()
                 .withChart(ChartBuilder.get()
+                        .withId("company-price-history-chart")
                         .withType(Type.LINE)
                         .withWidth("100%")
                         .withHeight("400px")

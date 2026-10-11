@@ -1,12 +1,13 @@
 package com.oraculum.ui.factory;
 
-import com.oraculum.company.api.CompanyMetadataApi;
-import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.company.api.CompanyFinancialDataApi;
 import com.oraculum.company.api.CompanyInsiderTransactionApi;
+import com.oraculum.company.api.CompanyInstitutionalFlowApi;
+import com.oraculum.company.api.CompanyMetadataApi;
 import com.oraculum.company.api.CompanyNewsApi;
 import com.oraculum.company.api.CompanySharePriceApi;
 import com.oraculum.company.api.CompanyValuationApi;
+import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.ui.ViewHelper;
 import com.oraculum.ui.components.CompanyOverviewComponent;
 import com.vaadin.flow.component.UI;
@@ -26,6 +27,7 @@ public class CompanyDetailsButtonFactory {
     private final CompanyNewsApi companyNewsApi;
     private final CompanyInsiderTransactionApi companyInsiderTransactionApi;
     private final CompanyValuationApi companyValuationApi;
+    private final CompanyInstitutionalFlowApi companyInstitutionalFlowApi;
     private final ObjectMapper objectMapper;
 
     public CompanyDetailsButtonFactory(CompanyMetadataApi companyMetadataApi,
@@ -34,6 +36,7 @@ public class CompanyDetailsButtonFactory {
                                        CompanyNewsApi companyNewsApi,
                                        CompanyInsiderTransactionApi companyInsiderTransactionApi,
                                        CompanyValuationApi companyValuationApi,
+                                       CompanyInstitutionalFlowApi companyInstitutionalFlowApi,
                                        ObjectMapper objectMapper) {
         this.companyMetadataApi = companyMetadataApi;
         this.companyFinancialDataApi = companyFinancialDataApi;
@@ -41,6 +44,7 @@ public class CompanyDetailsButtonFactory {
         this.companyNewsApi = companyNewsApi;
         this.companyInsiderTransactionApi = companyInsiderTransactionApi;
         this.companyValuationApi = companyValuationApi;
+        this.companyInstitutionalFlowApi = companyInstitutionalFlowApi;
         this.objectMapper = objectMapper;
     }
 
@@ -66,7 +70,10 @@ public class CompanyDetailsButtonFactory {
             dialog.setHeaderTitle(company.companyName() + " (" + company.ticker() + ")");
             dialog.setWidth("90vw");
             dialog.setHeight("90vh");
-            dialog.add(new CompanyOverviewComponent(companyFinancialDataApi, companySharePriceApi, companyNewsApi, companyInsiderTransactionApi, companyValuationApi, company, objectMapper));
+            dialog.add(new CompanyOverviewComponent(
+                    companyFinancialDataApi, companySharePriceApi, companyNewsApi,
+                    companyInsiderTransactionApi, companyValuationApi, companyInstitutionalFlowApi,
+                    company, objectMapper));
 
             Button headerCloseBtn = new Button(VaadinIcon.CLOSE.create(), _ -> dialog.close());
             headerCloseBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_ICON);

@@ -279,15 +279,41 @@ public final class ViewHelper {
             text = String.format(Locale.US, "%+.2f%%", changePct);
         }
         Span span = new Span(text);
-        span.getStyle().set("white-space", "nowrap");
+        span.getStyle().set("white-space", "nowrap").set("font-weight", "500");
         if (changePct > 0) {
+            span.getStyle().set("color", "var(--lumo-success-text-color)");
             span.addClassName(LumoUtility.TextColor.SUCCESS);
         } else if (changePct < 0) {
+            span.getStyle().set("color", "var(--lumo-error-text-color)");
             span.addClassName(LumoUtility.TextColor.ERROR);
         } else {
+            span.getStyle().set("color", "var(--lumo-secondary-text-color)");
             span.addClassName(LumoUtility.TextColor.SECONDARY);
         }
-        span.addClassName(LumoUtility.FontWeight.MEDIUM);
+        return span;
+    }
+
+    /**
+     * Creates a color-coded delta number Span (+1.25B green, -350M red).
+     */
+    public static Span deltaNumberSpan(Number value) {
+        if (value == null) {
+            return new Span("-");
+        }
+        double d = value.doubleValue();
+        String sign = d > 0 ? "+" : "";
+        Span span = new Span(sign + formatCompactNumber(value));
+        span.getStyle().set("white-space", "nowrap").set("font-weight", "500");
+        if (d > 0) {
+            span.getStyle().set("color", "var(--lumo-success-text-color)");
+            span.addClassName(LumoUtility.TextColor.SUCCESS);
+        } else if (d < 0) {
+            span.getStyle().set("color", "var(--lumo-error-text-color)");
+            span.addClassName(LumoUtility.TextColor.ERROR);
+        } else {
+            span.getStyle().set("color", "var(--lumo-secondary-text-color)");
+            span.addClassName(LumoUtility.TextColor.SECONDARY);
+        }
         return span;
     }
 

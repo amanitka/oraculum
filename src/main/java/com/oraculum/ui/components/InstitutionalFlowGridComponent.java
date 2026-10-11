@@ -131,13 +131,10 @@ public class InstitutionalFlowGridComponent extends VerticalLayout {
                         Comparator.nullsLast(Float::compareTo)
                 ));
 
-        grid.addColumn(item -> {
+        grid.addColumn(new ComponentRenderer<>(item -> {
                     var flow = currentFlowMap.get(item.companyId());
-                    if (flow == null || flow.netSharesChange() == null) return "-";
-                    long s = flow.netSharesChange();
-                    String sign = s > 0 ? "+" : "";
-                    return sign + ViewHelper.formatCompactNumber((float) s);
-                }).setHeader(ViewHelper.createExplainedHeader("Net Shares Δ", "Net change in total shares held by institutions."))
+                    return ViewHelper.deltaNumberSpan(flow != null ? flow.netSharesChange() : null);
+                })).setHeader(ViewHelper.createExplainedHeader("Net Shares Δ", "Net change in total shares held by institutions."))
                 .setWidth("150px").setFlexGrow(0).setSortable(true);
     }
 
