@@ -11,6 +11,7 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.HeaderRow;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
@@ -206,10 +207,11 @@ public final class ViewHelper {
      */
     public static Component createExplainedHeader(String title, String explanation) {
         Span container = new Span();
-        container.getStyle().set("display", "inline-flex").set("align-items", "center").set("gap", "4px");
+        container.getStyle().set("display", "inline-flex").set("align-items", "center").set("gap", "4px").set("white-space", "nowrap");
         Span titleSpan = new Span(title);
-        com.vaadin.flow.component.icon.Icon infoIcon = VaadinIcon.INFO_CIRCLE_O.create();
-        infoIcon.getStyle().set("width", "14px").set("height", "14px").set("color", "var(--lumo-secondary-text-color)");
+        titleSpan.getStyle().set("white-space", "nowrap");
+        Icon infoIcon = VaadinIcon.INFO_CIRCLE.create();
+        infoIcon.getStyle().set("width", "14px").set("height", "14px").set("flex-shrink", "0").set("color", "var(--lumo-secondary-text-color)");
         infoIcon.setTooltipText(explanation);
         container.add(titleSpan, infoIcon);
         return container;

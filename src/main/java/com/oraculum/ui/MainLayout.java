@@ -6,6 +6,7 @@ import com.oraculum.ui.views.CompanyView;
 import com.oraculum.ui.views.EconomyView;
 import com.oraculum.ui.views.MarketMapView;
 import com.oraculum.ui.views.ScreenerView;
+import com.oraculum.ui.views.SmartMoneyView;
 import com.oraculum.user.api.CurrentUserApi;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.applayout.AppLayout;
@@ -117,36 +118,28 @@ public class MainLayout extends AppLayout implements RouterLayout, AfterNavigati
     }
 
     private Tabs createNavigationTabs() {
-        RouterLink screenerLink = new RouterLink("Screener", ScreenerView.class);
-        RouterLink marketMapLink = new RouterLink("Market Map", MarketMapView.class);
-        RouterLink analysisLink = new RouterLink("Analysis", AnalysisView.class);
-        RouterLink companyLink = new RouterLink("Company", CompanyView.class);
-        RouterLink economyLink = new RouterLink("Economy", EconomyView.class);
+        Tab tabScreener = createTab("Screener", ScreenerView.class);
+        Tab tabMarketMap = createTab("Market Map", MarketMapView.class);
+        Tab tabSmartMoney = createTab("Smart Money", SmartMoneyView.class);
+        Tab tabAnalysis = createTab("Analysis", AnalysisView.class);
+        Tab tabCompany = createTab("Company", CompanyView.class);
+        Tab tabEconomy = createTab("Economy", EconomyView.class);
 
-        screenerLink.getStyle().set("text-decoration", "none");
-        marketMapLink.getStyle().set("text-decoration", "none");
-        analysisLink.getStyle().set("text-decoration", "none");
-        companyLink.getStyle().set("text-decoration", "none");
-        economyLink.getStyle().set("text-decoration", "none");
-
-        Tab tabScreener = new Tab(screenerLink);
-        Tab tabMarketMap = new Tab(marketMapLink);
-        Tab tabAnalysis = new Tab(analysisLink);
-        Tab tabCompany = new Tab(companyLink);
-        Tab tabEconomy = new Tab(economyLink);
-
-        tabMap.put(ScreenerView.class, tabScreener);
-        tabMap.put(MarketMapView.class, tabMarketMap);
-        tabMap.put(AnalysisView.class, tabAnalysis);
         tabMap.put(AnalysisDetailView.class, tabAnalysis);
-        tabMap.put(CompanyView.class, tabCompany);
-        tabMap.put(EconomyView.class, tabEconomy);
 
-        tabs = new Tabs(tabScreener, tabMarketMap, tabAnalysis, tabCompany, tabEconomy);
+        tabs = new Tabs(tabScreener, tabMarketMap, tabSmartMoney, tabAnalysis, tabCompany, tabEconomy);
         tabs.getStyle().set("--lumo-font-size-m", "var(--lumo-font-size-xl)");
         tabs.getStyle().set("--lumo-secondary-text-color", "var(--lumo-body-text-color)");
 
         return tabs;
+    }
+
+    private Tab createTab(String label, Class<? extends Component> target) {
+        RouterLink link = new RouterLink(label, target);
+        link.getStyle().set("text-decoration", "none");
+        Tab tab = new Tab(link);
+        tabMap.put(target, tab);
+        return tab;
     }
 
     private HorizontalLayout createUserProfileGroup() {
@@ -188,7 +181,7 @@ public class MainLayout extends AppLayout implements RouterLayout, AfterNavigati
                     userManagementApi, harvesterBatchApi, eventPublisher, companyMetadataApi);
 
             // Add Glossary Button
-            Button glossaryBtn = new Button(VaadinIcon.QUESTION_CIRCLE_O.create());
+            Button glossaryBtn = new Button(VaadinIcon.QUESTION_CIRCLE.create());
             glossaryBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_ICON);
             glossaryBtn.setTooltipText("Glossary & Help");
             glossaryBtn.addClickListener(_ -> openGlossary());

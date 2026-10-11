@@ -1,41 +1,31 @@
 package com.oraculum.ui.views;
 
-import com.github.appreciated.apexcharts.ApexCharts;
-import com.github.appreciated.apexcharts.ApexChartsBuilder;
-import com.github.appreciated.apexcharts.config.builder.ChartBuilder;
-import com.github.appreciated.apexcharts.config.builder.DataLabelsBuilder;
-import com.github.appreciated.apexcharts.config.builder.PlotOptionsBuilder;
-import com.github.appreciated.apexcharts.config.builder.TooltipBuilder;
-import com.github.appreciated.apexcharts.config.chart.Type;
-import com.github.appreciated.apexcharts.config.chart.builder.EventsBuilder;
-import com.github.appreciated.apexcharts.config.plotoptions.builder.TreemapBuilder;
-import com.github.appreciated.apexcharts.helper.Series;
 import com.oraculum.analyst.api.dto.CompanyAnalysisRequest;
 import com.oraculum.common.constant.MarketConstants;
+import com.oraculum.company.api.CompanyInstitutionalFlowApi;
 import com.oraculum.company.api.CompanyScreenerApi;
+import com.oraculum.company.api.dto.CompanyInstitutionalFlowDto;
 import com.oraculum.company.api.dto.CompanyOverviewDto;
 import com.oraculum.company.api.dto.TickerKeyDto;
 import com.oraculum.ui.MainLayout;
 import com.oraculum.ui.ViewHelper;
+import com.oraculum.ui.components.MarketGridComponent;
+import com.oraculum.ui.components.MarketTreemapComponent;
 import com.oraculum.ui.factory.CompanyDetailsButtonFactory;
 import com.oraculum.ui.service.AnalysisRequestService;
 import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.grid.GridVariant;
-import com.vaadin.flow.component.grid.HeaderRow;
-import com.vaadin.flow.component.grid.dataview.GridListDataView;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Paragraph;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
-import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
@@ -43,6 +33,7 @@ import jakarta.annotation.security.PermitAll;
 
 import java.time.LocalDate;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @Route(value = "market-map", layout = MainLayout.class)
@@ -53,13 +44,19 @@ public class MarketMapView extends VerticalLayout {
     private final CompanyScreenerApi companyScreenerApi;
     private final AnalysisRequestService analysisRequestService;
     private final CompanyDetailsButtonFactory companyDetailsButtonFactory;
+    private final CompanyInstitutionalFlowApi companyInstitutionalFlowApi;
+
+    private final MarketTreemapComponent marketTreemap = new MarketTreemapComponent();
+    private MarketGridComponent marketGrid;
 
     public MarketMapView(CompanyScreenerApi companyScreenerApi,
                          AnalysisRequestService analysisRequestService,
-                         CompanyDetailsButtonFactory companyDetailsButtonFactory) {
+                         CompanyDetailsButtonFactory companyDetailsButtonFactory,
+                         CompanyInstitutionalFlowApi companyInstitutionalFlowApi) {
         this.companyScreenerApi = companyScreenerApi;
         this.analysisRequestService = analysisRequestService;
         this.companyDetailsButtonFactory = companyDetailsButtonFactory;
+        this.companyInstitutionalFlowApi = companyInstitutionalFlowApi;
 
         setPadding(true);
         setSpacing(false);
@@ -69,35 +66,26 @@ public class MarketMapView extends VerticalLayout {
     }
 
     private void initLayout() {
-        H3 title = new H3("Market Map");
-        title.addClassNames(LumoUtility.Margin.Bottom.NONE);
-        title.getStyle().set("margin-top", "2rem");
+        this.marketGrid = new MarketGridComponent(companyDetailsButtonFactory);
+
+        add(createTitle());
 
         List<CompanyOverviewDto> companies = companyScreenerApi.getCompanyOverview();
-        LocalDate maxTradeDate = companies != null ? companies.stream()
-                .map(CompanyOverviewDto::tradeDate)
-                .filter(Objects::nonNull)
-                .max(LocalDate::compareTo)
-                .orElse(null) : null;
+        Map<Integer, CompanyInstitutionalFlowDto> latestFlowMap = companyInstitutionalFlowApi.getLatestInstitutionalFlowByCompanyId();
 
-        String asOfText = maxTradeDate != null ? " (Data as of " + maxTradeDate + ")" : "";
-        Paragraph description = new Paragraph("Interactive treemap and sortable table view visualizing market capitalization, sector division, growth trends, moving averages, and volume velocity." + asOfText);
-        description.addClassNames(LumoUtility.TextColor.SECONDARY);
+        add(createDescription(companies));
 
-        Tab treemapTab = new Tab("Treemap View");
-        Tab tableTab = new Tab("Table View");
+        Tab treemapTab = new Tab(VaadinIcon.CHART_GRID.create(), new Span("Treemap View"));
+        Tab tableTab = new Tab(VaadinIcon.TABLE.create(), new Span("Table View"));
         Tabs tabs = new Tabs(treemapTab, tableTab);
 
-        List<String> availableMarkets = getAvailableMarkets(companies);
-        String defaultMarket = availableMarkets.contains(MarketConstants.US) ? MarketConstants.US : (availableMarkets.isEmpty() ? MarketConstants.US : availableMarkets.getFirst());
+        ComboBox<String> marketSelect = createMarketSelect(companies);
+        ComboBox<String> metricSelect = createMetricSelect();
 
-        ComboBox<String> marketSelect = new ComboBox<>();
-        marketSelect.setPlaceholder("Market");
-        marketSelect.setItems(availableMarkets);
-        marketSelect.setValue(defaultMarket);
-        marketSelect.setClearButtonVisible(false);
+        HorizontalLayout filtersLayout = new HorizontalLayout(metricSelect, marketSelect);
+        filtersLayout.setAlignItems(FlexComponent.Alignment.CENTER);
 
-        HorizontalLayout controlsLayout = new HorizontalLayout(tabs, marketSelect);
+        HorizontalLayout controlsLayout = new HorizontalLayout(tabs, filtersLayout);
         controlsLayout.setWidthFull();
         controlsLayout.setAlignItems(FlexComponent.Alignment.CENTER);
         controlsLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
@@ -106,134 +94,86 @@ public class MarketMapView extends VerticalLayout {
         contentArea.setSizeFull();
         contentArea.setPadding(false);
 
-        java.util.function.Consumer<Tab> updateView = selectedTab -> {
+        Consumer<Tab> updateView = selectedTab -> {
             contentArea.removeAll();
-            String selectedMarket = marketSelect.getValue();
-            List<CompanyOverviewDto> filtered = filterByMarket(companies, selectedMarket);
+            List<CompanyOverviewDto> filtered = filterByMarket(companies, marketSelect.getValue());
+
+            metricSelect.setVisible(selectedTab.equals(treemapTab));
 
             if (selectedTab.equals(treemapTab)) {
-                ApexCharts treemap = createTreemap(filtered);
-                contentArea.add(Objects.requireNonNullElseGet(treemap, () -> new Paragraph("Not enough data to display the market map.")));
+                marketTreemap.updateData(filtered, latestFlowMap, metricSelect.getValue());
+                contentArea.add(marketTreemap);
             } else {
-                Grid<CompanyOverviewDto> grid = createMarketGrid(filtered != null ? filtered : List.of());
-
-                HorizontalLayout toolbar = new HorizontalLayout();
-                toolbar.setWidthFull();
-                toolbar.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
-                toolbar.addClassNames(LumoUtility.Padding.Bottom.SMALL);
-
-                Button runAnalysisBtn = new Button("Run Analysis", VaadinIcon.PLAY.create());
-                runAnalysisBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-                toolbar.add(runAnalysisBtn);
-                toolbar.getStyle().set("margin-top", "1rem");
-                toolbar.getStyle().set("margin-bottom", "0.5rem");
-
-                runAnalysisBtn.addClickListener(_ -> triggerAnalysis(grid.getSelectedItems(), grid));
-
-                contentArea.add(toolbar, grid);
+                marketGrid.updateData(filtered, latestFlowMap);
+                contentArea.add(createGridToolbar(marketGrid), marketGrid);
             }
         };
 
-        tabs.addSelectedChangeListener(event -> updateView.accept(event.getSelectedTab()));
+        tabs.addSelectedChangeListener(e -> updateView.accept(e.getSelectedTab()));
         marketSelect.addValueChangeListener(_ -> updateView.accept(tabs.getSelectedTab()));
+        metricSelect.addValueChangeListener(_ -> updateView.accept(tabs.getSelectedTab()));
 
         updateView.accept(treemapTab);
 
-        add(title, description, controlsLayout, ViewHelper.wrapInCard(contentArea));
+        add(controlsLayout, ViewHelper.wrapInCard(contentArea));
         setFlexGrow(1, contentArea);
 
         attachClientClickListener();
     }
 
-    private Grid<CompanyOverviewDto> createMarketGrid(List<CompanyOverviewDto> companies) {
-        Grid<CompanyOverviewDto> grid = new Grid<>(CompanyOverviewDto.class, false);
-        grid.setSizeFull();
-        grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
-        grid.addClassName("screener-grid");
-        grid.setSelectionMode(Grid.SelectionMode.MULTI);
-        if (grid.getSelectionModel() instanceof com.vaadin.flow.component.grid.GridMultiSelectionModel<CompanyOverviewDto> multiModel) {
-            multiModel.setSelectionColumnFrozen(true);
-        }
-
-        grid.addColumn(CompanyOverviewDto::ticker).setHeader("Ticker").setAutoWidth(true).setFrozen(true).setKey("ticker").setSortable(true);
-
-        Grid.Column<CompanyOverviewDto> nameCol = grid.addColumn(CompanyOverviewDto::companyName)
-                .setHeader("Company").setAutoWidth(true).setFrozen(true).setKey("companyName").setSortable(true);
-        nameCol.setTooltipGenerator(CompanyOverviewDto::description);
-
-        grid.addColumn(CompanyOverviewDto::sectorName).setHeader("Sector").setAutoWidth(true).setKey("sector").setSortable(true);
-        grid.addColumn(CompanyOverviewDto::industryName).setHeader("Industry").setAutoWidth(true).setKey("industry").setSortable(true);
-
-        grid.addColumn(c -> ViewHelper.formatCompact(c.marketCapitalization()))
-                .setHeader("Market Cap").setWidth("130px").setFlexGrow(0).setSortable(true)
-                .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::marketCapitalization));
-
-        grid.addColumn(c -> c.sharePrice() != null ? String.format(Locale.US, "%s%.2f", ViewHelper.getCurrencySymbol(c.currency(), c.market()), c.sharePrice()) : "-")
-                .setHeader("Price").setWidth("110px").setFlexGrow(0).setSortable(true)
-                .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::sharePrice));
-
-        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.priceChange1d()))).setHeader("1D %").setWidth("120px").setFlexGrow(0).setSortable(true)
-                .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::priceChange1d));
-        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.priceChange1w()))).setHeader("1W %").setWidth("120px").setFlexGrow(0).setSortable(true)
-                .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::priceChange1w));
-        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.priceChange1m()))).setHeader("1M %").setWidth("120px").setFlexGrow(0).setSortable(true)
-                .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::priceChange1m));
-        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.priceChange6m()))).setHeader("6M %").setWidth("120px").setFlexGrow(0).setSortable(true)
-                .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::priceChange6m));
-        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.priceChange1y()))).setHeader("1Y %").setWidth("120px").setFlexGrow(0).setSortable(true)
-                .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::priceChange1y));
-
-        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.pctFrom50dMa()))).setHeader("vs 50D MA").setWidth("130px").setFlexGrow(0).setSortable(true)
-                .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::pctFrom50dMa));
-        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.priceChangeSpan(item.pctFrom200dMa()))).setHeader("vs 200D MA").setWidth("130px").setFlexGrow(0).setSortable(true)
-                .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::pctFrom200dMa));
-
-        grid.addColumn(item -> item.volumeVelocity() != null ? String.format(Locale.US, "%.2fx", item.volumeVelocity()) : "-")
-                .setHeader(ViewHelper.createExplainedHeader("Vol Velocity", "Volume Velocity. Ratio of recent trading volume to historical average."))
-                .setWidth("120px").setFlexGrow(0).setSortable(true)
-                .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::volumeVelocity));
-
-        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.qualitySpan(item.qualityScore())))
-                .setHeader(ViewHelper.createExplainedHeader("Quality", "Quality Score (0-100). Higher is better. Based on profitability and balance sheet strength."))
-                .setWidth("110px").setFlexGrow(0).setSortable(true)
-                .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::qualityScore));
-
-        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.signalBadge(item.compositeSignal()))).setHeader("Signal").setWidth("130px").setFlexGrow(0).setSortable(true)
-                .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::compositeSignal));
-
-        grid.addComponentColumn(item -> createCompanyDetailsButton(item.companyId())).setHeader("Details").setAutoWidth(true);
-
-        GridListDataView<CompanyOverviewDto> dataView = grid.setItems(companies);
-        setupGridFilters(grid, dataView);
-
-        return grid;
+    private H3 createTitle() {
+        H3 title = new H3("Market Map");
+        title.addClassNames(LumoUtility.Margin.Bottom.NONE);
+        title.getStyle().set("margin-top", "2rem");
+        return title;
     }
 
-    private void setupGridFilters(Grid<CompanyOverviewDto> grid, GridListDataView<CompanyOverviewDto> dataView) {
-        HeaderRow filterRow = grid.appendHeaderRow();
-        MarketMapFilter filter = new MarketMapFilter();
-        dataView.setFilter(filter::test);
-
-        ViewHelper.addFilter(grid, filterRow, "ticker", "Ticker", v -> {
-            filter.ticker = v;
-            dataView.refreshAll();
-        });
-        ViewHelper.addFilter(grid, filterRow, "companyName", "Company", v -> {
-            filter.companyName = v;
-            dataView.refreshAll();
-        });
-        ViewHelper.addFilter(grid, filterRow, "sector", "Sector", v -> {
-            filter.sector = v;
-            dataView.refreshAll();
-        });
-        ViewHelper.addFilter(grid, filterRow, "industry", "Industry", v -> {
-            filter.industry = v;
-            dataView.refreshAll();
-        });
+    private Paragraph createDescription(List<CompanyOverviewDto> companies) {
+        LocalDate maxDate = companies != null ? companies.stream()
+                .map(CompanyOverviewDto::tradeDate)
+                .filter(Objects::nonNull)
+                .max(LocalDate::compareTo)
+                .orElse(null) : null;
+        String asOfText = maxDate != null ? " (Price data as of " + maxDate + ")" : "";
+        Paragraph p = new Paragraph("Interactive treemap and sortable table view visualizing market capitalization, sector division, valuation, and price growth trends." + asOfText);
+        p.addClassNames(LumoUtility.TextColor.SECONDARY);
+        return p;
     }
 
-    private Button createCompanyDetailsButton(int companyId) {
-        return companyDetailsButtonFactory.createButton(companyId, true);
+    private ComboBox<String> createMarketSelect(List<CompanyOverviewDto> companies) {
+        List<String> markets = getAvailableMarkets(companies);
+        String defaultMarket = markets.contains(MarketConstants.US) ? MarketConstants.US : (markets.isEmpty() ? MarketConstants.US : markets.getFirst());
+        ComboBox<String> select = new ComboBox<>();
+        select.setPlaceholder("Market");
+        select.setItems(markets);
+        select.setValue(defaultMarket);
+        select.setClearButtonVisible(false);
+        return select;
+    }
+
+    private ComboBox<String> createMetricSelect() {
+        ComboBox<String> select = new ComboBox<>();
+        select.setPlaceholder("Price Metric");
+        select.setItems("Price: 1-Day Change", "Price: 1-Week Change", "Price: 1-Month Change");
+        select.setValue("Price: 1-Day Change");
+        select.setClearButtonVisible(false);
+        return select;
+    }
+
+    private HorizontalLayout createGridToolbar(MarketGridComponent grid) {
+        HorizontalLayout toolbar = new HorizontalLayout();
+        toolbar.setWidthFull();
+        toolbar.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
+        toolbar.addClassNames(LumoUtility.Padding.Bottom.SMALL);
+
+        Button runAnalysisBtn = new Button("Run Analysis", VaadinIcon.PLAY.create());
+        runAnalysisBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        runAnalysisBtn.addClickListener(_ -> triggerAnalysis(grid.getSelectedItems(), grid));
+
+        toolbar.add(runAnalysisBtn);
+        toolbar.getStyle().set("margin-top", "1rem");
+        toolbar.getStyle().set("margin-bottom", "0.5rem");
+        return toolbar;
     }
 
     private void attachClientClickListener() {
@@ -247,13 +187,13 @@ public class MarketMapView extends VerticalLayout {
                 """, getElement());
     }
 
-    private void triggerAnalysis(Set<CompanyOverviewDto> selectedItems, Grid<CompanyOverviewDto> grid) {
-        if (!validateBatchSelection(selectedItems.size())) return;
-        for (CompanyOverviewDto item : selectedItems) {
-            CompanyAnalysisRequest requestDto = new CompanyAnalysisRequest(UUID.randomUUID(), item.companyId(), new TickerKeyDto(item.ticker(), item.market()), LocalDate.now(), null);
-            analysisRequestService.requestAnalysis(requestDto);
+    private void triggerAnalysis(Set<CompanyOverviewDto> sel, MarketGridComponent grid) {
+        if (!validateBatchSelection(sel.size())) return;
+        for (CompanyOverviewDto item : sel) {
+            CompanyAnalysisRequest req = new CompanyAnalysisRequest(UUID.randomUUID(), item.companyId(), new TickerKeyDto(item.ticker(), item.market()), LocalDate.now(), null);
+            analysisRequestService.requestAnalysis(req);
         }
-        ViewHelper.showSuccess("Triggered analysis for " + selectedItems.size() + " companies.");
+        ViewHelper.showSuccess("Triggered analysis for " + sel.size() + " companies.");
         grid.deselectAll();
     }
 
@@ -272,142 +212,6 @@ public class MarketMapView extends VerticalLayout {
     @ClientCallable
     public void onCompanySelected(int companyId) {
         companyDetailsButtonFactory.openCompanyDetailsDialog(companyId);
-    }
-
-    private ApexCharts createTreemap(List<CompanyOverviewDto> companies) {
-        if (companies == null || companies.isEmpty()) {
-            return null;
-        }
-
-        Map<String, List<CompanyOverviewDto>> groupedBySector = companies.stream()
-                .filter(c -> c.sectorName() != null && c.marketCapitalization() != null && c.marketCapitalization() > 0)
-                .collect(Collectors.groupingBy(CompanyOverviewDto::sectorName));
-
-        List<Series<CustomData>> seriesList = new ArrayList<>();
-        for (Map.Entry<String, List<CompanyOverviewDto>> entry : groupedBySector.entrySet()) {
-            List<CompanyOverviewDto> topCompanies = entry.getValue().stream()
-                    .sorted((a, b) -> Float.compare(b.marketCapitalization(), a.marketCapitalization()))
-                    .limit(20)
-                    .toList();
-
-            List<CustomData> dataPoints = topCompanies.stream()
-                    .map(this::toCustomData)
-                    .toList();
-
-            seriesList.add(new Series<>(entry.getKey(), dataPoints.toArray(new CustomData[0])));
-        }
-
-        return buildApexCharts(seriesList);
-    }
-
-    private CustomData toCustomData(CompanyOverviewDto c) {
-        Float priceChange = c.priceChange1d() != null ? c.priceChange1d() : 0f;
-        String color = getColorForPriceChange(priceChange);
-        String name = c.companyName() != null ? c.companyName() : c.ticker();
-        return new CustomData(
-                c.ticker(),
-                c.marketCapitalization(),
-                color,
-                name,
-                c.companyId(),
-                c.priceChange1d(),
-                c.priceChange1w(),
-                c.priceChange1m(),
-                c.priceChange6m(),
-                c.priceChange1y(),
-                c.pctFrom50dMa(),
-                c.pctFrom200dMa(),
-                c.volumeVelocity(),
-                c.tradeDate() != null ? c.tradeDate().toString() : "N/A",
-                ViewHelper.getCurrencySymbol(c.currency(), c.market())
-        );
-    }
-
-    private ApexCharts buildApexCharts(List<Series<CustomData>> seriesList) {
-        String tooltipCustomJs = """
-                function({ series, seriesIndex, dataPointIndex, w }) {
-                    var item = w.config.series[seriesIndex].data[dataPointIndex];
-                    if (!item) return '';
-                
-                    var name = item.companyName || item.x;
-                    var ticker = item.x;
-                    var symbol = item.currencySymbol || '$';
-                    var cap = item.y ? symbol + (item.y / 1000000000).toFixed(2) + 'B' : 'N/A';
-                
-                    var formatPct = function(val) {
-                        if (val === null || val === undefined) return '<span style="color:#aaa;">N/A</span>';
-                        var color = val >= 0 ? '#4caf50' : '#f44336';
-                        var sign = val >= 0 ? '+' : '';
-                        return '<span style="color:' + color + '; font-weight:600;">' + sign + val.toFixed(2) + '%</span>';
-                    };
-                
-                    var formatVel = function(val) {
-                        if (val === null || val === undefined) return '<span style="color:#aaa;">N/A</span>';
-                        return '<span style="color:#60a5fa; font-weight:600;">' + val.toFixed(2) + 'x</span>';
-                    };
-                
-                    return '<div style="padding: 12px 16px; background: rgba(18, 24, 38, 0.95); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: #fff; font-family: var(--lumo-font-family, sans-serif); box-shadow: 0 4px 16px rgba(0,0,0,0.4); min-width: 200px;">' +
-                           '<div style="font-size: 14px; font-weight: 700; margin-bottom: 4px; color: #f0f4f8;">' + name + ' <span style="color:#8a99ad; font-size:12px; font-weight:400;">(' + ticker + ')</span></div>' +
-                           '<div style="font-size: 12px; margin-bottom: 2px; color: #cbd5e1;">Market Cap: <strong style="color:#fff;">' + cap + '</strong></div>' +
-                           '<div style="font-size: 12px; margin-bottom: 8px; color: #cbd5e1;">Last Trade: <strong style="color:#fff;">' + (item.tradeDate || 'N/A') + '</strong></div>' +
-                           '<hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 6px 0;"/>' +
-                           '<div style="font-size: 12px; display: grid; grid-template-columns: 90px 1fr; gap: 4px;">' +
-                           '<span style="color:#94a3b8;">Prev Close:</span>' + formatPct(item.priceChange1d) +
-                           '<span style="color:#94a3b8;">1-Week:</span>' + formatPct(item.priceChange1w) +
-                           '<span style="color:#94a3b8;">1-Month:</span>' + formatPct(item.priceChange1m) +
-                           '<span style="color:#94a3b8;">6-Month:</span>' + formatPct(item.priceChange6m) +
-                           '<span style="color:#94a3b8;">1-Year:</span>' + formatPct(item.priceChange1y) +
-                           '<span style="color:#94a3b8;">vs 50D MA:</span>' + formatPct(item.pctFrom50dMa) +
-                           '<span style="color:#94a3b8;">vs 200D MA:</span>' + formatPct(item.pctFrom200dMa) +
-                           '<span style="color:#94a3b8;">Vol Velocity:</span>' + formatVel(item.volumeVelocity) +
-                           '</div></div>';
-                }
-                """;
-
-        String clickEventJs = """
-                function(event, chartContext, config) {
-                    if (config && config.w && config.seriesIndex !== undefined && config.dataPointIndex !== undefined) {
-                        var item = config.w.config.series[config.seriesIndex].data[config.dataPointIndex];
-                        if (item && item.companyId && window.oraculumMarketMapClick) {
-                            window.oraculumMarketMapClick(item.companyId);
-                        }
-                    }
-                }
-                """;
-
-        return ApexChartsBuilder.get()
-                .withChart(ChartBuilder.get()
-                        .withType(Type.TREEMAP)
-                        .withHeight("800px")
-                        .withEvents(EventsBuilder.get()
-                                .withDataPointSelection(clickEventJs)
-                                .build())
-                        .build())
-                .withSeries(seriesList.toArray(new Series[0]))
-                .withPlotOptions(PlotOptionsBuilder.get()
-                        .withTreemap(TreemapBuilder.get()
-                                .withEnableShades(true)
-                                .withShadeIntensity(0.5)
-                                .withDistributed(false)
-                                .build())
-                        .build())
-                .withDataLabels(DataLabelsBuilder.get()
-                        .withEnabled(true)
-                        .build())
-                .withTooltip(TooltipBuilder.get()
-                        .withCustom(tooltipCustomJs)
-                        .build())
-                .build();
-    }
-
-    private String getColorForPriceChange(Float priceChange) {
-        if (priceChange >= 3.0f) return "#16a34a";
-        if (priceChange >= 1.0f) return "#15803d";
-        if (priceChange > 0.0f) return "#166534";
-        if (priceChange <= -3.0f) return "#dc2626";
-        if (priceChange <= -1.0f) return "#b91c1c";
-        if (priceChange < 0.0f) return "#991b1b";
-        return "#334155";
     }
 
     private List<String> getAvailableMarkets(List<CompanyOverviewDto> companies) {
@@ -433,57 +237,4 @@ public class MarketMapView extends VerticalLayout {
                 .filter(c -> c.market() != null && c.market().equalsIgnoreCase(market))
                 .toList();
     }
-
-    private static class MarketMapFilter {
-        String ticker = "", companyName = "", sector = "", industry = "";
-
-        boolean test(CompanyOverviewDto item) {
-            return ViewHelper.matches(item.ticker(), ticker)
-                    && ViewHelper.matches(item.companyName(), companyName)
-                    && ViewHelper.matches(item.sectorName(), sector)
-                    && ViewHelper.matches(item.industryName(), industry);
-        }
-    }
-
-    public static class CustomData {
-        public String x;
-        public Float y;
-        public String fillColor;
-        public String companyName;
-        public int companyId;
-        public Float priceChange1d;
-        public Float priceChange1w;
-        public Float priceChange1m;
-        public Float priceChange6m;
-        public Float priceChange1y;
-        public Float pctFrom50dMa;
-        public Float pctFrom200dMa;
-        public Float volumeVelocity;
-        public String tradeDate;
-        public String currencySymbol;
-
-        public CustomData(String x, Float y, String fillColor, String companyName, int companyId,
-                          Float priceChange1d, Float priceChange1w, Float priceChange1m,
-                          Float priceChange6m, Float priceChange1y,
-                          Float pctFrom50dMa, Float pctFrom200dMa, Float volumeVelocity, String tradeDate, String currencySymbol) {
-            this.x = x;
-            this.y = y;
-            this.fillColor = fillColor;
-            this.companyName = companyName;
-            this.companyId = companyId;
-            this.priceChange1d = priceChange1d;
-            this.priceChange1w = priceChange1w;
-            this.priceChange1m = priceChange1m;
-            this.priceChange6m = priceChange6m;
-            this.priceChange1y = priceChange1y;
-            this.pctFrom50dMa = pctFrom50dMa;
-            this.pctFrom200dMa = pctFrom200dMa;
-            this.volumeVelocity = volumeVelocity;
-            this.tradeDate = tradeDate;
-            this.currencySymbol = currencySymbol;
-        }
-    }
 }
-
-
-

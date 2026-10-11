@@ -1,0 +1,89 @@
+package com.oraculum.company.api.dto;
+
+import com.oraculum.company.domain.CompanyInstitutionalFlowEntity;
+
+import java.time.LocalDate;
+import java.util.List;
+
+public record CompanyInstitutionalFlowDto(
+        int companyId,
+        String ticker,
+        String companyName,
+        String market,
+        String sectorName,
+        String industryName,
+        String cusip,
+        LocalDate reportPeriod,
+        long quarterIndex,
+        Long totalInstValueUsd,
+        Long totalInstShares,
+        Integer totalHoldersCount,
+        List<String> topHoldersNames,
+        Long top5HoldersValueUsd,
+        Float top5HoldersPct,
+        Long putValueUsd,
+        Long callValueUsd,
+        Float putCallRatio,
+        Long netValueChangeUsd,
+        Long netSharesChange,
+        Float sharesChangePct,
+        Integer fundsBuyingCount,
+        Integer fundsSellingCount,
+        Integer fundsNewCount,
+        Integer fundsClosedCount,
+        Integer fundsUnchangedCount,
+        Long tier1ValueUsd,
+        Long tier1Shares,
+        Integer tier1HoldersCount,
+        Long tier1NetValueChangeUsd,
+        Long tier1NetSharesChange,
+        Integer tier1BuyersCount,
+        Integer tier1SellersCount,
+        Integer tier1NewCount,
+        Integer tier1ClosedCount,
+        List<String> tier1BuyerNames,
+        List<String> tier1SellerNames
+) {
+    public static CompanyInstitutionalFlowDto fromEntity(CompanyInstitutionalFlowEntity entity) {
+        if (entity == null) return null;
+        return new CompanyInstitutionalFlowDto(
+                entity.getCompanyId(),
+                entity.getTicker(),
+                entity.getCompanyName(),
+                entity.getMarket(),
+                entity.getSectorName(),
+                entity.getIndustryName(),
+                entity.getCusip(),
+                entity.getReportPeriod(),
+                entity.getQuarterIndex(),
+                entity.getTotalInstValueUsd(),
+                entity.getTotalInstShares(),
+                entity.getTotalHoldersCount(),
+                entity.getTopHoldersNames() != null ? List.of(entity.getTopHoldersNames()) : List.of(),
+                entity.getTop5HoldersValueUsd(),
+                entity.getTop5HoldersPct(),
+                entity.getPutValueUsd(),
+                entity.getCallValueUsd(),
+                entity.getPutCallRatio(),
+                entity.getNetValueChangeUsd(),
+                entity.getNetSharesChange(),
+                entity.getSharesChangePct(),
+                entity.getFundsBuyingCount(),
+                entity.getFundsSellingCount(),
+                entity.getFundsNewCount(),
+                entity.getFundsClosedCount(),
+                entity.getFundsUnchangedCount(),
+                entity.getTier1ValueUsd(),
+                entity.getTier1Shares(),
+                entity.getTier1HoldersCount(),
+                entity.getTier1NetValueChangeUsd(),
+                entity.getTier1NetSharesChange(),
+                entity.getTier1BuyersCount(),
+                entity.getTier1SellersCount(),
+                entity.getTier1NewCount(),
+                entity.getTier1ClosedCount(),
+                entity.getTier1BuyerNames() != null ? List.of(entity.getTier1BuyerNames()) : List.of(),
+                entity.getTier1SellerNames() != null ? List.of(entity.getTier1SellerNames()) : List.of()
+        );
+    }
+}
