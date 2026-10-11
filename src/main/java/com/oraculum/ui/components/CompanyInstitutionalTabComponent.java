@@ -4,6 +4,7 @@ import com.oraculum.company.api.CompanyInstitutionalFlowApi;
 import com.oraculum.company.api.dto.CompanyInstitutionalFlowDto;
 import com.oraculum.ui.ViewHelper;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.grid.ColumnTextAlign;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.H4;
@@ -165,7 +166,7 @@ public class CompanyInstitutionalTabComponent extends VerticalLayout {
             Span badge = new Span();
             Icon icon = isBuyer ? VaadinIcon.ARROW_UP.create() : VaadinIcon.ARROW_DOWN.create();
             icon.setSize("12px");
-            badge.add(icon, new Span(" " + fund));
+            badge.add(icon, new Span(" " + ViewHelper.normalizeFundName(fund)));
             badge.getElement().getThemeList().addAll(List.of("badge", isBuyer ? "success" : "error"));
             container.add(badge);
         }
@@ -195,24 +196,140 @@ public class CompanyInstitutionalTabComponent extends VerticalLayout {
     }
 
     private void addHistoryGridColumns(Grid<CompanyInstitutionalFlowDto> grid) {
+        addPeriodAndPortfolioColumns(grid);
+        addSharesAndFlowColumns(grid);
+        addFilersAndOptionColumns(grid);
+        addTier1ActivityColumns(grid);
+    }
+
+    private void addPeriodAndPortfolioColumns(Grid<CompanyInstitutionalFlowDto> grid) {
         grid.addColumn(f -> formatQuarter(f.reportPeriod())).setHeader("Quarter").setAutoWidth(true).setSortable(true).setResizable(true);
         grid.addColumn(CompanyInstitutionalFlowDto::reportPeriod).setHeader("Period").setAutoWidth(true).setSortable(true).setResizable(true);
         grid.addColumn(f -> f.totalInstValueUsd() != null ? ViewHelper.formatCompact(f.totalInstValueUsd().floatValue()) : "-")
-                .setHeader("Portfolio ($)").setAutoWidth(true).setSortable(true).setResizable(true);
+                .setHeader("Portfolio ($)").setTextAlign(ColumnTextAlign.END).setAutoWidth(true).setSortable(true).setResizable(true);
+        grid.addColumn(new ComponentRenderer<>(f -> ViewHelper.deltaCurrencySpan(f.netValueChangeUsd())))
+                .setHeader("Net Flow ($)").setTextAlign(ColumnTextAlign.END).setAutoWidth(true).setSortable(true).setResizable(true);
+    }
+
+    private void addSharesAndFlowColumns(Grid<CompanyInstitutionalFlowDto> grid) {
         grid.addColumn(f -> f.totalInstShares() != null ? ViewHelper.formatCompactNumber(f.totalInstShares().floatValue()) : "-")
-                .setHeader("Shares").setAutoWidth(true).setSortable(true).setResizable(true);
-        grid.addColumn(new ComponentRenderer<>(f -> ViewHelper.priceChangeSpan(f.sharesChangePct())))
-                .setHeader("QoQ Flow %").setAutoWidth(true).setSortable(true).setResizable(true);
+                .setHeader("Shares").setTextAlign(ColumnTextAlign.END).setAutoWidth(true).setSortable(true).setResizable(true);
         grid.addColumn(new ComponentRenderer<>(f -> ViewHelper.deltaNumberSpan(f.netSharesChange())))
-                .setHeader("Net Shares Δ").setAutoWidth(true).setSortable(true).setResizable(true);
+                .setHeader("Net Shares Δ").setTextAlign(ColumnTextAlign.END).setAutoWidth(true).setSortable(true).setResizable(true);
+        grid.addColumn(new ComponentRenderer<>(f -> ViewHelper.priceChangeSpan(f.sharesChangePct())))
+                .setHeader("QoQ Flow %").setTextAlign(ColumnTextAlign.END).setAutoWidth(true).setSortable(true).setResizable(true);
+    }
+
+    private void addFilersAndOptionColumns(Grid<CompanyInstitutionalFlowDto> grid) {
         grid.addColumn(f -> f.totalHoldersCount() != null ? String.format(Locale.US, "%,d", f.totalHoldersCount()) : "-")
-                .setHeader("Holders").setAutoWidth(true).setSortable(true).setResizable(true);
+                .setHeader("Holders").setTextAlign(ColumnTextAlign.END).setAutoWidth(true).setSortable(true).setResizable(true);
+        grid.addColumn(new ComponentRenderer<>(this::createBuyersSellersCell))
+                .setHeader("Buyers / Sellers").setTextAlign(ColumnTextAlign.END).setAutoWidth(true).setResizable(true);
+        grid.addColumn(new ComponentRenderer<>(this::createNewClosedCell))
+                .setHeader("New / Closed").setTextAlign(ColumnTextAlign.END).setAutoWidth(true).setResizable(true);
         grid.addColumn(f -> f.top5HoldersPct() != null ? String.format(Locale.US, "%.1f%%", f.top5HoldersPct()) : "-")
-                .setHeader("Top 5 Conc.").setAutoWidth(true).setSortable(true).setResizable(true);
-        grid.addColumn(f -> f.putCallRatio() != null ? String.format(Locale.US, "%.2f", f.putCallRatio()) : "-")
-                .setHeader("P/C Ratio").setAutoWidth(true).setSortable(true).setResizable(true);
-        grid.addColumn(f -> f.tier1BuyerNames() != null && !f.tier1BuyerNames().isEmpty() ? String.join(", ", f.tier1BuyerNames()) : "-")
-                .setHeader("Tier 1 Buyers").setAutoWidth(true).setResizable(true).setFlexGrow(1);
+                .setHeader("Top 5 Conc.").setTextAlign(ColumnTextAlign.END).setAutoWidth(true).setSortable(true).setResizable(true);
+        grid.addColumn(new ComponentRenderer<>(this::createPutCallRatioCell))
+                .setHeader("P/C Ratio").setTextAlign(ColumnTextAlign.END).setAutoWidth(true).setSortable(true).setResizable(true);
+    }
+
+    private void addTier1ActivityColumns(Grid<CompanyInstitutionalFlowDto> grid) {
+        grid.addColumn(CompanyInstitutionalTabComponent::formatTier1Holdings)
+                .setHeader("Tier 1 Funds").setTextAlign(ColumnTextAlign.END).setAutoWidth(true).setSortable(true).setResizable(true);
+        grid.addColumn(new ComponentRenderer<>(this::createTier1ActivityCell))
+                .setHeader("Tier 1 Activity").setAutoWidth(true).setResizable(true).setFlexGrow(1);
+    }
+
+    private Component createBuyersSellersCell(CompanyInstitutionalFlowDto f) {
+        Integer buyers = f.fundsBuyingCount();
+        Integer sellers = f.fundsSellingCount();
+        if (buyers == null && sellers == null) return new Span("-");
+
+        Span bSpan = new Span(buyers != null ? String.format(Locale.US, "%,d", buyers) : "0");
+        bSpan.getStyle().set("color", "var(--lumo-success-text-color)");
+
+        Span sep = new Span(" / ");
+        sep.getStyle().set("color", "var(--lumo-secondary-text-color)");
+
+        Span sSpan = new Span(sellers != null ? String.format(Locale.US, "%,d", sellers) : "0");
+        sSpan.getStyle().set("color", "var(--lumo-error-text-color)");
+
+        Span container = new Span(bSpan, sep, sSpan);
+        container.getStyle().set("white-space", "nowrap").set("font-weight", "500");
+        return container;
+    }
+
+    private Component createNewClosedCell(CompanyInstitutionalFlowDto f) {
+        Integer newCount = f.fundsNewCount();
+        Integer closedCount = f.fundsClosedCount();
+        if (newCount == null && closedCount == null) return new Span("-");
+
+        Span nSpan = new Span(newCount != null ? "+" + newCount : "0");
+        nSpan.getStyle().set("color", "var(--lumo-success-text-color)");
+
+        Span sep = new Span(" / ");
+        sep.getStyle().set("color", "var(--lumo-secondary-text-color)");
+
+        Span cSpan = new Span(closedCount != null ? "-" + closedCount : "0");
+        cSpan.getStyle().set("color", "var(--lumo-error-text-color)");
+
+        Span container = new Span(nSpan, sep, cSpan);
+        container.getStyle().set("white-space", "nowrap").set("font-weight", "500");
+        return container;
+    }
+
+    private Component createPutCallRatioCell(CompanyInstitutionalFlowDto f) {
+        if (f.putCallRatio() == null) return new Span("-");
+        Span s = new Span(String.format(Locale.US, "%.2f", f.putCallRatio()));
+        if (f.putValueUsd() != null && f.callValueUsd() != null) {
+            String pStr = ViewHelper.formatCompact(f.putValueUsd().floatValue());
+            String cStr = ViewHelper.formatCompact(f.callValueUsd().floatValue());
+            s.setTitle("Puts: " + pStr + " | Calls: " + cStr);
+        }
+        return s;
+    }
+
+    private static String formatTier1Holdings(CompanyInstitutionalFlowDto f) {
+        if (f.tier1HoldersCount() == null || f.tier1HoldersCount() == 0) return "-";
+        String val = f.tier1ValueUsd() != null ? ViewHelper.formatCompact(f.tier1ValueUsd().floatValue()) : "$0";
+        return f.tier1HoldersCount() + " (" + val + ")";
+    }
+
+    private Component createTier1ActivityCell(CompanyInstitutionalFlowDto flow) {
+        List<String> buyers = flow.tier1BuyerNames();
+        List<String> sellers = flow.tier1SellerNames();
+        boolean hasBuyers = buyers != null && !buyers.isEmpty();
+        boolean hasSellers = sellers != null && !sellers.isEmpty();
+
+        if (!hasBuyers && !hasSellers) {
+            return new Span("-");
+        }
+
+        HorizontalLayout cell = new HorizontalLayout();
+        cell.setSpacing(true);
+        cell.getStyle().set("gap", "0.25rem").set("flex-wrap", "wrap").set("align-items", "center");
+
+        if (hasBuyers) {
+            for (String b : buyers) {
+                cell.add(createMiniFundBadge(b, true));
+            }
+        }
+        if (hasSellers) {
+            for (String s : sellers) {
+                cell.add(createMiniFundBadge(s, false));
+            }
+        }
+        return cell;
+    }
+
+    private Span createMiniFundBadge(String fundName, boolean isBuyer) {
+        Span badge = new Span();
+        Icon icon = isBuyer ? VaadinIcon.ARROW_UP.create() : VaadinIcon.ARROW_DOWN.create();
+        icon.setSize("10px");
+        badge.add(icon, new Span(" " + ViewHelper.normalizeFundName(fundName)));
+        badge.getElement().getThemeList().addAll(List.of("badge", isBuyer ? "success" : "error"));
+        badge.getStyle().set("font-size", "var(--lumo-font-size-xs)");
+        return badge;
     }
 
     private static String formatQuarter(LocalDate period) {

@@ -12,6 +12,7 @@ import com.github.appreciated.apexcharts.config.plotoptions.builder.TreemapBuild
 import com.github.appreciated.apexcharts.helper.Series;
 import com.oraculum.company.api.dto.CompanyInstitutionalFlowDto;
 import com.oraculum.company.api.dto.CompanyOverviewDto;
+import com.oraculum.ui.ViewHelper;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Paragraph;
 
@@ -79,9 +80,9 @@ public class InstitutionalFlowTreemapComponent extends Div {
         String name = c.companyName() != null ? c.companyName() : c.ticker();
         Float instValBillions = flow.totalInstValueUsd() != null ? flow.totalInstValueUsd() / 1_000_000_000f : 0f;
 
-        String buyers = flow.tier1BuyerNames() != null ? String.join(", ", flow.tier1BuyerNames()) : null;
-        String sellers = flow.tier1SellerNames() != null ? String.join(", ", flow.tier1SellerNames()) : null;
-        String topHolders = flow.topHoldersNames() != null ? String.join(", ", flow.topHoldersNames()) : null;
+        String buyers = flow.tier1BuyerNames() != null ? ViewHelper.formatFundNames(flow.tier1BuyerNames()) : null;
+        String sellers = flow.tier1SellerNames() != null ? ViewHelper.formatFundNames(flow.tier1SellerNames()) : null;
+        String topHolders = flow.topHoldersNames() != null ? ViewHelper.formatFundNames(flow.topHoldersNames()) : null;
 
         return new InstTreemapData(
                 c.ticker(),

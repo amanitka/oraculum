@@ -21,7 +21,9 @@ import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 
 import java.util.Comparator;
+import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -318,6 +320,31 @@ public final class ViewHelper {
     }
 
     /**
+     * Creates a color-coded delta currency Span (+$1.25B green, -$350M red).
+     */
+    public static Span deltaCurrencySpan(Number value) {
+        if (value == null) {
+            return new Span("-");
+        }
+        double d = value.doubleValue();
+        String formatted = d > 0 ? "+" + formatCompact((float) d)
+                : (d < 0 ? "-" + formatCompact((float) Math.abs(d)) : "$0");
+        Span span = new Span(formatted);
+        span.getStyle().set("white-space", "nowrap").set("font-weight", "500");
+        if (d > 0) {
+            span.getStyle().set("color", "var(--lumo-success-text-color)");
+            span.addClassName(LumoUtility.TextColor.SUCCESS);
+        } else if (d < 0) {
+            span.getStyle().set("color", "var(--lumo-error-text-color)");
+            span.addClassName(LumoUtility.TextColor.ERROR);
+        } else {
+            span.getStyle().set("color", "var(--lumo-secondary-text-color)");
+            span.addClassName(LumoUtility.TextColor.SECONDARY);
+        }
+        return span;
+    }
+
+    /**
      * Returns a comparator that extracts a key with nullsFirst natural order, so that when Vaadin
      * reverses the comparator for Descending sort (largest to smallest), nulls are placed at the very bottom.
      */
@@ -407,5 +434,36 @@ public final class ViewHelper {
 
     public static String getCurrencySymbol(String currencyCode) {
         return getCurrencySymbol(currencyCode, null);
+    }
+
+    /**
+     * Normalizes fund names to clean Title Case while preserving standard corporate abbreviations (LLC, LP, PLC).
+     */
+    public static String normalizeFundName(String name) {
+        if (name == null || name.isBlank()) return "";
+        String[] words = name.trim().split("\\s+");
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < words.length; i++) {
+            String word = words[i];
+            if (i > 0) sb.append(" ");
+            String clean = word.replaceAll("[^a-zA-Z]", "");
+            if (clean.equalsIgnoreCase("llc") || clean.equalsIgnoreCase("lp") || clean.equalsIgnoreCase("plc")) {
+                sb.append(word.toUpperCase(Locale.US));
+            } else if (!word.isEmpty()) {
+                sb.append(Character.toUpperCase(word.charAt(0)))
+                        .append(word.substring(1).toLowerCase(Locale.US));
+            }
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Normalizes and joins a list of fund names with comma separation.
+     */
+    public static String formatFundNames(List<String> names) {
+        if (names == null || names.isEmpty()) return null;
+        return names.stream()
+                .map(ViewHelper::normalizeFundName)
+                .collect(Collectors.joining(", "));
     }
 }

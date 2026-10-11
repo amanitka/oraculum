@@ -65,9 +65,9 @@ public class MarketTreemapComponent extends Div {
         String color = getColorForMetric(c, flow, selectedMetric);
         String name = c.companyName() != null ? c.companyName() : c.ticker();
 
-        String buyers = flow != null && flow.tier1BuyerNames() != null ? String.join(", ", flow.tier1BuyerNames()) : null;
-        String sellers = flow != null && flow.tier1SellerNames() != null ? String.join(", ", flow.tier1SellerNames()) : null;
-        String topHolders = flow != null && flow.topHoldersNames() != null ? String.join(", ", flow.topHoldersNames()) : null;
+        String buyers = flow != null ? ViewHelper.formatFundNames(flow.tier1BuyerNames()) : null;
+        String sellers = flow != null ? ViewHelper.formatFundNames(flow.tier1SellerNames()) : null;
+        String topHolders = flow != null ? ViewHelper.formatFundNames(flow.topHoldersNames()) : null;
 
         return new TreemapCustomData(
                 c.ticker(),

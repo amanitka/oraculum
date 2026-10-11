@@ -161,8 +161,8 @@ public class InstitutionalFlowGridComponent extends VerticalLayout {
     private void addBuyersAndDetailsColumns() {
         grid.addColumn(item -> {
                     var flow = currentFlowMap.get(item.companyId());
-                    if (flow == null || flow.tier1BuyerNames() == null || flow.tier1BuyerNames().isEmpty()) return "-";
-                    return String.join(", ", flow.tier1BuyerNames());
+                    String formatted = flow != null ? ViewHelper.formatFundNames(flow.tier1BuyerNames()) : null;
+                    return formatted != null ? formatted : "-";
                 }).setHeader(ViewHelper.createExplainedHeader("Smart Money Buyers", "Tier 1 elite funds that accumulated shares in this quarter."))
                 .setAutoWidth(true).setFlexGrow(1);
 
