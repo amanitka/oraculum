@@ -17,6 +17,7 @@ import com.oraculum.ui.service.AnalysisRequestService;
 import com.oraculum.ui.views.components.renderer.AnalysisResultFieldHelper;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -224,15 +225,15 @@ public class AnalysisView extends VerticalLayout {
 
         g.addColumn(new ComponentRenderer<>(a -> {
                     if (a.getStatus() == AnalysisStatus.QUEUED || a.getStatus() == AnalysisStatus.RUNNING) {
-                        return new ProgressCell(a, broadcaster, this::refreshGridData);
+                        return new ProgressCell(a, broadcaster, this::refreshGridData, getUI().orElse(null));
                     }
                     return ViewHelper.statusBadge(a.getStatus());
                 })).setHeader("Status")
                 .setKey("status")
                 .setComparator(Comparator.comparing(CompanyAnalysisViewDto::getStatus, Comparator.nullsLast(Comparator.naturalOrder())))
                 .setSortable(true)
-                .setWidth("125px")
-                .setFlexGrow(0);
+                .setAutoWidth(true)
+                .setFlexGrow(1);
 
         g.addColumn(new ComponentRenderer<>(a -> AnalysisResultFieldHelper.outlookBadge(a.getAnalysisResult())))
                 .setHeader("Outlook")
@@ -384,7 +385,7 @@ public class AnalysisView extends VerticalLayout {
     private static class ProgressCell extends Span {
         private final Runnable unregister;
 
-        public ProgressCell(CompanyAnalysisDto analysis, CompanyAnalysisProgressBroadcasterService broadcaster, Runnable onComplete) {
+        public ProgressCell(CompanyAnalysisDto analysis, CompanyAnalysisProgressBroadcasterService broadcaster, Runnable onComplete, UI ui) {
             getElement().getThemeList().add("badge");
             if (analysis.getStatus() == AnalysisStatus.QUEUED) {
                 getElement().getThemeList().add("contrast");
@@ -395,6 +396,7 @@ public class AnalysisView extends VerticalLayout {
             getStyle().set("display", "inline-flex");
             getStyle().set("align-items", "center");
             getStyle().set("gap", "8px");
+            getStyle().set("white-space", "nowrap");
 
             com.vaadin.flow.component.progressbar.ProgressBar progressBar = new com.vaadin.flow.component.progressbar.ProgressBar();
             progressBar.setIndeterminate(true);
@@ -409,16 +411,19 @@ public class AnalysisView extends VerticalLayout {
                 if (!update.analysisId().equals(analysis.getId())) {
                     return;
                 }
-                getUI().ifPresent(ui -> ui.access(() -> {
-                    if (update.isDone()) {
-                        onComplete.run();
-                    } else {
-                        label.setText("Running: " + update.agentType().getAgentName());
-                        getElement().getThemeList().remove("contrast");
-                        getElement().getThemeList().add("warning");
-                        analysis.setStatus(AnalysisStatus.RUNNING);
-                    }
-                }));
+                UI targetUi = ui != null ? ui : getUI().orElse(null);
+                if (targetUi != null) {
+                    targetUi.access(() -> {
+                        if (update.isDone()) {
+                            onComplete.run();
+                        } else if (update.agentType() != null) {
+                            label.setText("Running: " + update.agentType().getAgentName());
+                            getElement().getThemeList().remove("contrast");
+                            getElement().getThemeList().add("warning");
+                            analysis.setStatus(AnalysisStatus.RUNNING);
+                        }
+                    });
+                }
             });
 
             addDetachListener(_ -> unregister.run());

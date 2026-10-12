@@ -54,6 +54,8 @@ class CompanyFactSheetDataServiceTest {
     @Mock
     private CompanyValuationApi companyValuationApi;
     @Mock
+    private com.oraculum.company.api.CompanyInstitutionalFlowApi companyInstitutionalFlowApi;
+    @Mock
     private tools.jackson.databind.json.JsonMapper jsonMapper;
     @Mock(answer = org.mockito.Answers.RETURNS_DEEP_STUBS)
     private AnalystProperties analystProperties;
@@ -155,5 +157,6 @@ class CompanyFactSheetDataServiceTest {
         assertThat(data.getInsiderTransactionSummary()).isNotNull();
         assertThat(data.getRecentInsiderTransactions()).isNotNull();
         assertThat(data.getMacroeconomicSummary()).isNotNull();
+        assertThat(data.getInstitutionalFlowHistory()).isNotNull();
     }
 }

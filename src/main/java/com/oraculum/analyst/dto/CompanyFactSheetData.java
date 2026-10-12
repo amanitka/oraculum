@@ -48,6 +48,8 @@ public class CompanyFactSheetData {
     private final Map<TickerDocumentType, Map<TickerDocumentSubtype, List<TickerDocumentDto>>> recentSecDocuments;
     private final ReverseDcfDto reverseDcfResult;
     private final List<HistoricalValuationSummaryDto> historicalValuationPercentiles;
+    private final List<CompanyInstitutionalFlowDto> institutionalFlowHistory;
+    private final List<SectorInstitutionalFlowTrendDto> allSectorsInstitutionalFlow;
 
     private String wrapWithCitation(Class<?> clazz, Object uniqueId, Object dto) {
         if (dto == null) return "{}";
@@ -249,6 +251,24 @@ public class CompanyFactSheetData {
         }
         return "[" + macroeconomicSummary.stream()
                 .map(dto -> wrapWithCitation(MacroSummaryDto.class, dto.indicator(), dto))
+                .collect(Collectors.joining(",")) + "]";
+    }
+
+    public String getInstitutionalFlowHistoryJson() {
+        if (institutionalFlowHistory == null || institutionalFlowHistory.isEmpty()) {
+            return "[]";
+        }
+        return "[" + institutionalFlowHistory.stream()
+                .map(dto -> wrapWithCitation(CompanyInstitutionalFlowDto.class, company.ticker() + "_" + dto.reportPeriod(), dto))
+                .collect(Collectors.joining(",")) + "]";
+    }
+
+    public String getSectorRotationSummaryJson() {
+        if (allSectorsInstitutionalFlow == null || allSectorsInstitutionalFlow.isEmpty()) {
+            return "[]";
+        }
+        return "[" + allSectorsInstitutionalFlow.stream()
+                .map(dto -> wrapWithCitation(SectorInstitutionalFlowTrendDto.class, dto.sectorName() + "_" + dto.reportPeriod(), dto))
                 .collect(Collectors.joining(",")) + "]";
     }
 

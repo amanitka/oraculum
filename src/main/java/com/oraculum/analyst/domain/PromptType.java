@@ -14,6 +14,7 @@ public enum PromptType {
     FUNDAMENTALS("/prompt/fundamentals.md"),
     EARNINGS_ESTIMATES("/prompt/earnings_estimates.md"),
     INSIDER_TRANSACTION("/prompt/insider_transaction.md"),
+    SMART_MONEY("/prompt/smart_money.md"),
     MACROECONOMIC("/prompt/macroeconomic.md"),
     SEC_MD("/prompt/sec_md.md"),
     SEC_RF("/prompt/sec_rf.md"),

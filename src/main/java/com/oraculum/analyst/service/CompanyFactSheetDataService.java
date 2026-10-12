@@ -32,6 +32,7 @@ public class CompanyFactSheetDataService {
     private final JsonMapper jsonMapper;
     private final AnalystProperties analystProperties;
     private final CompanyValuationApi companyValuationApi;
+    private final CompanyInstitutionalFlowApi companyInstitutionalFlowApi;
 
     private Map<StatementVariant, List<IncomeStatementDto>> getIncomeStatements(CompanyDto company, LocalDate annualAfter, LocalDate quarterlyAfter) {
         return companyFinancialDataApi.getIncomeStatementsByCompanyId(company.id(), annualAfter)
@@ -148,7 +149,22 @@ public class CompanyFactSheetDataService {
                 .recentSecDocuments(getRecentSecDocuments(company))
                 .reverseDcfResult(companyValuationApi.calculateReverseDcf(company.id()))
                 .historicalValuationPercentiles(companyValuationApi.calculateHistoricalValuationPercentiles(company.id()))
+                .institutionalFlowHistory(getInstitutionalFlowHistory(company))
+                .allSectorsInstitutionalFlow(getAllSectorsInstitutionalFlow())
                 .build();
+    }
+
+    private List<CompanyInstitutionalFlowDto> getInstitutionalFlowHistory(CompanyDto company) {
+        if (company == null || company.id() == null) return List.of();
+        return companyInstitutionalFlowApi.getInstitutionalFlowHistory(company.id());
+    }
+
+    private List<SectorInstitutionalFlowTrendDto> getAllSectorsInstitutionalFlow() {
+        List<SectorInstitutionalFlowTrendDto> sectorFlows = companyInstitutionalFlowApi.getSectorInstitutionalFlowByPeriod(null);
+        if (sectorFlows == null || sectorFlows.isEmpty()) return List.of();
+        return sectorFlows.stream()
+                .sorted(Comparator.comparing(SectorInstitutionalFlowTrendDto::flowPct).reversed())
+                .toList();
     }
 
 }

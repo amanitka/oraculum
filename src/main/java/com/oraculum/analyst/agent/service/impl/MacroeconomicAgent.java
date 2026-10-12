@@ -32,7 +32,7 @@ public class MacroeconomicAgent implements Agent<StandardAgentOutput> {
     }
 
     private AgentOutput<StandardAgentOutput> getDefaultOutput() {
-        return new AgentOutput<>(new StandardAgentOutput("No macroeconomic data available.", 0.0, 0.0, java.util.List.of(), java.util.List.of(), java.util.List.of(), java.util.List.of(), java.util.Map.of(), "No macroeconomic data available."), 0);
+        return new AgentOutput<>(StandardAgentOutput.empty("No macroeconomic data available."), 0);
     }
 
     private String getPrompt(AgentContext ctx, String macroeconomicSummary) {

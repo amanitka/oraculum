@@ -41,7 +41,7 @@ public class NewsAgent implements Agent<StandardAgentOutput> {
 
         if (hasNoData(news) && hasNoData(secEx991Summary)) {
             log.warn("No recent news or 8-K documents found for ticker: {}", ctx.ticker());
-            return new AgentOutput<>(new StandardAgentOutput("No significant recent news or material events found for this ticker.", 0.0, 0.0, java.util.List.of(), java.util.List.of(), java.util.List.of(), java.util.List.of(), java.util.Map.of(), "No significant recent news or material events found for this ticker."), 0);
+            return new AgentOutput<>(StandardAgentOutput.empty("No significant recent news or material events found for this ticker."), 0);
         }
 
         String fullPrompt = buildFullPrompt(ctx, news, secEx991Summary);

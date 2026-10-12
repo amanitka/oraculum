@@ -82,16 +82,15 @@ public final class ViewHelper {
         String text = status != null ? status.getDisplayName() : "Pending";
         Span badge = new Span(text);
         badge.getStyle().set("white-space", "nowrap");
-        String theme = "badge";
+        badge.getElement().getThemeList().add("badge");
         if (status != null) {
-            if (status == AnalysisStatus.COMPLETED) theme += " success";
-            else if (status == AnalysisStatus.FAILED) theme += " error";
-            else if (status == AnalysisStatus.RUNNING) theme += " warning";
-            else theme += " contrast";
+            if (status == AnalysisStatus.COMPLETED) badge.getElement().getThemeList().add("success");
+            else if (status == AnalysisStatus.FAILED) badge.getElement().getThemeList().add("error");
+            else if (status == AnalysisStatus.RUNNING) badge.getElement().getThemeList().add("warning");
+            else badge.getElement().getThemeList().add("contrast");
         } else {
-            theme += " contrast";
+            badge.getElement().getThemeList().add("contrast");
         }
-        badge.getElement().getThemeList().add(theme);
         return badge;
     }
 
@@ -102,15 +101,14 @@ public final class ViewHelper {
         String text = outlook != null ? outlook.getDisplayName() : "Pending";
         Span badge = new Span(text);
         badge.getStyle().set("white-space", "nowrap");
-        String theme = "badge";
+        badge.getElement().getThemeList().add("badge");
         if (outlook != null) {
-            if (outlook == AnalysisOutlook.BULLISH) theme += " success";
-            else if (outlook == AnalysisOutlook.BEARISH) theme += " error";
-            else theme += " contrast";
+            if (outlook == AnalysisOutlook.BULLISH) badge.getElement().getThemeList().add("success");
+            else if (outlook == AnalysisOutlook.BEARISH) badge.getElement().getThemeList().add("error");
+            else badge.getElement().getThemeList().add("contrast");
         } else {
-            theme += " contrast";
+            badge.getElement().getThemeList().add("contrast");
         }
-        badge.getElement().getThemeList().add(theme);
         return badge;
     }
 
@@ -121,15 +119,19 @@ public final class ViewHelper {
         String text = valuation != null ? valuation.getDisplayLabel() : "Pending";
         Span badge = new Span(text);
         badge.getStyle().set("white-space", "nowrap");
-        String theme = "badge";
+        badge.getElement().getThemeList().add("badge");
         if (valuation != null) {
-            if (valuation == ValuationAssessment.UNDERVALUED) theme += " success primary";
-            else if (valuation == ValuationAssessment.OVERVALUED) theme += " error";
-            else theme += " contrast";
+            if (valuation == ValuationAssessment.UNDERVALUED) {
+                badge.getElement().getThemeList().add("success");
+                badge.getElement().getThemeList().add("primary");
+            } else if (valuation == ValuationAssessment.OVERVALUED) {
+                badge.getElement().getThemeList().add("error");
+            } else {
+                badge.getElement().getThemeList().add("contrast");
+            }
         } else {
-            theme += " contrast";
+            badge.getElement().getThemeList().add("contrast");
         }
-        badge.getElement().getThemeList().add(theme);
         return badge;
     }
 

@@ -16,7 +16,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 
 @Slf4j
 @Component
@@ -32,7 +31,7 @@ public class InsiderTransactionAgent implements Agent<StandardAgentOutput> {
     }
 
     private AgentOutput<StandardAgentOutput> getDefaultOutput() {
-        return new AgentOutput<>(new StandardAgentOutput("No insider transactions available.", 0.0, 0.0, List.of(), List.of(), List.of(), List.of(), java.util.Map.of(), "No insider transactions available."), 0);
+        return new AgentOutput<>(StandardAgentOutput.empty("No insider transactions available."), 0);
     }
 
     private String getPrompt(AgentContext ctx, String recentTransactions) {

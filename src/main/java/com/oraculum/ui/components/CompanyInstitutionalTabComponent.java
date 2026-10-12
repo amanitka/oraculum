@@ -89,7 +89,16 @@ public class CompanyInstitutionalTabComponent extends VerticalLayout {
         bar.add(createKpiCard("Filers", holdersVal, null));
 
         String concVal = latest.top5HoldersPct() != null ? String.format(Locale.US, "%.1f%%", latest.top5HoldersPct()) : "-";
-        bar.add(createKpiCard("Top 5 Conc.", concVal, null));
+        Component top5Card = createKpiCard("Top 5 Conc.", concVal, null);
+        if (latest.topHoldersNames() != null && !latest.topHoldersNames().isEmpty()) {
+            top5Card.getElement().setAttribute("title", "Top 5 largest holders: " + String.join(", ", latest.topHoldersNames()));
+        }
+        bar.add(top5Card);
+
+        Long t1Delta = latest.tier1NetValueChangeUsd();
+        Float t1DeltaFloat = t1Delta != null ? t1Delta.floatValue() : null;
+        String t1FlowVal = t1Delta != null ? (t1Delta >= 0 ? "+" : "-") + ViewHelper.formatCompact(Math.abs(t1Delta.floatValue())) : "-";
+        bar.add(createKpiCard("Tier 1 Flow", t1FlowVal, t1DeltaFloat));
 
         String pcVal = latest.putCallRatio() != null ? String.format(Locale.US, "%.2f", latest.putCallRatio()) : "-";
         bar.add(createKpiCard("P/C Ratio", pcVal, null));
@@ -155,7 +164,12 @@ public class CompanyInstitutionalTabComponent extends VerticalLayout {
     private void addTier1SummaryBadge(HorizontalLayout container, CompanyInstitutionalFlowDto latest) {
         int count = latest.tier1HoldersCount() != null ? latest.tier1HoldersCount() : 0;
         String val = latest.tier1ValueUsd() != null ? ViewHelper.formatCompact(latest.tier1ValueUsd().floatValue()) : "$0";
-        Span pill = new Span(count + " Elite Funds (" + val + ")");
+        String deltaStr = "";
+        if (latest.tier1NetValueChangeUsd() != null && latest.tier1NetValueChangeUsd() != 0) {
+            String sign = latest.tier1NetValueChangeUsd() > 0 ? "+" : "-";
+            deltaStr = " | Net Flow: " + sign + ViewHelper.formatCompact(Math.abs(latest.tier1NetValueChangeUsd().floatValue()));
+        }
+        Span pill = new Span(count + " Elite Funds (" + val + deltaStr + ")");
         pill.getElement().getThemeList().addAll(List.of("badge", "primary"));
         container.add(pill);
     }
@@ -227,15 +241,29 @@ public class CompanyInstitutionalTabComponent extends VerticalLayout {
                 .setHeader("Buyers / Sellers").setTextAlign(ColumnTextAlign.END).setAutoWidth(true).setResizable(true);
         grid.addColumn(new ComponentRenderer<>(this::createNewClosedCell))
                 .setHeader("New / Closed").setTextAlign(ColumnTextAlign.END).setAutoWidth(true).setResizable(true);
-        grid.addColumn(f -> f.top5HoldersPct() != null ? String.format(Locale.US, "%.1f%%", f.top5HoldersPct()) : "-")
-                .setHeader("Top 5 Conc.").setTextAlign(ColumnTextAlign.END).setAutoWidth(true).setSortable(true).setResizable(true);
+        grid.addColumn(new ComponentRenderer<>(this::createTop5HoldersCell))
+                .setHeader(ViewHelper.createExplainedHeader("Top 5 Conc.", "Share of total institutional float held by the top 5 largest filers overall (e.g. Vanguard, BlackRock, State Street)"))
+                .setTextAlign(ColumnTextAlign.END).setAutoWidth(true).setSortable(true).setResizable(true);
         grid.addColumn(new ComponentRenderer<>(this::createPutCallRatioCell))
                 .setHeader("P/C Ratio").setTextAlign(ColumnTextAlign.END).setAutoWidth(true).setSortable(true).setResizable(true);
     }
 
+    private Component createTop5HoldersCell(CompanyInstitutionalFlowDto f) {
+        if (f.top5HoldersPct() == null) return new Span("-");
+        Span s = new Span(String.format(Locale.US, "%.1f%%", f.top5HoldersPct()));
+        if (f.topHoldersNames() != null && !f.topHoldersNames().isEmpty()) {
+            s.setTitle("Top 5 largest holders: " + String.join(", ", f.topHoldersNames()));
+        }
+        return s;
+    }
+
     private void addTier1ActivityColumns(Grid<CompanyInstitutionalFlowDto> grid) {
         grid.addColumn(CompanyInstitutionalTabComponent::formatTier1Holdings)
-                .setHeader("Tier 1 Funds").setTextAlign(ColumnTextAlign.END).setAutoWidth(true).setSortable(true).setResizable(true);
+                .setHeader(ViewHelper.createExplainedHeader("Tier 1 Funds", "Number of curated superinvestor/elite hedge funds holding position and total dollar value at quarter end"))
+                .setTextAlign(ColumnTextAlign.END).setAutoWidth(true).setSortable(true).setResizable(true);
+        grid.addColumn(new ComponentRenderer<>(f -> ViewHelper.deltaCurrencySpan(f.tier1NetValueChangeUsd())))
+                .setHeader(ViewHelper.createExplainedHeader("Tier 1 Flow ($)", "Net quarterly dollar change in holdings by Tier 1 funds"))
+                .setTextAlign(ColumnTextAlign.END).setAutoWidth(true).setSortable(true).setResizable(true);
         grid.addColumn(new ComponentRenderer<>(this::createTier1ActivityCell))
                 .setHeader("Tier 1 Activity").setAutoWidth(true).setResizable(true).setFlexGrow(1);
     }
@@ -326,9 +354,11 @@ public class CompanyInstitutionalTabComponent extends VerticalLayout {
         Span badge = new Span();
         Icon icon = isBuyer ? VaadinIcon.ARROW_UP.create() : VaadinIcon.ARROW_DOWN.create();
         icon.setSize("10px");
-        badge.add(icon, new Span(" " + ViewHelper.normalizeFundName(fundName)));
+        String name = ViewHelper.normalizeFundName(fundName);
+        badge.add(icon, new Span(" " + name));
         badge.getElement().getThemeList().addAll(List.of("badge", isBuyer ? "success" : "error"));
         badge.getStyle().set("font-size", "var(--lumo-font-size-xs)");
+        badge.setTitle(name + (isBuyer ? " (Buyer / Added stake)" : " (Seller / Reduced or Closed stake)"));
         return badge;
     }
 

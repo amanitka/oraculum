@@ -61,7 +61,7 @@ public class EarningsEstimatesAgent implements Agent<StandardAgentOutput> {
         var factSheet = ctx.factSheetData();
         String earningsEstimatesJson = factSheet.getFutureEarningsEstimates(ctx.analysisDate());
         if ("[]".equals(earningsEstimatesJson)) {
-            return new AgentOutput<>(new StandardAgentOutput("No earnings estimates available.", 0.0, 0.0, java.util.List.of(), java.util.List.of(), java.util.List.of(), java.util.List.of(), java.util.Map.of(), "No earnings estimates available."), 0);
+            return new AgentOutput<>(StandardAgentOutput.empty("No earnings estimates available."), 0);
         }
         String fullPrompt = preparePrompt(ctx, earningsEstimatesJson);
         LlmResponse<StandardAgentOutput> response = llmRouterApi.executeCall(

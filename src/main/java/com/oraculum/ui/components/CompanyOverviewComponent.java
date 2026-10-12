@@ -9,6 +9,7 @@ import com.github.appreciated.apexcharts.config.stroke.Curve;
 import com.github.appreciated.apexcharts.config.xaxis.XAxisType;
 import com.github.appreciated.apexcharts.config.yaxis.builder.LabelsBuilder;
 import com.github.appreciated.apexcharts.helper.Series;
+import com.oraculum.common.constant.MarketConstants;
 import com.oraculum.company.api.*;
 import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.dto.*;
@@ -107,7 +108,9 @@ public class CompanyOverviewComponent extends VerticalLayout {
         mainTabSheet.add("Insider", createInsiderLayout());
 
         // 9. Smart Money (13F) Tab
-        mainTabSheet.add("Smart Money (13F)", new CompanyInstitutionalTabComponent(companyInstitutionalFlowApi, company.id()));
+        if (MarketConstants.US.equalsIgnoreCase(company.market())) {
+            mainTabSheet.add("Smart Money (13F)", new CompanyInstitutionalTabComponent(companyInstitutionalFlowApi, company.id()));
+        }
 
         mainTabSheet.addSelectedChangeListener(_ ->
                 getUI().ifPresent(ui -> ui.getPage().executeJs(
