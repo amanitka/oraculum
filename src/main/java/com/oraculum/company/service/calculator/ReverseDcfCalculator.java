@@ -3,7 +3,10 @@ package com.oraculum.company.service.calculator;
 import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.dto.CompanyFinancialRatiosDto;
 import com.oraculum.company.api.dto.ReverseDcfDto;
+import com.oraculum.company.api.dto.ReverseDcfMatrixCellDto;
+import com.oraculum.company.api.dto.ReverseDcfSensitivityMatrixDto;
 import com.oraculum.company.api.dto.SharePriceSignalDto;
+import com.oraculum.company.api.dto.ValuationZone;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -14,6 +17,9 @@ public class ReverseDcfCalculator {
     private static final double DEFAULT_DISCOUNT_RATE = 0.10d;
     private static final double DEFAULT_TERMINAL_GROWTH = 0.03d;
     private static final int DEFAULT_PROJECTION_YEARS = 10;
+
+    private static final List<Double> MATRIX_DISCOUNT_RATES = List.of(8.0d, 9.0d, 10.0d, 11.0d, 12.0d);
+    private static final List<Double> MATRIX_TERMINAL_RATES = List.of(2.0d, 2.5d, 3.0d, 3.5d, 4.0d);
 
     // Bounds for the implied-growth-rate solver. Kept wide, but the solver now
     // reports whether the answer landed on a bound rather than silently
@@ -58,6 +64,8 @@ public class ReverseDcfCalculator {
                 String.format(Locale.US, "FY%d to FY%d (%d-year period)", historicalCagr.startFiscalYear(), historicalCagr.endFiscalYear(), historicalCagr.yearsSpanned())
                 : null;
 
+        ReverseDcfSensitivityMatrixDto sensitivityMatrix = buildSensitivityMatrix(marketCap, currentFcf);
+
         return new ReverseDcfDto(
                 marketCap,
                 currentFcf,
@@ -69,8 +77,39 @@ public class ReverseDcfCalculator {
                 historicalCagr != null ? historicalCagr.cagr() * 100.0 : null,
                 historicalPeriodSpan,
                 solverResult.isClipped(),
-                interpretation
+                interpretation,
+                sensitivityMatrix
         );
+    }
+
+    private ReverseDcfSensitivityMatrixDto buildSensitivityMatrix(double marketCap, double currentFcf) {
+        List<ReverseDcfMatrixCellDto> cells = new ArrayList<>(MATRIX_DISCOUNT_RATES.size() * MATRIX_TERMINAL_RATES.size());
+
+        for (double r : MATRIX_DISCOUNT_RATES) {
+            for (double gTerminal : MATRIX_TERMINAL_RATES) {
+                cells.add(createMatrixCell(marketCap, currentFcf, r, gTerminal));
+            }
+        }
+        return new ReverseDcfSensitivityMatrixDto(MATRIX_DISCOUNT_RATES, MATRIX_TERMINAL_RATES, cells);
+    }
+
+    private ReverseDcfMatrixCellDto createMatrixCell(double marketCap, double fcf, double rPct, double gTerminalPct) {
+        SolverResult result = solveImpliedGrowthRate(marketCap, fcf, rPct / 100.0, DEFAULT_PROJECTION_YEARS, gTerminalPct / 100.0);
+        double impliedPct = result.impliedGrowth() * 100.0;
+        ValuationZone zone = determineValuationZone(impliedPct);
+        boolean isBaseCase = Math.abs(rPct - DEFAULT_DISCOUNT_RATE * 100.0) < 0.0001 && Math.abs(gTerminalPct - DEFAULT_TERMINAL_GROWTH * 100.0) < 0.0001;
+        return new ReverseDcfMatrixCellDto(rPct, gTerminalPct, impliedPct, zone, isBaseCase);
+    }
+
+    private ValuationZone determineValuationZone(double impliedGrowthPct) {
+        if (impliedGrowthPct <= 6.0) {
+            return ValuationZone.DEEP_DISCOUNT;
+        } else if (impliedGrowthPct <= 12.0) {
+            return ValuationZone.FAIR;
+        } else if (impliedGrowthPct <= 20.0) {
+            return ValuationZone.AGGRESSIVE;
+        }
+        return ValuationZone.SPECULATIVE;
     }
 
     private Float extractLatestTtmFcf(List<CompanyFinancialRatiosDto> ttmRatios) {

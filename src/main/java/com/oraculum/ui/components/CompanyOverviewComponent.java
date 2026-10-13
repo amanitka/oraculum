@@ -20,6 +20,7 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -33,6 +34,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -789,92 +791,186 @@ public class CompanyOverviewComponent extends VerticalLayout {
 
         int companyId = company.id();
 
-        // 1. Reverse DCF Section
         ReverseDcfDto dcfDto = companyValuationApi.calculateReverseDcf(companyId);
+        List<HistoricalValuationSummaryDto> summaries = companyValuationApi.calculateHistoricalValuationPercentiles(companyId);
+
+        if (dcfDto == null && (summaries == null || summaries.isEmpty())) {
+            layout.add(new Span("No valuation data available."));
+            return layout;
+        }
+
+        H3 dcfHeader = new H3("Company Valuation & Cash Flow Modeling");
+        dcfHeader.getStyle().set("margin-top", "0.5rem").set("margin-bottom", "0.25rem");
+        layout.add(dcfHeader);
+
+        // 1. Top Row: 5 KPI Metric Cards Strip
         if (dcfDto != null) {
-            H3 dcfHeader = new H3("Reverse Discounted Cash Flow (implied growth)");
-            dcfHeader.getStyle().set("margin-top", "0.5rem");
+            Div kpiStrip = new Div();
+            kpiStrip.setWidthFull();
+            kpiStrip.getStyle()
+                    .set("display", "grid")
+                    .set("grid-template-columns", "repeat(5, minmax(0, 1fr))")
+                    .set("gap", "0.75rem")
+                    .set("margin-bottom", "0.5rem");
 
-            HorizontalLayout dcfCards = new HorizontalLayout();
-            dcfCards.setWidthFull();
-            dcfCards.setSpacing(true);
+            String mCapStr = dcfDto.currentMarketCap() != null
+                    ? String.format(Locale.US, "$%,.2fB", dcfDto.currentMarketCap() / 1_000_000_000f) : "-";
+            String fcfStr = dcfDto.currentFcf() != null
+                    ? String.format(Locale.US, "$%,.2fB", dcfDto.currentFcf() / 1_000_000_000f) : "-";
+            String fcfYieldStr = dcfDto.fcfYieldPct() != null
+                    ? String.format(Locale.US, "%.2f%%", dcfDto.fcfYieldPct()) : "-";
+            String impliedGrowthStr = dcfDto.impliedFcfGrowthRatePct() != null
+                    ? String.format(Locale.US, "%.2f%%", dcfDto.impliedFcfGrowthRatePct()) : "-";
+            String histCagrStr = dcfDto.historicalFcfCagrPct() != null
+                    ? String.format(Locale.US, "%.1f%%", dcfDto.historicalFcfCagrPct()) : "N/A";
 
-            dcfCards.add(createMetricCard("Current Market Cap", String.format(java.util.Locale.US, "$%,.2fB", dcfDto.currentMarketCap() / 1_000_000_000f)));
-            dcfCards.add(createMetricCard("TTM Free Cash Flow", String.format(java.util.Locale.US, "$%,.2fB", dcfDto.currentFcf() / 1_000_000_000f)));
-            dcfCards.add(createMetricCard("Free Cash Flow Yield", String.format(java.util.Locale.US, "%.2f%%", dcfDto.fcfYieldPct())));
-            dcfCards.add(createMetricCard("Implied 10Y FCF Growth Rate", String.format(java.util.Locale.US, "%.2f%%", dcfDto.impliedFcfGrowthRatePct())));
+            kpiStrip.add(createMetricCard("Market Cap", mCapStr));
+            kpiStrip.add(createMetricCard("TTM Free Cash Flow", fcfStr));
+            kpiStrip.add(createMetricCard("FCF Yield", fcfYieldStr));
+            kpiStrip.add(createMetricCard("Implied 10Y FCF Growth", impliedGrowthStr));
+            kpiStrip.add(createMetricCard("Historical FCF CAGR", histCagrStr));
 
+            layout.add(kpiStrip);
+        }
+
+        // 2. Middle Row: Side-by-side Sensitivity Matrix (Left) + Historical Multiples Table (Right)
+        HorizontalLayout tablesRow = new HorizontalLayout();
+        tablesRow.setWidthFull();
+        tablesRow.setSpacing(true);
+        tablesRow.setAlignItems(FlexComponent.Alignment.START);
+        tablesRow.getStyle()
+                .set("gap", "1rem")
+                .set("align-items", "stretch");
+
+        if (dcfDto != null) {
+            ReverseDcfSensitivityMatrixComponent matrixComponent = new ReverseDcfSensitivityMatrixComponent(dcfDto);
+            matrixComponent.getStyle()
+                    .set("flex", "0 0 36%")
+                    .set("min-width", "530px");
+            tablesRow.add(matrixComponent);
+        }
+
+        if (summaries != null && !summaries.isEmpty()) {
+            Div histCard = new Div();
+            histCard.addClassName("metric-card");
+            histCard.getStyle()
+                    .set("box-sizing", "border-box")
+                    .set("padding", "1rem 1.15rem")
+                    .set("flex", "1 1 64%")
+                    .set("min-width", "540px")
+                    .set("display", "flex")
+                    .set("flex-direction", "column");
+
+            HorizontalLayout histHeader = new HorizontalLayout();
+            histHeader.setWidthFull();
+            histHeader.setPadding(false);
+            histHeader.setSpacing(true);
+            histHeader.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
+            histHeader.setAlignItems(FlexComponent.Alignment.BASELINE);
+            histHeader.getStyle().set("margin-bottom", "0.5rem");
+
+            H4 histTitle = new H4("Historical Multiples & 10Y Percentiles");
+            histTitle.getStyle()
+                    .set("margin", "0")
+                    .set("font-size", "0.95rem")
+                    .set("font-weight", "600")
+                    .set("white-space", "nowrap");
+
+            Span histSubtitle = new Span("Current vs. 5Y / 10Y historical ranges");
+            histSubtitle.getStyle()
+                    .set("font-size", "var(--lumo-font-size-xs)")
+                    .set("color", "var(--lumo-secondary-text-color)")
+                    .set("white-space", "nowrap");
+
+            histHeader.add(histTitle, histSubtitle);
+
+            Grid<HistoricalValuationSummaryDto> grid = createHistoricalValuationGrid(summaries);
+
+            histCard.add(histHeader, grid);
+            tablesRow.add(histCard);
+        }
+
+        layout.add(tablesRow);
+
+        // 3. Bottom Row: Analysis Interpretation Card (Full Width)
+        if (dcfDto != null && dcfDto.interpretation() != null && !dcfDto.interpretation().isBlank()) {
             Div interpretationCard = new Div();
             interpretationCard.setWidthFull();
             interpretationCard.getStyle()
                     .set("box-sizing", "border-box")
                     .set("background-color", "var(--lumo-contrast-5pct)")
                     .set("border-left", "4px solid var(--lumo-primary-color)")
-                    .set("padding", "1rem 1.5rem")
+                    .set("padding", "0.85rem 1.25rem")
                     .set("border-radius", "0 4px 4px 0")
-                    .set("margin-top", "0.5rem");
+                    .set("margin-top", "0.25rem");
 
             Span interpLabel = new Span("Analysis interpretation: ");
             interpLabel.getStyle().set("font-weight", "bold");
             Span interpText = new Span(dcfDto.interpretation());
 
             interpretationCard.add(interpLabel, interpText);
-
-            layout.add(dcfHeader, dcfCards, interpretationCard);
-        }
-
-        // 2. Historical Valuation Percentiles Section
-        List<HistoricalValuationSummaryDto> summaries = companyValuationApi.calculateHistoricalValuationPercentiles(companyId);
-        if (summaries != null && !summaries.isEmpty()) {
-            H3 histHeader = new H3("Historical Valuation Multiples & 10-Year Percentiles");
-            histHeader.getStyle().set("margin-top", "1.5rem");
-
-            Grid<HistoricalValuationSummaryDto> grid = new Grid<>(HistoricalValuationSummaryDto.class, false);
-            grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
-
-            grid.addColumn(HistoricalValuationSummaryDto::metric).setHeader("Metric").setAutoWidth(true);
-            grid.addColumn(item -> formatFloat(item.current())).setHeader("Current Multiple").setAutoWidth(true);
-            grid.addColumn(item -> formatFloat(item.avg5y())).setHeader("5Y Average").setAutoWidth(true);
-            grid.addColumn(item -> formatFloat(item.avg10y())).setHeader("10Y Average").setAutoWidth(true);
-
-            grid.addColumn(new ComponentRenderer<>(item -> {
-                Span badge = new Span(item.percentile10y() != null ? String.format("%d%%", item.percentile10y()) : "-");
-                if (item.percentile10y() != null) {
-                    badge.getElement().getThemeList().add("badge");
-                    int p = item.percentile10y();
-                    if (p > 70) {
-                        // Heatmap red (expensive)
-                        badge.getStyle().set("background-color", "rgba(220, 38, 38, 0.2)");
-                        badge.getStyle().set("color", "var(--lumo-error-text-color)");
-                    } else if (p < 30) {
-                        // Heatmap green (cheap)
-                        badge.getStyle().set("background-color", "rgba(22, 163, 74, 0.2)");
-                        badge.getStyle().set("color", "var(--lumo-success-text-color)");
-                    } else {
-                        badge.getElement().getThemeList().add("contrast");
-                    }
-                }
-                return badge;
-            })).setHeader("10Y Percentile Rank").setAutoWidth(true);
-
-            grid.addColumn(item -> formatFloat(item.min10y())).setHeader("10Y Min").setAutoWidth(true);
-            grid.addColumn(item -> formatFloat(item.max10y())).setHeader("10Y Max").setAutoWidth(true);
-
-            grid.setItems(summaries);
-            grid.setWidthFull();
-            grid.setAllRowsVisible(true);
-
-            layout.add(histHeader, grid);
+            layout.add(interpretationCard);
         }
 
         return layout;
     }
 
+    private Grid<HistoricalValuationSummaryDto> createHistoricalValuationGrid(List<HistoricalValuationSummaryDto> summaries) {
+        Grid<HistoricalValuationSummaryDto> grid = new Grid<>(HistoricalValuationSummaryDto.class, false);
+        grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
+
+        grid.addColumn(HistoricalValuationSummaryDto::metric).setHeader("Metric").setAutoWidth(true);
+        grid.addColumn(item -> formatHistoricalValuationMetric(item.metric(), item.current())).setHeader("Current").setAutoWidth(true);
+        grid.addColumn(item -> formatHistoricalValuationMetric(item.metric(), item.avg5y())).setHeader("5Y Avg").setAutoWidth(true);
+        grid.addColumn(item -> formatHistoricalValuationMetric(item.metric(), item.avg10y())).setHeader("10Y Avg").setAutoWidth(true);
+
+        grid.addColumn(new ComponentRenderer<>(item -> {
+            Span badge = new Span(item.percentile10y() != null ? String.format("%d%%", item.percentile10y()) : "-");
+            if (item.percentile10y() != null) {
+                badge.getElement().getThemeList().add("badge");
+                int p = item.percentile10y();
+                boolean isYield = item.metric() != null && item.metric().toLowerCase(Locale.US).contains("yield");
+                boolean isCheap = isYield ? (p > 70) : (p < 30);
+                boolean isExpensive = isYield ? (p < 30) : (p > 70);
+
+                if (isCheap) {
+                    badge.getStyle().set("background-color", "rgba(22, 163, 74, 0.2)");
+                    badge.getStyle().set("color", "var(--lumo-success-text-color)");
+                } else if (isExpensive) {
+                    badge.getStyle().set("background-color", "rgba(220, 38, 38, 0.2)");
+                    badge.getStyle().set("color", "var(--lumo-error-text-color)");
+                } else {
+                    badge.getElement().getThemeList().add("contrast");
+                }
+            }
+            return badge;
+        })).setHeader("10Y Rank").setAutoWidth(true);
+
+        grid.addColumn(item -> formatHistoricalValuationMetric(item.metric(), item.min10y())).setHeader("10Y Min").setAutoWidth(true);
+        grid.addColumn(item -> formatHistoricalValuationMetric(item.metric(), item.max10y())).setHeader("10Y Max").setAutoWidth(true);
+
+        grid.setItems(summaries);
+        grid.setWidthFull();
+        grid.setAllRowsVisible(true);
+        return grid;
+    }
+
     private Component createMetricCard(String label, String value) {
+        return createMetricCard(label, value, "var(--lumo-font-size-xl)");
+    }
+
+    private Component createMetricCard(String label, String value, String valueFontSize) {
         VerticalLayout card = new VerticalLayout();
         card.addClassName("metric-card");
+        card.setWidth(null);
         card.setPadding(true);
         card.setSpacing(false);
+        card.getStyle()
+                .set("box-sizing", "border-box")
+                .set("justify-content", "center")
+                .set("flex", "1 1 0")
+                .set("min-width", "140px")
+                .set("min-height", "76px");
 
         Span lblSpan = new Span(label);
         lblSpan.getStyle()
@@ -883,9 +979,9 @@ public class CompanyOverviewComponent extends VerticalLayout {
                 .set("text-transform", "uppercase")
                 .set("letter-spacing", "0.05em");
 
-        Span valSpan = new Span(value);
+        Span valSpan = new Span(value != null && !value.isBlank() ? value : "-");
         valSpan.getStyle()
-                .set("font-size", "var(--lumo-font-size-xl)")
+                .set("font-size", valueFontSize)
                 .set("font-weight", "bold")
                 .set("color", "var(--lumo-header-text-color)");
 
@@ -893,11 +989,19 @@ public class CompanyOverviewComponent extends VerticalLayout {
         return card;
     }
 
+    private String formatHistoricalValuationMetric(String metric, Float f) {
+        if (f == null) return "-";
+        if (metric != null && metric.toLowerCase(Locale.US).contains("yield")) {
+            return String.format(Locale.US, "%.2f%%", f * 100f);
+        }
+        return formatFloat(f);
+    }
+
     private String formatFloat(Float f) {
         if (f == null) return "-";
         if (Math.abs(f) < 1.0f && f != 0) {
-            return String.format(java.util.Locale.US, "%.4f", f);
+            return String.format(Locale.US, "%.4f", f);
         }
-        return String.format(java.util.Locale.US, "%.2f", f);
+        return String.format(Locale.US, "%.2f", f);
     }
 }

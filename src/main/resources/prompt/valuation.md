@@ -23,7 +23,8 @@ Your task is to evaluate valuation across three distinct analytical lenses:
 - Benchmark margins and financial health against `industry_ratios` medians.
 
 #### Lens 3: Intrinsic Valuation (reverse DCF sanity check)
-- Use `reverse_dcf` to state clearly: "At today's price, the market implies X% annual FCF growth for 10 years, compared to the historical FCF CAGR of Y%."
+- Use `reverse_dcf` to state clearly: "At today's price, the market implies X% annual FCF growth for 10 years (base case 10% discount, 3% terminal), compared to the historical FCF CAGR of Y%."
+- Review `reverse_dcf.sensitivity_matrix` across the 8–12% discount and 2–4% terminal rate spectrum to evaluate the range of implied growth (from deep discount to speculative) and whether the hurdle remains favorable under more demanding cost of capital assumptions.
 - Assess whether implied growth is realistic, aggressive, or conservative given competitive position.
 
 #### Synthesis

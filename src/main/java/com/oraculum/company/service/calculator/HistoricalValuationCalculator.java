@@ -93,7 +93,8 @@ public class HistoricalValuationCalculator {
             max10y = Math.max(max10y, val);
             if (val <= current) countBelow++;
         }
-        int percentile10y = (int) Math.round((double) countBelow / comparable10y.size() * 100);
+        int rawPercentile = (int) Math.round((double) countBelow / comparable10y.size() * 100);
+        int percentile10y = Math.clamp(rawPercentile, 1, 99);
 
         double avg10y = computeAverage(comparable10y, current);
         double avg5y = computeAverage(comparable5y, avg10y);

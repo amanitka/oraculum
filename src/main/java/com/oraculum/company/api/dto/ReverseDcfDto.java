@@ -13,5 +13,6 @@ public record ReverseDcfDto(
         @JsonProperty("historical_fcf_cagr_pct") Double historicalFcfCagrPct,
         @JsonProperty("historical_period_span") String historicalPeriodSpan,
         @JsonProperty("is_growth_rate_clipped") Boolean isGrowthRateClipped,
-        @JsonProperty("interpretation") String interpretation
+        @JsonProperty("interpretation") String interpretation,
+        @JsonProperty("sensitivity_matrix") ReverseDcfSensitivityMatrixDto sensitivityMatrix
 ) {}

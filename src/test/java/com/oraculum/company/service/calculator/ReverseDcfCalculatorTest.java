@@ -79,4 +79,42 @@ class ReverseDcfCalculatorTest {
         assertThat(result.historicalFcfCagrPct()).isCloseTo(20.0d, org.assertj.core.api.Assertions.within(0.1d));
         assertThat(result.interpretation()).contains("For comparison, the company's historical annual FCF growth (CAGR) was 20.0%");
     }
+
+    @Test
+    void calculate_computesSensitivityMatrixCorrectly() {
+        SharePriceSignalDto latestDaily = mock(SharePriceSignalDto.class);
+        when(latestDaily.marketCapitalization()).thenReturn(10_000_000_000f);
+
+        CompanyFinancialRatiosDto ttmRatio = mock(CompanyFinancialRatiosDto.class);
+        when(ttmRatio.freeCashFlow()).thenReturn(500_000_000f);
+
+        Map<StatementVariant, List<CompanyFinancialRatiosDto>> ratios = Map.of(
+                StatementVariant.TTM, List.of(ttmRatio),
+                StatementVariant.ANNUAL, List.of()
+        );
+
+        ReverseDcfDto result = calculator.calculate(List.of(latestDaily), ratios);
+
+        assertThat(result.sensitivityMatrix()).isNotNull();
+        assertThat(result.sensitivityMatrix().discountRatesPct()).containsExactly(8.0, 9.0, 10.0, 11.0, 12.0);
+        assertThat(result.sensitivityMatrix().terminalRatesPct()).containsExactly(2.0, 2.5, 3.0, 3.5, 4.0);
+        assertThat(result.sensitivityMatrix().cells()).hasSize(25);
+
+        var baseCase = result.sensitivityMatrix().cells().stream()
+                .filter(com.oraculum.company.api.dto.ReverseDcfMatrixCellDto::isBaseCase)
+                .findFirst()
+                .orElse(null);
+        assertThat(baseCase).isNotNull();
+        assertThat(baseCase.discountRatePct()).isEqualTo(10.0);
+        assertThat(baseCase.terminalGrowthRatePct()).isEqualTo(3.0);
+        assertThat(baseCase.impliedFcfGrowthPct()).isEqualTo(result.impliedFcfGrowthRatePct());
+
+        var cell8_3 = result.sensitivityMatrix().cells().stream()
+                .filter(c -> c.discountRatePct() == 8.0 && c.terminalGrowthRatePct() == 3.0)
+                .findFirst().orElseThrow();
+        var cell12_3 = result.sensitivityMatrix().cells().stream()
+                .filter(c -> c.discountRatePct() == 12.0 && c.terminalGrowthRatePct() == 3.0)
+                .findFirst().orElseThrow();
+        assertThat(cell12_3.impliedFcfGrowthPct()).isGreaterThan(cell8_3.impliedFcfGrowthPct());
+    }
 }

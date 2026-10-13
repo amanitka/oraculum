@@ -1,11 +1,12 @@
 package com.oraculum.analyst.dto;
 
 import com.oraculum.company.api.dto.CompanyDto;
-import com.oraculum.company.api.dto.ReverseDcfDto;
 import com.oraculum.company.api.dto.HistoricalValuationSummaryDto;
-import tools.jackson.databind.json.JsonMapper;
+import com.oraculum.company.api.dto.ReverseDcfDto;
+import com.oraculum.company.api.dto.ReverseDcfSensitivityMatrixDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.List;
 
@@ -29,8 +30,10 @@ class CompanyFactSheetDataTest {
 
     @Test
     void getReverseDcfAnalysis_returnsSerializedResult() {
+        ReverseDcfSensitivityMatrixDto matrix = new ReverseDcfSensitivityMatrixDto(List.of(10.0), List.of(3.0), List.of());
         ReverseDcfDto reverseDcfResult = new ReverseDcfDto(
-                10_000_000_000d, 500_000_000d, 5.0d, 10.0d, 10, 3.0d, 12.5d, 15.0d, "FY2020 to FY2025 (5-year period)", false, "Test Interpretation"
+                10_000_000_000d, 500_000_000d, 5.0d, 10.0d, 10, 3.0d, 12.5d, 15.0d,
+                "FY2020 to FY2025 (5-year period)", false, "Test Interpretation", matrix
         );
 
         CompanyFactSheetData data = CompanyFactSheetData.builder()
