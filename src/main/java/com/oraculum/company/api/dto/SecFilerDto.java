@@ -9,7 +9,4 @@ public record SecFilerDto(
         boolean active,
         LocalDate lastFilingDate
 ) {
-    public boolean isTier1() {
-        return tier == 1;
-    }
 }
