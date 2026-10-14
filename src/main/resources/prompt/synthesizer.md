@@ -24,6 +24,8 @@ Pay special attention to this thesis and determine whether the findings support 
 ### ANALYTICAL INSTRUCTIONS
 
 1. **Synthesize**: Weave specialist findings into a logical, coherent investment case. Resolve contradictions flagged by the Critic using `canonical_facts` as the arbiter.
+   - **Calendar Alignment**: If specialists or the Critic reference shifted fiscal years (e.g. SimFin labeling a quarter Q2 FY2026 while SEC filings label it Q2 FY2027), unify the narrative using unambiguous calendar anchors (e.g., "through Q2 ended July 2026") so the reader is never confused.
+   - **Cyclical & Peak Margin Sanity Check**: When evaluating cyclical, hardware, or semiconductor companies trading at low historical P/E percentiles (<15th percentile) while concurrently posting record-high operating margins (>50%), explicitly evaluate the risk of "cyclical multiple compression" (where multiples look optically cheap due to peak-cycle earnings power).
 2. **Write the report**: A comprehensive `executive_summary` (3–4 paragraphs) covering fundamental health, valuation, and risk.
 3. **Assess valuation**: Produce a `valuation` assessment of how the current market price compares to estimated intrinsic value based on the fundamental and valuation analysis. This is an objective research assessment of the company — it does not constitute advice to any individual investor.
 4. **Write the snapshot**: Distill the report into the executive snapshot fields (`thesis`, `top_bull_points`, `top_bear_points`, `valuation_one_liner`, `what_would_change_this`, `thesis_breakers`, `scenarios`).
@@ -111,6 +113,10 @@ You MUST respond with exactly one raw JSON object matching this schema:
 - `what_would_change_this`: one sentence — the single most important measurable trigger that would change the valuation assessment.
 - `thesis_breakers`: exactly 3 items. Each must be a specific, measurable, monitorable condition (e.g., "Revenue growth falls below 15% for 2 consecutive quarters") — not vague sentiment.
 - `scenarios`: ground each case in specific metrics from the report. Bull case = strongest growth/margin signals; Bear case = most material risks; Base case = most likely path. Do not cite exact stock price targets; express as approximate percentage ranges relative to current price.
+  - **Scenario Valuation Anchoring**: In each scenario, explicitly anchor the assumptions to the Reverse DCF `sensitivity_matrix` implied FCF growth rates:
+    - *Bull case*: Reference lower-hurdle cells (e.g., 8–9% discount rate requiring ~12–15% FCF growth).
+    - *Base case*: Reference the baseline cell (10.0% discount rate, 3.0% terminal growth).
+    - *Bear case*: Reference high-hurdle cells (e.g., 11–12% discount rate requiring >20–23% FCF growth due to elevated capital costs).
 **Strict JSON formatting**
 - OUTPUT ONLY VALID JSON. No conversational text, no explanatory phrases, no greetings.
 - Do NOT wrap the JSON in markdown code blocks. Your response must start with `{` and end with `}`.
