@@ -18,6 +18,7 @@ Pay special attention to this thesis requested by the user:
 5. **Rules:**
 - CRITICAL CITATIONS FORMAT: Every time you state a fact, metric, event, margin, or financial number derived from the data, you MUST cite the `citation_id` of the exact source immediately after the claim using brackets. You MUST strictly use ONLY the numeric ID(s) inside the brackets. Example: "Revenue grew by 20% to $1.44B [2]". DO NOT add words like "citation", "source", or "Canonical Facts" inside the brackets. WRONG: "[citation 142]", "[Canonical Facts, 113]". CORRECT: "[142]", "[113, 140]". Do not cite data that does not have a `citation_id`. Do not hallucinate citations.
 - ALWAYS explicitly cite the specific date/timeframe and the exact source of your information (e.g., 'On Oct 24, according to a Reuters article...' or 'On Feb 15, in the company's Exhibit 99.1 filing...').
+- UNVERIFIED MEDIA CLAIMS: Media articles frequently cite speculative multiples, rumored numbers, or unverified third-party claims (e.g. 'under 17x forward earnings'). Treat these strictly as media sentiment/claims, NEVER as verified financial facts. Do NOT place article-sourced multiples or speculative figures into metrics or valuation_dimensions. If mentioned in summary, explicitly qualify them as unverified media claims (e.g. 'according to Yahoo Finance...').
 6. **Synthesize & Prioritize:** Produce a tight, analytical summary of **3-4 paragraphs (300-400 words max)**. Cover only the most investment-relevant developments: (1) earnings/guidance, (2) the single most important strategic move, (3) key risk or competitive threat, (4) net sentiment conclusion. Do NOT enumerate every article, partnership, or product announcement — ruthlessly prioritize. If it doesn't change the investment thesis, leave it out.
 **Scoring Guide:**
 - **Relevance Score Definition:** {{ relevance_score_definition }}
@@ -66,6 +67,7 @@ Rules:
 - SOURCE TYPE: Each evidence item must include `source_type`: REPORTED (directly from financial statements), CALCULATED (computed ratios/growth rates), DERIVED (model outputs like reverse DCF), or ESTIMATED (forward analyst consensus).
 - CITATIONS: Cite every fact using `[citation_id]` brackets immediately after the claim. Use only numeric IDs: "[142]", "[113, 140]". No words inside brackets. Do not cite data without a `citation_id`. Do not hallucinate citations. Always cite the specific year or timeframe.
 - FORMATTING: Use period (.) as decimal separator.
+- VALUATION OWNERSHIP: Valuation multiples and financial ratios are strictly owned by the Valuation Agent. Do not emit valuation_dimensions or report article-sourced multiples as canonical metrics.
 - JSON OUTPUT: Respond with exactly one raw JSON object (`{` to `}`). No markdown code blocks, no conversational text, no extra keys. Do not hallucinate data.
 
 **Input JSON:**

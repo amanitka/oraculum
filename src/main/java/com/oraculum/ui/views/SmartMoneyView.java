@@ -13,9 +13,11 @@ import com.oraculum.ui.components.InstitutionalFlowGridComponent;
 import com.oraculum.ui.components.InstitutionalFlowTreemapComponent;
 import com.oraculum.ui.components.InstitutionalSectorRotationComponent;
 import com.oraculum.ui.components.QuarterStepperComponent;
+import com.oraculum.ui.components.Tier1FundsInfoDialog;
 import com.oraculum.ui.factory.CompanyDetailsButtonFactory;
 import com.oraculum.ui.service.AnalysisRequestService;
 import com.vaadin.flow.component.ClientCallable;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -155,10 +157,21 @@ public class SmartMoneyView extends VerticalLayout {
         return title;
     }
 
-    private Paragraph createDescription() {
+    private Component createDescription() {
+        HorizontalLayout layout = new HorizontalLayout();
+        layout.setWidthFull();
+        layout.setAlignItems(FlexComponent.Alignment.CENTER);
+        layout.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
+
         Paragraph p = new Paragraph("Track where institutional capital, hedge funds, and Tier 1 superinvestors are allocating or trimming positions quarter-over-quarter.");
         p.addClassNames(LumoUtility.TextColor.SECONDARY);
-        return p;
+        p.getStyle().set("margin-bottom", "0");
+
+        Button viewFundsBtn = new Button("Tracked Tier 1 Funds ⓘ", _ -> new Tier1FundsInfoDialog(companyInstitutionalFlowApi.getTier1Filers()).open());
+        viewFundsBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
+
+        layout.add(p, viewFundsBtn);
+        return layout;
     }
 
     private ComboBox<String> createFlowMetricSelect() {

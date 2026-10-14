@@ -1,9 +1,13 @@
 package com.oraculum.company.service.impl;
 
+import com.oraculum.common.config.OraculumProperties;
 import com.oraculum.company.api.CompanyInstitutionalFlowApi;
 import com.oraculum.company.api.dto.CompanyInstitutionalFlowDto;
+import com.oraculum.company.api.dto.SecFilerDto;
 import com.oraculum.company.api.dto.SectorInstitutionalFlowTrendDto;
+import com.oraculum.company.domain.SecFilerEntity;
 import com.oraculum.company.repository.CompanyInstitutionalFlowRepository;
+import com.oraculum.company.repository.SecFilerRepository;
 import com.oraculum.company.repository.SectorInstitutionalFlowRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,6 +24,8 @@ public class CompanyInstitutionalFlowServiceImpl implements CompanyInstitutional
 
     private final CompanyInstitutionalFlowRepository repository;
     private final SectorInstitutionalFlowRepository sectorRepository;
+    private final SecFilerRepository secFilerRepository;
+    private final OraculumProperties properties;
 
     @Override
     @Transactional(readOnly = true)
@@ -68,6 +74,29 @@ public class CompanyInstitutionalFlowServiceImpl implements CompanyInstitutional
         return sectorRepository.findByReportPeriodOrderByNetValueChangeUsdDesc(reportPeriod)
                 .stream()
                 .map(SectorInstitutionalFlowTrendDto::fromEntity)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SecFilerDto> getTier1Filers() {
+        List<SecFilerEntity> filers = secFilerRepository.findByTierOrderByManagerNameAsc((short) 1);
+        if (!filers.isEmpty()) {
+            return filers.stream()
+                    .map(f -> new SecFilerDto(f.getCik(), f.getManagerName(), f.getTier(), f.isActive(), f.getLastFilingDate()))
+                    .toList();
+        }
+        return createFallbackTier1Filers();
+    }
+
+    private List<SecFilerDto> createFallbackTier1Filers() {
+        if (properties == null || properties.data() == null || properties.data().sec13f() == null) {
+            return List.of();
+        }
+        List<String> ciks = properties.data().sec13f().tier1Ciks();
+        if (ciks == null || ciks.isEmpty()) return List.of();
+        return ciks.stream()
+                .map(cik -> new SecFilerDto(cik, null, (short) 1, true, null))
                 .toList();
     }
 }

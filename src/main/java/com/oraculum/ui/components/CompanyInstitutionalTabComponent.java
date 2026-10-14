@@ -4,6 +4,8 @@ import com.oraculum.company.api.CompanyInstitutionalFlowApi;
 import com.oraculum.company.api.dto.CompanyInstitutionalFlowDto;
 import com.oraculum.ui.ViewHelper;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.grid.ColumnTextAlign;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
@@ -146,8 +148,18 @@ public class CompanyInstitutionalTabComponent extends VerticalLayout {
         sec.setPadding(false);
         sec.setSpacing(true);
 
+        HorizontalLayout header = new HorizontalLayout();
+        header.setWidthFull();
+        header.setAlignItems(FlexComponent.Alignment.CENTER);
+        header.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
+
         H4 title = new H4("Tier 1 Smart Money (Superinvestors)");
         title.getStyle().set("margin-top", "0.25rem").set("margin-bottom", "0.25rem");
+
+        Button viewFundsBtn = new Button("Tracked Funds ⓘ", _ -> new Tier1FundsInfoDialog(institutionalFlowApi.getTier1Filers()).open());
+        viewFundsBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
+
+        header.add(title, viewFundsBtn);
 
         HorizontalLayout badgesLayout = new HorizontalLayout();
         badgesLayout.setWidthFull();
@@ -157,7 +169,7 @@ public class CompanyInstitutionalTabComponent extends VerticalLayout {
         addFundBadges(badgesLayout, latest.tier1BuyerNames(), true);
         addFundBadges(badgesLayout, latest.tier1SellerNames(), false);
 
-        sec.add(title, badgesLayout);
+        sec.add(header, badgesLayout);
         return sec;
     }
 
@@ -198,7 +210,7 @@ public class CompanyInstitutionalTabComponent extends VerticalLayout {
         Grid<CompanyInstitutionalFlowDto> grid = new Grid<>(CompanyInstitutionalFlowDto.class, false);
         grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
         grid.setWidthFull();
-        grid.setHeight("600px");
+        grid.setAllRowsVisible(true);
 
         addHistoryGridColumns(grid);
         grid.setItems(history.stream()

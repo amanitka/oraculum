@@ -1,10 +1,14 @@
 package com.oraculum.company.service.impl;
 
+import com.oraculum.common.config.OraculumProperties;
 import com.oraculum.company.api.dto.CompanyInstitutionalFlowDto;
+import com.oraculum.company.api.dto.SecFilerDto;
 import com.oraculum.company.api.dto.SectorInstitutionalFlowTrendDto;
 import com.oraculum.company.domain.CompanyInstitutionalFlowEntity;
+import com.oraculum.company.domain.SecFilerEntity;
 import com.oraculum.company.domain.SectorInstitutionalFlowEntity;
 import com.oraculum.company.repository.CompanyInstitutionalFlowRepository;
+import com.oraculum.company.repository.SecFilerRepository;
 import com.oraculum.company.repository.SectorInstitutionalFlowRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,11 +33,17 @@ class CompanyInstitutionalFlowServiceTest {
     @Mock
     private SectorInstitutionalFlowRepository sectorRepository;
 
+    @Mock
+    private SecFilerRepository secFilerRepository;
+
+    @Mock
+    private OraculumProperties properties;
+
     private CompanyInstitutionalFlowServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        service = new CompanyInstitutionalFlowServiceImpl(repository, sectorRepository);
+        service = new CompanyInstitutionalFlowServiceImpl(repository, sectorRepository, secFilerRepository, properties);
     }
 
     @Test
@@ -103,6 +113,20 @@ class CompanyInstitutionalFlowServiceTest {
         assertThat(result.getFirst().totalInstValueUsd()).isEqualTo(500_000_000_000L);
         assertThat(result.getFirst().companiesCount()).isEqualTo(50L);
         verify(sectorRepository).findByReportPeriodOrderByNetValueChangeUsdDesc(period);
+    }
+
+    @Test
+    void getTier1Filers_shouldReturnMappedDtosFromRepository() {
+        SecFilerEntity f1 = new SecFilerEntity("0001067983", "Berkshire Hathaway Inc", true, (short) 1, LocalDate.of(2026, 8, 14));
+        SecFilerEntity f2 = new SecFilerEntity("0001423053", "CITADEL ADVISORS LLC", true, (short) 1, LocalDate.of(2026, 8, 15));
+        when(secFilerRepository.findByTierOrderByManagerNameAsc((short) 1)).thenReturn(List.of(f1, f2));
+
+        List<SecFilerDto> result = service.getTier1Filers();
+
+        assertThat(result).hasSize(2);
+        assertThat(result.getFirst().cik()).isEqualTo("0001067983");
+        assertThat(result.getFirst().managerName()).isEqualTo("Berkshire Hathaway Inc");
+        assertThat(result.get(1).cik()).isEqualTo("0001423053");
     }
 
     private CompanyInstitutionalFlowEntity createTestEntity(int companyId, String ticker, long quarterIndex) {

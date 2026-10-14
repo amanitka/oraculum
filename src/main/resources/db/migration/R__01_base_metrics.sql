@@ -352,6 +352,7 @@ WITH fundamental_timeline AS (SELECT
                                  is_cash_earnings,
                                  is_negative_equity
                               FROM mv_company_financial_ratios
+                              WHERE variant = 'TTM'
                               ),
      share_price AS (SELECT
                         p.*,

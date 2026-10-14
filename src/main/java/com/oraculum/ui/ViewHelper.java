@@ -23,6 +23,9 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -438,25 +441,64 @@ public final class ViewHelper {
         return getCurrencySymbol(currencyCode, null);
     }
 
+    private static final Pattern SEC_JURISDICTION_PATTERN = Pattern.compile("(?i)/\\s*[A-Z]{2,3}$");
+    private static final Pattern LEGAL_SUFFIX_PATTERN = Pattern.compile("(?i)(?:,\\s*|\\s+)(?:L\\.?P\\.?|LLC|LLP|LTD\\.?|INC\\.?|CORP\\.?|PLC|CO\\.?|COMPANY)$");
+
+    private static final Map<String, String> ICONIC_INVESTORS = Map.ofEntries(
+            Map.entry("0001067983", "Warren Buffett"),
+            Map.entry("0001649339", "Michael Burry"),
+            Map.entry("0001423053", "Ken Griffin"),
+            Map.entry("0001350694", "Ray Dalio"),
+            Map.entry("0001037389", "Jim Simons"),
+            Map.entry("0001536411", "Stanley Druckenmiller"),
+            Map.entry("0001336528", "Bill Ackman"),
+            Map.entry("0001061768", "Seth Klarman"),
+            Map.entry("0001167483", "Chase Coleman"),
+            Map.entry("0001569205", "Terry Smith"),
+            Map.entry("0000915191", "Prem Watsa"),
+            Map.entry("0001009258", "James Flynn"),
+            Map.entry("0001099281", "Marty Whitman"),
+            Map.entry("0001079114", "David Einhorn"),
+            Map.entry("0001048445", "Daniel Loeb")
+    );
+
     /**
-     * Normalizes fund names to clean Title Case while preserving standard corporate abbreviations (LLC, LP, PLC).
+     * Normalizes SEC fund names to clean human-readable brand names in Title Case.
+     * Strips SEC jurisdiction codes (e.g. / CAN, /MA) and legal entity noise (LLC, L.P., Inc.).
      */
     public static String normalizeFundName(String name) {
         if (name == null || name.isBlank()) return "";
-        String[] words = name.trim().split("\\s+");
+        String cleaned = stripSecNoise(name.trim());
+        return toCleanTitleCase(cleaned);
+    }
+
+    private static String stripSecNoise(String text) {
+        String result = SEC_JURISDICTION_PATTERN.matcher(text).replaceAll("").trim();
+        Matcher matcher = LEGAL_SUFFIX_PATTERN.matcher(result);
+        while (matcher.find()) {
+            result = result.substring(0, matcher.start()).trim();
+            matcher = LEGAL_SUFFIX_PATTERN.matcher(result);
+        }
+        return result;
+    }
+
+    private static String toCleanTitleCase(String text) {
+        String[] words = text.split("\\s+");
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < words.length; i++) {
             String word = words[i];
             if (i > 0) sb.append(" ");
-            String clean = word.replaceAll("[^a-zA-Z]", "");
-            if (clean.equalsIgnoreCase("llc") || clean.equalsIgnoreCase("lp") || clean.equalsIgnoreCase("plc")) {
-                sb.append(word.toUpperCase(Locale.US));
-            } else if (!word.isEmpty()) {
+            if (!word.isEmpty()) {
                 sb.append(Character.toUpperCase(word.charAt(0)))
                         .append(word.substring(1).toLowerCase(Locale.US));
             }
         }
         return sb.toString();
+    }
+
+    public static String getIconicInvestor(String cik) {
+        if (cik == null) return null;
+        return ICONIC_INVESTORS.get(cik);
     }
 
     /**
