@@ -229,9 +229,9 @@ oraculum:
       max-completion-tokens: 12288
       provider-fallback-order:
         - lmstudio
-        - gemini
         - deepseek
         - openai
+        - gemini
 
     providers:
       lmstudio:

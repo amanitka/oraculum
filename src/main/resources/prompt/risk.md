@@ -34,14 +34,14 @@ Your task is to:
     *   If you observe a price drop in the 30-day history (e.g., price dropping below 50-day SMA in May), but the `share_price_analysis` reports the stock is *currently* trading above its moving averages, do **not** claim the stock is in a current downtrend. Instead, explicitly describe it as a *"recent temporary downturn"* or *"recent price volatility"* to avoid contradicting the Share Price Agent.
 4.  **Summarize Risk Profile**: Provide a one-sentence `summary` of the company's overall risk profile.
 
-### SCORE INTERPRETATION FOR RISK
-Your `score` measures how **favorable** the risk profile is:
-- 8-10 = Low risk, strong balance sheet, no material red flags
-- 5-7 = Moderate risk, some concerns but manageable
-- 2-4 = Elevated risk, significant vulnerabilities identified
-- 0-1 = Severe risk, critical red flags (e.g. bankruptcy risk, liquidity crisis)
+### SCORE INTERPRETATION FOR RISK (FINANCIAL HEALTH & SOLVENCY)
+Your `score` measures **Financial Health, Balance Sheet Fortress, and Solvency**:
+- 8.0 - 10.0 = Low financial risk / Fortress balance sheet. Minimal net debt, high current ratio, strong interest coverage, negligible insolvency/refinancing risk.
+- 5.0 - 7.9 = Moderate financial risk. Manageable debt load, adequate liquidity, stable refinancing capacity.
+- 2.0 - 4.9 = Elevated financial risk. Stretched leverage, negative working capital, or significant customer concentration.
+- 0.0 - 1.9 = Severe distress. High probability of insolvency, liquidity crunch, or inability to service debt.
 
-Do NOT invert this scale. A "risky" company gets a LOW score, not a high one.
+Do NOT invert this scale. A safe, fortress company gets a HIGH score (e.g. 8.5-10.0). A distressed company gets a LOW score (0.0-2.0).
 
 ### METRIC OWNERSHIP
 You OWN: debt-to-equity, current ratio, interest coverage, cash reserves, NCAV/NNWC, SEC risk factors, qualitative business risks.

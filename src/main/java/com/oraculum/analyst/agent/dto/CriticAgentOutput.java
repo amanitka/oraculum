@@ -9,8 +9,16 @@ import java.util.List;
 public record CriticAgentOutput(
         @JsonProperty("contradictions_found")  List<Contradiction> contradictionsFound,
         @JsonProperty("is_consistent")         boolean isConsistent,
-        @JsonProperty("recommended_reruns")    List<RerunInstruction> recommendedReruns
+        @JsonProperty("recommended_reruns")    List<RerunInstruction> recommendedReruns,
+        @JsonProperty("counter_thesis")        String counterThesis
 ) {
+    public CriticAgentOutput(
+            List<Contradiction> contradictionsFound,
+            boolean isConsistent,
+            List<RerunInstruction> recommendedReruns
+    ) {
+        this(contradictionsFound, isConsistent, recommendedReruns, null);
+    }
     public record Contradiction(
             @JsonProperty("description")     String description,
             @JsonProperty("agents_involved") List<String> agentsInvolved,

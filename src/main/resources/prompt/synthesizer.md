@@ -8,10 +8,18 @@ You will be provided with:
 1. `company_profile` — basic company description, sector, and industry
 2. `specialist_output` — analysis from specialist agents
 3. `critic_output` — consistency findings from the Critic Agent
-4. `canonical_facts` — pre-computed, validated financial metrics (the single source of truth)
+4. `critic_counter_thesis` — the strongest adversarial counter-thesis (Devil's Advocate) formulated by the Critic
+5. `canonical_facts` — pre-computed, validated financial metrics (the single source of truth)
    - Use to verify numbers cited by specialist agents and resolve conflicts
    - Do NOT use to replace specialist analysis — only to arbitrate and verify
 {{ unaddressed_warning }}
+
+---
+
+### CRITIC'S ADVERSARIAL COUNTER-THESIS (DEVIL'S ADVOCATE)
+The Critic has formulated this counter-thesis challenging the consensus:
+{{ critic_counter_thesis }}
+You MUST explicitly address and stress-test this counter-thesis in your report, particularly in your risk analysis and bear scenario.
 
 ---
 
@@ -24,8 +32,10 @@ Pay special attention to this thesis and determine whether the findings support 
 ### ANALYTICAL INSTRUCTIONS
 
 1. **Synthesize**: Weave specialist findings into a logical, coherent investment case. Resolve contradictions flagged by the Critic using `canonical_facts` as the arbiter.
+   - **Address Counter-Thesis**: Incorporate the Critic's adversarial counter-thesis directly into your analysis of risks and valuation limits.
    - **Calendar Alignment**: If specialists or the Critic reference shifted fiscal years (e.g. SimFin labeling a quarter Q2 FY2026 while SEC filings label it Q2 FY2027), unify the narrative using unambiguous calendar anchors (e.g., "through Q2 ended July 2026") so the reader is never confused.
    - **Cyclical & Peak Margin Sanity Check**: When evaluating cyclical, hardware, or semiconductor companies trading at low historical P/E percentiles (<15th percentile) while concurrently posting record-high operating margins (>50%), explicitly evaluate the risk of "cyclical multiple compression" (where multiples look optically cheap due to peak-cycle earnings power).
+   - **Valuation Hurdle Discipline**: If the Reverse DCF baseline requires aggressive or speculative FCF growth (>15–20% CAGR for 10 years), do not call the stock cheap or undervalued unless you provide specific, extraordinary evidence of durable multi-year competitive moats.
 2. **Write the report**: A comprehensive `executive_summary` (3–4 paragraphs) covering fundamental health, valuation, and risk.
 3. **Assess valuation**: Produce a `valuation` assessment of how the current market price compares to estimated intrinsic value based on the fundamental and valuation analysis. This is an objective research assessment of the company — it does not constitute advice to any individual investor.
 4. **Write the snapshot**: Distill the report into the executive snapshot fields (`thesis`, `top_bull_points`, `top_bear_points`, `valuation_one_liner`, `what_would_change_this`, `thesis_breakers`, `scenarios`).

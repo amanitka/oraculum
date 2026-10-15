@@ -64,6 +64,12 @@ class CompanyAnalysisWorkflowServiceTest {
     @Mock
     private com.oraculum.analyst.agent.document.service.SecDocumentProcessingAgent secDocumentProcessingAgent;
 
+    @Mock
+    private DataQualityMetricsCalculator dataQualityMetricsCalculator;
+
+    @Mock
+    private SynthesizerGuardrailService synthesizerGuardrailService;
+
     @InjectMocks
     private CompanyAnalysisWorkflowService workflowService;
 
@@ -72,6 +78,7 @@ class CompanyAnalysisWorkflowServiceTest {
     @BeforeEach
     void setUp() {
         when(citationIntegrityService.verifyRecordCitations(any(), any(), any())).thenAnswer(inv -> inv.getArgument(0));
+        when(synthesizerGuardrailService.applyGuardrails(any(), any(), any())).thenAnswer(inv -> inv.getArgument(0));
         when(jsonMapper.writeValueAsString(any())).thenReturn("{}");
         UUID correlationId = UUID.randomUUID();
         request = new CompanyAnalysisRequestEvent(

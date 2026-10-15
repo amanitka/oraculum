@@ -52,12 +52,14 @@ public class SynthesizerAgent implements Agent<AnalysisResult> {
         String specialistOutputJson = JsonUtils.toJson(jsonMapper, specialistOutputs, "{}");
         CriticAgentOutput criticOutput = (CriticAgentOutput) ctx.state().getAgentOutput(AgentType.CRITIC);
         String criticOutputJson = JsonUtils.toJson(jsonMapper, criticOutput, "{}");
+        String counterThesis = criticOutput != null && criticOutput.counterThesis() != null ? criticOutput.counterThesis() : "No adversarial counter-thesis identified.";
 
         String prompt = promptRegistry.getPrompt(PromptType.SYNTHESIZER)
                 .replace("{{ analysis_focus }}", ctx.analysisFocus() != null ? ctx.analysisFocus() : "Standard comprehensive analysis.")
                 .replace("{{ company_profile }}", ctx.factSheetData() != null && ctx.factSheetData().getCompanyProfile() != null ? ctx.factSheetData().getCompanyProfile() : "{}")
                 .replace("{{ specialist_output }}", specialistOutputJson != null ? specialistOutputJson : "{}")
                 .replace("{{ critic_output }}", criticOutputJson != null ? criticOutputJson : "{}")
+                .replace("{{ critic_counter_thesis }}", counterThesis)
                 .replace("{{ canonical_facts }}", ctx.factSheetData() != null && ctx.factSheetData().getCanonicalFacts() != null ? ctx.factSheetData().getCanonicalFacts() : "{}")
                 .replace("{{ unaddressed_warning }}", getWarningMessage(criticOutput))
                 .replace("{{ ticker }}", ctx.ticker() != null ? ctx.ticker() : "");

@@ -254,6 +254,26 @@ public class CompanyFactSheetData {
                 .collect(Collectors.joining(",")) + "]";
     }
 
+    public List<SharePriceSignalDto> getDailySharePriceSignalsList() {
+        return dailySharePriceSignals != null ? dailySharePriceSignals : List.of();
+    }
+
+    public List<MacroSummaryDto> getMacroeconomicSummaryList() {
+        return macroeconomicSummary != null ? macroeconomicSummary : List.of();
+    }
+
+    public List<InsiderTransactionTickerDto> getRecentInsiderTransactionsList() {
+        return recentInsiderTransactions != null ? recentInsiderTransactions : List.of();
+    }
+
+    public InsiderTransactionSummaryDto getInsiderTransactionSummaryDto() {
+        return insiderTransactionSummary;
+    }
+
+    public List<EarningsEstimateDto> getEarningsEstimatesList() {
+        return earningsEstimates != null ? earningsEstimates : List.of();
+    }
+
     public String getInstitutionalFlowHistoryJson() {
         if (institutionalFlowHistory == null || institutionalFlowHistory.isEmpty()) {
             return "[]";

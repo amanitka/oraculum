@@ -41,6 +41,8 @@ public class CompanyAnalysisWorkflowService {
     private final ApplicationEventPublisher eventPublisher;
     private final JsonMapper jsonMapper;
     private final CitationIntegrityService citationIntegrityService;
+    private final DataQualityMetricsCalculator dataQualityMetricsCalculator;
+    private final SynthesizerGuardrailService synthesizerGuardrailService;
 
     public CompanyAnalysisResult run(CompanyAnalysisRequestEvent request) {
         long startMs = System.currentTimeMillis();
@@ -82,7 +84,19 @@ public class CompanyAnalysisWorkflowService {
         );
         log.info("{} Citation Metrics: {}", agent.getName(), metrics.getSummary());
 
-        return new AgentOutput<>(verifiedResult, rawOutput.tokens());
+        T enrichedResult = enrichConfidenceIfApplicable(agent.getName(), verifiedResult, ctx);
+        return new AgentOutput<>(enrichedResult, rawOutput.tokens());
+    }
+
+    private <T> T enrichConfidenceIfApplicable(AgentType type, T result, AgentContext ctx) {
+        if (result instanceof StandardAgentOutput std) {
+            var dq = dataQualityMetricsCalculator.calculate(type, ctx);
+            return (T) std.toBuilder()
+                    .confidence(dq.confidenceScore())
+                    .confidenceReasons(dq.confidenceReasons())
+                    .build();
+        }
+        return result;
     }
 
     private void processPendingCompanyDocuments(CompanyAnalysisRequestEvent request) {
@@ -203,11 +217,13 @@ public class CompanyAnalysisWorkflowService {
         Agent<AnalysisResult> synthesizer = (Agent<AnalysisResult>) agents.get(AgentType.SYNTHESIZER);
 
         var output = runAndVerifyAgent(synthesizer, ctx);
+        CriticAgentOutput criticOutput = (CriticAgentOutput) ctx.state().getAgentOutput(AgentType.CRITIC);
+        AnalysisResult guardedResult = synthesizerGuardrailService.applyGuardrails(output.result(), ctx, criticOutput);
 
-        ctx.state().putAgentOutput(AgentType.SYNTHESIZER, output.result());
-        recordTraceAndTokens(ctx, AgentType.SYNTHESIZER.name(), output);
-        log.info("Synthesizer phase complete. Valuation: {}", output.result().valuation());
-        return output.result();
+        ctx.state().putAgentOutput(AgentType.SYNTHESIZER, guardedResult);
+        recordTraceAndTokens(ctx, AgentType.SYNTHESIZER.name(), new AgentOutput<>(guardedResult, output.tokens()));
+        log.info("Synthesizer phase complete. Valuation: {}", guardedResult.valuation());
+        return guardedResult;
     }
 
 
