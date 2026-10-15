@@ -96,7 +96,7 @@ public class Tier1FundsInfoDialog extends Dialog {
         nameSpan.getStyle().set("font-weight", "600").set("font-size", "var(--lumo-font-size-m)");
         titleRow.add(nameSpan);
 
-        String investor = ViewHelper.getIconicInvestor(filer.cik());
+        String investor = filer.iconicInvestor();
         if (investor != null) {
             Span investorBadge = new Span(investor);
             investorBadge.getElement().getThemeList().addAll(List.of("badge", "primary", "small"));

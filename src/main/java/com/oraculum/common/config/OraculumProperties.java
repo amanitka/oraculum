@@ -4,6 +4,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 
 @ConfigurationProperties(prefix = "oraculum")
@@ -27,7 +28,12 @@ public record OraculumProperties(Data data,
         public record InsiderTransactions(String cron) {
         }
 
-        public record Sec13F(String bulkCron, List<String> tier1Ciks) {
+        public record Sec13F(String bulkCron, List<String> tier1Ciks, Map<String, String> tier1Investors) {
+            public Sec13F {
+                if (tier1Investors == null) {
+                    tier1Investors = Map.of();
+                }
+            }
         }
 
         public record SecDocuments(String dailyCron, String staleCron) {

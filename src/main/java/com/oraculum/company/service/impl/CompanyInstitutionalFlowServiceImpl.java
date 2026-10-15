@@ -80,23 +80,34 @@ public class CompanyInstitutionalFlowServiceImpl implements CompanyInstitutional
     @Override
     @Transactional(readOnly = true)
     public List<SecFilerDto> getTier1Filers() {
+        Map<String, String> iconicMap = getIconicInvestorsMap();
         List<SecFilerEntity> filers = secFilerRepository.findByTierOrderByManagerNameAsc((short) 1);
         if (!filers.isEmpty()) {
             return filers.stream()
-                    .map(f -> new SecFilerDto(f.getCik(), f.getManagerName(), f.getTier(), f.isActive(), f.getLastFilingDate()))
+                    .map(f -> new SecFilerDto(f.getCik(), f.getManagerName(), f.getTier(), f.isActive(), f.getLastFilingDate(), iconicMap.get(f.getCik())))
                     .toList();
         }
-        return createFallbackTier1Filers();
+        return createFallbackTier1Filers(iconicMap);
     }
 
-    private List<SecFilerDto> createFallbackTier1Filers() {
+    private Map<String, String> getIconicInvestorsMap() {
+        if (properties != null && properties.data() != null && properties.data().sec13f() != null) {
+            Map<String, String> map = properties.data().sec13f().tier1Investors();
+            if (map != null) {
+                return map;
+            }
+        }
+        return Map.of();
+    }
+
+    private List<SecFilerDto> createFallbackTier1Filers(Map<String, String> iconicMap) {
         if (properties == null || properties.data() == null || properties.data().sec13f() == null) {
             return List.of();
         }
         List<String> ciks = properties.data().sec13f().tier1Ciks();
         if (ciks == null || ciks.isEmpty()) return List.of();
         return ciks.stream()
-                .map(cik -> new SecFilerDto(cik, null, (short) 1, true, null))
+                .map(cik -> new SecFilerDto(cik, null, (short) 1, true, null, iconicMap.get(cik)))
                 .toList();
     }
 }

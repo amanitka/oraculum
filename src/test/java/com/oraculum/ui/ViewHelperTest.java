@@ -22,13 +22,4 @@ class ViewHelperTest {
         assertThat(ViewHelper.normalizeFundName("Fundsmith LLP")).isEqualTo("Fundsmith");
         assertThat(ViewHelper.normalizeFundName("Scion Asset Management, LLC")).isEqualTo("Scion Asset Management");
     }
-
-    @Test
-    void getIconicInvestor_shouldReturnKnownInvestors() {
-        assertThat(ViewHelper.getIconicInvestor("0001067983")).isEqualTo("Warren Buffett");
-        assertThat(ViewHelper.getIconicInvestor("0001649339")).isEqualTo("Michael Burry");
-        assertThat(ViewHelper.getIconicInvestor("0001423053")).isEqualTo("Ken Griffin");
-        assertThat(ViewHelper.getIconicInvestor("0001350694")).isEqualTo("Ray Dalio");
-        assertThat(ViewHelper.getIconicInvestor("unknown")).isNull();
-    }
 }

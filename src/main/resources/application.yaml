@@ -143,6 +143,22 @@ oraculum:
         - "0001037389"   # Renaissance Technologies
         - "0001167483"   # Tiger Global Management
         - "0001569205"   # ARK Investment Management (Wood)
+      tier1-investors:
+        "0001067983": "Warren Buffett"
+        "0001649339": "Michael Burry"
+        "0001336528": "Bill Ackman"
+        "0001536411": "Stanley Druckenmiller"
+        "0001009258": "David Tepper"
+        "0001061768": "Seth Klarman"
+        "0001079114": "David Einhorn"
+        "0000915191": "Paul Singer"
+        "0001048445": "Daniel Loeb"
+        "0001099281": "Carl Icahn"
+        "0001423053": "Ken Griffin"
+        "0001350694": "Ray Dalio"
+        "0001037389": "Jim Simons"
+        "0001167483": "Chase Coleman"
+        "0001569205": "Cathie Wood"
 
   database:
     host: ${ORACULUM_DATABASE_HOST}

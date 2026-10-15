@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -127,6 +128,23 @@ class CompanyInstitutionalFlowServiceTest {
         assertThat(result.getFirst().cik()).isEqualTo("0001067983");
         assertThat(result.getFirst().managerName()).isEqualTo("Berkshire Hathaway Inc");
         assertThat(result.get(1).cik()).isEqualTo("0001423053");
+    }
+
+    @Test
+    void getTier1Filers_shouldPopulateIconicInvestorFromProperties() {
+        SecFilerEntity f1 = new SecFilerEntity("0001067983", "Berkshire Hathaway Inc", true, (short) 1, LocalDate.of(2026, 8, 14));
+        when(secFilerRepository.findByTierOrderByManagerNameAsc((short) 1)).thenReturn(List.of(f1));
+
+        OraculumProperties.Data data = mock(OraculumProperties.Data.class);
+        OraculumProperties.Data.Sec13F sec13f = new OraculumProperties.Data.Sec13F(null, List.of("0001067983"), Map.of("0001067983", "Warren Buffett"));
+        when(properties.data()).thenReturn(data);
+        when(data.sec13f()).thenReturn(sec13f);
+
+        List<SecFilerDto> result = service.getTier1Filers();
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().cik()).isEqualTo("0001067983");
+        assertThat(result.getFirst().iconicInvestor()).isEqualTo("Warren Buffett");
     }
 
     private CompanyInstitutionalFlowEntity createTestEntity(int companyId, String ticker, long quarterIndex) {

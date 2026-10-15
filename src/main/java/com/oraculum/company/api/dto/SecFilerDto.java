@@ -7,6 +7,7 @@ public record SecFilerDto(
         String managerName,
         short tier,
         boolean active,
-        LocalDate lastFilingDate
+        LocalDate lastFilingDate,
+        String iconicInvestor
 ) {
 }

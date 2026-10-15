@@ -1,8 +1,8 @@
 package com.oraculum.ui;
 
 import com.oraculum.analyst.api.domain.AnalysisOutlook;
-import com.oraculum.analyst.api.domain.ValuationAssessment;
 import com.oraculum.analyst.api.domain.AnalysisStatus;
+import com.oraculum.analyst.api.domain.ValuationAssessment;
 import com.oraculum.company.api.domain.CompanySize;
 import com.oraculum.company.api.domain.NewsSentimentLabel;
 import com.oraculum.company.api.domain.ScreenerSignal;
@@ -23,12 +23,11 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 /**
  * Shared UI utilities for Oraculum views.
@@ -36,10 +35,15 @@ import java.util.function.Function;
  */
 public final class ViewHelper {
 
+    private static final Pattern SEC_JURISDICTION_PATTERN = Pattern.compile("(?i)/\\s*[A-Z]{2,3}$");
+
+    // ── Notifications ──────────────────────────────────────────────────────
+    private static final Pattern LEGAL_SUFFIX_PATTERN = Pattern.compile("(?i)(?:,\\s*|\\s+)(?:L\\.?P\\.?|LLC|LLP|LTD\\.?|INC\\.?|CORP\\.?|PLC|CO\\.?|COMPANY)$");
+
     private ViewHelper() {
     }
 
-    // ── Notifications ──────────────────────────────────────────────────────
+    // ── Filter Fields ──────────────────────────────────────────────────────
 
     public static void showError(String message) {
         Notification.show(message, 3000, Notification.Position.BOTTOM_END)
@@ -51,7 +55,7 @@ public final class ViewHelper {
                 .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
     }
 
-    // ── Filter Fields ──────────────────────────────────────────────────────
+    // ── Badge Rendering ────────────────────────────────────────────────────
 
     /**
      * Creates a standard filter TextField used in grid header rows.
@@ -75,8 +79,6 @@ public final class ViewHelper {
         filterRow.getCell(grid.getColumnByKey(columnKey))
                 .setComponent(createFilterField(placeholder, action));
     }
-
-    // ── Badge Rendering ────────────────────────────────────────────────────
 
     /**
      * Creates a themed badge Span for status values (COMPLETED, FAILED, etc.).
@@ -324,6 +326,8 @@ public final class ViewHelper {
         return span;
     }
 
+    // ── Common Layout ──────────────────────────────────────────────────────
+
     /**
      * Creates a color-coded delta currency Span (+$1.25B green, -$350M red).
      */
@@ -357,7 +361,7 @@ public final class ViewHelper {
         return Comparator.comparing(keyExtractor, Comparator.nullsFirst(Comparator.naturalOrder()));
     }
 
-    // ── Common Layout ──────────────────────────────────────────────────────
+    // ── String matching ────────────────────────────────────────────────────
 
     /**
      * Wraps a component in a full-size Div with the screener-card class.
@@ -370,6 +374,8 @@ public final class ViewHelper {
         return card;
     }
 
+    // ── Components ─────────────────────────────────────────────────────────
+
     /**
      * Creates a secondary-styled empty placeholder Div.
      */
@@ -380,8 +386,6 @@ public final class ViewHelper {
         return empty;
     }
 
-    // ── String matching ────────────────────────────────────────────────────
-
     /**
      * Case-insensitive substring match used by grid filters.
      */
@@ -389,9 +393,6 @@ public final class ViewHelper {
         return searchTerm == null || searchTerm.isEmpty()
                 || (value != null && value.toLowerCase().contains(searchTerm.toLowerCase()));
     }
-
-    // ── Components ─────────────────────────────────────────────────────────
-
 
     /**
      * Resolves the proper currency symbol based on currency code and market context.
@@ -441,27 +442,6 @@ public final class ViewHelper {
         return getCurrencySymbol(currencyCode, null);
     }
 
-    private static final Pattern SEC_JURISDICTION_PATTERN = Pattern.compile("(?i)/\\s*[A-Z]{2,3}$");
-    private static final Pattern LEGAL_SUFFIX_PATTERN = Pattern.compile("(?i)(?:,\\s*|\\s+)(?:L\\.?P\\.?|LLC|LLP|LTD\\.?|INC\\.?|CORP\\.?|PLC|CO\\.?|COMPANY)$");
-
-    private static final Map<String, String> ICONIC_INVESTORS = Map.ofEntries(
-            Map.entry("0001067983", "Warren Buffett"),
-            Map.entry("0001649339", "Michael Burry"),
-            Map.entry("0001423053", "Ken Griffin"),
-            Map.entry("0001350694", "Ray Dalio"),
-            Map.entry("0001037389", "Jim Simons"),
-            Map.entry("0001536411", "Stanley Druckenmiller"),
-            Map.entry("0001336528", "Bill Ackman"),
-            Map.entry("0001061768", "Seth Klarman"),
-            Map.entry("0001167483", "Chase Coleman"),
-            Map.entry("0001569205", "Terry Smith"),
-            Map.entry("0000915191", "Prem Watsa"),
-            Map.entry("0001009258", "James Flynn"),
-            Map.entry("0001099281", "Marty Whitman"),
-            Map.entry("0001079114", "David Einhorn"),
-            Map.entry("0001048445", "Daniel Loeb")
-    );
-
     /**
      * Normalizes SEC fund names to clean human-readable brand names in Title Case.
      * Strips SEC jurisdiction codes (e.g. / CAN, /MA) and legal entity noise (LLC, L.P., Inc.).
@@ -494,11 +474,6 @@ public final class ViewHelper {
             }
         }
         return sb.toString();
-    }
-
-    public static String getIconicInvestor(String cik) {
-        if (cik == null) return null;
-        return ICONIC_INVESTORS.get(cik);
     }
 
     /**
