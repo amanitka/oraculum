@@ -30,6 +30,9 @@ public class MacroSummaryEntity {
     @Column(name = "yoy_change_pct")
     private Double yoyChangePct;
 
+    @Column(name = "yoy_change_bps")
+    private Double yoyChangeBps;
+
     @Column(name = "min_1y")
     private Double min1y;
 

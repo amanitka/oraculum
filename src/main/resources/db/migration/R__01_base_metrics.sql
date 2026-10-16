@@ -99,6 +99,8 @@ WITH raw_data AS (SELECT
                                  ELSE NULL
                             END                                                                                       AS int_coverage,
                             ABS(COALESCE(cost_of_revenue, 0)) / NULLIF(inventories, 0)                               AS inv_turnover,
+                            (receivables / NULLIF(revenue, 0)) * (CASE WHEN UPPER(variant) = 'QUARTERLY' THEN 91.25 ELSE 365.0 END) AS days_sales_outstanding,
+                            (inventories / NULLIF(ABS(COALESCE(cost_of_revenue, 0)), 0)) * (CASE WHEN UPPER(variant) = 'QUARTERLY' THEN 91.25 ELSE 365.0 END) AS days_inventory_outstanding,
                             revenue          / NULLIF(assets, 0)                                                     AS asset_turnover,
                             net_income       / NULLIF(shares, 0)                                                     AS eps,
                             fcf              / NULLIF(shares, 0)                                                     AS fcf_per_share
@@ -193,6 +195,8 @@ WITH raw_data AS (SELECT
                           debt_to_equity,
                           int_coverage      AS interest_coverage_ratio,
                           inv_turnover      AS inventory_turnover,
+                          days_sales_outstanding,
+                          days_inventory_outstanding,
                           asset_turnover,
                           rev_growth_streak AS revenue_growth_streak,
                           fcf_streak        AS positive_fcf_streak,
@@ -257,6 +261,8 @@ SELECT
     debt_to_equity,
     interest_coverage_ratio,
     inventory_turnover,
+    days_sales_outstanding,
+    days_inventory_outstanding,
     asset_turnover,
     revenue_growth_streak,
     positive_fcf_streak,

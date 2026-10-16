@@ -127,9 +127,11 @@ public class DataQualityMetricsCalculator {
         if (latest == null) {
             return 0.0;
         }
-        long nonNulls = Stream.of(latest.freeCashFlow(), latest.fcfMargin(), latest.fcfYoyGrowth())
-                .filter(Objects::nonNull).count();
-        return nonNulls / 3.0;
+        long nonNulls = Stream.of(
+                latest.freeCashFlow(), latest.fcfMargin(), latest.fcfYoyGrowth(),
+                latest.daysSalesOutstanding(), latest.daysInventoryOutstanding()
+        ).filter(Objects::nonNull).count();
+        return nonNulls / 5.0;
     }
 
     private double evaluateRiskCompleteness(CompanyFactSheetData data) {
@@ -152,10 +154,10 @@ public class DataQualityMetricsCalculator {
     }
 
     private double evaluateInsiderCompleteness(CompanyFactSheetData data) {
-        if (data.getInsiderTransactionSummaryDto() != null) {
+        if (data.getInsiderTransactionSummaryDto() != null || !data.getInsiderTransactionsByPersonList().isEmpty()) {
             return 1.0;
         }
-        return !data.getRecentInsiderTransactionsList().isEmpty() ? 0.6 : 0.0;
+        return 0.0;
     }
 
     private double evaluateSmartMoneyCompleteness(CompanyFactSheetData data) {

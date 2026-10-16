@@ -24,6 +24,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -119,14 +120,9 @@ class PreCriticValidationServiceTest {
     }
 
     private CompanyFinancialRatiosDto mockRatioWithFiscalYear(int fiscalYear, LocalDate reportDate) {
-        return new CompanyFinancialRatiosDto(
-                "id", 1, "NVDA", "USD", null, StatementVariant.TTM,
-                fiscalYear, "Q2", reportDate, reportDate, reportDate,
-                null, null, null, null, null, null, null, null,
-                null, null, null, null, null, null, null,
-                null, null, null, null, null, null, null,
-                null, null, null, null, null, null, null,
-                null, null, null, null
-        );
+        CompanyFinancialRatiosDto ratio = mock(CompanyFinancialRatiosDto.class);
+        when(ratio.fiscalYear()).thenReturn(fiscalYear);
+        when(ratio.reportDate()).thenReturn(reportDate);
+        return ratio;
     }
 }

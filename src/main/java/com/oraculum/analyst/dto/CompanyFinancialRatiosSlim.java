@@ -32,6 +32,8 @@ public record CompanyFinancialRatiosSlim(
         @JsonProperty("quick_ratio")            Float quickRatio,
         @JsonProperty("debt_to_equity")         Float debtToEquity,
         @JsonProperty("interest_coverage_ratio") Float interestCoverageRatio,
+        @JsonProperty("days_sales_outstanding")     Float daysSalesOutstanding,
+        @JsonProperty("days_inventory_outstanding") Float daysInventoryOutstanding,
 
         // ── YoY growth rates ─────────────────────────────────────────────────────
         @JsonProperty("revenue_yoy_growth")    Float revenueYoyGrowth,
@@ -74,6 +76,8 @@ public record CompanyFinancialRatiosSlim(
                 dto.quickRatio(),
                 dto.debtToEquity(),
                 dto.interestCoverageRatio(),
+                dto.daysSalesOutstanding(),
+                dto.daysInventoryOutstanding(),
                 dto.revenueYoyGrowth(),
                 dto.netIncomeYoyGrowth(),
                 dto.epsYoyGrowth(),

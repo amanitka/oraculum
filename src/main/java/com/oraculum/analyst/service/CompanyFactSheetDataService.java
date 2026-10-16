@@ -101,8 +101,8 @@ public class CompanyFactSheetDataService {
         return companyInsiderTransactionApi.getInsiderTransactionSummaryByTicker(company.ticker()).orElse(null);
     }
 
-    private List<InsiderTransactionTickerDto> getRecentInsiderTransactions(CompanyDto company, LocalDate after) {
-        return companyInsiderTransactionApi.getInsiderTransactionsByTicker(company.ticker(), after);
+    private List<InsiderTransactionByPersonDto> getInsiderTransactionsByPerson(CompanyDto company) {
+        return companyInsiderTransactionApi.getInsiderTransactionsByPerson(company.ticker());
     }
 
     private Map<TickerDocumentType, Map<TickerDocumentSubtype, List<TickerDocumentDto>>> getRecentSecDocuments(CompanyDto company) {
@@ -143,7 +143,7 @@ public class CompanyFactSheetDataService {
                 .recentNews(getNews(company, analystProperties.news().getNewsHistoryDate(), analystProperties.news().articleLimit()))
                 .newsSentimentAggregate(getNewsSentiment(company))
                 .insiderTransactionSummary(getInsiderTransactionSummary(company))
-                .recentInsiderTransactions(getRecentInsiderTransactions(company, analystProperties.insider().getTransactionHistoryDate()))
+                .insiderTransactionsByPerson(getInsiderTransactionsByPerson(company))
                 .earningsEstimates(harvesterLiveApi.fetchEarningsEstimates(company.ticker()).orElse(List.of()))
                 .macroeconomicSummary(economyDataApi.getMacroeconomicSummary())
                 .recentSecDocuments(getRecentSecDocuments(company))

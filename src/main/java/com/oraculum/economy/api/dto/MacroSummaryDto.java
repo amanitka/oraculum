@@ -11,6 +11,7 @@ public record MacroSummaryDto(
         Double latestValue,
         Double value1yAgo,
         Double yoyChangePct,
+        Double yoyChangeBps,
         Double min1y,
         Double max1y,
         Double avg1y,

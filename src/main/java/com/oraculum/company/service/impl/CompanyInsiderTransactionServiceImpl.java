@@ -1,8 +1,10 @@
 package com.oraculum.company.service.impl;
 
 import com.oraculum.company.api.CompanyInsiderTransactionApi;
+import com.oraculum.company.api.dto.InsiderTransactionByPersonDto;
 import com.oraculum.company.api.dto.InsiderTransactionSummaryDto;
 import com.oraculum.company.api.dto.InsiderTransactionTickerDto;
+import com.oraculum.company.repository.InsiderTransactionByPersonRepository;
 import com.oraculum.company.repository.InsiderTransactionSummaryRepository;
 import com.oraculum.company.repository.InsiderTransactionTickerRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,7 @@ public class CompanyInsiderTransactionServiceImpl implements CompanyInsiderTrans
 
     private final InsiderTransactionTickerRepository insiderTransactionTickerRepository;
     private final InsiderTransactionSummaryRepository insiderTransactionSummaryRepository;
+    private final InsiderTransactionByPersonRepository insiderTransactionByPersonRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -40,6 +43,14 @@ public class CompanyInsiderTransactionServiceImpl implements CompanyInsiderTrans
     public List<InsiderTransactionTickerDto> getInsiderTransactionsByTicker(String ticker, LocalDate after) {
         return insiderTransactionTickerRepository.findByTickerAndTradeDateAfterOrderByFilingDateDesc(ticker, after).stream()
                 .map(InsiderTransactionTickerDto::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<InsiderTransactionByPersonDto> getInsiderTransactionsByPerson(String ticker) {
+        return insiderTransactionByPersonRepository.findByTickerOrderByValueSold12mDesc(ticker).stream()
+                .map(InsiderTransactionByPersonDto::fromEntity)
                 .collect(Collectors.toList());
     }
 }

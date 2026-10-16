@@ -50,6 +50,8 @@ public class CashFlowAgent implements Agent<StandardAgentOutput> {
                 .replace("{{ analysis_focus }}", ctx.analysisFocus() != null ? ctx.analysisFocus() : "Standard comprehensive analysis.")
                 .replace("{{ cash_flow_history_ttm }}", factSheet.getCashFlowHistory(StatementVariant.TTM, profile.periodLimit(StatementVariant.TTM)))
                 .replace("{{ company_financial_ratios_ttm }}", factSheet.getCompanyFinancialRatios(StatementVariant.TTM, profile.periodLimit(StatementVariant.TTM)))
+                .replace("{{ cash_flow_history_q }}", factSheet.getCashFlowHistory(StatementVariant.QUARTERLY, profile.periodLimit(StatementVariant.QUARTERLY)))
+                .replace("{{ company_financial_ratios_q }}", factSheet.getCompanyFinancialRatios(StatementVariant.QUARTERLY, profile.periodLimit(StatementVariant.QUARTERLY)))
                 .replace("{{ fundamentals_analysis }}", fundamentalsJson)
                 .replace("{{ ticker }}", ctx.ticker())
                 .replace("{{ analysis_date }}", ctx.analysisDate().toString());

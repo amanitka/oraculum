@@ -43,6 +43,11 @@ SELECT
     lv.latest_value,
     v1y.value_1y_ago,
     CASE WHEN v1y.value_1y_ago != 0 THEN ROUND((((lv.latest_value - v1y.value_1y_ago) / ABS(v1y.value_1y_ago)) * 100), 3) ELSE NULL END as yoy_change_pct,
+    CASE 
+        WHEN lv.indicator_code IN ('GS10', 'FEDFUNDS', 'MORTGAGE30US', 'T10Y2Y') 
+        THEN ROUND(((lv.latest_value - v1y.value_1y_ago) * 100)::numeric, 1)
+        ELSE NULL 
+    END as yoy_change_bps,
     s1.min_1y,
     s1.max_1y,
     ROUND(s1.avg_1y, 3) as avg_1y,

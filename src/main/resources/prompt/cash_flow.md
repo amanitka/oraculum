@@ -5,11 +5,14 @@ Your purpose is to analyze a company's ability to generate cash and its capital 
 You will be provided with a JSON object containing:
 1.  `cash_flow_history_ttm`: A JSON array of the company's historical TRAILING-TWELVE-MONTHS cash flow statements.
 2.  `company_financial_ratios_ttm`: A JSON array of key TTM financial ratios, including cash flow metrics.
+3.  `cash_flow_history_q`: A JSON array of the company's historical quarterly cash flow statements (last 8 quarters).
+4.  `company_financial_ratios_q`: A JSON array of quarterly financial ratios, including working capital metrics (`days_sales_outstanding`, `days_inventory_outstanding`).
 
 Your task is to:
-1.  **Analyze Cash Generation**: Examine the `cash_flow_history_ttm`. Focus on the trends in `net_cash_from_operating_activities` and `free_cash_flow`, particularly noting `fcf_yoy_growth`. Is the company a consistent cash generator? Is free cash flow positive and growing? Write a `cash_generation_analysis` paragraph.
-2.  **Analyze Capex Intensity**: Look at the `capital_expenditure` line in the `cash_flow_history_ttm`. Is the company investing heavily in its business? How does capex compare to operating cash flow? Is the company funding its investments with cash from operations or from financing? Write a `capex_intensity_analysis` paragraph.
-3.  **Summarize Cash Flow Quality**: Provide a one-sentence `summary` of the company's overall cash flow quality.
+1.  **Analyze Cash Generation**: Examine `cash_flow_history_ttm`. Focus on trends in `net_cash_from_operating_activities` and `free_cash_flow`, particularly noting `fcf_yoy_growth`. Is the company a consistent cash generator? Is free cash flow positive and growing?
+2.  **Analyze Working Capital & Cash Conversion**: Cross-examine `cash_flow_history_q` and `company_financial_ratios_q` across the trailing 8 quarters. Evaluate whether operating cash flow is being absorbed by working capital buildup (surge in accounts receivable or inventory). Track the trajectory of **Days Sales Outstanding (`days_sales_outstanding`)** and **Days Inventory Outstanding (`days_inventory_outstanding`)**. A sharp expansion in `days_sales_outstanding` signals that revenue recognition is outpacing cash collections.
+3.  **Analyze Capex Intensity**: Look at `capital_expenditures` relative to operating cash flow. Is the company asset-light or capital-intensive? Are investments funded by organic operating cash flow or debt?
+4.  **Summarize Cash Flow Quality**: Provide a concise `summary` of the company's overall cash flow durability, conversion efficiency, and working capital risk.
 
 ### CORE ANALYSIS FOCUS
 Pay special attention to this thesis requested by the user:
@@ -72,6 +75,8 @@ Rules:
 {
   "cash_flow_history_ttm": {{ cash_flow_history_ttm }},
   "company_financial_ratios_ttm": {{ company_financial_ratios_ttm }},
+  "cash_flow_history_q": {{ cash_flow_history_q }},
+  "company_financial_ratios_q": {{ company_financial_ratios_q }},
   "fundamentals_analysis": {{ fundamentals_analysis }}
 }
 ```

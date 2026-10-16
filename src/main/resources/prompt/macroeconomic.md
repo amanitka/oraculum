@@ -52,6 +52,7 @@ Rules:
 - SCORE & CONFIDENCE: `score` (0.0-10.0) measures how favorable the evidence is for the company. `confidence` (0.0-1.0) measures how reliable the evidence is. A high score does not imply high confidence.
 - TREND: The `trend` field (IMPROVING, DETERIORATING, STABLE) describes the *implication* for the company, not the raw mathematical direction. Rising costs or debt = DETERIORATING. Rising margins or revenue = IMPROVING.
 - EVIDENCE UNITS: `value` and `previous_value` must use the same unit and scale. If `value` is a YoY percentage change, `previous_value` must also be a YoY percentage change -- not a raw index level. Never compare percentages with raw index values.
+- INTEREST RATES: For interest rate indicators and yield spreads (e.g., GS10 10-Year Treasury, FEDFUNDS, MORTGAGE30US, T10Y2Y), express YoY changes in basis points using `yoy_change_bps` (e.g. '+87 bps' or '-47 bps') instead of relative percent-of-percent change.
 - SOURCE TYPE: Each evidence item must include `source_type`: REPORTED (directly from financial statements), CALCULATED (computed ratios/growth rates), DERIVED (model outputs like reverse DCF), or ESTIMATED (forward analyst consensus).
 - CITATIONS: Cite every fact using `[citation_id]` brackets immediately after the claim. Use only numeric IDs: "[142]", "[113, 140]". No words inside brackets. Do not cite data without a `citation_id`. Do not hallucinate citations. Always cite the specific year or timeframe.
 - FORMATTING: Use period (.) as decimal separator.

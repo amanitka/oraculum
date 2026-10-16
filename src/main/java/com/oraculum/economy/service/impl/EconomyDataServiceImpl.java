@@ -70,6 +70,7 @@ public class EconomyDataServiceImpl implements EconomyDataApi {
                         entity.getLatestValue(),
                         entity.getValue1yAgo(),
                         entity.getYoyChangePct(),
+                        entity.getYoyChangeBps(),
                         entity.getMin1y(),
                         entity.getMax1y(),
                         entity.getAvg1y(),

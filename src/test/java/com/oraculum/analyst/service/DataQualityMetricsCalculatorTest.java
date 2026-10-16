@@ -116,13 +116,30 @@ class DataQualityMetricsCalculatorTest {
         assertThat(result.confidenceScore().data()).isEqualTo(0.70); // 0.4 DCF + 0.3 matrix
     }
 
+    @Test
+    void calculate_cashFlowWithWorkingCapitalMetrics_returnsCompleteScore() {
+        LocalDate analysisDate = LocalDate.of(2026, 10, 15);
+        LocalDate reportDate = LocalDate.of(2026, 9, 30);
+        CompanyFinancialRatiosDto ratio = mockRatio(reportDate);
+        when(factSheetData.getCompanyFinancialRatiosList(StatementVariant.TTM)).thenReturn(List.of(ratio));
+
+        AgentContext ctx = AgentContext.builder()
+                .analysisDate(analysisDate)
+                .factSheetData(factSheetData)
+                .build();
+
+        var result = calculator.calculate(AgentType.CASH_FLOW, ctx);
+
+        assertThat(result.confidenceScore().data()).isEqualTo(1.0);
+    }
+
     private CompanyFinancialRatiosDto mockRatio(LocalDate reportDate) {
         return new CompanyFinancialRatiosDto(
                 "id", 1, "AAPL", "USD", null, StatementVariant.TTM,
                 2026, "Q3", reportDate, reportDate, reportDate,
                 1000f, 800f, 500f, 400f, 100f, 0.2f, 0.25f, 0.15f,
                 0.2f, 5000f, 1000f, 0.4f, 0.25f, 0.16f, 1.5f,
-                1.2f, 0.5f, 5.0f, 10f, 0.1f, 0.12f, 0.15f,
+                1.2f, 0.5f, 5.0f, 10f, 45f, 30f, 0.1f, 0.12f, 0.15f,
                 0.08f, 0.1f, 8, 1.1f, 1, 0, 1,
                 4, 4, 4, 8.5f
         );

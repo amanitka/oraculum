@@ -34,11 +34,11 @@ public class InsiderTransactionAgent implements Agent<StandardAgentOutput> {
         return new AgentOutput<>(StandardAgentOutput.empty("No insider transactions available."), 0);
     }
 
-    private String getPrompt(AgentContext ctx, String recentTransactions) {
+    private String getPrompt(AgentContext ctx, String insiderByPerson) {
         return promptRegistry.getPrompt(PromptType.INSIDER_TRANSACTION)
-                .replace("{{ analysis_focus }}", ctx.analysisFocus())
+                .replace("{{ analysis_focus }}", ctx.analysisFocus() != null ? ctx.analysisFocus() : "")
                 .replace("{{ insider_summary }}", ctx.factSheetData().getInsiderTransactionSummary())
-                .replace("{{ recent_transactions }}", recentTransactions)
+                .replace("{{ insider_transactions_by_person }}", insiderByPerson)
                 .replace("{{ ticker }}", ctx.ticker())
                 .replace("{{ analysis_date }}", ctx.analysisDate().toString());
     }
@@ -46,13 +46,13 @@ public class InsiderTransactionAgent implements Agent<StandardAgentOutput> {
     @Override
     public AgentOutput<StandardAgentOutput> run(AgentContext ctx) {
         log.info("InsiderTransactionAgent starting analysis for ticker: {}", ctx.ticker());
-        String recentTransactions = ctx.factSheetData().getRecentInsiderTransactions();
-        if ("[]".equals(recentTransactions)) {
-            log.warn("No recent insider transactions found for ticker: {}", ctx.ticker());
+        String insiderByPerson = ctx.factSheetData().getInsiderTransactionsByPerson();
+        if ("[]".equals(insiderByPerson)) {
+            log.warn("No insider transactions found for ticker: {}", ctx.ticker());
             return getDefaultOutput();
         }
 
-        String prompt = getPrompt(ctx, recentTransactions);
+        String prompt = appendCriticFeedbackIfPresent(getPrompt(ctx, insiderByPerson), ctx);
         LlmResponse<StandardAgentOutput> response = llmRouterApi.executeCall(
                 LlmCallRequest.of(
                         LlmTierType.STANDARD,

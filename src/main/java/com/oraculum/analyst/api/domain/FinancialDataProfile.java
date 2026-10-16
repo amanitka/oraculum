@@ -52,7 +52,8 @@ public enum FinancialDataProfile {
      * Used by agents evaluating FCF quality and capex intensity.
      */
     CASH_GENERATION(
-            DataWindow.of(StatementVariant.TTM, Integer.MAX_VALUE)
+            DataWindow.of(StatementVariant.TTM, Integer.MAX_VALUE),
+            DataWindow.of(StatementVariant.QUARTERLY, 8)
     ),
 
     /**

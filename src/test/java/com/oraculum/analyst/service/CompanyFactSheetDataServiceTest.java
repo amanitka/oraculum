@@ -3,12 +3,7 @@ package com.oraculum.analyst.service;
 import com.oraculum.analyst.config.AnalystProperties;
 import com.oraculum.analyst.dto.CitationRegistry;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
-import com.oraculum.company.api.CompanyFinancialDataApi;
-import com.oraculum.company.api.CompanyValuationApi;
-import com.oraculum.company.api.CompanyInsiderTransactionApi;
-import com.oraculum.company.api.CompanyNewsApi;
-import com.oraculum.company.api.CompanySharePriceApi;
-import com.oraculum.company.api.CompanyTickerDocumentApi;
+import com.oraculum.company.api.*;
 import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.dto.*;
 import com.oraculum.economy.api.EconomyDataApi;
@@ -22,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -54,9 +50,9 @@ class CompanyFactSheetDataServiceTest {
     @Mock
     private CompanyValuationApi companyValuationApi;
     @Mock
-    private com.oraculum.company.api.CompanyInstitutionalFlowApi companyInstitutionalFlowApi;
+    private CompanyInstitutionalFlowApi companyInstitutionalFlowApi;
     @Mock
-    private tools.jackson.databind.json.JsonMapper jsonMapper;
+    private JsonMapper jsonMapper;
     @Mock(answer = org.mockito.Answers.RETURNS_DEEP_STUBS)
     private AnalystProperties analystProperties;
 
@@ -80,7 +76,6 @@ class CompanyFactSheetDataServiceTest {
         when(analystProperties.sharePrice().getMonthlySharePriceHistoryDate()).thenReturn(LocalDate.now().minusYears(10));
         when(analystProperties.news().getNewsHistoryDate()).thenReturn(LocalDate.now().minusDays(30));
         when(analystProperties.news().articleLimit()).thenReturn(50);
-        when(analystProperties.insider().getTransactionHistoryDate()).thenReturn(LocalDate.now().minusYears(5));
     }
 
     @Test
@@ -126,9 +121,9 @@ class CompanyFactSheetDataServiceTest {
         InsiderTransactionSummaryDto insiderSummary = mock(InsiderTransactionSummaryDto.class);
         when(companyInsiderTransactionApi.getInsiderTransactionSummaryByTicker(anyString())).thenReturn(Optional.of(insiderSummary));
 
-        InsiderTransactionTickerDto transaction = mock(InsiderTransactionTickerDto.class);
-        when(companyInsiderTransactionApi.getInsiderTransactionsByTicker(anyString(), any(LocalDate.class)))
-                .thenReturn(List.of(transaction));
+        InsiderTransactionByPersonDto personTx = mock(InsiderTransactionByPersonDto.class);
+        when(companyInsiderTransactionApi.getInsiderTransactionsByPerson(anyString()))
+                .thenReturn(List.of(personTx));
 
         MacroSummaryDto macroSummary = mock(MacroSummaryDto.class);
         when(economyDataApi.getMacroeconomicSummary()).thenReturn(List.of(macroSummary));
@@ -155,7 +150,7 @@ class CompanyFactSheetDataServiceTest {
         assertThat(data.getRecentNews()).isNotNull();
         assertThat(data.getNewsSentimentAggregate()).isNotNull();
         assertThat(data.getInsiderTransactionSummary()).isNotNull();
-        assertThat(data.getRecentInsiderTransactions()).isNotNull();
+        assertThat(data.getInsiderTransactionsByPerson()).isNotNull();
         assertThat(data.getMacroeconomicSummary()).isNotNull();
         assertThat(data.getInstitutionalFlowHistory()).isNotNull();
     }

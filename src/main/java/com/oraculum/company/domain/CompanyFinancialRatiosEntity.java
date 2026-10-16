@@ -113,6 +113,12 @@ public class CompanyFinancialRatiosEntity {
     @Column(name = "interest_coverage_ratio")
     private Float interestCoverageRatio;
 
+    @Column(name = "days_sales_outstanding")
+    private Float daysSalesOutstanding;
+
+    @Column(name = "days_inventory_outstanding")
+    private Float daysInventoryOutstanding;
+
     @Column(name = "revenue_yoy_growth")
     private Float revenueYoyGrowth;
 

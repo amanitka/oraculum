@@ -11,7 +11,6 @@ public record AnalystProperties(Refresh refresh,
                                 SharePrice sharePrice,
                                 News news,
                                 Critic critic,
-                                Insider insider,
                                 int tokenBudget) {
     public record Refresh(String priceCron,
                           String fundamentalsCron,
@@ -50,11 +49,5 @@ public record AnalystProperties(Refresh refresh,
     }
 
     public record Critic(int maxReruns, int maxSpecialistsPerRerun) {
-    }
-
-    public record Insider(int transactionHistoryLimit) {
-        public LocalDate getTransactionHistoryDate() {
-            return LocalDate.now().minusDays(transactionHistoryLimit);
-        }
     }
 }

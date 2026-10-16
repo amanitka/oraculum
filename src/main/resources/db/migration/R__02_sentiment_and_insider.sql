@@ -1,6 +1,7 @@
 -- Flyway repeatable migration script for sentiment and insider views
 DROP VIEW IF EXISTS v_ticker_news_sentiment CASCADE;
 DROP VIEW IF EXISTS v_insider_transaction_summary CASCADE;
+DROP VIEW IF EXISTS v_insider_transaction_by_person CASCADE;
 
 -- =================================================================
 -- VIEW: v_ticker_news_sentiment
@@ -171,4 +172,62 @@ SELECT
 FROM aggregates a
 LEFT JOIN csuite_aggregates cs ON a.ticker = cs.ticker
 LEFT JOIN cluster_buys cb      ON a.ticker = cb.ticker;
+
+-- =================================================================
+-- VIEW: v_insider_transaction_by_person
+-- Description: Aggregates insider transactions per individual person
+--              across 1M, 3M, 6M, and 12M horizons with initial and
+--              current stake change percentages.
+-- =================================================================
+DO $$ BEGIN RAISE NOTICE 'Creating view: v_insider_transaction_by_person'; END $$;
+CREATE VIEW v_insider_transaction_by_person AS
+WITH tx_12m AS (
+    SELECT ticker, insider_name, title, trade_date, filing_date, trade_type, qty, value, owned
+    FROM t_insider_transaction_ticker
+    WHERE filing_date >= NOW() - INTERVAL '1 year'
+),
+ranked AS (
+    SELECT *,
+           ROW_NUMBER() OVER (PARTITION BY ticker, insider_name ORDER BY trade_date ASC, filing_date ASC) as rn_first_12m,
+           ROW_NUMBER() OVER (PARTITION BY ticker, insider_name ORDER BY trade_date DESC, filing_date DESC) as rn_last
+    FROM tx_12m
+)
+SELECT 
+    ticker || '_' || insider_name as id,
+    ticker,
+    insider_name,
+    MAX(title) as title,
+    
+    -- 1 Month window
+    COUNT(*) FILTER (WHERE filing_date >= NOW() - INTERVAL '1 month') as tx_count_1m,
+    SUM(CASE WHEN trade_type LIKE 'P - Purchase%' AND filing_date >= NOW() - INTERVAL '1 month' THEN qty ELSE 0 END) as shares_bought_1m,
+    SUM(CASE WHEN trade_type LIKE 'S - Sale%'     AND filing_date >= NOW() - INTERVAL '1 month' THEN ABS(qty) ELSE 0 END) as shares_sold_1m,
+    SUM(CASE WHEN trade_type LIKE 'S - Sale%'     AND filing_date >= NOW() - INTERVAL '1 month' THEN ABS(value) ELSE 0 END) as value_sold_1m,
+
+    -- 3 Month window
+    COUNT(*) FILTER (WHERE filing_date >= NOW() - INTERVAL '3 months') as tx_count_3m,
+    SUM(CASE WHEN trade_type LIKE 'P - Purchase%' AND filing_date >= NOW() - INTERVAL '3 months' THEN qty ELSE 0 END) as shares_bought_3m,
+    SUM(CASE WHEN trade_type LIKE 'S - Sale%'     AND filing_date >= NOW() - INTERVAL '3 months' THEN ABS(qty) ELSE 0 END) as shares_sold_3m,
+    SUM(CASE WHEN trade_type LIKE 'S - Sale%'     AND filing_date >= NOW() - INTERVAL '3 months' THEN ABS(value) ELSE 0 END) as value_sold_3m,
+
+    -- 6 Month window
+    COUNT(*) FILTER (WHERE filing_date >= NOW() - INTERVAL '6 months') as tx_count_6m,
+    SUM(CASE WHEN trade_type LIKE 'P - Purchase%' AND filing_date >= NOW() - INTERVAL '6 months' THEN qty ELSE 0 END) as shares_bought_6m,
+    SUM(CASE WHEN trade_type LIKE 'S - Sale%'     AND filing_date >= NOW() - INTERVAL '6 months' THEN ABS(qty) ELSE 0 END) as shares_sold_6m,
+    SUM(CASE WHEN trade_type LIKE 'S - Sale%'     AND filing_date >= NOW() - INTERVAL '6 months' THEN ABS(value) ELSE 0 END) as value_sold_6m,
+
+    -- 12 Month window (LTM)
+    COUNT(*) as tx_count_12m,
+    SUM(CASE WHEN trade_type LIKE 'P - Purchase%' THEN qty ELSE 0 END) as shares_bought_12m,
+    SUM(CASE WHEN trade_type LIKE 'S - Sale%'     THEN ABS(qty) ELSE 0 END) as shares_sold_12m,
+    SUM(CASE WHEN trade_type LIKE 'S - Sale%'     THEN ABS(value) ELSE 0 END) as value_sold_12m,
+    
+    -- Stock holdings & stake change
+    MAX(CASE WHEN rn_first_12m = 1 THEN owned END) as initial_owned_12m,
+    MAX(CASE WHEN rn_last = 1 THEN owned END)      as current_owned,
+    ROUND(((MAX(CASE WHEN rn_last = 1 THEN owned END) - MAX(CASE WHEN rn_first_12m = 1 THEN owned END)) * 100.0) 
+          / NULLIF(MAX(CASE WHEN rn_first_12m = 1 THEN owned END), 0), 2) as stake_change_pct_12m
+FROM ranked
+GROUP BY ticker, insider_name;
+
 

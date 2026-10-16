@@ -42,7 +42,7 @@ public class CompanyFactSheetData {
     private final List<NewsTickerDto> recentNews;
     private final TickerNewsSentimentDto newsSentimentAggregate;
     private final InsiderTransactionSummaryDto insiderTransactionSummary;
-    private final List<InsiderTransactionTickerDto> recentInsiderTransactions;
+    private final List<InsiderTransactionByPersonDto> insiderTransactionsByPerson;
     private final List<EarningsEstimateDto> earningsEstimates;
     private final List<MacroSummaryDto> macroeconomicSummary;
     private final Map<TickerDocumentType, Map<TickerDocumentSubtype, List<TickerDocumentDto>>> recentSecDocuments;
@@ -226,13 +226,17 @@ public class CompanyFactSheetData {
         return wrapWithCitation(InsiderTransactionSummaryDto.class, company.ticker(), insiderTransactionSummary);
     }
 
-    public String getRecentInsiderTransactions() {
-        if (recentInsiderTransactions == null || recentInsiderTransactions.isEmpty()) {
+    public String getInsiderTransactionsByPerson() {
+        if (insiderTransactionsByPerson == null || insiderTransactionsByPerson.isEmpty()) {
             return "[]";
         }
-        return "[" + recentInsiderTransactions.stream()
-                .map(dto -> wrapWithCitation(InsiderTransactionTickerDto.class, dto.id(), dto))
+        return "[" + insiderTransactionsByPerson.stream()
+                .map(dto -> wrapWithCitation(InsiderTransactionByPersonDto.class, company.ticker() + "_" + dto.insiderName(), dto))
                 .collect(Collectors.joining(",")) + "]";
+    }
+
+    public List<InsiderTransactionByPersonDto> getInsiderTransactionsByPersonList() {
+        return insiderTransactionsByPerson != null ? insiderTransactionsByPerson : List.of();
     }
 
     public String getFutureEarningsEstimates(LocalDate analysisDate) {
@@ -260,10 +264,6 @@ public class CompanyFactSheetData {
 
     public List<MacroSummaryDto> getMacroeconomicSummaryList() {
         return macroeconomicSummary != null ? macroeconomicSummary : List.of();
-    }
-
-    public List<InsiderTransactionTickerDto> getRecentInsiderTransactionsList() {
-        return recentInsiderTransactions != null ? recentInsiderTransactions : List.of();
     }
 
     public InsiderTransactionSummaryDto getInsiderTransactionSummaryDto() {

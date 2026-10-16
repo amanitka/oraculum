@@ -1,5 +1,6 @@
 package com.oraculum.company.api;
 
+import com.oraculum.company.api.dto.InsiderTransactionByPersonDto;
 import com.oraculum.company.api.dto.InsiderTransactionSummaryDto;
 import com.oraculum.company.api.dto.InsiderTransactionTickerDto;
 
@@ -12,4 +13,5 @@ public interface CompanyInsiderTransactionApi {
     Optional<LocalDateTime> getInsiderTransactionsLastFilingDate();
     Optional<InsiderTransactionSummaryDto> getInsiderTransactionSummaryByTicker(String ticker);
     List<InsiderTransactionTickerDto> getInsiderTransactionsByTicker(String ticker, LocalDate after);
+    List<InsiderTransactionByPersonDto> getInsiderTransactionsByPerson(String ticker);
 }
