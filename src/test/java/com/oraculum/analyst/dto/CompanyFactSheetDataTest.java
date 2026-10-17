@@ -11,8 +11,7 @@ import tools.jackson.databind.json.JsonMapper;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+
 
 class CompanyFactSheetDataTest {
 
@@ -24,8 +23,7 @@ class CompanyFactSheetDataTest {
     void setUp() {
         jsonMapper = new JsonMapper();
         citationRegistry = new CitationRegistry();
-        company = mock(CompanyDto.class);
-        when(company.id()).thenReturn(1);
+        company = new CompanyDto(1, "NVDA", "us", "NVIDIA Corp", null, null, null, null, null, null, null, null, null, null);
     }
 
     @Test

@@ -10,7 +10,7 @@ public interface Agent<T> {
     AgentOutput<T> run(AgentContext ctx);
 
     default String appendCriticFeedbackIfPresent(String prompt, AgentContext ctx) {
-        String criticFeedback = ctx.state().getCriticFeedbackFor(getName());
+        String criticFeedback = ctx.state() != null ? ctx.state().getCriticFeedbackFor(getName()) : null;
         if (criticFeedback != null) {
             return prompt + "\n\n### CRITIC FEEDBACK (Correction Required)\n"
                     + criticFeedback

@@ -30,7 +30,7 @@ public record AgentContext(UUID correlationId,
     }
 
     public String analysisFocus() {
-        return state.getAnalysisFocus();
+        return state != null ? state.getAnalysisFocus() : null;
     }
 
     public SharePriceSignalDto getLatestSignal() {

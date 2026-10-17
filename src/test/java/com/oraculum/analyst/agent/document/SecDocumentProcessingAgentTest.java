@@ -17,7 +17,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import tools.jackson.databind.json.JsonMapper;
@@ -33,25 +32,20 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class SecDocumentProcessingAgentTest {
 
+    private final JsonMapper jsonMapper = new JsonMapper();
     @Mock
     private CompanyTickerDocumentApi companyTickerDocumentApi;
-
     @Mock
     private LlmRouterApi llmRouterApi;
-
     @Mock
     private PromptRegistry promptRegistry;
-
-    @Mock
-    private JsonMapper jsonMapper;
-
-    @InjectMocks
     private SecDocumentProcessingAgent service;
 
     private TickerDocumentPendingDto rawDto;
 
     @BeforeEach
     void setUp() {
+        service = new SecDocumentProcessingAgent(companyTickerDocumentApi, llmRouterApi, promptRegistry, jsonMapper);
         rawDto = TickerDocumentPendingDto.builder()
                 .id("hash123")
                 .ticker("AAPL")
@@ -84,9 +78,6 @@ class SecDocumentProcessingAgentTest {
         LlmResponse<SecMdResponse> response = new LlmResponse<>(mdResponse, null);
         when(llmRouterApi.executeCall(any(LlmCallRequest.class))).thenReturn(response);
 
-        String expectedJson = "{\"summary\":\"Good performance\",\"sentiment_score\":0.75}";
-        when(jsonMapper.writeValueAsString(mdResponse)).thenReturn(expectedJson);
-
         // Act
         service.processPendingDocuments(1);
 
@@ -97,7 +88,7 @@ class SecDocumentProcessingAgentTest {
         TickerDocumentDto saved = summaryCaptor.getValue();
         assertThat(saved.getId()).isEqualTo("hash123");
         assertThat(saved.getSentimentScore()).isEqualTo(0.75f);
-        assertThat(saved.getSummary()).isEqualTo(expectedJson);
+        assertThat(saved.getSummary()).contains("Good performance");
         assertThat(saved.getDocumentType()).isEqualTo(TickerDocumentType.SEC_10K);
         assertThat(saved.getDocumentSubtype()).isEqualTo(TickerDocumentSubtype.SEC_MD);
     }

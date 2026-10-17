@@ -15,7 +15,7 @@ class CitationVerifierServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new CitationVerifierService(new ObjectMapper());
+        service = new CitationVerifierService(new ObjectMapper(), new FinancialMetricDictionary());
     }
 
     @Test
@@ -63,18 +63,83 @@ class CitationVerifierServiceTest {
     }
 
     @Test
-    void testVerifyCitations_qualitativeNoNumbers() {
+    void testVerifyCitations_dsoAndWorkingCapital() {
         Map<Integer, Object> citations = new HashMap<>();
-        citations.put(1, Map.of("summary", "Company is doing great"));
+        citations.put(58, Map.of("daysSalesOutstanding", 59.8, "daysInventoryOutstanding", 119.65));
 
-        String report = "The company has a positive outlook [1].";
+        String report = "DSO was 59.8 days and DIO reached 119.6 [58].";
         String result = service.verifyCitations(report, citations);
 
-        assertThat(result).isEqualTo("The company has a positive outlook [1].");
+        assertThat(result).isEqualTo("DSO was 59.8 days and DIO reached 119.6 [58].");
     }
 
     @Test
-    void testVerifyCitations_multipleCitations() {
+    void testVerifyCitations_dsoMismatch_markedUnverified() {
+        Map<Integer, Object> citations = new HashMap<>();
+        citations.put(58, Map.of("daysSalesOutstanding", 59.8));
+
+        String report = "DSO was 80.0 days [58].";
+        String result = service.verifyCitations(report, citations);
+
+        assertThat(result).contains("[58 ?]");
+    }
+
+    @Test
+    void testVerifyCitations_cashFlowStatementMetrics() {
+        Map<Integer, Object> citations = new HashMap<>();
+        citations.put(93, Map.of(
+                "Net Cash from Operating Activities", 50300000000.0,
+                "Change in Fixed Assets & Intangibles", -7470000000.0
+        ));
+
+        String report = "Operating cash flow was 50.3B and Capex was 7.47B [93].";
+        String result = service.verifyCitations(report, citations);
+
+        assertThat(result).isEqualTo("Operating cash flow was 50.3B and Capex was 7.47B [93].");
+    }
+
+    @Test
+    void testVerifyCitations_secQualitativeFiling_validWithoutRatioNumbers() {
+        Map<Integer, Object> citations = new HashMap<>();
+        citations.put(89, Map.of(
+                "documentType", "SEC_10Q",
+                "documentSubtype", "SEC_MD",
+                "accessionNumber", "0001045810-26-000075",
+                "filingDate", "2026-08-26"
+        ));
+
+        String report = "Management cited supply chain constraints for H100 in 2026 [89].";
+        String result = service.verifyCitations(report, citations);
+
+        assertThat(result).isEqualTo("Management cited supply chain constraints for H100 in 2026 [89].");
+    }
+
+    @Test
+    void testVerifyCitations_adjacentCitationsMultiplePeriods_bothVerified() {
+        Map<Integer, Object> citations = new HashMap<>();
+        citations.put(58, Map.of("revenueYoyGrowth", 1.0585));
+        citations.put(59, Map.of("revenueYoyGrowth", 0.852));
+
+        String report = "Revenue rose 105.9% YoY from 85.2% in Q1 [58][59].";
+        String result = service.verifyCitations(report, citations);
+
+        assertThat(result).isEqualTo("Revenue rose 105.9% YoY from 85.2% in Q1 [58][59].");
+    }
+
+    @Test
+    void testVerifyCitations_proximityContextSeparatedCitations() {
+        Map<Integer, Object> citations = new HashMap<>();
+        citations.put(58, Map.of("revenueYoyGrowth", 1.0585));
+        citations.put(59, Map.of("revenueYoyGrowth", 0.852));
+
+        String report = "Revenue rose 105.9% YoY [58], up from 85.2% in Q1 [59].";
+        String result = service.verifyCitations(report, citations);
+
+        assertThat(result).isEqualTo("Revenue rose 105.9% YoY [58], up from 85.2% in Q1 [59].");
+    }
+
+    @Test
+    void testVerifyCitations_multipleCitationsInSingleBracket() {
         Map<Integer, Object> citations = new HashMap<>();
         citations.put(1, Map.of("eps", 8.99));
         citations.put(2, Map.of("eps", 12.87));

@@ -27,16 +27,8 @@ public class CitationVerifierService {
     };
     private static final double MATCH_TOLERANCE = 0.03;
 
-    private static final Map<String, List<String>> TRIGGER_WORDS = Map.of(
-            "p/e", List.of("peRatio", "priceEarningsRatio", "forwardPE", "trailingPE"),
-            "margin", List.of("grossMargin", "operatingMargin", "netMargin", "profitMargin", "ebitdaMargin"),
-            "roe", List.of("returnOnEquity", "roe"),
-            "roa", List.of("returnOnAssets", "roa"),
-            "revenue", List.of("revenue", "totalRevenue", "sales"),
-            "eps", List.of("eps", "earningsPerShare", "dilutedEps", "basicEps")
-    );
-
     private final ObjectMapper objectMapper;
+    private final FinancialMetricDictionary metricDictionary;
 
     public String verifyCitations(String reportMd, Map<Integer, Object> citations) {
         return verifyCitations(reportMd, citations, true, null);
@@ -132,6 +124,14 @@ public class CitationVerifierService {
         int periodIdx = reportMd.lastIndexOf(". ", matchStart - 1);
         if (periodIdx != -1) periodIdx++;
         int newlineIdx = reportMd.lastIndexOf('\n', matchStart - 1);
+
+        int prevBracketIdx = reportMd.lastIndexOf(']', matchStart - 1);
+        if (prevBracketIdx != -1 && prevBracketIdx < matchStart - 1) {
+            String between = reportMd.substring(prevBracketIdx + 1, matchStart).trim();
+            if (!between.isEmpty() && !between.matches("^[\\[\\]\\s,;]+$")) {
+                periodIdx = Math.max(periodIdx, prevBracketIdx);
+            }
+        }
         int safeStart = Math.max(contextStart, Math.max(periodIdx + 1, newlineIdx + 1));
         return reportMd.substring(safeStart, matchStart);
     }
@@ -172,40 +172,73 @@ public class CitationVerifierService {
             return String.valueOf(id);
         }
 
-        List<Double> jsonNumbers = extractNumbersForCitation(citations.get(id), context);
-        boolean allVerified = contextNumbers.stream()
-                .allMatch(cNum -> jsonNumbers.stream().anyMatch(jNum -> isMatch(cNum, jNum)));
+        JsonNode root = objectMapper.valueToTree(citations.get(id));
+        if (isQualitativeFiling(root)) {
+            if (metrics != null) metrics.incrementValid();
+            return String.valueOf(id);
+        }
 
-        if (allVerified) {
+        return verifyQuantitativePayload(id, root, contextNumbers, context, metrics);
+    }
+
+    private String verifyQuantitativePayload(int id, JsonNode root, List<Double> contextNumbers,
+                                             String context, CitationMetrics metrics) {
+        List<String> targetFields = metricDictionary.getCandidateProperties(context);
+        List<Double> targetedNumbers = new ArrayList<>();
+        if (!targetFields.isEmpty()) {
+            extractNumbersFromJson(root, targetedNumbers, targetFields);
+        }
+
+        if (!targetedNumbers.isEmpty()) {
+            boolean verified = verifyTargetedNumbers(contextNumbers, targetedNumbers);
+            if (verified) {
+                if (metrics != null) metrics.incrementValid();
+                return String.valueOf(id);
+            }
+            if (metrics != null) metrics.incrementUnverified();
+            log.debug("Citation target mismatch: ID {} targeted {} context {}", id, targetedNumbers, contextNumbers);
+            return id + " ?";
+        }
+
+        return verifyAgainstAllNumbers(id, root, contextNumbers, metrics);
+    }
+
+    private boolean verifyTargetedNumbers(List<Double> contextNumbers, List<Double> targetedNumbers) {
+        if (contextNumbers.size() == 1) {
+            return targetedNumbers.stream().anyMatch(tNum -> isMatch(contextNumbers.get(0), tNum));
+        }
+        if (targetedNumbers.size() == 1) {
+            return contextNumbers.stream().anyMatch(cNum -> isMatch(cNum, targetedNumbers.get(0)));
+        }
+        return contextNumbers.stream().allMatch(cNum -> targetedNumbers.stream().anyMatch(tNum -> isMatch(cNum, tNum)));
+    }
+
+    private String verifyAgainstAllNumbers(int id, JsonNode root, List<Double> contextNumbers, CitationMetrics metrics) {
+        List<Double> allJsonNumbers = new ArrayList<>();
+        extractNumbersFromJson(root, allJsonNumbers, List.of());
+
+        boolean matched = contextNumbers.stream()
+                .anyMatch(cNum -> allJsonNumbers.stream().anyMatch(jNum -> isMatch(cNum, jNum)));
+
+        if (matched) {
             if (metrics != null) metrics.incrementValid();
             return String.valueOf(id);
         }
         if (metrics != null) metrics.incrementUnverified();
-        log.debug("Citation mismatch detected: ID {} payload did not verify all context numbers {}", id, contextNumbers);
+        log.debug("Citation mismatch detected: ID {} payload did not verify context numbers {}", id, contextNumbers);
         return id + " ?";
     }
 
-    private List<Double> extractNumbersForCitation(Object payload, String context) {
-        JsonNode root = objectMapper.valueToTree(payload);
-        List<Double> jsonNumbers = new ArrayList<>();
-        List<String> targetFields = getTargetFields(context);
-        extractNumbersFromJson(root, jsonNumbers, targetFields);
+    private boolean isQualitativeFiling(JsonNode root) {
+        if (root == null || !root.isObject()) return false;
+        JsonNode docType = root.get("documentType");
+        JsonNode docSubtype = root.get("documentSubtype");
+        boolean isSec = (docType != null && docType.asString().toUpperCase().startsWith("SEC_"))
+                || (docSubtype != null && docSubtype.asString().toUpperCase().startsWith("SEC_"));
+        if (!isSec) return false;
 
-        if (jsonNumbers.isEmpty() && !targetFields.isEmpty()) {
-            extractNumbersFromJson(root, jsonNumbers, List.of());
-        }
-        return jsonNumbers;
-    }
-
-    private List<String> getTargetFields(String context) {
-        String lowerContext = context.toLowerCase();
-        List<String> fields = new ArrayList<>();
-        for (Map.Entry<String, List<String>> entry : TRIGGER_WORDS.entrySet()) {
-            if (lowerContext.contains(entry.getKey())) {
-                fields.addAll(entry.getValue());
-            }
-        }
-        return fields;
+        return !root.has("peRatio") && !root.has("grossMargin")
+                && !root.has("daysSalesOutstanding") && !root.has("totalRevenue");
     }
 
     private List<Double> extractNumbersFromText(String text) {
@@ -241,9 +274,10 @@ public class CitationVerifierService {
         if (node.isObject()) {
             node.properties().forEach(entry -> {
                 boolean isTarget = targetFields.isEmpty() || targetFields.stream()
-                        .anyMatch(t -> entry.getKey().toLowerCase().contains(t.toLowerCase()));
+                        .anyMatch(t -> entry.getKey().equalsIgnoreCase(t)
+                                || entry.getKey().toLowerCase().contains(t.toLowerCase()));
                 if (isTarget) {
-                    extractAllNumbers(entry.getValue(), numbers);
+                    extractFieldNumbers(entry.getKey(), entry.getValue(), numbers);
                 } else if (entry.getValue().isObject() || entry.getValue().isArray()) {
                     extractNumbersFromJson(entry.getValue(), numbers, targetFields);
                 }
@@ -255,6 +289,28 @@ public class CitationVerifierService {
         } else if (targetFields.isEmpty()) {
             extractAllNumbers(node, numbers);
         }
+    }
+
+    private void extractFieldNumbers(String fieldName, JsonNode valueNode, List<Double> numbers) {
+        List<Double> extracted = new ArrayList<>();
+        extractAllNumbers(valueNode, extracted);
+        numbers.addAll(extracted);
+        if (isOutflowOrSaleField(fieldName)) {
+            for (Double val : extracted) {
+                if (val < 0) {
+                    numbers.add(Math.abs(val));
+                }
+            }
+        }
+    }
+
+    private boolean isOutflowOrSaleField(String fieldName) {
+        if (fieldName == null) return false;
+        String lower = fieldName.toLowerCase();
+        return lower.contains("fixed assets") || lower.contains("capex")
+                || lower.contains("capitalexpenditures") || lower.contains("dividends")
+                || lower.contains("repurchase") || lower.contains("sellsvalue")
+                || lower.contains("sellsshares");
     }
 
     private void extractAllNumbers(JsonNode node, List<Double> numbers) {

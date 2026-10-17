@@ -9,13 +9,12 @@ import com.oraculum.company.api.dto.TickerKeyDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.context.ApplicationEventPublisher;
-import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDate;
 import java.util.Map;
@@ -28,19 +27,14 @@ import static org.mockito.Mockito.*;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class CompanyAnalysisOrchestrationServiceTest {
 
+    private final JsonMapper jsonMapper = JsonMapper.builder().build();
     @Mock
     private CompanyAnalysisService companyAnalysisService;
-
     @Mock
     private CompanyAnalysisWorkflowService workflow;
-
-    @Mock
-    private ObjectMapper objectMapper;
-
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
-    @InjectMocks
     private CompanyAnalysisOrchestrationService orchestrationService;
 
     private CompanyAnalysisRequestEvent request;
@@ -48,6 +42,12 @@ class CompanyAnalysisOrchestrationServiceTest {
 
     @BeforeEach
     void setUp() {
+        orchestrationService = new CompanyAnalysisOrchestrationService(
+                companyAnalysisService,
+                workflow,
+                jsonMapper,
+                eventPublisher
+        );
         correlationId = UUID.randomUUID();
         request = new CompanyAnalysisRequestEvent(
                 correlationId,
@@ -57,10 +57,6 @@ class CompanyAnalysisOrchestrationServiceTest {
                 "focus",
                 null
         );
-        try {
-            when(objectMapper.writeValueAsString(any())).thenReturn("{}");
-        } catch (Exception ignored) {
-        }
     }
 
     @Test

@@ -55,8 +55,7 @@ class NewsAgentTest {
     void run_whenNoNewsInFactSheet_skipsLlmAndReturnsEmptyOutput() {
         when(factSheetData.getRecentNews()).thenReturn("[]");
 
-        CompanyDto company = mock(CompanyDto.class);
-        when(company.ticker()).thenReturn("NVDA");
+        CompanyDto company = createCompany("NVDA");
 
         AgentContext ctx = AgentContext.builder()
                 .company(company)
@@ -75,7 +74,7 @@ class NewsAgentTest {
     void run_whenNewsPresent_executesLlmCall() {
         when(factSheetData.getRecentNews()).thenReturn("[{\"title\":\"Nvidia releases Blackwell\"}]");
         when(factSheetData.getRecentSecEx991Summaries()).thenReturn("[]");
-        when(factSheetData.getRecentNewsList()).thenReturn(List.of(mock(NewsTickerDto.class)));
+        when(factSheetData.getRecentNewsList()).thenReturn(List.of(createNews("NVDA")));
         when(factSheetData.getNewsSentimentAggregate()).thenReturn("{}");
 
         when(promptRegistry.getPrompt(PromptType.NEWS)).thenReturn("News prompt for {{ ticker }} on {{ analysis_date }}. Focus: {{ analysis_focus }}. Relevance: {{ relevance_score_definition }}. Sentiment: {{ sentiment_score_definition }}. Aggregate: {{ news_sentiment_aggregate }}. News: {{ recent_news }}. SEC: {{ recent_sec_ex99_1_summaries }}.");
@@ -88,8 +87,7 @@ class NewsAgentTest {
         LlmResponse<StandardAgentOutput> llmResp = new LlmResponse<>(expectedOutput, new LlmMetrics(null, null, 100, 200, 300, 10L));
         when(llmRouterApi.executeCall(any(LlmCallRequest.class))).thenReturn(llmResp);
 
-        CompanyDto company = mock(CompanyDto.class);
-        when(company.ticker()).thenReturn("NVDA");
+        CompanyDto company = createCompany("NVDA");
 
         AgentContext ctx = AgentContext.builder()
                 .company(company)
@@ -104,5 +102,13 @@ class NewsAgentTest {
         assertThat(output.tokens()).isEqualTo(300);
         assertThat(output.result().headline()).isEqualTo("Blackwell launch boosts sentiment");
         verify(llmRouterApi).executeCall(any(LlmCallRequest.class));
+    }
+
+    private CompanyDto createCompany(String ticker) {
+        return new CompanyDto(1, ticker, "US", ticker + " Inc", "1", "Tech", "Tech", "US123", "Desc", 1000L, "USD", "CIK1", "CUSIP1", null);
+    }
+
+    private NewsTickerDto createNews(String ticker) {
+        return new NewsTickerDto("1", "Title", "url", null, null, "Summary", "Source", null, null, null, 0.5f, "Positive", null, "Sentiment def", "Relevance def", ticker, 0.8f, 0.5f, "Positive");
     }
 }
