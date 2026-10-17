@@ -2,7 +2,7 @@ package com.oraculum.analyst.service;
 
 import com.oraculum.analyst.agent.dto.AgentContext;
 import com.oraculum.analyst.agent.dto.CriticAgentOutput;
-import com.oraculum.analyst.agent.dto.StandardAgentOutput;
+import com.oraculum.analyst.agent.dto.SpecialistOutput;
 import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.api.domain.ValuationAssessment;
 import com.oraculum.analyst.api.dto.AnalysisResult;
@@ -98,8 +98,8 @@ public class SynthesizerGuardrailService {
         List<Double> scores = new ArrayList<>();
         Map<AgentType, Object> outputs = ctx.state().getSpecialistOutputs();
         for (Object output : outputs.values()) {
-            if (output instanceof StandardAgentOutput std) {
-                scores.add(std.score());
+            if (output instanceof SpecialistOutput specialist) {
+                scores.add(specialist.score());
             }
         }
         return scores;

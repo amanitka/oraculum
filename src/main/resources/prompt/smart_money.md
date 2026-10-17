@@ -79,6 +79,7 @@ Rules:
 - EVIDENCE UNITS: `value` and `previous_value` must use the same unit and scale. Never compare percentages with raw counts or dollar levels.
 - SOURCE TYPE: Each evidence item must include `source_type`: REPORTED (directly from Form 13F / regulatory filings), CALCULATED (computed ratios/growth rates), DERIVED (model outputs), or ESTIMATED (forward consensus).
 - CITATIONS: Cite every fact using `[citation_id]` brackets immediately after the claim. Use only numeric IDs: "[142]", "[113, 140]". No words inside brackets. Do not cite data without a `citation_id`. Do not hallucinate citations. Always cite the specific year or timeframe.
+- CRITICAL ATTRIBUTION RULE: Do NOT make assertions about buying or selling by individual top holders (e.g. BlackRock, Vanguard, State Street) unless specific share change numbers are explicitly provided for them. The `top_holders_names` list contains only current snapshot holdings, not change directions. You may only discuss buyer/seller actions for Tier 1 superinvestors where `tier1_buyer_names` or `tier1_seller_names` are explicitly populated.
 - FORMATTING: Use period (.) as decimal separator. Anchor analysis on the most recent reporting period; do not present older data as current.
 - JSON OUTPUT: Respond with exactly one raw JSON object (`{` to `}`). No markdown code blocks, no conversational text, no extra keys. Do not hallucinate data.
 

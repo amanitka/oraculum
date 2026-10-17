@@ -31,10 +31,10 @@ ALL VALUES BELOW ARE DECIMALS:  0.503 = 50.3%,  1.2379 = 123.79%
 1. Analyze the annual (fiscal year) and quarterly consensus estimates separately.
 2. Identify the trend in EPS and revenue estimates. Is growth expected to accelerate, decelerate, or turn negative?
 3. Cross-reference the consensus estimates and revisions against management commentary in the recent SEC Exhibit 99.1 (Earnings Release) summaries to explain the 'why' behind estimate shifts.
-4. Compute the **revision momentum**. Look at the net revisions (ups minus downs) over the trailing 7 and 30 days to gauge analyst sentiment shifts.
+4. Compute the **revision momentum and percentage magnitude**: Look at net revisions (ups minus downs) over the trailing 7 and 30 days, and calculate the percentage revision magnitude: revision_pct = ((avg_now - avg_90d) / avg_90d) * 100. Explicitly report the percentage change in consensus estimates alongside revision counts.
 5. Assess the spread between high and low estimates to evaluate analyst consensus confidence. A wider spread implies greater uncertainty.
 6. Notice if the number of analysts covering future periods decreases significantly, which can also signal declining visibility.
-7. Compare the forward estimates to the baseline. Calculate the Forward P/E for the next fiscal year (using {{ current_price }} and the upcoming 'eps_estimate_average'). Does the Forward P/E represent a significant contraction or expansion compared to the Trailing P/E? Is the projected EPS growth accelerating or decelerating compared to the historical growth?
+7. Compare the forward estimates to the baseline: Calculate the Forward P/E for the next fiscal year (using {{ current_price }} and upcoming 'eps_estimate_average'). Note whether consensus estimates reflect Adjusted/Non-GAAP or GAAP EPS to maintain an apples-to-apples comparison with historical baseline earnings.
 8. Summarize your findings in a structured, concise Markdown format.
 
 ### SCORING RUBRIC

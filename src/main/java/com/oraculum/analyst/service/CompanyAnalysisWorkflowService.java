@@ -89,12 +89,9 @@ public class CompanyAnalysisWorkflowService {
     }
 
     private <T> T enrichConfidenceIfApplicable(AgentType type, T result, AgentContext ctx) {
-        if (result instanceof StandardAgentOutput std) {
+        if (result instanceof SpecialistOutput specialist) {
             var dq = dataQualityMetricsCalculator.calculate(type, ctx);
-            return (T) std.toBuilder()
-                    .confidence(dq.confidenceScore())
-                    .confidenceReasons(dq.confidenceReasons())
-                    .build();
+            return (T) specialist.withConfidence(dq.confidenceScore(), dq.confidenceReasons());
         }
         return result;
     }

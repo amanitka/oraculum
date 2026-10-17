@@ -44,6 +44,12 @@ Derive your `score` using this weighted framework:
 - Business quality justification (15%): High ROE/margins justifying current multiple = 8-10, adequate = 5-7, poor quality = 0-4
 - Macro impact (10%): Favorable rate environment for valuation multiples = 8-10, neutral = 5-7, hostile = 0-4
 
+#### HARD SCORING CONSTRAINTS (Reverse DCF Hurdle Alignment)
+Your final `score` MUST be consistent with the pre-computed `reverse_dcf.sensitivity_matrix` base case:
+- If `valuation_zone` is **AGGRESSIVE** (implied FCF CAGR is high / demanding): Your final `score` **MUST NOT exceed 6.8** (recommended range 5.0 - 6.8). Even if trailing multiples appear low or in single-digit percentiles, priced-in future expectations require aggressive execution, so the valuation cannot be rated attractive (score >= 7.0).
+- If `valuation_zone` is **SPECULATIVE** (implied FCF CAGR is extreme / unrealistic): Your final `score` **MUST NOT exceed 4.9** (range 1.0 - 4.9).
+- If `valuation_zone` is **REALISTIC** or **CONSERVATIVE**: Your score may range from 7.0 to 10.0 if multiples and peer comparison also justify an attractive valuation.
+
 ### Canonical Facts (authoritative — do not recompute)
 These values come from the Financial Ratios source (TTM) and are authoritative.
 Use them for growth rates, margins, and returns — do NOT derive your own values
@@ -84,7 +90,7 @@ You MUST respond with valid JSON using exactly this schema:
 }
 
 Rules:
-- SCORE & CONFIDENCE: `score` (0.0-10.0) measures how favorable the evidence is for the company. `confidence` (0.0-1.0) measures how reliable the evidence is. A high score does not imply high confidence.
+- SCORE & CONFIDENCE: `score` (0.0-10.0) measures how favorable the valuation is for an investor. A high score does not imply high confidence. You MUST strictly respect the HARD SCORING CONSTRAINTS regarding Reverse DCF valuation zones (if base case is AGGRESSIVE, score MUST NOT exceed 6.8; if SPECULATIVE, score MUST NOT exceed 4.9).
 - TREND: The `trend` field (IMPROVING, DETERIORATING, STABLE) describes the *implication* for the company, not the raw mathematical direction. Rising costs or debt = DETERIORATING. Rising margins or revenue = IMPROVING.
 - EVIDENCE UNITS: `value` and `previous_value` must use the same unit and scale. Never compare percentages or multiples with raw dollar or index values.
 - SOURCE TYPE: Each evidence item must include `source_type`: REPORTED (directly from financial statements), CALCULATED (computed ratios/growth rates), DERIVED (model outputs like reverse DCF), or ESTIMATED (forward analyst consensus).

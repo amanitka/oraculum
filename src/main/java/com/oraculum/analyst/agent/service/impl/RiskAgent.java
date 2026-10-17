@@ -20,7 +20,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 @Component
 @RequiredArgsConstructor
-public class RiskAgent implements Agent<StandardAgentOutput> {
+public class RiskAgent implements Agent<RiskAgentOutput> {
 
     private final LlmRouterApi llmRouterApi;
     private final PromptRegistry promptRegistry;
@@ -31,9 +31,8 @@ public class RiskAgent implements Agent<StandardAgentOutput> {
         return AgentType.RISK;
     }
 
-
     @Override
-    public AgentOutput<StandardAgentOutput> run(AgentContext ctx) {
+    public AgentOutput<RiskAgentOutput> run(AgentContext ctx) {
         CompanyFactSheetData factSheet = ctx.factSheetData();
 
         StandardAgentOutput sharePriceOutput = (StandardAgentOutput) ctx.state().getAgentOutput(AgentType.SHARE_PRICE);
@@ -63,8 +62,8 @@ public class RiskAgent implements Agent<StandardAgentOutput> {
 
         String fullPrompt = appendCriticFeedbackIfPresent(prompt, ctx);
 
-        LlmResponse<StandardAgentOutput> response = llmRouterApi.executeCall(
-                LlmCallRequest.of(LlmTierType.STANDARD, fullPrompt, StandardAgentOutput.class, ctx.correlationId(), CorrelationType.COMPANY_ANALYSIS, getName().name()));
+        LlmResponse<RiskAgentOutput> response = llmRouterApi.executeCall(
+                LlmCallRequest.of(LlmTierType.STANDARD, fullPrompt, RiskAgentOutput.class, ctx.correlationId(), CorrelationType.COMPANY_ANALYSIS, getName().name()));
 
         return new AgentOutput<>(response.result(), response.metrics().totalTokens());
     }

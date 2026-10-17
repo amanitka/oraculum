@@ -154,4 +154,26 @@ class CompanyFactSheetDataServiceTest {
         assertThat(data.getMacroeconomicSummary()).isNotNull();
         assertThat(data.getInstitutionalFlowHistory()).isNotNull();
     }
+
+    @Test
+    void create_filtersOutBotNewsArticles() {
+        NewsTickerDto realNews = mock(NewsTickerDto.class);
+        when(realNews.timePublished()).thenReturn(OffsetDateTime.now());
+        when(realNews.title()).thenReturn("NVIDIA Unveils Next-Gen AI Architecture");
+
+        NewsTickerDto botNews1 = mock(NewsTickerDto.class);
+        when(botNews1.timePublished()).thenReturn(OffsetDateTime.now());
+        when(botNews1.title()).thenReturn("Pension Fund Purchases 15,000 Shares of NVIDIA Co.");
+
+        NewsTickerDto botNews2 = mock(NewsTickerDto.class);
+        when(botNews2.timePublished()).thenReturn(OffsetDateTime.now());
+        when(botNews2.title()).thenReturn("Stock Bought by State Wealth Fund");
+
+        when(companyNewsApi.getNewsByTicker(anyString(), any(LocalDate.class)))
+                .thenReturn(List.of(realNews, botNews1, botNews2));
+
+        CompanyFactSheetData data = service.create(company, new CitationRegistry());
+
+        assertThat(data.getRecentNewsList()).containsExactly(realNews);
+    }
 }

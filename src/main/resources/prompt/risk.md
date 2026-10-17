@@ -27,6 +27,8 @@ Your task is to:
     *   Fundamental deterioration noted in `fundamentals_analysis`.
     *   Cash generation issues or high capex burdens noted in `cash_flow_analysis`.
     *   Qualitative business risks, customer concentration, legal vulnerabilities, or competitive threats noted in `sec_rf_summaries`.
+    *   Off-balance-sheet commitments & customer financing noted in SEC filings: power and infrastructure commitments, long-term purchase obligations with suppliers (e.g. wafer foundry capacity), third-party guarantees, and investments in or vendor financing to private AI startups/customers.
+    *   Hardware depreciation & asset obsolescence lifecycle: customer capex digestion risks and exposure to rapid obsolescence of prior generation hardware inventory.
     *   Refinancing risks, bankruptcy risks, or severe demand destruction implied by the `macroeconomic_context`. Use this macroeconomic context strictly as background information; it should not be the primary driver of your risk assessment.
 3.  **Cross-Reference and Reconcile Share Price Momentum (Strategy 4)**: 
     *   Review the `share_price_analysis`.
@@ -44,7 +46,7 @@ Your `score` measures **Financial Health, Balance Sheet Fortress, and Solvency**
 Do NOT invert this scale. A safe, fortress company gets a HIGH score (e.g. 8.5-10.0). A distressed company gets a LOW score (0.0-2.0).
 
 ### METRIC OWNERSHIP
-You OWN: debt-to-equity, current ratio, interest coverage, cash reserves, NCAV/NNWC, SEC risk factors, qualitative business risks.
+You OWN: debt-to-equity, current ratio, interest coverage, cash reserves, NCAV/NNWC, SEC risk factors, off-balance-sheet commitments, obsolescence/lifecycle risks, qualitative business risks.
 You REFERENCE (do not re-derive): price momentum (owned by Share Price), FCF trends (owned by Cash Flow), margin health (owned by Fundamentals). Cite the other agent's conclusion in one sentence; do not reanalyze their data.
 
 ### SCORING RUBRIC

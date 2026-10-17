@@ -2,7 +2,7 @@ package com.oraculum.analyst.agent.service.impl;
 
 import com.oraculum.analyst.agent.dto.AgentContext;
 import com.oraculum.analyst.agent.dto.AgentOutput;
-import com.oraculum.analyst.agent.dto.StandardAgentOutput;
+import com.oraculum.analyst.agent.dto.RiskAgentOutput;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.PromptType;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
@@ -70,12 +70,12 @@ class RiskAgentTest {
         when(factSheetData.getLatestIndustryRatios(any())).thenReturn("IND_RATIO");
         when(factSheetData.getRecentSecRfSummaries()).thenReturn("[]");
 
-        StandardAgentOutput outputData = mock(StandardAgentOutput.class);
-        LlmResponse<StandardAgentOutput> llmResponse = new LlmResponse<>(outputData, new LlmMetrics(null, null, 100, 50, 150, 100L));
+        RiskAgentOutput outputData = mock(RiskAgentOutput.class);
+        LlmResponse<RiskAgentOutput> llmResponse = new LlmResponse<>(outputData, new LlmMetrics(null, null, 100, 50, 150, 100L));
 
         when(llmRouterApi.executeCall(any(LlmCallRequest.class))).thenReturn(llmResponse);
 
-        AgentOutput<StandardAgentOutput> result = agent.run(context);
+        AgentOutput<RiskAgentOutput> result = agent.run(context);
 
         assertThat(result).isNotNull();
         assertThat(result.result()).isEqualTo(outputData);

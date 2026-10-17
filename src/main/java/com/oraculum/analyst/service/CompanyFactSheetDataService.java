@@ -16,6 +16,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDate;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -81,11 +82,17 @@ public class CompanyFactSheetDataService {
         return companySharePriceApi.getMonthlySharePriceSignalsByCompanyId(company.id(), after);
     }
 
+    private static final Pattern BOT_ARTICLE_PATTERN = Pattern.compile(
+            "(Purchases [\\d,]+ Shares|Stock Bought by|Lowers Position in|Increases Stock Holdings in|Sold [\\d,]+ Shares)",
+            Pattern.CASE_INSENSITIVE
+    );
+
     private List<NewsTickerDto> getNews(CompanyDto company, LocalDate after, int limit) {
         List<NewsTickerDto> news = companyNewsApi.getNewsByTicker(company.ticker(), after);
         if (news == null || news.isEmpty()) return news;
 
         return news.stream()
+                .filter(n -> n.title() == null || !BOT_ARTICLE_PATTERN.matcher(n.title()).find())
                 .sorted(Comparator.comparing(NewsTickerDto::relevanceScore, Comparator.nullsLast(Comparator.reverseOrder()))
                         .thenComparing(NewsTickerDto::timePublished, Comparator.nullsLast(Comparator.reverseOrder())))
                 .limit(limit > 0 ? limit : 50)
