@@ -178,4 +178,50 @@ class CitationVerifierServiceTest {
 
         assertThat(result).contains("[999 !]");
     }
+
+    @Test
+    void testVerifyCitations_nvdaCompoundRevenueSentence_allVerified() {
+        Map<Integer, Object> citations = new HashMap<>();
+        citations.put(58, Map.of(
+                "revenue", 96221000000.0,
+                "revenueYoyGrowth", 1.0585114
+        ));
+        citations.put(89, Map.of(
+                "documentType", "SEC_10Q",
+                "documentSubtype", "SEC_MD"
+        ));
+        citations.put(301, Map.of(
+                "documentType", "SEC_8K",
+                "documentSubtype", "SEC_EX99_1"
+        ));
+
+        String report = "Quarter ended July 2026 revenue reached $96.2B, up 105.9% YoY, with Data Center revenue up 117% YoY and next-quarter guidance of $108.0B ±2% [58][89][301].";
+        String result = service.verifyCitations(report, citations);
+
+        assertThat(result).isEqualTo("Quarter ended July 2026 revenue reached $96.2B, up 105.9% YoY, with Data Center revenue up 117% YoY and next-quarter guidance of $108.0B ±2% [58][89][301].");
+    }
+
+    @Test
+    void testVerifyCitations_macroCompoundSentence_allVerified() {
+        Map<Integer, Object> citations = new HashMap<>();
+        citations.put(6, Map.of("indicator", "DGORDER", "yoyChangePct", 8.432, "latestValue", 338458.0));
+        citations.put(1, Map.of("indicator", "INDPRO", "yoyChangePct", 2.245, "latestValue", 103.9506));
+
+        String report = "Durable goods orders rose 8.43% YoY and industrial production rose 2.25% YoY [6][1].";
+        String result = service.verifyCitations(report, citations);
+
+        assertThat(result).isEqualTo("Durable goods orders rose 8.43% YoY and industrial production rose 2.25% YoY [6][1].");
+    }
+
+    @Test
+    void testVerifyCitations_workingCapitalMultiPeriod_allVerified() {
+        Map<Integer, Object> citations = new HashMap<>();
+        citations.put(113, Map.of("daysSalesOutstanding", 75.96993, "daysInventoryOutstanding", 150.2043));
+        citations.put(114, Map.of("daysSalesOutstanding", 58.618057, "daysInventoryOutstanding", 143.66873));
+
+        String report = "TTM days sales outstanding rose to 75.97 days from 58.62 days, and TTM days inventory outstanding rose to 150.20 days from 143.67 days [113][114].";
+        String result = service.verifyCitations(report, citations);
+
+        assertThat(result).isEqualTo("TTM days sales outstanding rose to 75.97 days from 58.62 days, and TTM days inventory outstanding rose to 150.20 days from 143.67 days [113][114].");
+    }
 }

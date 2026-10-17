@@ -120,13 +120,28 @@ public class FinancialMetricDictionary {
         map.put("funds selling", List.of("fundsSellingCount"));
 
         // Macro (FRED)
-        map.put("gdp", List.of("value", "previous_value"));
-        map.put("durable goods", List.of("value", "previous_value"));
-        map.put("m2", List.of("value", "previous_value"));
-        map.put("fed funds", List.of("value", "previous_value"));
-        map.put("treasury", List.of("value", "previous_value"));
-        map.put("wti", List.of("value", "previous_value"));
+        List<String> commonFredProps = List.of("latestValue", "value1yAgo", "yoyChangePct", "yoyChangeBps", "value", "previous_value");
+        map.put("gdp", combine(List.of("GDPC1", "gdp", "gross domestic product"), commonFredProps));
+        map.put("durable goods", combine(List.of("DGORDER", "durable goods"), commonFredProps));
+        map.put("m2", combine(List.of("M2SL", "m2 money supply", "m2"), commonFredProps));
+        map.put("fed funds", combine(List.of("FEDFUNDS", "fed funds"), commonFredProps));
+        map.put("treasury", combine(List.of("GS10", "DGS10", "treasury"), commonFredProps));
+        map.put("wti", combine(List.of("DCOILWTICO", "wti", "crude oil"), commonFredProps));
+        map.put("crude oil", combine(List.of("DCOILWTICO", "wti", "crude oil"), commonFredProps));
+        map.put("industrial production", combine(List.of("INDPRO", "industrial production"), commonFredProps));
+        map.put("consumer sentiment", combine(List.of("UMCSENT", "consumer sentiment"), commonFredProps));
+        map.put("housing starts", combine(List.of("HOUST", "housing starts"), commonFredProps));
+        map.put("unemployment", combine(List.of("UNRATE", "unemployment"), commonFredProps));
+        map.put("ppi", combine(List.of("PPIACO", "producer price", "ppi"), commonFredProps));
+        map.put("retail sales", combine(List.of("RSAFS", "retail sales"), commonFredProps));
+        map.put("mortgage", combine(List.of("MORTGAGE30US", "mortgage"), commonFredProps));
 
         return Collections.unmodifiableMap(map);
+    }
+
+    private static List<String> combine(List<String> list1, List<String> list2) {
+        List<String> combined = new ArrayList<>(list1);
+        combined.addAll(list2);
+        return combined;
     }
 }

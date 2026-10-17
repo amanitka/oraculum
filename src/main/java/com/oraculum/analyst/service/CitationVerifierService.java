@@ -21,9 +21,32 @@ import java.util.regex.Pattern;
 public class CitationVerifierService {
 
     private static final Pattern CITATION_PATTERN = Pattern.compile("\\[([\\d,\\s]+)\\]");
+    private static final Pattern PRECEDING_CLUSTER_PATTERN = Pattern.compile("(?:\\[[\\d,\\s]+\\][\\s,;]*)+$");
+    private static final Pattern TRAILING_CLUSTER_PATTERN = Pattern.compile("^[\\s,;]*\\[[\\d,\\s]+\\]");
+    private static final Pattern CLAUSE_SPLIT_PATTERN = Pattern.compile(
+            "(?:,|;)?\\s*\\b(?:and|while|whereas|with|but|versus|vs\\.?)\\b|;",
+            Pattern.CASE_INSENSITIVE
+    );
     private static final Pattern NUMBER_PATTERN = Pattern.compile("(-?\\d+(?:,\\d{3})*(?:\\.\\d+)?)");
+    private static final Pattern NEGATIVE_WORD_PATTERN = Pattern.compile(
+            "\\b(fell|dropped|declined|decreased|down|loss)\\b"
+    );
+    private static final Pattern LEVEL_PREPOSITION_PATTERN = Pattern.compile("\\b(from|to)\\b");
+    private static final Pattern MONTH_PREFIX_PATTERN = Pattern.compile(
+            ".*\\b(january|february|march|april|may|june|july|august|september|october|november|december|"
+                    + "jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)\\.?\\s+$"
+    );
+    private static final Pattern ABBREVIATION_SUFFIX_PATTERN = Pattern.compile(
+            ".*\\b(vs|u\\.s|inc|corp|co|ltd|est|approx|no|fig)$",
+            Pattern.CASE_INSENSITIVE
+    );
+    private static final Pattern NON_METRIC_SUFFIX_PATTERN = Pattern.compile(
+            "^(?:-[kqf]|(?:st|nd|rd|th|nm)\\b|[qh]\\d).*"
+    );
+
+    private static final int MAX_CONTEXT_LENGTH = 400;
     private static final double[] VALID_SCALES = {
-            1.0, 100.0, 1_000.0, 1_000_000.0, 1_000_000_000.0, 1_000_000_000_000.0
+            1.0, 100.0, 1_000.0, 10_000.0, 1_000_000.0, 1_000_000_000.0, 1_000_000_000_000.0
     };
     private static final double MATCH_TOLERANCE = 0.03;
 
@@ -34,62 +57,71 @@ public class CitationVerifierService {
         return verifyCitations(reportMd, citations, true, null);
     }
 
-    public String verifyCitations(String reportMd, Map<Integer, Object> citations, boolean appendFootnote, CitationMetrics metrics) {
+    public String verifyCitations(String reportMd, Map<Integer, Object> citations,
+                                  boolean appendFootnote, CitationMetrics metrics) {
         if (reportMd == null || citations == null || citations.isEmpty()) {
             return reportMd;
         }
-        StringBuilder correctedReport = new StringBuilder();
-        Matcher m = CITATION_PATTERN.matcher(reportMd);
+        StringBuilder corrected = new StringBuilder();
+        Matcher matcher = CITATION_PATTERN.matcher(reportMd);
         int lastIndex = 0;
         boolean hasUnverified = false;
         boolean hasBroken = false;
 
-        while (m.find()) {
-            int matchStart = m.start();
-            String context = extractContext(reportMd, matchStart);
-            List<Double> contextNumbers = extractNumbersFromText(context);
-
-            String[] ids = m.group(1).split(",");
-            List<String> validatedIds = validateCitationIds(ids, context, contextNumbers, citations, metrics);
+        while (matcher.find()) {
+            String[] ids = matcher.group(1).split(",");
+            boolean singleCitation = isSingleCitation(ids, reportMd, matcher.start(), matcher.end());
+            String context = extractContext(reportMd, matcher.start());
+            List<ContextClaim> claims = extractClaimsFromContext(context);
+            List<String> validatedIds = validateCitationIds(ids, claims, citations, metrics, singleCitation);
 
             hasUnverified |= validatedIds.stream().anyMatch(id -> id.endsWith("?"));
             hasBroken |= validatedIds.stream().anyMatch(id -> id.endsWith("!"));
 
-            correctedReport.append(reportMd, lastIndex, matchStart);
-            correctedReport.append("[").append(String.join(", ", validatedIds)).append("]");
-            lastIndex = m.end();
+            corrected.append(reportMd, lastIndex, matcher.start());
+            corrected.append("[").append(String.join(", ", validatedIds)).append("]");
+            lastIndex = matcher.end();
         }
-        correctedReport.append(reportMd.substring(lastIndex));
+        corrected.append(reportMd.substring(lastIndex));
+        appendVerificationFootnote(corrected, appendFootnote, hasUnverified, hasBroken);
+        return corrected.toString();
+    }
 
+    private void appendVerificationFootnote(StringBuilder report, boolean appendFootnote,
+                                            boolean hasUnverified, boolean hasBroken) {
         if ((hasUnverified || hasBroken) && appendFootnote) {
-            correctedReport.append("\n\n*Note: Citations marked with [?] contain extrapolated metrics or claims that could not be strictly verified. Citations marked with [!] reference missing or hallucinated sources.*");
+            report.append("\n\n*Note: Citations marked with [?] contain extrapolated metrics or claims ")
+                    .append("that could not be strictly verified. Citations marked with [!] reference ")
+                    .append("missing or hallucinated sources.*");
         }
-        return correctedReport.toString();
     }
 
     public <T> T verifyRecordCitations(T record, Map<Integer, Object> citations, CitationMetrics metrics) {
-        if (record == null) return null;
-        Class<?> clazz = record.getClass();
-        if (!clazz.isRecord()) return record;
-
-        try {
-            RecordComponent[] components = clazz.getRecordComponents();
-            Object[] args = new Object[components.length];
-            Class<?>[] paramTypes = new Class<?>[components.length];
-
-            for (int i = 0; i < components.length; i++) {
-                paramTypes[i] = components[i].getType();
-                Method accessor = components[i].getAccessor();
-                Object value = accessor.invoke(record);
-                args[i] = verifyComponentValue(value, citations, metrics);
-            }
-            Constructor<?> constructor = clazz.getDeclaredConstructor(paramTypes);
-            constructor.setAccessible(true);
-            return (T) constructor.newInstance(args);
-        } catch (Exception e) {
-            log.error("Failed to verify record citations for {}", clazz.getName(), e);
+        if (record == null || !record.getClass().isRecord()) {
             return record;
         }
+        try {
+            return buildVerifiedRecord(record, record.getClass(), citations, metrics);
+        } catch (Exception e) {
+            log.error("Failed to verify record citations for {}", record.getClass().getName(), e);
+            return record;
+        }
+    }
+
+    private <T> T buildVerifiedRecord(T record, Class<?> clazz,
+                                      Map<Integer, Object> citations, CitationMetrics metrics) throws Exception {
+        RecordComponent[] components = clazz.getRecordComponents();
+        Object[] args = new Object[components.length];
+        Class<?>[] paramTypes = new Class<?>[components.length];
+
+        for (int i = 0; i < components.length; i++) {
+            paramTypes[i] = components[i].getType();
+            Method accessor = components[i].getAccessor();
+            args[i] = verifyComponentValue(accessor.invoke(record), citations, metrics);
+        }
+        Constructor<?> constructor = clazz.getDeclaredConstructor(paramTypes);
+        constructor.setAccessible(true);
+        return (T) constructor.newInstance(args);
     }
 
     private Object verifyComponentValue(Object value, Map<Integer, Object> citations, CitationMetrics metrics) {
@@ -106,137 +138,224 @@ public class CitationVerifierService {
     }
 
     private List<Object> verifyListCitations(List<?> list, Map<Integer, Object> citations, CitationMetrics metrics) {
-        List<Object> newList = new ArrayList<>();
+        List<Object> verifiedList = new ArrayList<>(list.size());
         for (Object item : list) {
-            if (item instanceof String strItem) {
-                newList.add(verifyCitations(strItem, citations, false, metrics));
-            } else if (item != null && item.getClass().isRecord()) {
-                newList.add(verifyRecordCitations(item, citations, metrics));
-            } else {
-                newList.add(item);
-            }
+            verifiedList.add(verifyComponentValue(item, citations, metrics));
         }
-        return newList;
+        return verifiedList;
     }
 
     private String extractContext(String reportMd, int matchStart) {
-        int contextStart = Math.max(0, matchStart - 150);
-        int periodIdx = reportMd.lastIndexOf(". ", matchStart - 1);
-        if (periodIdx != -1) periodIdx++;
-        int newlineIdx = reportMd.lastIndexOf('\n', matchStart - 1);
+        int clusterStart = findClusterStart(reportMd, matchStart);
+        int contextStart = Math.max(0, clusterStart - MAX_CONTEXT_LENGTH);
+        int periodBoundary = findSentenceBoundary(reportMd, clusterStart);
+        int newlineBoundary = reportMd.lastIndexOf('\n', clusterStart - 1) + 1;
+        int bracketBoundary = findPreviousClauseBracket(reportMd, clusterStart);
 
-        int prevBracketIdx = reportMd.lastIndexOf(']', matchStart - 1);
-        if (prevBracketIdx != -1 && prevBracketIdx < matchStart - 1) {
-            String between = reportMd.substring(prevBracketIdx + 1, matchStart).trim();
-            if (!between.isEmpty() && !between.matches("^[\\[\\]\\s,;]+$")) {
-                periodIdx = Math.max(periodIdx, prevBracketIdx);
-            }
-        }
-        int safeStart = Math.max(contextStart, Math.max(periodIdx + 1, newlineIdx + 1));
-        return reportMd.substring(safeStart, matchStart);
+        int safeStart = Math.max(contextStart, Math.max(periodBoundary, Math.max(newlineBoundary, bracketBoundary)));
+        return reportMd.substring(safeStart, clusterStart);
     }
 
-    private List<String> validateCitationIds(String[] ids, String context, List<Double> contextNumbers,
-                                             Map<Integer, Object> citations, CitationMetrics metrics) {
-        List<String> validatedIds = new ArrayList<>();
-        if (ids.length == contextNumbers.size() && ids.length > 0) {
-            for (int i = 0; i < ids.length; i++) {
-                validatedIds.add(validateSingleCitation(ids[i].trim(), List.of(contextNumbers.get(i)), context, citations, metrics));
-            }
-            return validatedIds;
+    private int findClusterStart(String reportMd, int matchStart) {
+        int lookbackStart = Math.max(0, matchStart - 120);
+        String prefix = reportMd.substring(lookbackStart, matchStart);
+        Matcher matcher = PRECEDING_CLUSTER_PATTERN.matcher(prefix);
+        if (matcher.find()) {
+            return lookbackStart + matcher.start();
         }
+        return matchStart;
+    }
+
+    private boolean isSingleCitation(String[] ids, String reportMd, int matchStart, int matchEnd) {
+        return ids.length == 1
+                && findClusterStart(reportMd, matchStart) == matchStart
+                && !hasTrailingCluster(reportMd, matchEnd);
+    }
+
+    private boolean hasTrailingCluster(String reportMd, int matchEnd) {
+        int lookaheadEnd = Math.min(reportMd.length(), matchEnd + 120);
+        String suffix = reportMd.substring(matchEnd, lookaheadEnd);
+        return TRAILING_CLUSTER_PATTERN.matcher(suffix).find();
+    }
+
+    private int findSentenceBoundary(String reportMd, int limit) {
+        int searchPos = limit - 1;
+        while (searchPos >= 0) {
+            int periodIdx = reportMd.lastIndexOf(". ", searchPos);
+            if (periodIdx == -1) {
+                return 0;
+            }
+            String beforePeriod = reportMd.substring(Math.max(0, periodIdx - 10), periodIdx);
+            if (!ABBREVIATION_SUFFIX_PATTERN.matcher(beforePeriod).matches()) {
+                return periodIdx + 2;
+            }
+            searchPos = periodIdx - 1;
+        }
+        return 0;
+    }
+
+    private int findPreviousClauseBracket(String reportMd, int clusterStart) {
+        int prevBracketIdx = reportMd.lastIndexOf(']', clusterStart - 1);
+        if (prevBracketIdx != -1 && prevBracketIdx < clusterStart - 1) {
+            String between = reportMd.substring(prevBracketIdx + 1, clusterStart).trim();
+            if (!between.isEmpty() && !between.matches("^[\\[\\]\\s,;]+$")) {
+                return prevBracketIdx + 1;
+            }
+        }
+        return 0;
+    }
+
+    private List<ContextClaim> extractClaimsFromContext(String context) {
+        String cleanContext = CITATION_PATTERN.matcher(context).replaceAll(" ");
+        String[] clauses = CLAUSE_SPLIT_PATTERN.split(cleanContext);
+        if (clauses.length <= 1) {
+            List<String> targets = getSafeCandidateProperties(context);
+            return extractNumbersFromText(cleanContext).stream()
+                    .map(num -> new ContextClaim(num, targets))
+                    .toList();
+        }
+        return buildMultiClauseClaims(clauses, context);
+    }
+
+    private List<ContextClaim> buildMultiClauseClaims(String[] clauses, String fullContext) {
+        List<ContextClaim> claims = new ArrayList<>();
+        List<String> pendingTargets = List.of();
+        boolean anyTargetsMatched = false;
+
+        for (String clause : clauses) {
+            List<Double> numbers = extractNumbersFromText(clause);
+            List<String> targets = getSafeCandidateProperties(clause);
+            anyTargetsMatched |= !targets.isEmpty();
+
+            if (numbers.isEmpty()) {
+                if (!targets.isEmpty()) pendingTargets = targets;
+            } else {
+                List<String> effectiveTargets = !targets.isEmpty() ? targets : pendingTargets;
+                numbers.forEach(num -> claims.add(new ContextClaim(num, effectiveTargets)));
+                pendingTargets = List.of();
+            }
+        }
+        return applyFallbackTargetsIfNeeded(claims, anyTargetsMatched, fullContext);
+    }
+
+    private List<ContextClaim> applyFallbackTargetsIfNeeded(List<ContextClaim> claims,
+                                                            boolean anyTargetsMatched, String fullContext) {
+        if (anyTargetsMatched || claims.isEmpty()) {
+            return claims;
+        }
+        List<String> fullTargets = getSafeCandidateProperties(fullContext);
+        if (fullTargets.isEmpty()) {
+            return claims;
+        }
+        return claims.stream().map(c -> new ContextClaim(c.value(), fullTargets)).toList();
+    }
+
+    private List<String> getSafeCandidateProperties(String text) {
+        List<String> properties = metricDictionary.getCandidateProperties(text);
+        return properties != null ? properties : List.of();
+    }
+
+    private List<String> validateCitationIds(String[] ids, List<ContextClaim> claims,
+                                             Map<Integer, Object> citations, CitationMetrics metrics,
+                                             boolean isSingleCitation) {
+        List<String> validatedIds = new ArrayList<>(ids.length);
         for (String idStr : ids) {
-            validatedIds.add(validateSingleCitation(idStr.trim(), contextNumbers, context, citations, metrics));
+            validatedIds.add(validateSingleCitation(idStr.trim(), claims, citations, metrics, isSingleCitation));
         }
         return validatedIds;
     }
 
-    private String validateSingleCitation(String idStr, List<Double> contextNumbers, String context,
-                                          Map<Integer, Object> citations, CitationMetrics metrics) {
+    private String validateSingleCitation(String idStr, List<ContextClaim> claims,
+                                          Map<Integer, Object> citations, CitationMetrics metrics,
+                                          boolean isSingleCitation) {
         try {
             int id = Integer.parseInt(idStr);
-            return checkCitation(id, contextNumbers, context, citations, metrics);
+            return checkCitation(id, claims, citations, metrics, isSingleCitation);
         } catch (NumberFormatException e) {
             return idStr;
         }
     }
 
-    private String checkCitation(int id, List<Double> contextNumbers, String context,
-                                 Map<Integer, Object> citations, CitationMetrics metrics) {
+    private String checkCitation(int id, List<ContextClaim> claims,
+                                 Map<Integer, Object> citations, CitationMetrics metrics,
+                                 boolean isSingleCitation) {
         if (!citations.containsKey(id)) {
             if (metrics != null) metrics.incrementBroken();
             return id + " !";
         }
-        if (contextNumbers.isEmpty()) {
+        if (claims.isEmpty()) {
             if (metrics != null) metrics.incrementValid();
             return String.valueOf(id);
         }
-
         JsonNode root = objectMapper.valueToTree(citations.get(id));
         if (isQualitativeFiling(root)) {
             if (metrics != null) metrics.incrementValid();
             return String.valueOf(id);
         }
-
-        return verifyQuantitativePayload(id, root, contextNumbers, context, metrics);
+        return verifyQuantitativePayload(id, root, claims, metrics, isSingleCitation);
     }
 
-    private String verifyQuantitativePayload(int id, JsonNode root, List<Double> contextNumbers,
-                                             String context, CitationMetrics metrics) {
-        List<String> targetFields = metricDictionary.getCandidateProperties(context);
-        List<Double> targetedNumbers = new ArrayList<>();
-        if (!targetFields.isEmpty()) {
-            extractNumbersFromJson(root, targetedNumbers, targetFields);
-        }
-
-        if (!targetedNumbers.isEmpty()) {
-            boolean verified = verifyTargetedNumbers(contextNumbers, targetedNumbers);
-            if (verified) {
-                if (metrics != null) metrics.incrementValid();
-                return String.valueOf(id);
-            }
-            if (metrics != null) metrics.incrementUnverified();
-            log.debug("Citation target mismatch: ID {} targeted {} context {}", id, targetedNumbers, contextNumbers);
-            return id + " ?";
-        }
-
-        return verifyAgainstAllNumbers(id, root, contextNumbers, metrics);
-    }
-
-    private boolean verifyTargetedNumbers(List<Double> contextNumbers, List<Double> targetedNumbers) {
-        if (contextNumbers.size() == 1) {
-            return targetedNumbers.stream().anyMatch(tNum -> isMatch(contextNumbers.get(0), tNum));
-        }
-        if (targetedNumbers.size() == 1) {
-            return contextNumbers.stream().anyMatch(cNum -> isMatch(cNum, targetedNumbers.get(0)));
-        }
-        return contextNumbers.stream().allMatch(cNum -> targetedNumbers.stream().anyMatch(tNum -> isMatch(cNum, tNum)));
-    }
-
-    private String verifyAgainstAllNumbers(int id, JsonNode root, List<Double> contextNumbers, CitationMetrics metrics) {
+    private String verifyQuantitativePayload(int id, JsonNode root,
+                                             List<ContextClaim> claims, CitationMetrics metrics,
+                                             boolean isSingleCitation) {
         List<Double> allJsonNumbers = new ArrayList<>();
         extractNumbersFromJson(root, allJsonNumbers, List.of());
 
-        boolean matched = contextNumbers.stream()
-                .anyMatch(cNum -> allJsonNumbers.stream().anyMatch(jNum -> isMatch(cNum, jNum)));
+        boolean verified = claims.stream()
+                .anyMatch(claim -> isClaimVerified(claim, root, allJsonNumbers));
 
-        if (matched) {
+        if (verified && (!isSingleCitation || !hasContradictedClaim(claims, root))) {
             if (metrics != null) metrics.incrementValid();
             return String.valueOf(id);
         }
         if (metrics != null) metrics.incrementUnverified();
-        log.debug("Citation mismatch detected: ID {} payload did not verify context numbers {}", id, contextNumbers);
+        log.debug("Citation mismatch detected: ID {} payload did not verify claims {}", id, claims);
         return id + " ?";
     }
 
-    private boolean isQualitativeFiling(JsonNode root) {
-        if (root == null || !root.isObject()) return false;
-        JsonNode docType = root.get("documentType");
-        JsonNode docSubtype = root.get("documentSubtype");
-        boolean isSec = (docType != null && docType.asString().toUpperCase().startsWith("SEC_"))
-                || (docSubtype != null && docSubtype.asString().toUpperCase().startsWith("SEC_"));
-        if (!isSec) return false;
+    private boolean hasContradictedClaim(List<ContextClaim> claims, JsonNode root) {
+        for (ContextClaim claim : claims) {
+            if (!claim.targetFields().isEmpty() && isIndicatorPayloadApplicable(root, claim.targetFields())) {
+                List<Double> targetedNumbers = new ArrayList<>();
+                extractNumbersFromJson(root, targetedNumbers, claim.targetFields());
+                if (!targetedNumbers.isEmpty() && targetedNumbers.stream().noneMatch(tNum -> isMatch(claim.value(), tNum))) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
+    private boolean isClaimVerified(ContextClaim claim, JsonNode root, List<Double> allJsonNumbers) {
+        if (!claim.targetFields().isEmpty()) {
+            if (!isIndicatorPayloadApplicable(root, claim.targetFields())) {
+                return false;
+            }
+            List<Double> targetedNumbers = new ArrayList<>();
+            extractNumbersFromJson(root, targetedNumbers, claim.targetFields());
+            if (!targetedNumbers.isEmpty()) {
+                return targetedNumbers.stream().anyMatch(tNum -> isMatch(claim.value(), tNum));
+            }
+        }
+        return allJsonNumbers.stream().anyMatch(jNum -> isMatch(claim.value(), jNum));
+    }
+
+    private boolean isIndicatorPayloadApplicable(JsonNode root, List<String> targetFields) {
+        if (!root.has("indicator") || targetFields.isEmpty()) {
+            return true;
+        }
+        String ind = root.get("indicator").asString().toLowerCase();
+        String title = root.has("indicatorTitle") ? root.get("indicatorTitle").asString().toLowerCase() : "";
+        return targetFields.stream().anyMatch(t -> {
+            String lowerT = t.toLowerCase();
+            return ind.contains(lowerT) || title.contains(lowerT) || lowerT.contains(ind);
+        });
+    }
+
+    private boolean isQualitativeFiling(JsonNode root) {
+        if (!root.has("documentSubtype") && !root.has("documentType")) {
+            return false;
+        }
         return !root.has("peRatio") && !root.has("grossMargin")
                 && !root.has("daysSalesOutstanding") && !root.has("totalRevenue");
     }
@@ -244,24 +363,24 @@ public class CitationVerifierService {
     private List<Double> extractNumbersFromText(String text) {
         List<Double> numbers = new ArrayList<>();
         String lowerContext = text.toLowerCase();
-        Matcher m = NUMBER_PATTERN.matcher(text);
+        Matcher matcher = NUMBER_PATTERN.matcher(text);
 
-        while (m.find()) {
-            parseAndCollectNumber(m.group(1), m.start(), lowerContext, numbers);
+        while (matcher.find()) {
+            parseAndCollectNumber(matcher.group(1), matcher.start(), matcher.end(), lowerContext, numbers);
         }
         return numbers;
     }
 
-    private void parseAndCollectNumber(String numStr, int matchStart, String lowerContext, List<Double> numbers) {
+    private void parseAndCollectNumber(String numStr, int matchStart, int matchEnd,
+                                       String lowerContext, List<Double> numbers) {
         try {
             double val = Double.parseDouble(numStr.replace(",", ""));
-            if (val >= 1900 && val <= 2100 && numStr.indexOf('.') == -1) return;
-            if (val >= 0 && val <= 4 && numStr.indexOf('.') == -1) return;
-
+            if (isIgnoredTokenNumber(numStr, val, matchStart, matchEnd, lowerContext)) {
+                return;
+            }
             if (val > 0) {
-                int start = Math.max(0, matchStart - 25);
-                String prefix = lowerContext.substring(start, matchStart);
-                if (prefix.matches(".*\\b(fell|dropped|declined|decreased|down|loss)\\b.*")) {
+                String prefix = lowerContext.substring(Math.max(0, matchStart - 40), matchStart);
+                if (shouldNegateNumber(prefix)) {
                     val = -val;
                 }
             }
@@ -270,93 +389,92 @@ public class CitationVerifierService {
         }
     }
 
+    private boolean isIgnoredTokenNumber(String numStr, double val, int matchStart,
+                                         int matchEnd, String lowerContext) {
+        boolean isInteger = numStr.indexOf('.') == -1;
+        if (isInteger && ((val >= 1900 && val <= 2100) || (val >= 0 && val <= 4))) {
+            return true;
+        }
+        if (matchStart > 0 && Character.isLetter(lowerContext.charAt(matchStart - 1))) {
+            return true;
+        }
+        String suffix = lowerContext.substring(matchEnd, Math.min(lowerContext.length(), matchEnd + 4));
+        if (NON_METRIC_SUFFIX_PATTERN.matcher(suffix).matches()) {
+            return true;
+        }
+        return isInteger && val >= 1 && val <= 31 && !suffix.startsWith("%")
+                && MONTH_PREFIX_PATTERN.matcher(lowerContext.substring(0, matchStart)).matches();
+    }
+
+    private boolean shouldNegateNumber(String prefix) {
+        Matcher matcher = NEGATIVE_WORD_PATTERN.matcher(prefix);
+        int lastEnd = -1;
+        while (matcher.find()) {
+            lastEnd = matcher.end();
+        }
+        return lastEnd != -1 && !LEVEL_PREPOSITION_PATTERN.matcher(prefix.substring(lastEnd)).find();
+    }
+
     private void extractNumbersFromJson(JsonNode node, List<Double> numbers, List<String> targetFields) {
         if (node.isObject()) {
             node.properties().forEach(entry -> {
-                boolean isTarget = targetFields.isEmpty() || targetFields.stream()
-                        .anyMatch(t -> entry.getKey().equalsIgnoreCase(t)
-                                || entry.getKey().toLowerCase().contains(t.toLowerCase()));
-                if (isTarget) {
+                if (isTargetProperty(entry.getKey(), targetFields)) {
                     extractFieldNumbers(entry.getKey(), entry.getValue(), numbers);
                 } else if (entry.getValue().isObject() || entry.getValue().isArray()) {
                     extractNumbersFromJson(entry.getValue(), numbers, targetFields);
                 }
             });
         } else if (node.isArray()) {
-            for (JsonNode child : node) {
-                extractNumbersFromJson(child, numbers, targetFields);
-            }
-        } else if (targetFields.isEmpty()) {
-            extractAllNumbers(node, numbers);
+            node.forEach(item -> extractNumbersFromJson(item, numbers, targetFields));
         }
     }
 
-    private void extractFieldNumbers(String fieldName, JsonNode valueNode, List<Double> numbers) {
-        List<Double> extracted = new ArrayList<>();
-        extractAllNumbers(valueNode, extracted);
-        numbers.addAll(extracted);
-        if (isOutflowOrSaleField(fieldName)) {
-            for (Double val : extracted) {
-                if (val < 0) {
-                    numbers.add(Math.abs(val));
-                }
+    private boolean isTargetProperty(String key, List<String> targetFields) {
+        if (targetFields.isEmpty()) {
+            return true;
+        }
+        String lowerKey = key.toLowerCase();
+        return targetFields.stream()
+                .anyMatch(t -> lowerKey.contains(t.toLowerCase()));
+    }
+
+    private void extractFieldNumbers(String key, JsonNode value, List<Double> numbers) {
+        if (value.isNumber()) {
+            double num = value.asDouble();
+            numbers.add(num);
+            if (isDirectionalCashFlowProperty(key)) {
+                numbers.add(Math.abs(num));
             }
+        } else if (value.isString()) {
+            numbers.addAll(extractNumbersFromText(value.asString()));
         }
     }
 
-    private boolean isOutflowOrSaleField(String fieldName) {
-        if (fieldName == null) return false;
-        String lower = fieldName.toLowerCase();
+    private boolean isDirectionalCashFlowProperty(String key) {
+        String lower = key.toLowerCase();
         return lower.contains("fixed assets") || lower.contains("capex")
-                || lower.contains("capitalexpenditures") || lower.contains("dividends")
-                || lower.contains("repurchase") || lower.contains("sellsvalue")
-                || lower.contains("sellsshares");
+                || lower.contains("capitalexpenditure") || lower.contains("dividends")
+                || lower.contains("repurchase") || lower.contains("buyback")
+                || lower.contains("sellsvalue") || lower.contains("working capital");
     }
 
-    private void extractAllNumbers(JsonNode node, List<Double> numbers) {
-        if (node.isObject()) {
-            node.properties().forEach(entry -> extractAllNumbers(entry.getValue(), numbers));
-        } else if (node.isArray()) {
-            for (JsonNode child : node) {
-                extractAllNumbers(child, numbers);
-            }
-        } else if (node.isNumber()) {
-            numbers.add(node.asDouble());
-        } else if (node.isString()) {
-            tryParseStringNumber(node.asString().trim(), numbers);
+    private boolean isMatch(double contextVal, double jsonVal) {
+        if (jsonVal == 0.0) {
+            return Math.abs(contextVal) < 0.0001;
         }
-    }
-
-    private void tryParseStringNumber(String text, List<Double> numbers) {
-        if ((text.startsWith("{") && text.endsWith("}")) || (text.startsWith("[") && text.endsWith("]"))) {
-            try {
-                JsonNode nested = objectMapper.readTree(text);
-                extractAllNumbers(nested, numbers);
-                return;
-            } catch (Exception ignored) {
-            }
-        }
-        try {
-            numbers.add(Double.parseDouble(text));
-        } catch (NumberFormatException ignored) {
-        }
-    }
-
-    private boolean isMatch(double cNum, double jNum) {
-        if (Math.abs(cNum) < 1e-6 && Math.abs(jNum) < 1e-6) return true;
-        if (Math.abs(cNum) < 1e-6 || Math.abs(jNum) < 1e-6) return false;
-        if (Math.signum(cNum) != Math.signum(jNum)) return false;
-
-        double absC = Math.abs(cNum);
-        double absJ = Math.abs(jNum);
-        double ratio = absC > absJ ? absC / absJ : absJ / absC;
-
         for (double scale : VALID_SCALES) {
-            double normalized = ratio / scale;
-            if (Math.abs(normalized - 1.0) <= MATCH_TOLERANCE) {
+            double scaledJson = jsonVal * scale;
+            if (scaledJson != 0 && Math.abs(contextVal - scaledJson) / Math.abs(scaledJson) <= MATCH_TOLERANCE) {
+                return true;
+            }
+            double invScaledJson = jsonVal / scale;
+            if (invScaledJson != 0 && Math.abs(contextVal - invScaledJson) / Math.abs(invScaledJson) <= MATCH_TOLERANCE) {
                 return true;
             }
         }
         return false;
+    }
+
+    private record ContextClaim(double value, List<String> targetFields) {
     }
 }
