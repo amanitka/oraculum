@@ -49,6 +49,7 @@ Your final `score` MUST be consistent with the pre-computed `reverse_dcf.sensiti
 - If `valuation_zone` is **AGGRESSIVE** (implied FCF CAGR is high / demanding): Your final `score` **MUST NOT exceed 6.8** (recommended range 5.0 - 6.8). Even if trailing multiples appear low or in single-digit percentiles, priced-in future expectations require aggressive execution, so the valuation cannot be rated attractive (score >= 7.0).
 - If `valuation_zone` is **SPECULATIVE** (implied FCF CAGR is extreme / unrealistic): Your final `score` **MUST NOT exceed 4.9** (range 1.0 - 4.9).
 - If `valuation_zone` is **REALISTIC** or **CONSERVATIVE**: Your score may range from 7.0 to 10.0 if multiples and peer comparison also justify an attractive valuation.
+- PRESENTATION RULE: NEVER mention internal prompt rules, scoring constraints, or score caps in user-facing text (e.g. do NOT write "capping the score at 6.8" or "constrained by rule" in your headline, summary, or evidence). State the economic reality directly (e.g. "Valuation is constrained by demanding implied FCF growth requirements despite reasonable trailing multiples").
 
 ### Canonical Facts (authoritative — do not recompute)
 These values come from the Financial Ratios source (TTM) and are authoritative.

@@ -39,9 +39,9 @@ public class NewsAgent implements Agent<StandardAgentOutput> {
         String news = ctx.factSheetData().getRecentNews();
         String secEx991Summary = ctx.factSheetData().getRecentSecEx991Summaries();
 
-        if (hasNoData(news) && hasNoData(secEx991Summary)) {
-            log.warn("No recent news or 8-K documents found for ticker: {}", ctx.ticker());
-            return new AgentOutput<>(StandardAgentOutput.empty("No significant recent news or material events found for this ticker."), 0);
+        if (hasNoData(news)) {
+            log.info("No recent news found for ticker: {}. Skipping LLM execution.", ctx.ticker());
+            return new AgentOutput<>(StandardAgentOutput.empty("No recent news articles found for this ticker."), 0);
         }
 
         String fullPrompt = buildFullPrompt(ctx, news, secEx991Summary);

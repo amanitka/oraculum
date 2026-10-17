@@ -12,20 +12,16 @@ import com.oraculum.analyst.config.AnalystProperties;
 import com.oraculum.analyst.dto.CompanyAnalysisResult;
 import com.oraculum.analyst.dto.CompanyAnalysisWorkflowResult;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
-import com.oraculum.analyst.util.JsonUtils;
 import com.oraculum.company.api.CompanyMetadataApi;
 import com.oraculum.company.api.dto.CompanyDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -39,8 +35,8 @@ public class CompanyAnalysisWorkflowService {
     private final SecDocumentProcessingAgent secDocumentProcessingAgent;
     private final Map<AgentType, Agent<?>> agents;
     private final ApplicationEventPublisher eventPublisher;
-    private final JsonMapper jsonMapper;
-    private final CitationIntegrityService citationIntegrityService;
+    private final CitationVerifierService citationVerifierService;
+    private final CitationManagementService citationManagementService;
     private final DataQualityMetricsCalculator dataQualityMetricsCalculator;
     private final SynthesizerGuardrailService synthesizerGuardrailService;
 
@@ -77,7 +73,7 @@ public class CompanyAnalysisWorkflowService {
             return rawOutput;
         }
         CitationMetrics metrics = new CitationMetrics();
-        T verifiedResult = citationIntegrityService.verifyRecordCitations(
+        T verifiedResult = citationVerifierService.verifyRecordCitations(
                 rawOutput.result(),
                 ctx.state().getCitationRegistry().getCitations(),
                 metrics
@@ -237,7 +233,7 @@ public class CompanyAnalysisWorkflowService {
         int tokens = ctx.state().getTotalTokens();
         log.info("Analysis workflow completed in {}ms. Tokens: {}", System.currentTimeMillis() - outcome.startMs(), tokens);
 
-        injectPrunedCitationsToTrace(ctx);
+        citationManagementService.injectUsedCitationsToTrace(ctx);
 
         return CompanyAnalysisResult.builder()
                 .correlationId(req.correlationId())
@@ -245,44 +241,12 @@ public class CompanyAnalysisWorkflowService {
                 .market(req.ticker().market())
                 .analysisDate(ctx.analysisDate())
                 .status(AnalysisStatus.COMPLETED)
-                .analysisResult(withFormattedReport(finalOut))
+                .analysisResult(citationManagementService.formatReportWithFootnote(finalOut))
                 .agentTrace(ctx.state().getAgentTrace())
                 .tokenUsage(tokens)
                 .createdAt(outcome.now())
                 .updatedAt(ZonedDateTime.now())
                 .build();
-    }
-
-    private AnalysisResult withFormattedReport(AnalysisResult output) {
-        String report = output.executiveSummary();
-        if (report != null && report.contains("?]") && !report.contains("*Note: Citations marked with [?]")) {
-            report = report + "\n\n*Note: Citations marked with [?] contain extrapolated metrics or claims that could not be strictly verified against the raw numerical data.*";
-            return output.withExecutiveSummary(report);
-        }
-        return output;
-    }
-
-    private void injectPrunedCitationsToTrace(AgentContext ctx) {
-        String fullTraceStr = JsonUtils.toJson(jsonMapper, ctx.state().getAgentTrace(), "");
-        Map<Integer, Object> allCitations = ctx.state().getCitationRegistry().getCitations();
-        Map<Integer, Object> prunedCitations = new TreeMap<>();
-
-        Pattern p = Pattern.compile("\\[([\\d,\\s\\?]+)\\]");
-        Matcher m = p.matcher(fullTraceStr);
-        while (m.find()) {
-            String idsStr = m.group(1);
-            Matcher idMatcher = Pattern.compile("\\d+").matcher(idsStr);
-            while (idMatcher.find()) {
-                try {
-                    int id = Integer.parseInt(idMatcher.group());
-                    if (allCitations.containsKey(id)) {
-                        prunedCitations.put(id, allCitations.get(id));
-                    }
-                } catch (NumberFormatException ignored) {
-                }
-            }
-        }
-        ctx.state().putAgentTrace(AgentWorkflowState.TRACE_CITATIONS_KEY, prunedCitations);
     }
 
     private CompanyAnalysisResult createFailureResult(CompanyAnalysisRequestEvent req, LocalDate analysisDate, Exception e, ZonedDateTime now) {

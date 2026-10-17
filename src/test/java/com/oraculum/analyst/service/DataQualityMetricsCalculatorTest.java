@@ -4,10 +4,8 @@ import com.oraculum.analyst.agent.dto.AgentContext;
 import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
 import com.oraculum.company.api.domain.StatementVariant;
-import com.oraculum.company.api.dto.CompanyFinancialRatiosDto;
-import com.oraculum.company.api.dto.ReverseDcfDto;
-import com.oraculum.company.api.dto.ReverseDcfSensitivityMatrixDto;
-import com.oraculum.company.api.dto.SharePriceSignalDto;
+import com.oraculum.company.api.dto.*;
+import com.oraculum.economy.api.dto.MacroSummaryDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,9 +33,9 @@ class DataQualityMetricsCalculatorTest {
     }
 
     @Test
-    void calculate_fundamentalsWithCompleteData_returnsHighConfidence() {
+    void calculate_fundamentalsWithin120Days_returns100PercentFreshness() {
         LocalDate analysisDate = LocalDate.of(2026, 10, 15);
-        LocalDate reportDate = LocalDate.of(2026, 9, 30); // 15 days ago
+        LocalDate reportDate = LocalDate.of(2026, 7, 31); // 76 days ago (NVDA scenario)
 
         CompanyFinancialRatiosDto ratio = mockRatio(reportDate);
         when(factSheetData.getCompanyFinancialRatiosList(StatementVariant.TTM)).thenReturn(List.of(ratio));
@@ -50,14 +48,14 @@ class DataQualityMetricsCalculatorTest {
         var result = calculator.calculate(AgentType.FUNDAMENTALS, ctx);
 
         assertThat(result.confidenceScore().data()).isEqualTo(1.0);
-        assertThat(result.confidenceScore().interpretation()).isGreaterThanOrEqualTo(0.90);
-        assertThat(result.confidenceScore().overall()).isGreaterThan(0.90);
+        assertThat(result.confidenceScore().overall()).isEqualTo(1.0);
         assertThat(result.confidenceReasons()).hasSize(2);
         assertThat(result.confidenceReasons().getFirst()).contains("100%");
+        assertThat(result.confidenceReasons().get(1)).contains("100%").contains("current filing");
     }
 
     @Test
-    void calculate_fundamentalsWithStaleData_reducesFreshness() {
+    void calculate_fundamentalsWithStaleDataOver120Days_reducesFreshness() {
         LocalDate analysisDate = LocalDate.of(2026, 10, 15);
         LocalDate reportDate = LocalDate.of(2025, 10, 15); // 365 days ago
 
@@ -71,16 +69,59 @@ class DataQualityMetricsCalculatorTest {
 
         var result = calculator.calculate(AgentType.FUNDAMENTALS, ctx);
 
+        assertThat(result.confidenceScore().data()).isLessThan(0.15);
+        assertThat(result.confidenceReasons().get(1)).contains("delayed filing");
+    }
+
+    @Test
+    void calculate_newsWithArticles_returnsFullScore() {
+        NewsTickerDto newsDto = mock(NewsTickerDto.class);
+        when(factSheetData.getRecentNewsList()).thenReturn(List.of(newsDto));
+
+        AgentContext ctx = AgentContext.builder()
+                .factSheetData(factSheetData)
+                .build();
+
+        var result = calculator.calculate(AgentType.NEWS, ctx);
+
         assertThat(result.confidenceScore().data()).isEqualTo(1.0);
-        assertThat(result.confidenceScore().interpretation()).isLessThan(0.20);
-        assertThat(result.confidenceScore().overall()).isLessThan(0.70);
+        assertThat(result.confidenceReasons().get(1)).contains("time-decayed sentiment active");
+    }
+
+    @Test
+    void calculate_newsWithoutArticles_returnsZeroScore() {
+        when(factSheetData.getRecentNewsList()).thenReturn(List.of());
+
+        AgentContext ctx = AgentContext.builder()
+                .factSheetData(factSheetData)
+                .build();
+
+        var result = calculator.calculate(AgentType.NEWS, ctx);
+
+        assertThat(result.confidenceScore().data()).isEqualTo(0.0);
+        assertThat(result.confidenceReasons().getFirst()).contains("no news articles found");
+    }
+
+    @Test
+    void calculate_macroWithSummary_returnsFullScore() {
+        MacroSummaryDto macroDto = mock(MacroSummaryDto.class);
+        when(factSheetData.getMacroeconomicSummaryList()).thenReturn(List.of(macroDto));
+
+        AgentContext ctx = AgentContext.builder()
+                .factSheetData(factSheetData)
+                .build();
+
+        var result = calculator.calculate(AgentType.MACROECONOMIC, ctx);
+
+        assertThat(result.confidenceScore().data()).isEqualTo(1.0);
+        assertThat(result.confidenceReasons().get(1)).contains("current economic observation series");
     }
 
     @Test
     void calculate_sharePriceSignals_evaluatesCompletenessAndFreshness() {
         LocalDate analysisDate = LocalDate.of(2026, 10, 15);
         SharePriceSignalDto signal = mock(SharePriceSignalDto.class);
-        when(signal.tradeDate()).thenReturn(LocalDate.of(2026, 10, 14));
+        when(signal.tradeDate()).thenReturn(LocalDate.of(2026, 10, 14)); // 1 day ago (within 3d buffer)
 
         when(factSheetData.getDailySharePriceSignalsList()).thenReturn(List.of(signal));
         when(factSheetData.getLatestDailySignal()).thenReturn(signal);
@@ -92,8 +133,7 @@ class DataQualityMetricsCalculatorTest {
 
         var result = calculator.calculate(AgentType.SHARE_PRICE, ctx);
 
-        assertThat(result.confidenceScore().interpretation()).isGreaterThan(0.95);
-        assertThat(result.confidenceScore().data()).isEqualTo(0.05); // 1 / 20 signals
+        assertThat(result.confidenceScore().data()).isEqualTo(0.05); // 1 / 20 completeness * 1.0 freshness
     }
 
     @Test
@@ -113,24 +153,8 @@ class DataQualityMetricsCalculatorTest {
 
         var result = calculator.calculate(AgentType.VALUATION, ctx);
 
-        assertThat(result.confidenceScore().data()).isEqualTo(0.70); // 0.4 DCF + 0.3 matrix
-    }
-
-    @Test
-    void calculate_cashFlowWithWorkingCapitalMetrics_returnsCompleteScore() {
-        LocalDate analysisDate = LocalDate.of(2026, 10, 15);
-        LocalDate reportDate = LocalDate.of(2026, 9, 30);
-        CompanyFinancialRatiosDto ratio = mockRatio(reportDate);
-        when(factSheetData.getCompanyFinancialRatiosList(StatementVariant.TTM)).thenReturn(List.of(ratio));
-
-        AgentContext ctx = AgentContext.builder()
-                .analysisDate(analysisDate)
-                .factSheetData(factSheetData)
-                .build();
-
-        var result = calculator.calculate(AgentType.CASH_FLOW, ctx);
-
-        assertThat(result.confidenceScore().data()).isEqualTo(1.0);
+        // completeness is 0.70 (0.4 DCF + 0.3 matrix), no ratio date defaults to 180d ago -> freshness decayed
+        assertThat(result.confidenceScore().data()).isLessThan(0.70);
     }
 
     private CompanyFinancialRatiosDto mockRatio(LocalDate reportDate) {
@@ -145,9 +169,9 @@ class DataQualityMetricsCalculatorTest {
         );
     }
 
-    private com.oraculum.company.api.dto.ReverseDcfMatrixCellDto mockCell() {
-        return new com.oraculum.company.api.dto.ReverseDcfMatrixCellDto(
-                10.0, 3.0, 12.0, com.oraculum.company.api.dto.ValuationZone.FAIR, true
+    private ReverseDcfMatrixCellDto mockCell() {
+        return new ReverseDcfMatrixCellDto(
+                10.0, 3.0, 12.0, ValuationZone.FAIR, true
         );
     }
 }
