@@ -214,7 +214,6 @@ public class MainLayout extends AppLayout implements RouterLayout, AfterNavigati
         
         layout.add(createGlossaryItem("Signals", null));
         layout.add(createGlossaryItem("Screener Signal", "Composite investment signal derived from combined Q-Rank, V-Rank, and F-Rank scores (Strong Buy, Buy, Neutral, Avoid)."));
-        layout.add(createGlossaryItem("News Sentiment", "Aggregated sentiment score from recent financial news coverage."));
         
         dialog.add(layout);
         

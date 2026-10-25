@@ -2,7 +2,6 @@ package com.oraculum.harvester.scheduler;
 
 import com.oraculum.harvester.service.FredService;
 import com.oraculum.harvester.service.HarvesterBatchService;
-import com.oraculum.harvester.service.NewsService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,16 +17,13 @@ class RefreshSchedulerTest {
     private HarvesterBatchService refreshService;
 
     @Mock
-    private NewsService newsService;
-
-    @Mock
     private FredService fredService;
 
     private RefreshScheduler scheduler;
 
     @BeforeEach
     void setUp() {
-        scheduler = new RefreshScheduler(refreshService, newsService, fredService);
+        scheduler = new RefreshScheduler(refreshService, fredService);
     }
 
     @Test

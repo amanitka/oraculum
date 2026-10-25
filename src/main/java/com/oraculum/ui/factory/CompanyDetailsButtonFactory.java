@@ -4,7 +4,7 @@ import com.oraculum.company.api.CompanyFinancialDataApi;
 import com.oraculum.company.api.CompanyInsiderTransactionApi;
 import com.oraculum.company.api.CompanyInstitutionalFlowApi;
 import com.oraculum.company.api.CompanyMetadataApi;
-import com.oraculum.company.api.CompanyNewsApi;
+import com.oraculum.harvester.api.HarvesterLiveApi;
 import com.oraculum.company.api.CompanySharePriceApi;
 import com.oraculum.company.api.CompanyValuationApi;
 import com.oraculum.company.api.dto.CompanyDto;
@@ -24,7 +24,7 @@ public class CompanyDetailsButtonFactory {
     private final CompanyMetadataApi companyMetadataApi;
     private final CompanyFinancialDataApi companyFinancialDataApi;
     private final CompanySharePriceApi companySharePriceApi;
-    private final CompanyNewsApi companyNewsApi;
+    private final HarvesterLiveApi harvesterLiveApi;
     private final CompanyInsiderTransactionApi companyInsiderTransactionApi;
     private final CompanyValuationApi companyValuationApi;
     private final CompanyInstitutionalFlowApi companyInstitutionalFlowApi;
@@ -33,7 +33,7 @@ public class CompanyDetailsButtonFactory {
     public CompanyDetailsButtonFactory(CompanyMetadataApi companyMetadataApi,
                                        CompanyFinancialDataApi companyFinancialDataApi,
                                        CompanySharePriceApi companySharePriceApi,
-                                       CompanyNewsApi companyNewsApi,
+                                       HarvesterLiveApi harvesterLiveApi,
                                        CompanyInsiderTransactionApi companyInsiderTransactionApi,
                                        CompanyValuationApi companyValuationApi,
                                        CompanyInstitutionalFlowApi companyInstitutionalFlowApi,
@@ -41,7 +41,7 @@ public class CompanyDetailsButtonFactory {
         this.companyMetadataApi = companyMetadataApi;
         this.companyFinancialDataApi = companyFinancialDataApi;
         this.companySharePriceApi = companySharePriceApi;
-        this.companyNewsApi = companyNewsApi;
+        this.harvesterLiveApi = harvesterLiveApi;
         this.companyInsiderTransactionApi = companyInsiderTransactionApi;
         this.companyValuationApi = companyValuationApi;
         this.companyInstitutionalFlowApi = companyInstitutionalFlowApi;
@@ -71,7 +71,7 @@ public class CompanyDetailsButtonFactory {
             dialog.setWidth("90vw");
             dialog.setHeight("90vh");
             dialog.add(new CompanyOverviewComponent(
-                    companyFinancialDataApi, companySharePriceApi, companyNewsApi,
+                    companyFinancialDataApi, companySharePriceApi, harvesterLiveApi,
                     companyInsiderTransactionApi, companyValuationApi, companyInstitutionalFlowApi,
                     company, objectMapper));
 

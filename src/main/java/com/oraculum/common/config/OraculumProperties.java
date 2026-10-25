@@ -14,15 +14,11 @@ public record OraculumProperties(Data data,
                                  Harvester harvester) {
 
     public record Data(SharePrice sharePrice,
-                       News news,
                        InsiderTransactions insiderTransactions,
                        Sec13F sec13f,
                        SecDocuments secDocuments) {
 
         public record SharePrice(int incrementalWindowDays) {
-        }
-
-        public record News(int incrementalWindowHours) {
         }
 
         public record InsiderTransactions(String cron) {
@@ -58,7 +54,6 @@ public record OraculumProperties(Data data,
         public record Topics(String dataFileReady,
                              String market,
                              String industry,
-                             String news,
                              String harvesterRequest) {
         }
     }
@@ -68,7 +63,8 @@ public record OraculumProperties(Data data,
                             AlphaVantage alphaVantage,
                             Fred fred,
                             SecEdgar secEdgar,
-                            OpenFigi openFigi) {
+                            OpenFigi openFigi,
+                            Finnhub finnhub) {
 
         public String resolveExchangePath(String relativePath) {
             return Path.of(exchangeDirectory).resolve(Path.of(relativePath).getFileName()).normalize().toString();
@@ -104,6 +100,16 @@ public record OraculumProperties(Data data,
 
             public int getBatchSize() {
                 return hasApiKey() ? 100 : 10;
+            }
+        }
+
+        public record Finnhub(String apiKey,
+                              String baseUrl,
+                              Integer rateLimitPerSecond,
+                              Integer rateLimitPerMinute) {
+
+            public boolean hasApiKey() {
+                return apiKey != null && !apiKey.isBlank();
             }
         }
     }

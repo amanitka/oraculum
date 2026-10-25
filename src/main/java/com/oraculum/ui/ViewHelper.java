@@ -4,7 +4,6 @@ import com.oraculum.analyst.api.domain.AnalysisOutlook;
 import com.oraculum.analyst.api.domain.AnalysisStatus;
 import com.oraculum.analyst.api.domain.ValuationAssessment;
 import com.oraculum.company.api.domain.CompanySize;
-import com.oraculum.company.api.domain.NewsSentimentLabel;
 import com.oraculum.company.api.domain.ScreenerSignal;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.grid.Grid;
@@ -171,27 +170,6 @@ public final class ViewHelper {
             badge.getElement().getThemeList().add("success");
         } else if (size == CompanySize.SMALL) {
             badge.getElement().getThemeList().add("warning");
-        } else {
-            badge.getElement().getThemeList().add("contrast");
-        }
-        return badge;
-    }
-
-    /**
-     * Creates a themed badge for news sentiment values (BULLISH, SOMEWHAT_BULLISH, NEUTRAL, etc.).
-     */
-    public static Span newsSentimentBadge(String labelCode, Float score) {
-        NewsSentimentLabel label = NewsSentimentLabel.fromCode(labelCode);
-        String text = label != null ? label.getDisplayName() : "No News";
-        if (score != null) {
-            text += String.format(Locale.US, " (%+.2f)", score);
-        }
-        Span badge = new Span(text);
-        badge.getElement().getThemeList().add("badge");
-        if (label == NewsSentimentLabel.BULLISH || label == NewsSentimentLabel.SOMEWHAT_BULLISH) {
-            badge.getElement().getThemeList().add("success");
-        } else if (label == NewsSentimentLabel.BEARISH || label == NewsSentimentLabel.SOMEWHAT_BEARISH) {
-            badge.getElement().getThemeList().add("error");
         } else {
             badge.getElement().getThemeList().add("contrast");
         }

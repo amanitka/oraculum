@@ -2,7 +2,6 @@ package com.oraculum.harvester.scheduler;
 
 import com.oraculum.harvester.service.FredService;
 import com.oraculum.harvester.service.HarvesterBatchService;
-import com.oraculum.harvester.service.NewsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -18,7 +17,6 @@ import java.time.LocalDate;
 public class RefreshScheduler {
 
     private final HarvesterBatchService refreshService;
-    private final NewsService newsService;
     private final FredService fredService;
 
     @Scheduled(cron = "${oraculum.data.metadata.cron}")
@@ -69,16 +67,6 @@ public class RefreshScheduler {
             refreshService.refreshInsiderTransactions();
         } catch (Exception e) {
             log.error("Scheduled insider transactions refresh failed", e);
-        }
-    }
-
-    @Scheduled(cron = "${oraculum.data.news.cron}")
-    public void refreshNews() {
-        log.info("Starting scheduled news & sentiment refresh...");
-        try {
-            newsService.refreshNews();
-        } catch (Exception e) {
-            log.error("Scheduled news refresh failed", e);
         }
     }
 

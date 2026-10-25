@@ -10,13 +10,13 @@ import com.oraculum.company.api.domain.TickerDocumentType;
 import com.oraculum.company.api.dto.*;
 import com.oraculum.economy.api.EconomyDataApi;
 import com.oraculum.harvester.api.HarvesterLiveApi;
+import com.oraculum.harvester.api.dto.CompanyNewsDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDate;
 import java.util.*;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,7 +25,6 @@ public class CompanyFactSheetDataService {
 
     private final CompanyFinancialDataApi companyFinancialDataApi;
     private final CompanySharePriceApi companySharePriceApi;
-    private final CompanyNewsApi companyNewsApi;
     private final CompanyInsiderTransactionApi companyInsiderTransactionApi;
     private final HarvesterLiveApi harvesterLiveApi;
     private final EconomyDataApi economyDataApi;
@@ -82,27 +81,7 @@ public class CompanyFactSheetDataService {
         return companySharePriceApi.getMonthlySharePriceSignalsByCompanyId(company.id(), after);
     }
 
-    private static final Pattern BOT_ARTICLE_PATTERN = Pattern.compile(
-            "(Purchases [\\d,]+ Shares|Stock Bought by|Lowers Position in|Increases Stock Holdings in|Sold [\\d,]+ Shares)",
-            Pattern.CASE_INSENSITIVE
-    );
 
-    private List<NewsTickerDto> getNews(CompanyDto company, LocalDate after, int limit) {
-        List<NewsTickerDto> news = companyNewsApi.getNewsByTicker(company.ticker(), after);
-        if (news == null || news.isEmpty()) return news;
-
-        return news.stream()
-                .filter(n -> n.title() == null || !BOT_ARTICLE_PATTERN.matcher(n.title()).find())
-                .sorted(Comparator.comparing(NewsTickerDto::relevanceScore, Comparator.nullsLast(Comparator.reverseOrder()))
-                        .thenComparing(NewsTickerDto::timePublished, Comparator.nullsLast(Comparator.reverseOrder())))
-                .limit(limit > 0 ? limit : 50)
-                .sorted(Comparator.comparing(NewsTickerDto::timePublished, Comparator.nullsLast(Comparator.reverseOrder())))
-                .collect(Collectors.toList());
-    }
-
-    private TickerNewsSentimentDto getNewsSentiment(CompanyDto company) {
-        return companyNewsApi.getNewsSentimentByTicker(company.ticker()).orElse(null);
-    }
 
     private InsiderTransactionSummaryDto getInsiderTransactionSummary(CompanyDto company) {
         return companyInsiderTransactionApi.getInsiderTransactionSummaryByTicker(company.ticker()).orElse(null);
@@ -129,6 +108,15 @@ public class CompanyFactSheetDataService {
         return result;
     }
 
+    private List<CompanyNewsDto> getRecentNews(CompanyDto company) {
+        return harvesterLiveApi.fetchCompanyNews(
+                company.ticker(),
+                analystProperties.news().getNewsHistoryDate(),
+                LocalDate.now(),
+                analystProperties.news().articleLimit()
+        );
+    }
+
     public CompanyFactSheetData create(CompanyDto company, CitationRegistry citationRegistry) {
         LocalDate annualAfter = analystProperties.factSheet().getAnnualFactSheetHistoryDate();
         LocalDate quarterlyAfter = analystProperties.factSheet().getQuarterlyFactSheetHistoryDate();
@@ -147,8 +135,7 @@ public class CompanyFactSheetDataService {
                 .industryFinancialRatios(getIndustryFinancialRatios(company))
                 .dailySharePriceSignals(dailySignals)
                 .monthlySharePriceSignals(monthlySignals)
-                .recentNews(getNews(company, analystProperties.news().getNewsHistoryDate(), analystProperties.news().articleLimit()))
-                .newsSentimentAggregate(getNewsSentiment(company))
+                .recentNews(getRecentNews(company))
                 .insiderTransactionSummary(getInsiderTransactionSummary(company))
                 .insiderTransactionsByPerson(getInsiderTransactionsByPerson(company))
                 .earningsEstimates(harvesterLiveApi.fetchEarningsEstimates(company.ticker()).orElse(List.of()))

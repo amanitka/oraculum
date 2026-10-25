@@ -1,6 +1,6 @@
 package com.oraculum.harvester.provider;
 
-import com.oraculum.harvester.provider.dto.AlphaVantageNewsResponse;
+import com.oraculum.harvester.provider.dto.AlphaVantageEarningsEstimatesResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpMethod;
@@ -26,47 +26,31 @@ class AlphaVantageClientTest {
     }
 
     @Test
-    void fetchNewsSentiment_sendsCorrectRequest_andReturnsParsedResponse() {
+    void fetchEarningsEstimates_sendsCorrectRequest_andReturnsParsedResponse() {
         String jsonResponse = """
                 {
-                    "items": "50",
-                    "sentiment_score_definition": "x = 0.15",
-                    "relevance_score_definition": "0 < x <= 1",
-                    "feed": [
+                    "symbol": "AAPL",
+                    "estimates": [
                         {
-                            "title": "Apple News",
-                            "url": "http://apple.com"
+                            "date": "2026-06-30",
+                            "horizon": "fiscal quarter",
+                            "eps_estimate_average": 1.55
                         }
                     ]
                 }
                 """;
 
-        mockServer.expect(requestTo("/query?function=NEWS_SENTIMENT&limit=1000&time_from=20230101T0000"))
+        mockServer.expect(requestTo("/query?function=EARNINGS_ESTIMATES&symbol=AAPL"))
                 .andExpect(method(HttpMethod.GET))
                 .andRespond(withSuccess(jsonResponse, MediaType.APPLICATION_JSON));
 
-        AlphaVantageNewsResponse response = client.fetchNewsSentiment("20230101T0000");
+        AlphaVantageEarningsEstimatesResponse response = client.fetchEarningsEstimates("AAPL");
 
         mockServer.verify();
-        
+
         assertThat(response).isNotNull();
-        assertThat(response.items()).isEqualTo("50");
-        assertThat(response.sentimentScoreDefinition()).isEqualTo("x = 0.15");
-        assertThat(response.relevanceScoreDefinition()).isEqualTo("0 < x <= 1");
-        assertThat(response.feed()).hasSize(1);
-        assertThat(response.feed().getFirst().title()).isEqualTo("Apple News");
-        assertThat(response.feed().getFirst().url()).isEqualTo("http://apple.com");
-    }
-
-    @Test
-    void fetchNewsSentiment_withoutTimeFrom_sendsCorrectRequest() {
-        mockServer.expect(requestTo("/query?function=NEWS_SENTIMENT&limit=1000"))
-                .andExpect(method(HttpMethod.GET))
-                .andRespond(withSuccess("{\"items\": \"0\"}", MediaType.APPLICATION_JSON));
-
-        AlphaVantageNewsResponse response = client.fetchNewsSentiment(null);
-
-        mockServer.verify();
-        assertThat(response).isNotNull();
+        assertThat(response.symbol()).isEqualTo("AAPL");
+        assertThat(response.estimates()).hasSize(1);
+        assertThat(response.estimates().getFirst().epsEstimateAverage()).isEqualByComparingTo("1.55");
     }
 }

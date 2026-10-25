@@ -13,11 +13,14 @@ import com.oraculum.common.constant.MarketConstants;
 import com.oraculum.company.api.*;
 import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.dto.*;
+import com.oraculum.harvester.api.HarvesterLiveApi;
+import com.oraculum.harvester.api.dto.CompanyNewsDto;
 import com.oraculum.ui.ViewHelper;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
+import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.H4;
@@ -25,12 +28,15 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.progressbar.ProgressBar;
 import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
+import org.springframework.util.StringUtils;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -41,9 +47,11 @@ import java.util.stream.Collectors;
 
 public class CompanyOverviewComponent extends VerticalLayout {
 
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
     private final CompanyFinancialDataApi companyFinancialDataApi;
     private final CompanySharePriceApi companySharePriceApi;
-    private final CompanyNewsApi companyNewsApi;
+    private final HarvesterLiveApi harvesterLiveApi;
     private final CompanyInsiderTransactionApi companyInsiderTransactionApi;
     private final CompanyValuationApi companyValuationApi;
     private final CompanyInstitutionalFlowApi companyInstitutionalFlowApi;
@@ -55,14 +63,14 @@ public class CompanyOverviewComponent extends VerticalLayout {
 
     public CompanyOverviewComponent(CompanyFinancialDataApi companyFinancialDataApi,
                                     CompanySharePriceApi companySharePriceApi,
-                                    CompanyNewsApi companyNewsApi,
+                                    HarvesterLiveApi harvesterLiveApi,
                                     CompanyInsiderTransactionApi companyInsiderTransactionApi,
                                     CompanyValuationApi companyValuationApi,
                                     CompanyInstitutionalFlowApi companyInstitutionalFlowApi,
                                     CompanyDto company, ObjectMapper objectMapper) {
         this.companyFinancialDataApi = companyFinancialDataApi;
         this.companySharePriceApi = companySharePriceApi;
-        this.companyNewsApi = companyNewsApi;
+        this.harvesterLiveApi = harvesterLiveApi;
         this.companyInsiderTransactionApi = companyInsiderTransactionApi;
         this.companyValuationApi = companyValuationApi;
         this.companyInstitutionalFlowApi = companyInstitutionalFlowApi;
@@ -104,7 +112,7 @@ public class CompanyOverviewComponent extends VerticalLayout {
         mainTabSheet.add("Cash Flow", createCashFlowLayout());
 
         // 7. News Tab
-        mainTabSheet.add("News", createNewsLayout());
+        mainTabSheet.add("News", registerLazyNewsLayout(mainTabSheet));
 
         // 8. Insider Tab
         mainTabSheet.add("Insider", createInsiderLayout());
@@ -217,46 +225,79 @@ public class CompanyOverviewComponent extends VerticalLayout {
         return createVariantTabSheet(data, this::createCashFlowGrid);
     }
 
-    private Component createNewsLayout() {
+    private Component registerLazyNewsLayout(TabSheet mainTabSheet) {
         VerticalLayout layout = new VerticalLayout();
         layout.setWidthFull();
         layout.setPadding(true);
 
-        List<NewsTickerDto> news = companyNewsApi.getNewsByTicker(company.ticker(), LocalDate.now().minusDays(30));
+        ProgressBar spinner = new ProgressBar();
+        spinner.setIndeterminate(true);
+        VerticalLayout loading = new VerticalLayout(new Span("Loading company news..."), spinner);
+        loading.setAlignItems(Alignment.CENTER);
+        layout.add(loading);
 
-        Grid<NewsTickerDto> grid = new Grid<>(NewsTickerDto.class, false);
+        final boolean[] loaded = {false};
+        mainTabSheet.addSelectedChangeListener(e -> {
+            if (!loaded[0] && "News".equals(e.getSelectedTab().getLabel())) {
+                loaded[0] = true;
+                layout.removeAll();
+                loadNewsContent(layout);
+            }
+        });
+        return layout;
+    }
+
+    private void loadNewsContent(VerticalLayout layout) {
+        LocalDate to = LocalDate.now();
+        LocalDate from = to.minusDays(30);
+        List<CompanyNewsDto> news = harvesterLiveApi.fetchCompanyNews(company.ticker(), from, to);
+        if (news.isEmpty()) {
+            Span empty = new Span("No recent news found. Finnhub news is available for North American companies only.");
+            empty.getStyle().set("color", "var(--lumo-secondary-text-color)").set("padding", "var(--lumo-space-m)");
+            layout.add(empty);
+            return;
+        }
+        layout.add(createNewsGrid(news));
+    }
+
+    private Grid<CompanyNewsDto> createNewsGrid(List<CompanyNewsDto> news) {
+        Grid<CompanyNewsDto> grid = new Grid<>(CompanyNewsDto.class, false);
         grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
+
         grid.addColumn(item -> {
-            if (item.timePublished() != null) {
-                return java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").format(item.timePublished());
+            if (item.publishedAt() != null) {
+                return DATE_TIME_FORMATTER.format(item.publishedAt());
             }
             return "-";
-        }).setHeader("Date").setSortable(true).setAutoWidth(true).setComparator(Comparator.comparing(NewsTickerDto::timePublished, Comparator.nullsLast(Comparator.naturalOrder())));
+        }).setHeader("Date").setSortable(true).setAutoWidth(true)
+          .setComparator(Comparator.comparing(CompanyNewsDto::publishedAt, Comparator.nullsLast(Comparator.naturalOrder())));
 
-        grid.addColumn(NewsTickerDto::title).setHeader("Title").setWidth("450px").setFlexGrow(1);
-        grid.addColumn(NewsTickerDto::source).setHeader("Publisher").setAutoWidth(true);
-        grid.addColumn(item -> item.relevanceScore() != null ? String.format(java.util.Locale.US, "%.0f%%", item.relevanceScore() * 100) : "-")
-                .setHeader("Relevance").setAutoWidth(true);
-        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.newsSentimentBadge(item.tickerSentimentLabel(), item.tickerSentimentScore())))
-                .setHeader("Sentiment").setAutoWidth(true);
+        grid.addComponentColumn(item -> {
+            if (StringUtils.hasText(item.url())) {
+                Anchor link = new Anchor(item.url(), item.headline());
+                link.setTarget("_blank");
+                return link;
+            }
+            return new Span(item.headline());
+        }).setHeader("Headline").setWidth("500px").setFlexGrow(1);
 
-        // Sort newest first
-        grid.setItems(news.stream().sorted(Comparator.comparing(NewsTickerDto::timePublished).reversed()).collect(Collectors.toList()));
+        grid.addColumn(CompanyNewsDto::source).setHeader("Publisher").setAutoWidth(true);
 
         grid.setItemDetailsRenderer(new ComponentRenderer<>(item -> {
             VerticalLayout vl = new VerticalLayout();
             vl.setPadding(true);
-            Span summary = new Span(item.summary());
-            summary.getStyle().set("font-size", "0.9rem");
-            vl.add(summary);
+            if (StringUtils.hasText(item.summary())) {
+                Span summary = new Span(item.summary());
+                summary.getStyle().set("font-size", "0.9rem");
+                vl.add(summary);
+            }
             return vl;
         }));
         grid.setDetailsVisibleOnClick(true);
-
+        grid.setItems(news);
         grid.setWidthFull();
         grid.setHeight("600px");
-        layout.add(grid);
-        return layout;
+        return grid;
     }
 
     private Component createInsiderLayout() {

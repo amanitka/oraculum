@@ -27,10 +27,7 @@ public record ScreenerInsiderDto(
         Double sellsValue12m,
         Integer csuiteBuysCount12m,
         Double csuiteBuysValue12m,
-        Boolean hasClusterBuy,
-        Float newsSentimentScore,
-        String newsSentimentLabel,
-        Integer newsCount30d
+        Boolean hasClusterBuy
 ) {
     public static ScreenerInsiderDto fromEntity(ScreenerInsiderEntity entity) {
         return ScreenerInsiderDto.builder()
@@ -56,9 +53,6 @@ public record ScreenerInsiderDto(
                 .csuiteBuysCount12m(entity.getCsuiteBuysCount12m())
                 .csuiteBuysValue12m(entity.getCsuiteBuysValue12m())
                 .hasClusterBuy(entity.getHasClusterBuy())
-                .newsSentimentScore(entity.getNewsSentimentScore())
-                .newsSentimentLabel(entity.getNewsSentimentLabel())
-                .newsCount30d(entity.getNewsCount30d())
                 .build();
     }
 }

@@ -42,7 +42,7 @@ class DatabaseMaintenanceServiceTest {
         databaseMaintenanceService.runPartitionManagement();
 
         verify(jdbcTemplate).execute(contains("create_monthly_partitions('t_share_price'"));
-        verify(jdbcTemplate).execute(contains("purge_old_partitions('t_news'"));
+        verify(jdbcTemplate).execute(contains("purge_old_partitions('t_insider_transaction_ticker'"));
     }
 
     @Test

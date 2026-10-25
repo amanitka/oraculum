@@ -2,6 +2,7 @@ package com.oraculum.ui.views;
 
 import com.oraculum.company.api.*;
 import com.oraculum.company.api.dto.CompanyDto;
+import com.oraculum.harvester.api.HarvesterLiveApi;
 import com.oraculum.ui.MainLayout;
 import com.oraculum.ui.components.CompanyOverviewComponent;
 import com.vaadin.flow.component.Component;
@@ -27,7 +28,7 @@ public class CompanyView extends VerticalLayout {
     private final CompanyMetadataApi companyMetadataApi;
     private final CompanyFinancialDataApi companyFinancialDataApi;
     private final CompanySharePriceApi companySharePriceApi;
-    private final CompanyNewsApi companyNewsApi;
+    private final HarvesterLiveApi harvesterLiveApi;
     private final CompanyInsiderTransactionApi companyInsiderTransactionApi;
     private final CompanyValuationApi companyValuationApi;
     private final CompanyInstitutionalFlowApi companyInstitutionalFlowApi;
@@ -38,7 +39,7 @@ public class CompanyView extends VerticalLayout {
     public CompanyView(CompanyMetadataApi companyMetadataApi,
                        CompanyFinancialDataApi companyFinancialDataApi,
                        CompanySharePriceApi companySharePriceApi,
-                       CompanyNewsApi companyNewsApi,
+                       HarvesterLiveApi harvesterLiveApi,
                        CompanyInsiderTransactionApi companyInsiderTransactionApi,
                        CompanyValuationApi companyValuationApi,
                        CompanyInstitutionalFlowApi companyInstitutionalFlowApi,
@@ -46,7 +47,7 @@ public class CompanyView extends VerticalLayout {
         this.companyMetadataApi = companyMetadataApi;
         this.companyFinancialDataApi = companyFinancialDataApi;
         this.companySharePriceApi = companySharePriceApi;
-        this.companyNewsApi = companyNewsApi;
+        this.harvesterLiveApi = harvesterLiveApi;
         this.companyInsiderTransactionApi = companyInsiderTransactionApi;
         this.companyValuationApi = companyValuationApi;
         this.companyInstitutionalFlowApi = companyInstitutionalFlowApi;
@@ -108,7 +109,7 @@ public class CompanyView extends VerticalLayout {
         }
 
         CompanyOverviewComponent overview = new CompanyOverviewComponent(
-                companyFinancialDataApi, companySharePriceApi, companyNewsApi, 
+                companyFinancialDataApi, companySharePriceApi, harvesterLiveApi, 
                 companyInsiderTransactionApi, companyValuationApi, companyInstitutionalFlowApi,
                 selectedCompany, objectMapper);
         contentArea.add(overview);

@@ -8,7 +8,6 @@ import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.PromptType;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
 import com.oraculum.company.api.dto.CompanyDto;
-import com.oraculum.company.api.dto.NewsTickerDto;
 import com.oraculum.llm.api.LlmCallRequest;
 import com.oraculum.llm.api.LlmRouterApi;
 import com.oraculum.llm.api.dto.LlmMetrics;
@@ -20,7 +19,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,8 +50,9 @@ class NewsAgentTest {
     }
 
     @Test
-    void run_whenNoNewsInFactSheet_skipsLlmAndReturnsEmptyOutput() {
+    void run_whenNoNewsAndNoSecEx991_skipsLlmAndReturnsEmptyOutput() {
         when(factSheetData.getRecentNews()).thenReturn("[]");
+        when(factSheetData.getRecentSecEx991Summaries()).thenReturn("[]");
 
         CompanyDto company = createCompany("NVDA");
 
@@ -66,18 +65,46 @@ class NewsAgentTest {
 
         assertThat(output).isNotNull();
         assertThat(output.tokens()).isEqualTo(0);
-        assertThat(output.result().headline()).contains("No recent news articles found");
+        assertThat(output.result().headline()).contains("No recent news articles or press releases found");
         verifyNoInteractions(llmRouterApi);
     }
 
     @Test
-    void run_whenNewsPresent_executesLlmCall() {
-        when(factSheetData.getRecentNews()).thenReturn("[{\"title\":\"Nvidia releases Blackwell\"}]");
-        when(factSheetData.getRecentSecEx991Summaries()).thenReturn("[]");
-        when(factSheetData.getRecentNewsList()).thenReturn(List.of(createNews("NVDA")));
-        when(factSheetData.getNewsSentimentAggregate()).thenReturn("{}");
+    void run_whenOnlySecEx991Present_executesLlmCall() {
+        when(factSheetData.getRecentNews()).thenReturn("[]");
+        when(factSheetData.getRecentSecEx991Summaries()).thenReturn("[{\"headline\":\"Q3 Earnings Release\"}]");
 
-        when(promptRegistry.getPrompt(PromptType.NEWS)).thenReturn("News prompt for {{ ticker }} on {{ analysis_date }}. Focus: {{ analysis_focus }}. Relevance: {{ relevance_score_definition }}. Sentiment: {{ sentiment_score_definition }}. Aggregate: {{ news_sentiment_aggregate }}. News: {{ recent_news }}. SEC: {{ recent_sec_ex99_1_summaries }}.");
+        when(promptRegistry.getPrompt(PromptType.NEWS)).thenReturn("News prompt for {{ ticker }}. News: {{ recent_news }}. SEC: {{ recent_sec_ex99_1_summaries }}.");
+
+        StandardAgentOutput expectedOutput = StandardAgentOutput.builder()
+                .headline("Q3 Earnings beat estimates")
+                .score(7.5)
+                .build();
+
+        LlmResponse<StandardAgentOutput> llmResp = new LlmResponse<>(expectedOutput, new LlmMetrics(null, null, 100, 200, 300, 10L));
+        when(llmRouterApi.executeCall(any(LlmCallRequest.class))).thenReturn(llmResp);
+
+        CompanyDto company = createCompany("NVDA");
+        AgentContext ctx = AgentContext.builder()
+                .company(company)
+                .analysisDate(LocalDate.of(2026, 10, 16))
+                .correlationId(UUID.randomUUID())
+                .factSheetData(factSheetData)
+                .build();
+
+        AgentOutput<StandardAgentOutput> output = newsAgent.run(ctx);
+
+        assertThat(output).isNotNull();
+        assertThat(output.tokens()).isEqualTo(300);
+        verify(llmRouterApi).executeCall(any(LlmCallRequest.class));
+    }
+
+    @Test
+    void run_whenNewsPresent_executesLlmCall() {
+        when(factSheetData.getRecentNews()).thenReturn("[{\"headline\":\"Nvidia releases Blackwell\"}]");
+        when(factSheetData.getRecentSecEx991Summaries()).thenReturn("[]");
+
+        when(promptRegistry.getPrompt(PromptType.NEWS)).thenReturn("News prompt for {{ ticker }} on {{ analysis_date }}. Focus: {{ analysis_focus }}. News: {{ recent_news }}. SEC: {{ recent_sec_ex99_1_summaries }}.");
 
         StandardAgentOutput expectedOutput = StandardAgentOutput.builder()
                 .headline("Blackwell launch boosts sentiment")
@@ -106,9 +133,5 @@ class NewsAgentTest {
 
     private CompanyDto createCompany(String ticker) {
         return new CompanyDto(1, ticker, "US", ticker + " Inc", "1", "Tech", "Tech", "US123", "Desc", 1000L, "USD", "CIK1", "CUSIP1", null);
-    }
-
-    private NewsTickerDto createNews(String ticker) {
-        return new NewsTickerDto("1", "Title", "url", null, null, "Summary", "Source", null, null, null, 0.5f, "Positive", null, "Sentiment def", "Relevance def", ticker, 0.8f, 0.5f, "Positive");
     }
 }

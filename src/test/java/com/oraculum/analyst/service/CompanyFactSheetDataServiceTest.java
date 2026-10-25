@@ -3,42 +3,54 @@ package com.oraculum.analyst.service;
 import com.oraculum.analyst.config.AnalystProperties;
 import com.oraculum.analyst.dto.CitationRegistry;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
-import com.oraculum.company.api.*;
+import com.oraculum.company.api.CompanyFinancialDataApi;
+import com.oraculum.company.api.CompanyInsiderTransactionApi;
+import com.oraculum.company.api.CompanyInstitutionalFlowApi;
+import com.oraculum.company.api.CompanySharePriceApi;
+import com.oraculum.company.api.CompanyTickerDocumentApi;
+import com.oraculum.company.api.CompanyValuationApi;
 import com.oraculum.company.api.domain.StatementVariant;
-import com.oraculum.company.api.dto.*;
+import com.oraculum.company.api.dto.CompanyDto;
+import com.oraculum.company.api.dto.CompanyFinancialRatiosDto;
+import com.oraculum.company.api.dto.HistoricalValuationSummaryDto;
+import com.oraculum.company.api.dto.IncomeStatementDto;
+import com.oraculum.company.api.dto.IndustryFinancialRatiosDto;
+import com.oraculum.company.api.dto.InsiderTransactionByPersonDto;
+import com.oraculum.company.api.dto.InsiderTransactionSummaryDto;
+import com.oraculum.company.api.dto.ReverseDcfDto;
+import com.oraculum.company.api.dto.SharePriceSignalDto;
 import com.oraculum.economy.api.EconomyDataApi;
 import com.oraculum.economy.api.dto.MacroSummaryDto;
 import com.oraculum.harvester.api.HarvesterLiveApi;
+import com.oraculum.harvester.api.dto.CompanyNewsDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
 class CompanyFactSheetDataServiceTest {
 
     @Mock
     private CompanyFinancialDataApi companyFinancialDataApi;
     @Mock
     private CompanySharePriceApi companySharePriceApi;
-    @Mock
-    private CompanyNewsApi companyNewsApi;
     @Mock
     private EconomyDataApi economyDataApi;
     @Mock
@@ -66,43 +78,30 @@ class CompanyFactSheetDataServiceTest {
         company = mock(CompanyDto.class);
         when(company.id()).thenReturn(1);
         when(company.ticker()).thenReturn("AAPL");
-        when(company.industryName()).thenReturn("Technology");
+        when(company.industryId()).thenReturn("TECH");
+        when(company.market()).thenReturn("US");
 
-        when(jsonMapper.writeValueAsString(any())).thenReturn("[]");
-
-        when(analystProperties.factSheet().getAnnualFactSheetHistoryDate()).thenReturn(LocalDate.now().minusYears(10));
+        when(analystProperties.factSheet().getAnnualFactSheetHistoryDate()).thenReturn(LocalDate.now().minusYears(5));
         when(analystProperties.factSheet().getQuarterlyFactSheetHistoryDate()).thenReturn(LocalDate.now().minusYears(2));
-        when(analystProperties.sharePrice().getSharePriceHistoryDate()).thenReturn(LocalDate.now().minusYears(1));
-        when(analystProperties.sharePrice().getMonthlySharePriceHistoryDate()).thenReturn(LocalDate.now().minusYears(10));
+        when(analystProperties.sharePrice().getSharePriceHistoryDate()).thenReturn(LocalDate.now().minusDays(30));
+        when(analystProperties.sharePrice().getMonthlySharePriceHistoryDate()).thenReturn(LocalDate.now().minusYears(5));
         when(analystProperties.news().getNewsHistoryDate()).thenReturn(LocalDate.now().minusDays(30));
         when(analystProperties.news().articleLimit()).thenReturn(50);
     }
 
     @Test
-    void create_returnsPopulatedFactSheet() {
-        IncomeStatementDto is = mock(IncomeStatementDto.class);
-        when(is.variant()).thenReturn(StatementVariant.ANNUAL);
-        when(is.reportDate()).thenReturn(LocalDate.now());
+    void create_populatesAllFields_successfully() {
+        IncomeStatementDto isDto = mock(IncomeStatementDto.class);
         when(companyFinancialDataApi.getIncomeStatementsByCompanyId(anyInt(), any(LocalDate.class)))
-                .thenReturn(List.of(is));
+                .thenReturn(List.of(isDto));
 
-        BalanceSheetDto bs = mock(BalanceSheetDto.class);
-        when(bs.variant()).thenReturn(StatementVariant.ANNUAL);
-        when(bs.reportDate()).thenReturn(LocalDate.now());
-        when(companyFinancialDataApi.getBalanceSheetsByCompanyId(anyInt(), any(LocalDate.class)))
-                .thenReturn(List.of(bs));
-
-        CashFlowStatementDto cf = mock(CashFlowStatementDto.class);
-        when(cf.variant()).thenReturn(StatementVariant.ANNUAL);
-        when(cf.reportDate()).thenReturn(LocalDate.now());
-        when(companyFinancialDataApi.getCashFlowStatementsByCompanyId(anyInt(), any(LocalDate.class)))
-                .thenReturn(List.of(cf));
-
-        CompanyFinancialRatiosDto ratio = mock(CompanyFinancialRatiosDto.class);
-        when(ratio.variant()).thenReturn(StatementVariant.ANNUAL);
-        when(ratio.reportDate()).thenReturn(LocalDate.now());
+        CompanyFinancialRatiosDto ratios = mock(CompanyFinancialRatiosDto.class);
         when(companyFinancialDataApi.getCompanyFinancialRatiosByCompanyId(anyInt(), any(LocalDate.class)))
-                .thenReturn(List.of(ratio));
+                .thenReturn(List.of(ratios));
+
+        IndustryFinancialRatiosDto indRatios = mock(IndustryFinancialRatiosDto.class);
+        when(companyFinancialDataApi.getIndustryFinancialRatiosByIndustryName(anyString()))
+                .thenReturn(List.of(indRatios));
 
         SharePriceSignalDto signal = mock(SharePriceSignalDto.class);
         when(companySharePriceApi.getDailySharePriceSignalsByCompanyId(anyInt(), any(LocalDate.class)))
@@ -110,13 +109,9 @@ class CompanyFactSheetDataServiceTest {
         when(companySharePriceApi.getMonthlySharePriceSignalsByCompanyId(anyInt(), any(LocalDate.class)))
                 .thenReturn(List.of(signal));
 
-        NewsTickerDto news = mock(NewsTickerDto.class);
-        when(news.timePublished()).thenReturn(OffsetDateTime.now());
-        when(companyNewsApi.getNewsByTicker(anyString(), any(LocalDate.class)))
+        CompanyNewsDto news = mock(CompanyNewsDto.class);
+        when(harvesterLiveApi.fetchCompanyNews(eq("AAPL"), any(LocalDate.class), any(LocalDate.class), eq(50)))
                 .thenReturn(List.of(news));
-
-        TickerNewsSentimentDto sentiment = mock(TickerNewsSentimentDto.class);
-        when(companyNewsApi.getNewsSentimentByTicker(anyString())).thenReturn(Optional.of(sentiment));
 
         InsiderTransactionSummaryDto insiderSummary = mock(InsiderTransactionSummaryDto.class);
         when(companyInsiderTransactionApi.getInsiderTransactionSummaryByTicker(anyString())).thenReturn(Optional.of(insiderSummary));
@@ -148,7 +143,7 @@ class CompanyFactSheetDataServiceTest {
         assertThat(data.getDailySharePriceSignals()).isNotNull();
         assertThat(data.getMonthlySharePriceSignals()).isNotNull();
         assertThat(data.getRecentNews()).isNotNull();
-        assertThat(data.getNewsSentimentAggregate()).isNotNull();
+        assertThat(data.getRecentNewsList()).containsExactly(news);
         assertThat(data.getInsiderTransactionSummary()).isNotNull();
         assertThat(data.getInsiderTransactionsByPerson()).isNotNull();
         assertThat(data.getMacroeconomicSummary()).isNotNull();
@@ -156,24 +151,18 @@ class CompanyFactSheetDataServiceTest {
     }
 
     @Test
-    void create_filtersOutBotNewsArticles() {
-        NewsTickerDto realNews = mock(NewsTickerDto.class);
-        when(realNews.timePublished()).thenReturn(OffsetDateTime.now());
-        when(realNews.title()).thenReturn("NVIDIA Unveils Next-Gen AI Architecture");
+    void create_delegatesNewsFetchToHarvesterLiveApi() {
+        LocalDate historyDate = LocalDate.now().minusDays(30);
+        when(analystProperties.news().getNewsHistoryDate()).thenReturn(historyDate);
+        when(analystProperties.news().articleLimit()).thenReturn(40);
 
-        NewsTickerDto botNews1 = mock(NewsTickerDto.class);
-        when(botNews1.timePublished()).thenReturn(OffsetDateTime.now());
-        when(botNews1.title()).thenReturn("Pension Fund Purchases 15,000 Shares of NVIDIA Co.");
-
-        NewsTickerDto botNews2 = mock(NewsTickerDto.class);
-        when(botNews2.timePublished()).thenReturn(OffsetDateTime.now());
-        when(botNews2.title()).thenReturn("Stock Bought by State Wealth Fund");
-
-        when(companyNewsApi.getNewsByTicker(anyString(), any(LocalDate.class)))
-                .thenReturn(List.of(realNews, botNews1, botNews2));
+        CompanyNewsDto newsItem = mock(CompanyNewsDto.class);
+        when(harvesterLiveApi.fetchCompanyNews(eq("AAPL"), eq(historyDate), any(LocalDate.class), eq(40)))
+                .thenReturn(List.of(newsItem));
 
         CompanyFactSheetData data = service.create(company, new CitationRegistry());
 
-        assertThat(data.getRecentNewsList()).containsExactly(realNews);
+        verify(harvesterLiveApi).fetchCompanyNews(eq("AAPL"), eq(historyDate), any(LocalDate.class), eq(40));
+        assertThat(data.getRecentNewsList()).containsExactly(newsItem);
     }
 }

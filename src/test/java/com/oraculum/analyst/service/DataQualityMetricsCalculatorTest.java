@@ -6,6 +6,7 @@ import com.oraculum.analyst.dto.CompanyFactSheetData;
 import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.dto.*;
 import com.oraculum.economy.api.dto.MacroSummaryDto;
+import com.oraculum.harvester.api.dto.CompanyNewsDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -75,7 +76,7 @@ class DataQualityMetricsCalculatorTest {
 
     @Test
     void calculate_newsWithArticles_returnsFullScore() {
-        NewsTickerDto newsDto = mock(NewsTickerDto.class);
+        CompanyNewsDto newsDto = mock(CompanyNewsDto.class);
         when(factSheetData.getRecentNewsList()).thenReturn(List.of(newsDto));
 
         AgentContext ctx = AgentContext.builder()
@@ -85,7 +86,7 @@ class DataQualityMetricsCalculatorTest {
         var result = calculator.calculate(AgentType.NEWS, ctx);
 
         assertThat(result.confidenceScore().data()).isEqualTo(1.0);
-        assertThat(result.confidenceReasons().get(1)).contains("time-decayed sentiment active");
+        assertThat(result.confidenceReasons().get(1)).contains("recent news available");
     }
 
     @Test

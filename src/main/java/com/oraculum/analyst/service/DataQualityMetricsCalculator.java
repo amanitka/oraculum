@@ -51,7 +51,7 @@ public class DataQualityMetricsCalculator {
         boolean hasNews = data != null && data.getRecentNewsList() != null && !data.getRecentNewsList().isEmpty();
         double score = hasNews ? 1.0 : 0.0;
         List<String> reasons = hasNews
-                ? List.of("Data completeness: 100% based on verified input fields", "Data freshness: 100% (time-decayed sentiment active)")
+                ? List.of("Data completeness: 100% based on verified input fields", "Data freshness: 100% (recent news available)")
                 : List.of("Data completeness: 0% (no news articles found for ticker)", "Data freshness: 0% (no news data)");
         return buildResult(score, reasons);
     }

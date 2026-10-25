@@ -1,15 +1,12 @@
 package com.oraculum.analyst.agent.service.impl;
 
-import com.oraculum.analyst.agent.dto.*;
-
 import com.oraculum.analyst.agent.dto.AgentContext;
 import com.oraculum.analyst.agent.dto.AgentOutput;
-
+import com.oraculum.analyst.agent.dto.StandardAgentOutput;
 import com.oraculum.analyst.agent.service.Agent;
 import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.PromptType;
-import com.oraculum.company.api.dto.NewsTickerDto;
 import com.oraculum.llm.api.LlmCallRequest;
 import com.oraculum.llm.api.LlmRouterApi;
 import com.oraculum.llm.api.dto.CorrelationType;
@@ -18,7 +15,6 @@ import com.oraculum.llm.api.dto.LlmTierType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
 
 @Slf4j
 @Component
@@ -39,9 +35,9 @@ public class NewsAgent implements Agent<StandardAgentOutput> {
         String news = ctx.factSheetData().getRecentNews();
         String secEx991Summary = ctx.factSheetData().getRecentSecEx991Summaries();
 
-        if (hasNoData(news)) {
-            log.info("No recent news found for ticker: {}. Skipping LLM execution.", ctx.ticker());
-            return new AgentOutput<>(StandardAgentOutput.empty("No recent news articles found for this ticker."), 0);
+        if (hasNoData(news) && hasNoData(secEx991Summary)) {
+            log.info("No recent news or SEC Exhibit 99.1 press releases found for ticker: {}. Skipping LLM execution.", ctx.ticker());
+            return new AgentOutput<>(StandardAgentOutput.empty("No recent news articles or press releases found for this ticker."), 0);
         }
 
         String fullPrompt = buildFullPrompt(ctx, news, secEx991Summary);
@@ -57,21 +53,8 @@ public class NewsAgent implements Agent<StandardAgentOutput> {
     }
 
     private String buildFullPrompt(AgentContext ctx, String news, String secEx991) {
-        String relevanceDef = "No definition provided";
-        String sentimentDef = "No definition provided";
-        var newsList = ctx.factSheetData().getRecentNewsList();
-
-        if (!newsList.isEmpty()) {
-            NewsTickerDto firstNews = newsList.getFirst();
-            relevanceDef = firstNews.relevanceScoreDefinition() != null ? firstNews.relevanceScoreDefinition() : relevanceDef;
-            sentimentDef = firstNews.sentimentScoreDefinition() != null ? firstNews.sentimentScoreDefinition() : sentimentDef;
-        }
-
         String systemPrompt = promptRegistry.getPrompt(PromptType.NEWS)
                 .replace("{{ analysis_focus }}", ctx.analysisFocus() != null ? ctx.analysisFocus() : "Standard comprehensive analysis.")
-                .replace("{{ relevance_score_definition }}", relevanceDef)
-                .replace("{{ sentiment_score_definition }}", sentimentDef)
-                .replace("{{ news_sentiment_aggregate }}", ctx.factSheetData().getNewsSentimentAggregate())
                 .replace("{{ recent_news }}", news)
                 .replace("{{ recent_sec_ex99_1_summaries }}", secEx991)
                 .replace("{{ ticker }}", ctx.ticker())

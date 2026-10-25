@@ -26,31 +26,16 @@ latest_signals AS (
     WHERE trade_date = max_trade_date
 )
 SELECT s.*,
-       n.news_count_7d, n.news_sentiment_7d, n.avg_relevance_7d, n.news_sentiment_label_7d,
-       n.news_count_14d, n.news_sentiment_14d, n.avg_relevance_14d, n.news_sentiment_label_14d,
-       n.news_sentiment_30d as news_sentiment_score,
-       n.news_sentiment_label_30d as news_sentiment_label,
-       n.news_count_30d, n.news_sentiment_30d, n.avg_relevance_30d, n.news_sentiment_label_30d,
        RANK() OVER (ORDER BY s.quality_score DESC NULLS LAST) AS quality_rank,
        RANK() OVER (ORDER BY s.earnings_yield DESC NULLS LAST) AS value_rank,
        RANK() OVER (ORDER BY s.financial_trend_score DESC NULLS LAST) AS fscore_rank
 FROM latest_signals s
-LEFT JOIN v_ticker_news_sentiment n ON n.ticker = s.ticker
 WHERE s.market_capitalization IS NOT NULL;
 
 CREATE UNIQUE INDEX idx_mv_company_overview_company_id 
 ON mv_company_overview (company_id);
 
 ANALYZE mv_company_overview;
-
--- =================================================================
--- VIEW: v_screener_news_sentiment
--- Description: Detailed news sentiment screener view
--- =================================================================
-DO $$ BEGIN RAISE NOTICE 'Creating view: v_screener_news_sentiment'; END $$;
-CREATE VIEW v_screener_news_sentiment AS
-SELECT *
-FROM mv_company_overview;
 
 -- =================================================================
 -- VIEW: v_screener_undervalued
@@ -96,10 +81,8 @@ WHERE financial_trend_score >= 7;
 
 -- =================================================================
 -- VIEW: v_screener_insider_activity
--- Description: Screener combining share price signals (mv_share_price_signals_recent),
---              news sentiment (v_ticker_news_sentiment) and insider activity
---              (v_insider_transaction_summary). Enables finding companies where
---              management is actively buying while news sentiment is negative.
+-- Description: Screener combining share price signals (mv_share_price_signals_recent)
+--              and insider activity (v_insider_transaction_summary).
 -- =================================================================
 DO $$ BEGIN RAISE NOTICE 'Creating view: v_screener_insider_activity'; END $$;
 CREATE VIEW v_screener_insider_activity AS

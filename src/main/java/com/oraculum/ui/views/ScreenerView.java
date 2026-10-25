@@ -3,7 +3,10 @@ package com.oraculum.ui.views;
 import com.oraculum.analyst.api.dto.CompanyAnalysisRequest;
 import com.oraculum.company.api.CompanyScreenerApi;
 import com.oraculum.company.api.domain.CompanySize;
-import com.oraculum.company.api.dto.*;
+import com.oraculum.company.api.dto.CompanyOverviewDto;
+import com.oraculum.company.api.dto.ScreenerDto;
+import com.oraculum.company.api.dto.ScreenerInsiderDto;
+import com.oraculum.company.api.dto.TickerKeyDto;
 import com.oraculum.ui.MainLayout;
 import com.oraculum.ui.ViewHelper;
 import com.oraculum.ui.factory.CompanyDetailsButtonFactory;
@@ -15,7 +18,9 @@ import com.vaadin.flow.component.grid.GridMultiSelectionModel;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.grid.HeaderRow;
 import com.vaadin.flow.component.grid.dataview.GridListDataView;
-import com.vaadin.flow.component.html.*;
+import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.Paragraph;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -31,7 +36,6 @@ import jakarta.annotation.security.PermitAll;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Route(value = "screener", layout = MainLayout.class)
 @RouteAlias(value = "", layout = MainLayout.class)
@@ -41,19 +45,16 @@ public class ScreenerView extends VerticalLayout {
 
     private final CompanyScreenerApi companyScreenerApi;
     private final CompanyDetailsButtonFactory companyDetailsButtonFactory;
-    private final com.oraculum.company.api.CompanyNewsApi companyNewsApi;
     private final AnalysisRequestService analysisRequestService;
     private final VerticalLayout gridContainer;
     private final List<CompanyOverviewDto> masterData;
 
     public ScreenerView(CompanyScreenerApi companyScreenerApi,
                         CompanyDetailsButtonFactory companyDetailsButtonFactory,
-                        AnalysisRequestService analysisRequestService,
-                        com.oraculum.company.api.CompanyNewsApi companyNewsApi) {
+                        AnalysisRequestService analysisRequestService) {
         this.companyScreenerApi = companyScreenerApi;
         this.companyDetailsButtonFactory = companyDetailsButtonFactory;
         this.analysisRequestService = analysisRequestService;
-        this.companyNewsApi = companyNewsApi;
         setPadding(true);
         setSpacing(false);
         setSizeFull();
@@ -75,14 +76,13 @@ public class ScreenerView extends VerticalLayout {
         description.addClassNames(LumoUtility.TextColor.SECONDARY);
 
         Tab tabMaster = new Tab("Master Ranks");
-        Tab tabNews = new Tab("News Sentiment");
         Tab tabQuality = new Tab("Quality Compounders");
         Tab tabValue = new Tab("Undervalued");
         Tab tabGraham = new Tab("Graham Deep Value");
         Tab tabFinancialTrend = new Tab("Trend Score 7+");
         Tab tabInsider = new Tab("Insider Activity");
 
-        Tabs tabs = new Tabs(tabMaster, tabNews, tabQuality, tabValue, tabGraham, tabFinancialTrend, tabInsider);
+        Tabs tabs = new Tabs(tabMaster, tabQuality, tabValue, tabGraham, tabFinancialTrend, tabInsider);
         tabs.setWidthFull();
 
         gridContainer = new VerticalLayout();
@@ -107,16 +107,6 @@ public class ScreenerView extends VerticalLayout {
                 GridListDataView<CompanyOverviewDto> dataView = grid.setItems(masterData != null ? masterData : List.of());
                 setupFilters(grid, dataView, CompanyOverviewDto.class);
                 HorizontalLayout floatingBar = createFloatingSelectionBar(grid, () -> triggerAnalysisMaster(grid.getSelectedItems(), grid));
-                gridContainer.add(ViewHelper.wrapInCard(grid), floatingBar);
-            }
-            case "News Sentiment" -> {
-                Grid<ScreenerNewsSentimentDto> grid = createNewsSentimentGrid();
-                List<ScreenerNewsSentimentDto> data = companyScreenerApi.getNewsSentimentScreener().stream()
-                        .filter(item -> item.newsCount30d() != null && item.newsCount30d() > 0)
-                        .collect(Collectors.toList());
-                GridListDataView<ScreenerNewsSentimentDto> dataView = grid.setItems(data);
-                setupFilters(grid, dataView, ScreenerNewsSentimentDto.class);
-                HorizontalLayout floatingBar = createFloatingSelectionBar(grid, () -> triggerAnalysisNewsSentiment(grid.getSelectedItems(), grid));
                 gridContainer.add(ViewHelper.wrapInCard(grid), floatingBar);
             }
             case "Insider Activity" -> {
@@ -187,16 +177,6 @@ public class ScreenerView extends VerticalLayout {
     private void triggerAnalysisMaster(Set<CompanyOverviewDto> selectedItems, Grid<CompanyOverviewDto> grid) {
         if (!validateBatchSelection(selectedItems.size())) return;
         for (CompanyOverviewDto item : selectedItems) {
-            CompanyAnalysisRequest requestDto = new CompanyAnalysisRequest(UUID.randomUUID(), item.companyId(), new TickerKeyDto(item.ticker(), item.market()), LocalDate.now(), null);
-            analysisRequestService.requestAnalysis(requestDto);
-        }
-        ViewHelper.showSuccess("Triggered analysis for " + selectedItems.size() + " companies.");
-        grid.deselectAll();
-    }
-
-    private void triggerAnalysisNewsSentiment(Set<ScreenerNewsSentimentDto> selectedItems, Grid<ScreenerNewsSentimentDto> grid) {
-        if (!validateBatchSelection(selectedItems.size())) return;
-        for (ScreenerNewsSentimentDto item : selectedItems) {
             CompanyAnalysisRequest requestDto = new CompanyAnalysisRequest(UUID.randomUUID(), item.companyId(), new TickerKeyDto(item.ticker(), item.market()), LocalDate.now(), null);
             analysisRequestService.requestAnalysis(requestDto);
         }
@@ -283,14 +263,6 @@ public class ScreenerView extends VerticalLayout {
                 .setAutoWidth(true).setSortable(true)
                 .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::volumeVelocity));
 
-        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.newsSentimentBadge(item.newsSentimentLabel(), item.newsSentimentScore())))
-                .setHeader("News Sentiment (30D)").setAutoWidth(true)
-                .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::newsSentimentScore));
-
-        grid.addColumn(item -> item.newsCount30d() != null ? String.format("%d articles", item.newsCount30d()) : "-")
-                .setHeader("Coverage (30D)").setAutoWidth(true).setSortable(true)
-                .setComparator(ViewHelper.nullsAlwaysLast(CompanyOverviewDto::newsCount30d));
-
         grid.addColumn(CompanyOverviewDto::financialTrendScore)
                 .setHeader(ViewHelper.createExplainedHeader("Trend Score", "Financial Trend Score (0-9). Evaluates fundamental business improvements."))
                 .setAutoWidth(true).setSortable(true);
@@ -317,109 +289,6 @@ public class ScreenerView extends VerticalLayout {
         return grid;
     }
 
-    private Grid<ScreenerNewsSentimentDto> createNewsSentimentGrid() {
-        Grid<ScreenerNewsSentimentDto> grid = new Grid<>(ScreenerNewsSentimentDto.class, false);
-        grid.setSizeFull();
-        grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
-        grid.addClassName("screener-grid");
-        grid.setSelectionMode(Grid.SelectionMode.MULTI);
-        if (grid.getSelectionModel() instanceof GridMultiSelectionModel<ScreenerNewsSentimentDto> multiModel) {
-            multiModel.setSelectionColumnFrozen(true);
-        }
-
-        grid.addColumn(ScreenerNewsSentimentDto::ticker).setHeader("Ticker").setAutoWidth(true).setFrozen(true).setKey("ticker").setSortable(true);
-
-        Grid.Column<ScreenerNewsSentimentDto> nameCol = grid.addColumn(ScreenerNewsSentimentDto::companyName)
-                .setHeader("Company").setAutoWidth(true).setFrozen(true).setKey("companyName").setSortable(true);
-        nameCol.setTooltipGenerator(ScreenerNewsSentimentDto::description);
-
-        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.newsSentimentBadge(item.newsSentimentLabel7d(), item.newsSentiment7d())))
-                .setHeader("7D Sentiment").setAutoWidth(true)
-                .setComparator(Comparator.comparing(ScreenerNewsSentimentDto::newsSentiment7d, Comparator.nullsLast(Float::compareTo)));
-
-        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.newsSentimentBadge(item.newsSentimentLabel14d(), item.newsSentiment14d())))
-                .setHeader("14D Sentiment").setAutoWidth(true)
-                .setComparator(Comparator.comparing(ScreenerNewsSentimentDto::newsSentiment14d, Comparator.nullsLast(Float::compareTo)));
-
-        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.newsSentimentBadge(item.newsSentimentLabel30d(), item.newsSentiment30d())))
-                .setHeader("30D Sentiment").setAutoWidth(true)
-                .setComparator(Comparator.comparing(ScreenerNewsSentimentDto::newsSentiment30d, Comparator.nullsLast(Float::compareTo)));
-
-        grid.addColumn(item -> String.format("%d / %d / %d",
-                        item.newsCount7d() != null ? item.newsCount7d() : 0,
-                        item.newsCount14d() != null ? item.newsCount14d() : 0,
-                        item.newsCount30d() != null ? item.newsCount30d() : 0))
-                .setHeader("News Coverage (7D/14D/30D)").setAutoWidth(true).setSortable(true);
-
-        grid.addColumn(item -> item.avgRelevance14d() != null ? String.format(Locale.US, "%.0f%%", item.avgRelevance14d() * 100) : "-")
-                .setHeader("Avg Relevance (14D)").setAutoWidth(true).setSortable(true);
-
-        grid.setItemDetailsRenderer(createNewsDetailsRenderer());
-        grid.setDetailsVisibleOnClick(true);
-
-        grid.addComponentColumn(item -> createCompanyDetailsButton(item.companyId())).setHeader("Details").setAutoWidth(true);
-
-        return grid;
-    }
-
-    private ComponentRenderer<VerticalLayout, ScreenerNewsSentimentDto> createNewsDetailsRenderer() {
-        return new ComponentRenderer<>(item -> {
-            VerticalLayout layout = new VerticalLayout();
-            layout.setPadding(true);
-            layout.setSpacing(true);
-            layout.addClassName(LumoUtility.Background.CONTRAST_5);
-            layout.getStyle().set("border-radius", "8px");
-            layout.getStyle().set("margin", "0.5rem");
-
-            H4 header = new H4("Recent News Coverage for " + item.companyName());
-            header.addClassNames(LumoUtility.Margin.Top.NONE, LumoUtility.Margin.Bottom.SMALL);
-            layout.add(header);
-
-            List<NewsTickerDto> newsList = companyNewsApi.getNewsByTicker(item.ticker(), LocalDate.now().minusDays(14));
-            if (newsList.isEmpty()) {
-                layout.add(new Paragraph("No individual news articles found in the last 14 days."));
-            } else {
-                for (NewsTickerDto news : newsList) {
-                    VerticalLayout articleBox = new VerticalLayout();
-                    articleBox.setPadding(false);
-                    articleBox.setSpacing(false);
-                    articleBox.addClassNames(LumoUtility.Padding.Vertical.XSMALL);
-
-                    HorizontalLayout titleRow = new HorizontalLayout();
-                    titleRow.setWidthFull();
-                    titleRow.setJustifyContentMode(JustifyContentMode.BETWEEN);
-                    titleRow.setAlignItems(Alignment.CENTER);
-
-                    Span headline = new Span(news.title());
-                    headline.addClassNames(LumoUtility.FontWeight.BOLD, LumoUtility.TextColor.PRIMARY);
-
-                    Span scoreBadge = ViewHelper.newsSentimentBadge(news.tickerSentimentLabel(), news.tickerSentimentScore());
-
-                    titleRow.add(headline, scoreBadge);
-
-                    Paragraph meta = new Paragraph(String.format("Source: %s | Published: %s | Relevance: %.0f%%",
-                            news.source() != null ? news.source() : "Unknown",
-                            news.timePublished() != null ? news.timePublished().toString().substring(0, 10) : "N/A",
-                            news.relevanceScore() != null ? news.relevanceScore() * 100 : 0));
-                    meta.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontSize.SMALL, LumoUtility.Margin.Top.NONE, LumoUtility.Margin.Bottom.XSMALL);
-
-                    Paragraph summary = new Paragraph(news.summary());
-                    summary.addClassNames(LumoUtility.TextColor.BODY, LumoUtility.FontSize.SMALL, LumoUtility.Margin.Top.NONE);
-
-                    articleBox.add(titleRow, meta, summary);
-
-                    Div divider = new Div();
-                    divider.setHeight("1px");
-                    divider.setWidthFull();
-                    divider.addClassName(LumoUtility.Background.CONTRAST_10);
-
-                    layout.add(articleBox, divider);
-                }
-            }
-
-            return layout;
-        });
-    }
 
     private Grid<ScreenerDto> createStandardGrid() {
         Grid<ScreenerDto> grid = new Grid<>(ScreenerDto.class, false);
@@ -483,11 +352,7 @@ public class ScreenerView extends VerticalLayout {
 
         grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.sizeBadge(item.companySize())))
                 .setHeader("Size").setAutoWidth(true).setKey("size")
-                .setComparator(java.util.Comparator.comparing(ScreenerInsiderDto::companySize, java.util.Comparator.nullsLast(CompanySize::compareTo)));
-
-        grid.addColumn(new ComponentRenderer<>(item -> ViewHelper.newsSentimentBadge(item.newsSentimentLabel(), item.newsSentimentScore())))
-                .setHeader("News Sentiment").setAutoWidth(true).setSortable(true)
-                .setComparator(Comparator.comparing(ScreenerInsiderDto::newsSentimentScore, Comparator.nullsFirst(Float::compareTo)));
+                .setComparator(Comparator.comparing(ScreenerInsiderDto::companySize, Comparator.nullsLast(CompanySize::compareTo)));
 
         grid.addColumn(item -> ViewHelper.formatCompact(item.csuiteBuysValue3m()))
                 .setHeader("C-Suite Buys 3M").setAutoWidth(true).setSortable(true)
@@ -570,14 +435,7 @@ public class ScreenerView extends VerticalLayout {
                     CompanySize size = ((CompanyOverviewDto) t).companySize();
                     return size != null ? size.getDisplayName() : "";
                 };
-            } else if (type == ScreenerNewsSentimentDto.class) {
-                tickerFn = t -> ((ScreenerNewsSentimentDto) t).ticker();
-                nameFn = t -> ((ScreenerNewsSentimentDto) t).companyName();
-                sectorFn = t -> ((ScreenerNewsSentimentDto) t).sectorName();
-                sizeFn = t -> {
-                    CompanySize size = ((ScreenerNewsSentimentDto) t).companySize();
-                    return size != null ? size.getDisplayName() : "";
-                };
+
             } else if (type == ScreenerInsiderDto.class) {
                 tickerFn = t -> ((ScreenerInsiderDto) t).ticker();
                 nameFn = t -> ((ScreenerInsiderDto) t).companyName();

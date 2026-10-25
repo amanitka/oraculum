@@ -2,6 +2,7 @@ package com.oraculum.harvester.service;
 
 import com.oraculum.common.config.OraculumProperties;
 import com.oraculum.harvester.api.HarvesterLiveApi;
+import com.oraculum.harvester.api.dto.CompanyNewsDto;
 import com.oraculum.harvester.api.dto.EarningsEstimateDto;
 import com.oraculum.harvester.domain.ProviderType;
 import com.oraculum.harvester.provider.AlphaVantageClient;
@@ -9,6 +10,7 @@ import com.oraculum.harvester.provider.dto.AlphaVantageEarningsEstimatesResponse
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,14 +20,17 @@ public class HarvesterLiveService implements HarvesterLiveApi {
 
     private final AlphaVantageClient alphaVantageClient;
     private final ApiUsageTrackerService apiUsageTrackerService;
+    private final FinnhubNewsService finnhubNewsService;
     private final int dailyLimit;
     private final int reservedCalls;
 
     public HarvesterLiveService(AlphaVantageClient alphaVantageClient,
                                 ApiUsageTrackerService apiUsageTrackerService,
+                                FinnhubNewsService finnhubNewsService,
                                 OraculumProperties properties) {
         this.alphaVantageClient = alphaVantageClient;
         this.apiUsageTrackerService = apiUsageTrackerService;
+        this.finnhubNewsService = finnhubNewsService;
         this.dailyLimit = properties.harvester().alphaVantage().dailyLimit();
         this.reservedCalls = properties.harvester().alphaVantage().reservedCalls();
     }
@@ -51,5 +56,10 @@ public class HarvesterLiveService implements HarvesterLiveApi {
             log.error("Failed to fetch earnings estimates for {}", ticker, e);
             return Optional.empty();
         }
+    }
+
+    @Override
+    public List<CompanyNewsDto> fetchCompanyNews(String ticker, LocalDate from, LocalDate to) {
+        return finnhubNewsService.fetchCompanyNews(ticker, from, to);
     }
 }

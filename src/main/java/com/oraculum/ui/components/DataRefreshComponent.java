@@ -65,7 +65,6 @@ public class DataRefreshComponent extends VerticalLayout {
                 createSec13FRow(harvesterBatchApi),
                 createSharePricesRow(harvesterBatchApi),
                 createSecSummariesRow(eventPublisher),
-                createSimpleRow("News & Sentiment", "Refreshes recent news articles and sentiment data.", harvesterBatchApi::refreshNews),
                 createSimpleRow("Insider Transactions", "Refreshes daily insider trading from OpenInsider.", harvesterBatchApi::refreshInsiderTransactions),
                 createSimpleRow("Macroeconomic Data", "Refreshes yield curves, inflation, unemployment.", harvesterBatchApi::refreshMacroeconomic),
                 createSimpleRow("Materialized Views", "Rebuilds materialized views and refreshes cache (async).", () -> eventPublisher.publishEvent(new RefreshMaterializedViewsEvent())),

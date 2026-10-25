@@ -128,12 +128,6 @@ class HarvesterBatchServiceTest {
     }
 
     @Test
-    void refreshNews_publishesNewsRefreshRequestedEvent() {
-        harvesterBatchService.refreshNews();
-        verify(eventPublisher).publishEvent(any(com.oraculum.harvester.event.FetchNewsRequestEvent.class));
-    }
-
-    @Test
     void refreshMacroeconomic_publishesMacroeconomicRefreshRequestedEvent() {
         harvesterBatchService.refreshMacroeconomic();
         verify(eventPublisher).publishEvent(any(com.oraculum.harvester.event.FetchMacroeconomicRequestEvent.class));

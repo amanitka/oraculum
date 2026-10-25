@@ -58,6 +58,15 @@ resilience4j:
           - org.springframework.web.client.HttpClientErrorException.TooManyRequests
           - org.springframework.web.reactive.function.client.WebClientResponseException.TooManyRequests
           - com.openai.errors.RateLimitException
+      finnhubApi:
+        max-attempts: 3
+        wait-duration: 2s
+        enable-exponential-backoff: true
+        ignore-exceptions:
+          - org.springframework.web.client.HttpClientErrorException.TooManyRequests
+        retry-exceptions:
+          - org.springframework.web.client.RestClientException
+          - java.io.IOException
       fredApi:
         max-attempts: 3
         wait-duration: 2s
@@ -112,9 +121,6 @@ oraculum:
     share-price:
       incremental-window-days: 10
       cron: "0 0 3 * * TUE-SAT"
-    news:
-      incremental-window-hours: 1
-      cron: "0 0 2,8,12,18 * * *"
     insider-transactions:
       cron: "0 0 4,16 * * *"
     macroeconomic:
@@ -208,7 +214,7 @@ oraculum:
       api-key: ${ORACULUM_ALPHA_VANTAGE_API_KEY}
       base-url: "https://www.alphavantage.co"
       daily-limit: 25
-      reserved-calls: 3
+      reserved-calls: 0
     fred:
       api-key: ${ORACULUM_FRED_API_KEY}
       base-url: "https://api.stlouisfed.org/fred"
@@ -220,6 +226,11 @@ oraculum:
       api-key: ${ORACULUM_OPEN_FIGI_API_KEY}
       base-url: "https://api.openfigi.com"
       rate-limit-per-second: ${ORACULUM_OPEN_FIGI_RATE_LIMIT:3}
+    finnhub:
+      api-key: ${ORACULUM_FINNHUB_API_KEY:${ORACULUM_FINHUB_API_KEY:}}
+      base-url: "https://finnhub.io"
+      rate-limit-per-second: 30
+      rate-limit-per-minute: 60
 
   llm:
     common:

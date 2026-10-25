@@ -1,8 +1,15 @@
 package com.oraculum.company.service.impl;
 
 import com.oraculum.company.api.CompanyScreenerApi;
-import com.oraculum.company.api.dto.*;
-import com.oraculum.company.repository.*;
+import com.oraculum.company.api.dto.CompanyOverviewDto;
+import com.oraculum.company.api.dto.ScreenerDto;
+import com.oraculum.company.api.dto.ScreenerInsiderDto;
+import com.oraculum.company.repository.CompanyOverviewRepository;
+import com.oraculum.company.repository.ScreenerFinancialTrendRepository;
+import com.oraculum.company.repository.ScreenerGrahamDeepValueRepository;
+import com.oraculum.company.repository.ScreenerInsiderRepository;
+import com.oraculum.company.repository.ScreenerQualityCompoundersRepository;
+import com.oraculum.company.repository.ScreenerUndervaluedRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,7 +23,6 @@ import java.util.stream.Collectors;
 public class CompanyScreenerServiceImpl implements CompanyScreenerApi {
 
     private final CompanyOverviewRepository companyOverviewRepository;
-    private final ScreenerNewsSentimentRepository screenerNewsSentimentRepository;
     private final ScreenerUndervaluedRepository screenerUndervaluedRepository;
     private final ScreenerQualityCompoundersRepository screenerQualityCompoundersRepository;
     private final ScreenerGrahamDeepValueRepository screenerGrahamDeepValueRepository;
@@ -30,16 +36,6 @@ public class CompanyScreenerServiceImpl implements CompanyScreenerApi {
                 .stream()
                 .map(CompanyOverviewDto::fromEntity)
                 .sorted(Comparator.comparing(CompanyOverviewDto::qualityRank, Comparator.nullsLast(Comparator.naturalOrder())))
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<ScreenerNewsSentimentDto> getNewsSentimentScreener() {
-        return screenerNewsSentimentRepository.findAll()
-                .stream()
-                .map(ScreenerNewsSentimentDto::fromEntity)
-                .sorted(Comparator.comparing(ScreenerNewsSentimentDto::newsSentiment30d, Comparator.nullsLast(Comparator.reverseOrder())))
                 .collect(Collectors.toList());
     }
 
@@ -86,8 +82,10 @@ public class CompanyScreenerServiceImpl implements CompanyScreenerApi {
     @Override
     @Transactional(readOnly = true)
     public List<ScreenerInsiderDto> getInsiderScreener() {
-        return screenerInsiderRepository.findAll().stream()
+        return screenerInsiderRepository.findAll()
+                .stream()
                 .map(ScreenerInsiderDto::fromEntity)
+                .sorted(Comparator.comparing(ScreenerInsiderDto::buysValue3m, Comparator.nullsLast(Comparator.reverseOrder())))
                 .collect(Collectors.toList());
     }
 }

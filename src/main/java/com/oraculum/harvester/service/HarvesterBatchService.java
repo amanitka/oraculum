@@ -11,7 +11,6 @@ import com.oraculum.harvester.api.dto.*;
 import com.oraculum.company.api.dto.TickerKeyDto;
 import com.oraculum.harvester.api.event.FetchCompanyCusipsRequestEvent;
 import com.oraculum.harvester.event.FetchMacroeconomicRequestEvent;
-import com.oraculum.harvester.event.FetchNewsRequestEvent;
 import com.oraculum.util.DateTimeUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -154,12 +153,6 @@ public class HarvesterBatchService implements HarvesterBatchApi {
             HarvesterRequest request = new FetchSharePricePriceRequest(market, "daily", fromTradeDateString);
             publishRequest(request);
         }
-    }
-
-    @Override
-    public void refreshNews() {
-        log.info("Broadcasting news refresh requested event");
-        eventPublisher.publishEvent(new FetchNewsRequestEvent());
     }
 
     @Override

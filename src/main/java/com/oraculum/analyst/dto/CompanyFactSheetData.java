@@ -7,6 +7,7 @@ import com.oraculum.company.api.domain.TickerDocumentSubtype;
 import com.oraculum.company.api.domain.TickerDocumentType;
 import com.oraculum.company.api.dto.*;
 import com.oraculum.economy.api.dto.MacroSummaryDto;
+import com.oraculum.harvester.api.dto.CompanyNewsDto;
 import com.oraculum.harvester.api.dto.EarningsEstimateDto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -39,8 +40,7 @@ public class CompanyFactSheetData {
     private final Map<StatementVariant, List<IndustryFinancialRatiosDto>> industryFinancialRatios;
     private final List<SharePriceSignalDto> dailySharePriceSignals;
     private final List<SharePriceSignalDto> monthlySharePriceSignals;
-    private final List<NewsTickerDto> recentNews;
-    private final TickerNewsSentimentDto newsSentimentAggregate;
+    private final List<CompanyNewsDto> recentNews;
     private final InsiderTransactionSummaryDto insiderTransactionSummary;
     private final List<InsiderTransactionByPersonDto> insiderTransactionsByPerson;
     private final List<EarningsEstimateDto> earningsEstimates;
@@ -190,21 +190,17 @@ public class CompanyFactSheetData {
 
     public String getRecentNews() {
         if (recentNews == null || recentNews.isEmpty()) return "[]";
-        List<NewsTickerSlim> slimNews = recentNews.stream()
+        List<CompanyNewsSlim> slimNews = recentNews.stream()
                 .map(dto -> {
-                    String citationId = citationRegistry.getOrAssignCitationId(NewsTickerDto.class, dto.id(), dto);
-                    return NewsTickerSlim.from(dto, citationId);
+                    String citationId = citationRegistry.getOrAssignCitationId(CompanyNewsDto.class, dto.id(), dto);
+                    return CompanyNewsSlim.from(dto, citationId);
                 })
                 .collect(Collectors.toList());
         return JsonUtils.toJson(jsonMapper, slimNews, "[]");
     }
 
-    public List<NewsTickerDto> getRecentNewsList() {
+    public List<CompanyNewsDto> getRecentNewsList() {
         return recentNews;
-    }
-
-    public String getNewsSentimentAggregate() {
-        return wrapWithCitation(TickerNewsSentimentDto.class, company.ticker(), newsSentimentAggregate);
     }
 
     public SharePriceSignalDto getLatestDailySignal() {

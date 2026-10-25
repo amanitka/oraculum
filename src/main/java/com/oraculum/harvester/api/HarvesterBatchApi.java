@@ -6,7 +6,6 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
 
-
 public interface HarvesterBatchApi {
 
     void refreshMarket();
@@ -22,8 +21,6 @@ public interface HarvesterBatchApi {
     void refreshStaleSecDocuments();
 
     void refreshDailyNewSecDocuments(LocalDate targetDate);
-
-    void refreshNews();
 
     void refreshMacroeconomic();
 
@@ -58,4 +55,3 @@ public interface HarvesterBatchApi {
      */
     void refreshCompanyCusips();
 }
-

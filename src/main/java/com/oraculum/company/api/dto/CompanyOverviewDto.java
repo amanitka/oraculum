@@ -33,10 +33,7 @@ public record CompanyOverviewDto(
         String compositeSignal,
         Long qualityRank,
         Long valueRank,
-        Long fscoreRank,
-        Float newsSentimentScore,
-        String newsSentimentLabel,
-        Integer newsCount30d
+        Long fscoreRank
 ) {
     public static CompanyOverviewDto fromEntity(CompanyOverviewEntity entity) {
         if (entity == null) return null;
@@ -68,10 +65,7 @@ public record CompanyOverviewDto(
                 entity.getCompositeSignal(),
                 entity.getQualityRank(),
                 entity.getValueRank(),
-                entity.getFscoreRank(),
-                entity.getNewsSentimentScore(),
-                entity.getNewsSentimentLabel(),
-                entity.getNewsCount30d()
+                entity.getFscoreRank()
         );
     }
 }
