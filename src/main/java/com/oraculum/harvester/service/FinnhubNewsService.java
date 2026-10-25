@@ -13,12 +13,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
 
 @Service
@@ -29,7 +24,7 @@ public class FinnhubNewsService {
             "\\b(buys|sells|purchases|acquires|holdings|stake|shares of)\\b",
             Pattern.CASE_INSENSITIVE
     );
-    private static final int MAX_SUMMARY_LENGTH = 400;
+    private static final int MAX_SUMMARY_LENGTH = 1000;
 
     private final FinnhubClient finnhubClient;
     private final boolean finnhubConfigured;
