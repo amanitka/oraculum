@@ -8,30 +8,31 @@ import java.time.LocalDate;
 public record CompanyFinancialRatiosSlim(
 
         // ── Period ──────────────────────────────────────────────────────────────
-        @JsonProperty("citation_id")   String    citationId,
-        @JsonProperty("fiscal_year")   int       fiscalYear,
-        @JsonProperty("fiscal_period") String    fiscalPeriod,
-        @JsonProperty("report_date")   LocalDate reportDate,
+        @JsonProperty("citation_id")      String    citationId,
+        @JsonProperty("fiscal_year")      int       fiscalYear,
+        @JsonProperty("fiscal_period")    String    fiscalPeriod,
+        @JsonProperty("report_date")      LocalDate reportDate,
+        @JsonProperty("period_end_label") String    periodEndLabel,
 
         // ── Absolute values ──────────────────────────────────────────────────────
-        @JsonProperty("revenue")          Float revenue,
-        @JsonProperty("net_income")       Float netIncome,
-        @JsonProperty("ebitda")           Float ebitda,
-        @JsonProperty("free_cash_flow")   Float freeCashFlow,
+        @JsonProperty("revenue")            Float revenue,
+        @JsonProperty("net_income")         Float netIncome,
+        @JsonProperty("ebitda")             Float ebitda,
+        @JsonProperty("free_cash_flow")     Float freeCashFlow,
         @JsonProperty("earnings_per_share") Float earningsPerShare,
 
         // ── Profitability ratios ─────────────────────────────────────────────────
-        @JsonProperty("return_on_equity")    Float returnOnEquity,
-        @JsonProperty("net_margin")          Float netMargin,
-        @JsonProperty("gross_margin")        Float grossMargin,
-        @JsonProperty("operating_margin")    Float operatingMargin,
-        @JsonProperty("fcf_margin")          Float fcfMargin,
+        @JsonProperty("return_on_equity") Float returnOnEquity,
+        @JsonProperty("net_margin")       Float netMargin,
+        @JsonProperty("gross_margin")     Float grossMargin,
+        @JsonProperty("operating_margin") Float operatingMargin,
+        @JsonProperty("fcf_margin")       Float fcfMargin,
 
         // ── Balance sheet / leverage ratios ─────────────────────────────────────
-        @JsonProperty("current_ratio")          Float currentRatio,
-        @JsonProperty("quick_ratio")            Float quickRatio,
-        @JsonProperty("debt_to_equity")         Float debtToEquity,
-        @JsonProperty("interest_coverage_ratio") Float interestCoverageRatio,
+        @JsonProperty("current_ratio")              Float currentRatio,
+        @JsonProperty("quick_ratio")                Float quickRatio,
+        @JsonProperty("debt_to_equity")             Float debtToEquity,
+        @JsonProperty("interest_coverage_ratio")    Float interestCoverageRatio,
         @JsonProperty("days_sales_outstanding")     Float daysSalesOutstanding,
         @JsonProperty("days_inventory_outstanding") Float daysInventoryOutstanding,
 
@@ -43,25 +44,27 @@ public record CompanyFinancialRatiosSlim(
         @JsonProperty("fcf_yoy_growth")        Float fcfYoyGrowth,
 
         // ── Quality signals ──────────────────────────────────────────────────────
-        @JsonProperty("ratios_trend_score")          Integer financialTrendScore,
+        @JsonProperty("ratios_trend_score")      Integer financialTrendScore,
         @JsonProperty("margin_expansion_signal") Integer marginExpansionSignal,
         @JsonProperty("earnings_quality_ratio")  Float   earningsQualityRatio,
         @JsonProperty("is_cash_earnings")        Integer isCashEarnings,
         @JsonProperty("is_negative_equity")      Integer isNegativeEquity,
 
         // ── Consistency streaks ──────────────────────────────────────────────────
-        @JsonProperty("revenue_growth_streak")    Integer revenueGrowthStreak,
-        @JsonProperty("positive_fcf_streak")      Integer positiveFcfStreak,
-        @JsonProperty("positive_earnings_streak") Integer positiveEarningsStreak
+        @JsonProperty("revenue_growth_streak")     Integer revenueGrowthStreak,
+        @JsonProperty("positive_fcf_streak")       Integer positiveFcfStreak,
+        @JsonProperty("positive_earnings_streak")  Integer positiveEarningsStreak
 
 ) {
     public static CompanyFinancialRatiosSlim from(CompanyFinancialRatiosDto dto, String citationId) {
         if (dto == null) return null;
+        String label = buildPeriodEndLabel(dto.fiscalPeriod(), dto.reportDate());
         return new CompanyFinancialRatiosSlim(
                 citationId,
                 dto.fiscalYear(),
                 dto.fiscalPeriod(),
                 dto.reportDate(),
+                label,
                 dto.revenue(),
                 dto.netIncome(),
                 dto.ebitda(),
@@ -92,5 +95,15 @@ public record CompanyFinancialRatiosSlim(
                 dto.positiveFcfStreak(),
                 dto.positiveEarningsStreak()
         );
+    }
+
+    public static String buildPeriodEndLabel(String fiscalPeriod, LocalDate reportDate) {
+        if (reportDate == null) {
+            return fiscalPeriod;
+        }
+        if (fiscalPeriod == null || fiscalPeriod.isBlank()) {
+            return "ended " + reportDate;
+        }
+        return fiscalPeriod + " (ended " + reportDate + ")";
     }
 }

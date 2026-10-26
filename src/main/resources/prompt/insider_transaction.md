@@ -47,32 +47,34 @@ You MUST respond with valid JSON using exactly this schema:
     "overall": 0.0
   },
   "confidence_reasons": ["string (Reason 1)", "string (Reason 2)"],
-  "strengths": ["string (Strength 1)", "string (Strength 2)"],
-  "weaknesses": ["string (Weakness 1)", "string (Weakness 2)"],
+  "strengths": ["string (Strength 1 with [citation_id])", "string (Strength 2 with [citation_id])"],
+  "weaknesses": ["string (Weakness 1 with [citation_id])", "string (Weakness 2 with [citation_id])"],
   "evidence": [
     {
-      "metric": "string (e.g. 'Revenue Growth')",
-      "value": "string (e.g. 1.5M, 15%)",
-      "previous_value": "string",
+      "metric": "string (e.g. '12M Net Stake Change (CEO)')",
+      "value": "string (e.g. '-1.89%')",
+      "previous_value": "string (e.g. '0%')",
       "trend": "IMPROVING | DETERIORATING | STABLE",
-      "significance": "string (Why this matters)"
+      "source_type": "REPORTED | CALCULATED | DERIVED | ESTIMATED",
+      "significance": "string (Why this matters, with [citation_id])"
     }
   ],
   "metrics": {
-    "key1": "value1"
+    "management_sentiment": "HIGHLY_BULLISH | MILDLY_BULLISH | NEUTRAL | ROUTINE_SELLING | CONCERNING_SELLING",
+    "bullish_conviction": 3
   },
-  "summary": "string (Detailed paragraph explaining your overall findings)"
+  "summary": "string (Concise 2-3 sentence summary in Markdown format starting with ### Insider Activity & Management Conviction)"
 }
 
-- `management_sentiment` (string): Must be EXACTLY one of: HIGHLY_BULLISH, MILDLY_BULLISH, NEUTRAL, ROUTINE_SELLING, CONCERNING_SELLING.
-- `bullish_conviction` (integer): Score from 1 to 5. (1 = very bearish/heavy selling, 3 = neutral/noise, 5 = extreme conviction buying).
+- `metrics.management_sentiment` (string): Must be EXACTLY one of: HIGHLY_BULLISH, MILDLY_BULLISH, NEUTRAL, ROUTINE_SELLING, CONCERNING_SELLING.
+- `metrics.bullish_conviction` (integer): Score from 1 to 5. (1 = very bearish/heavy selling, 3 = neutral/noise, 5 = extreme conviction buying).
 - `summary` (string): A concise 2-3 sentence summary in Markdown format starting with `### Insider Activity & Management Conviction`.
 
 Rules:
 - SCORE & CONFIDENCE: `score` (0.0-10.0) measures how favorable the evidence is for the company. `confidence` (0.0-1.0) measures how reliable the evidence is. A high score does not imply high confidence.
 - TREND: The `trend` field (IMPROVING, DETERIORATING, STABLE) describes the *implication* for the company, not the raw mathematical direction. Rising costs or debt = DETERIORATING. Rising margins or revenue = IMPROVING.
 - EVIDENCE UNITS: `value` and `previous_value` must use the same unit and scale. Never compare percentages with raw counts or dollar levels.
-- SOURCE TYPE: Each evidence item must include `source_type`: REPORTED (directly from financial statements), CALCULATED (computed ratios/growth rates), DERIVED (model outputs like reverse DCF), or ESTIMATED (forward analyst consensus).
+- SOURCE TYPE: Each evidence item must include `source_type`: REPORTED (directly from insider transaction filings), CALCULATED (computed ratios/growth rates), DERIVED (model outputs), or ESTIMATED.
 - CITATIONS: Cite every fact using `[citation_id]` brackets immediately after the claim. Use only numeric IDs: "[142]", "[113, 140]". No words inside brackets. Do not cite data without a `citation_id`. Do not hallucinate citations. Always cite the specific year or timeframe.
 - FORMATTING: Use period (.) as decimal separator.
 - JSON OUTPUT: Respond with exactly one raw JSON object (`{` to `}`). No markdown code blocks, no conversational text, no extra keys. Do not hallucinate data.

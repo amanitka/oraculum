@@ -81,8 +81,6 @@ public class CompanyFactSheetDataService {
         return companySharePriceApi.getMonthlySharePriceSignalsByCompanyId(company.id(), after);
     }
 
-
-
     private InsiderTransactionSummaryDto getInsiderTransactionSummary(CompanyDto company) {
         return companyInsiderTransactionApi.getInsiderTransactionSummaryByTicker(company.ticker()).orElse(null);
     }
@@ -112,8 +110,7 @@ public class CompanyFactSheetDataService {
         return harvesterLiveApi.fetchCompanyNews(
                 company.ticker(),
                 analystProperties.news().getNewsHistoryDate(),
-                LocalDate.now(),
-                analystProperties.news().articleLimit()
+                LocalDate.now()
         );
     }
 

@@ -55,15 +55,16 @@ You MUST respond with valid JSON using exactly this schema:
     "overall": 0.0
   },
   "confidence_reasons": ["string (Reason 1)", "string (Reason 2)"],
-  "strengths": ["string (Strength 1)", "string (Strength 2)"],
-  "weaknesses": ["string (Weakness 1)", "string (Weakness 2)"],
+  "strengths": ["string (Strength 1 with [citation_id])", "string (Strength 2 with [citation_id])"],
+  "weaknesses": ["string (Weakness 1 with [citation_id])", "string (Weakness 2 with [citation_id])"],
   "evidence": [
     {
-      "metric": "string (e.g. 'Revenue Growth')",
-      "value": "string (e.g. 1.5M, 15%)",
-      "previous_value": "string",
+      "metric": "string (e.g. 'FY27 Consensus EPS (90d Revision)')",
+      "value": "string (e.g. '$9.31')",
+      "previous_value": "string (e.g. '$8.62')",
       "trend": "IMPROVING | DETERIORATING | STABLE",
-      "significance": "string (Why this matters)"
+      "source_type": "REPORTED | CALCULATED | DERIVED | ESTIMATED",
+      "significance": "string (Why this matters, with [citation_id])"
     }
   ],
   "metrics": {
@@ -76,7 +77,7 @@ Rules:
 - SCORE & CONFIDENCE: `score` (0.0-10.0) measures how favorable the evidence is for the company. `confidence` (0.0-1.0) measures how reliable the evidence is. A high score does not imply high confidence.
 - TREND: The `trend` field (IMPROVING, DETERIORATING, STABLE) describes the *implication* for the company, not the raw mathematical direction. Rising costs or debt = DETERIORATING. Rising margins or revenue = IMPROVING.
 - EVIDENCE UNITS: `value` and `previous_value` must use the same unit and scale. Never compare percentages or EPS estimates with raw index or dollar values of different metrics.
-- SOURCE TYPE: Each evidence item must include `source_type`: REPORTED (directly from financial statements), CALCULATED (computed ratios/growth rates), DERIVED (model outputs like reverse DCF), or ESTIMATED (forward analyst consensus).
+- SOURCE TYPE: Each evidence item must include `source_type`: REPORTED (from SEC Exhibit 99.1 actuals/guidance), CALCULATED (computed Forward P/E or revision %), DERIVED, or ESTIMATED (forward analyst consensus).
 - CITATIONS: Cite every fact using `[citation_id]` brackets immediately after the claim. Use only numeric IDs: "[142]", "[113, 140]". No words inside brackets. Do not cite data without a `citation_id`. Do not hallucinate citations. Always cite the specific year or timeframe.
 - FORMATTING: Use period (.) as decimal separator.
 - JSON OUTPUT: Respond with exactly one raw JSON object (`{` to `}`). No markdown code blocks, no conversational text, no extra keys. Do not hallucinate data.

@@ -1,29 +1,26 @@
 package com.oraculum.analyst.agent.service.impl;
 
-import com.oraculum.analyst.agent.dto.*;
-
 import com.oraculum.analyst.agent.dto.AgentContext;
 import com.oraculum.analyst.agent.dto.AgentOutput;
-
+import com.oraculum.analyst.agent.dto.CriticAgentOutput;
+import com.oraculum.analyst.agent.dto.CriticAgentOutput.Contradiction;
+import com.oraculum.analyst.agent.dto.CriticAgentOutput.Resolution;
+import com.oraculum.analyst.agent.dto.CriticAgentOutput.RerunInstruction;
 import com.oraculum.analyst.agent.service.Agent;
 import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.PromptType;
+import com.oraculum.analyst.service.PreCriticValidationService;
 import com.oraculum.analyst.util.JsonUtils;
+import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.llm.api.LlmCallRequest;
 import com.oraculum.llm.api.LlmRouterApi;
 import com.oraculum.llm.api.dto.CorrelationType;
 import com.oraculum.llm.api.dto.LlmResponse;
 import com.oraculum.llm.api.dto.LlmTierType;
-import com.oraculum.analyst.agent.dto.CriticAgentOutput.Contradiction;
-import com.oraculum.analyst.agent.dto.CriticAgentOutput.Resolution;
-import com.oraculum.analyst.agent.dto.CriticAgentOutput.RerunInstruction;
-import com.oraculum.analyst.service.PreCriticValidationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.json.JsonMapper;
-
-import com.oraculum.company.api.domain.StatementVariant;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -93,9 +90,14 @@ public class CriticAgent implements Agent<CriticAgentOutput> {
                 ? new ArrayList<>(output.recommendedReruns()) : new ArrayList<>();
         appendMissingReruns(combined, reruns);
 
-        boolean consistent = combined.isEmpty() && reruns.isEmpty();
+        boolean consistent = !hasUnreconciledContradictions(combined) && reruns.isEmpty();
         String counterThesis = output != null ? output.counterThesis() : null;
         return new CriticAgentOutput(combined, consistent, reruns, counterThesis);
+    }
+
+    private boolean hasUnreconciledContradictions(List<Contradiction> contradictions) {
+        return contradictions.stream()
+                .anyMatch(c -> c.resolution() != Resolution.NARRATIVE_RECONCILED);
     }
 
     private boolean isDuplicate(Contradiction candidate, List<Contradiction> existing) {

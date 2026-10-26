@@ -81,8 +81,5 @@ class HarvesterLiveServiceTest {
 
         List<CompanyNewsDto> all = service.fetchCompanyNews("AAPL", from, to);
         assertThat(all).containsExactly(item1, item2);
-
-        List<CompanyNewsDto> limited = service.fetchCompanyNews("AAPL", from, to, 1);
-        assertThat(limited).containsExactly(item1);
     }
 }

@@ -19,16 +19,4 @@ public interface HarvesterLiveApi {
      * Articles are deduplicated, bot-filtered, and sorted from newest to oldest.
      */
     List<CompanyNewsDto> fetchCompanyNews(String ticker, LocalDate from, LocalDate to);
-
-    /**
-     * Fetches recent company news from Finnhub for the given ticker and date range,
-     * optionally limiting the maximum number of returned articles.
-     */
-    default List<CompanyNewsDto> fetchCompanyNews(String ticker, LocalDate from, LocalDate to, int limit) {
-        List<CompanyNewsDto> news = fetchCompanyNews(ticker, from, to);
-        if (limit > 0 && news.size() > limit) {
-            return news.subList(0, limit);
-        }
-        return news;
-    }
 }

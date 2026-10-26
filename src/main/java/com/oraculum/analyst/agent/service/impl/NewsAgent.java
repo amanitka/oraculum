@@ -5,6 +5,7 @@ import com.oraculum.analyst.agent.dto.AgentOutput;
 import com.oraculum.analyst.agent.dto.StandardAgentOutput;
 import com.oraculum.analyst.agent.service.Agent;
 import com.oraculum.analyst.api.domain.AgentType;
+import com.oraculum.analyst.config.AnalystProperties;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.PromptType;
 import com.oraculum.llm.api.LlmCallRequest;
@@ -21,8 +22,11 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class NewsAgent implements Agent<StandardAgentOutput> {
 
+    private static final int MAX_SEC_8K_AGE_DAYS = 75;
+
     private final LlmRouterApi llmRouterApi;
     private final PromptRegistry promptRegistry;
+    private final AnalystProperties analystProperties;
 
     @Override
     public AgentType getName() {
@@ -32,15 +36,15 @@ public class NewsAgent implements Agent<StandardAgentOutput> {
     @Override
     public AgentOutput<StandardAgentOutput> run(AgentContext ctx) {
         log.info("NewsAgent starting analysis for ticker: {}", ctx.ticker());
-        String news = ctx.factSheetData().getRecentNews();
-        String secEx991Summary = ctx.factSheetData().getRecentSecEx991Summaries();
-
-        if (hasNoData(news) && hasNoData(secEx991Summary)) {
+        String companyNews = ctx.factSheetData().getRecentCompanyNews(analystProperties.news().articleLimit());
+        String marketNews = ctx.factSheetData().getRecentMarketNews(analystProperties.news().marketContextLimit());
+        String secEx991Summary = ctx.factSheetData().getRecentSecEx991Summaries(ctx.analysisDate(), MAX_SEC_8K_AGE_DAYS);
+        if (hasNoData(companyNews) && hasNoData(marketNews) && hasNoData(secEx991Summary)) {
             log.info("No recent news or SEC Exhibit 99.1 press releases found for ticker: {}. Skipping LLM execution.", ctx.ticker());
             return new AgentOutput<>(StandardAgentOutput.empty("No recent news articles or press releases found for this ticker."), 0);
         }
 
-        String fullPrompt = buildFullPrompt(ctx, news, secEx991Summary);
+        String fullPrompt = buildFullPrompt(ctx, companyNews, marketNews, secEx991Summary);
         LlmResponse<StandardAgentOutput> response = llmRouterApi.executeCall(
                 LlmCallRequest.of(LlmTierType.STANDARD, fullPrompt, StandardAgentOutput.class, ctx.correlationId(), CorrelationType.COMPANY_ANALYSIS, getName().name()));
 
@@ -52,10 +56,12 @@ public class NewsAgent implements Agent<StandardAgentOutput> {
         return markdown == null || markdown.isBlank() || "[]".equals(markdown);
     }
 
-    private String buildFullPrompt(AgentContext ctx, String news, String secEx991) {
+    private String buildFullPrompt(AgentContext ctx, String companyNews, String marketNews, String secEx991) {
         String systemPrompt = promptRegistry.getPrompt(PromptType.NEWS)
                 .replace("{{ analysis_focus }}", ctx.analysisFocus() != null ? ctx.analysisFocus() : "Standard comprehensive analysis.")
-                .replace("{{ recent_news }}", news)
+                .replace("{{ recent_company_news }}", companyNews)
+                .replace("{{ recent_market_news }}", marketNews)
+                .replace("{{ recent_news }}", companyNews)
                 .replace("{{ recent_sec_ex99_1_summaries }}", secEx991)
                 .replace("{{ ticker }}", ctx.ticker())
                 .replace("{{ analysis_date }}", ctx.analysisDate().toString());

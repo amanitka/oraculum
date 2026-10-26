@@ -47,11 +47,38 @@ public class SharePriceSignalEntity {
     @Column(name = "volume")
     private Integer volume;
 
+    @Column(name = "pct_from_20d_ma")
+    private Float pctFrom20dMa;
+
     @Column(name = "pct_from_50d_ma")
     private Float pctFrom50dMa;
 
     @Column(name = "pct_from_200d_ma")
     private Float pctFrom200dMa;
+
+    @Column(name = "ma_20")
+    private Float ma20;
+
+    @Column(name = "ma_50")
+    private Float ma50;
+
+    @Column(name = "ma_200")
+    private Float ma200;
+
+    @Column(name = "high_52w")
+    private Float high52w;
+
+    @Column(name = "low_52w")
+    private Float low52w;
+
+    @Column(name = "drawdown_52w_pct")
+    private Float drawdown52wPct;
+
+    @Column(name = "range_position_52w_pct")
+    private Float rangePosition52wPct;
+
+    @Column(name = "down_days_high_vol_5d")
+    private Integer downDaysHighVol5d;
 
     @Column(name = "volume_velocity")
     private Float volumeVelocity;

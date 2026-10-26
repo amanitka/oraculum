@@ -200,6 +200,7 @@ oraculum:
     news:
       history-limit: 30
       article-limit: 50
+      market-context-limit: 5
     critic:
       max-reruns: 1
       max-specialists-per-rerun: 3

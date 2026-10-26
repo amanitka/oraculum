@@ -360,39 +360,60 @@ WITH fundamental_timeline AS (SELECT
                               FROM mv_company_financial_ratios
                               WHERE variant = 'TTM'
                               ),
-     share_price AS (SELECT
+     share_price_base AS (SELECT
                         p.*,
+                        AVG(p.close) OVER (PARTITION BY p.company_id ORDER BY p.trade_date ROWS BETWEEN 19 PRECEDING AND CURRENT ROW) AS ma_20,
                         AVG(p.close) OVER (PARTITION BY p.company_id ORDER BY p.trade_date ROWS BETWEEN 49 PRECEDING AND CURRENT ROW) AS ma_50,
                         AVG(p.close) OVER (PARTITION BY p.company_id ORDER BY p.trade_date ROWS BETWEEN 199 PRECEDING AND CURRENT ROW) AS ma_200,
                         AVG(p.volume) OVER (PARTITION BY p.company_id ORDER BY p.trade_date ROWS BETWEEN 29 PRECEDING AND CURRENT ROW) AS vol_30,
-                        LAG(p.close, 1) OVER (PARTITION BY p.company_id ORDER BY p.trade_date) as close_1d_ago,
-                        LAG(p.close, 5) OVER (PARTITION BY p.company_id ORDER BY p.trade_date) as close_1w_ago,
-                        LAG(p.close, 21) OVER (PARTITION BY p.company_id ORDER BY p.trade_date) as close_1m_ago,
+                        MAX(p.close) OVER (PARTITION BY p.company_id ORDER BY p.trade_date ROWS BETWEEN 251 PRECEDING AND CURRENT ROW) AS high_52w,
+                        MIN(p.close) OVER (PARTITION BY p.company_id ORDER BY p.trade_date ROWS BETWEEN 251 PRECEDING AND CURRENT ROW) AS low_52w,
+                        LAG(p.close, 1)   OVER (PARTITION BY p.company_id ORDER BY p.trade_date) as close_1d_ago,
+                        LAG(p.close, 5)   OVER (PARTITION BY p.company_id ORDER BY p.trade_date) as close_1w_ago,
+                        LAG(p.close, 21)  OVER (PARTITION BY p.company_id ORDER BY p.trade_date) as close_1m_ago,
                         LAG(p.close, 126) OVER (PARTITION BY p.company_id ORDER BY p.trade_date) as close_6m_ago,
                         LAG(p.close, 252) OVER (PARTITION BY p.company_id ORDER BY p.trade_date) as close_1y_ago
                      FROM public.t_share_price p
                      ),
-                     signals_base AS (SELECT
-                         p.trade_date,
-                         CASE
-                             WHEN p.trade_date = MAX(p.trade_date) OVER (PARTITION BY p.company_id, DATE_TRUNC('month', p.trade_date)) THEN 'Y'
-                             ELSE 'N'
-                             END                                                         AS flag_last_day_of_month,
-                         p.company_id,
-                         c.company_name,
-                         c.description,
-                         c.sector_name,
-                         c.industry_name,
-                         p.ticker,
-                         p.market,
-                         p.currency,
-                         p.close                                                         AS share_price,
-                         p.volume,
-                         ROUND(((p.close - p.ma_50) / NULLIF(p.ma_50, 0) * 100):: numeric,
-                               2)                                                        AS pct_from_50d_ma,
-                         ROUND(((p.close - p.ma_200) / NULLIF(p.ma_200, 0) * 100):: numeric,
-                               2)                                                        AS pct_from_200d_ma,
-                         ROUND((p.volume / NULLIF(p.vol_30, 0)):: numeric, 2)            AS volume_velocity,
+     share_price AS (SELECT
+                        b.*,
+                        SUM(CASE WHEN b.close < b.close_1d_ago AND b.volume > b.vol_30 THEN 1 ELSE 0 END)
+                            OVER (PARTITION BY b.company_id ORDER BY b.trade_date ROWS BETWEEN 4 PRECEDING AND CURRENT ROW) AS down_days_high_vol_5d
+                     FROM share_price_base b
+                     ),
+     signals_base AS (SELECT
+         p.trade_date,
+         CASE
+             WHEN p.trade_date = MAX(p.trade_date) OVER (PARTITION BY p.company_id, DATE_TRUNC('month', p.trade_date)) THEN 'Y'
+             ELSE 'N'
+             END                                                         AS flag_last_day_of_month,
+         p.company_id,
+         c.company_name,
+         c.description,
+         c.sector_name,
+         c.industry_name,
+         p.ticker,
+         p.market,
+         p.currency,
+         p.close                                                         AS share_price,
+         p.volume,
+         ROUND(p.ma_20::numeric, 2)                                      AS ma_20,
+         ROUND(p.ma_50::numeric, 2)                                      AS ma_50,
+         ROUND(p.ma_200::numeric, 2)                                     AS ma_200,
+         ROUND(((p.close - p.ma_20) / NULLIF(p.ma_20, 0) * 100):: numeric,
+               2)                                                        AS pct_from_20d_ma,
+         ROUND(((p.close - p.ma_50) / NULLIF(p.ma_50, 0) * 100):: numeric,
+               2)                                                        AS pct_from_50d_ma,
+         ROUND(((p.close - p.ma_200) / NULLIF(p.ma_200, 0) * 100):: numeric,
+               2)                                                        AS pct_from_200d_ma,
+         ROUND(p.high_52w::numeric, 2)                                  AS high_52w,
+         ROUND(p.low_52w::numeric, 2)                                   AS low_52w,
+         ROUND(((p.close - p.high_52w) / NULLIF(p.high_52w, 0) * 100):: numeric,
+               2)                                                        AS drawdown_52w_pct,
+         ROUND(((p.close - p.low_52w) / NULLIF(p.high_52w - p.low_52w, 0) * 100):: numeric,
+               2)                                                        AS range_position_52w_pct,
+         p.down_days_high_vol_5d::integer                                AS down_days_high_vol_5d,
+         ROUND((p.volume / NULLIF(p.vol_30, 0)):: numeric, 2)            AS volume_velocity,
                          ROUND(((p.close - p.close_1d_ago) / NULLIF(p.close_1d_ago, 0) * 100):: numeric, 2) AS price_change_1d,
                          ROUND(((p.close - p.close_1w_ago) / NULLIF(p.close_1w_ago, 0) * 100):: numeric, 2) AS price_change_1w,
                          ROUND(((p.close - p.close_1m_ago) / NULLIF(p.close_1m_ago, 0) * 100):: numeric, 2) AS price_change_1m,

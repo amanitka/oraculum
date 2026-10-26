@@ -1,10 +1,8 @@
 package com.oraculum.analyst.agent.service.impl;
 
-import com.oraculum.analyst.agent.dto.*;
-
 import com.oraculum.analyst.agent.dto.AgentContext;
 import com.oraculum.analyst.agent.dto.AgentOutput;
-
+import com.oraculum.analyst.agent.dto.StandardAgentOutput;
 import com.oraculum.analyst.agent.service.Agent;
 import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.config.PromptRegistry;
@@ -36,9 +34,12 @@ public class MacroeconomicAgent implements Agent<StandardAgentOutput> {
     }
 
     private String getPrompt(AgentContext ctx, String macroeconomicSummary) {
+        String focus = ctx.analysisFocus() != null ? ctx.analysisFocus() : "Standard comprehensive analysis.";
+        String analysisDate = ctx.analysisDate() != null ? ctx.analysisDate().toString() : "";
         return promptRegistry.getPrompt(PromptType.MACROECONOMIC)
-                .replace("{{ analysis_focus }}", ctx.analysisFocus())
-                .replace("{{ ticker }}", ctx.ticker())
+                .replace("{{ analysis_focus }}", focus)
+                .replace("{{ ticker }}", ctx.ticker() != null ? ctx.ticker() : "")
+                .replace("{{ analysis_date }}", analysisDate)
                 .replace("{{ company_profile }}", ctx.factSheetData().getCompanyProfile())
                 .replace("{{ macroeconomic_summary }}", macroeconomicSummary);
     }

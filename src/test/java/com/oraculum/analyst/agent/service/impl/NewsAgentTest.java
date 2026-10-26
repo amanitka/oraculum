@@ -4,6 +4,7 @@ import com.oraculum.analyst.agent.dto.AgentContext;
 import com.oraculum.analyst.agent.dto.AgentOutput;
 import com.oraculum.analyst.agent.dto.StandardAgentOutput;
 import com.oraculum.analyst.api.domain.AgentType;
+import com.oraculum.analyst.config.AnalystProperties;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.PromptType;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
@@ -23,6 +24,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,7 +43,12 @@ class NewsAgentTest {
 
     @BeforeEach
     void setUp() {
-        newsAgent = new NewsAgent(llmRouterApi, promptRegistry);
+        AnalystProperties properties = new AnalystProperties(
+                null, null, null, null,
+                new AnalystProperties.News(30, 50, 5),
+                null, 1000
+        );
+        newsAgent = new NewsAgent(llmRouterApi, promptRegistry, properties);
     }
 
     @Test
@@ -51,13 +58,15 @@ class NewsAgentTest {
 
     @Test
     void run_whenNoNewsAndNoSecEx991_skipsLlmAndReturnsEmptyOutput() {
-        when(factSheetData.getRecentNews()).thenReturn("[]");
-        when(factSheetData.getRecentSecEx991Summaries()).thenReturn("[]");
+        when(factSheetData.getRecentCompanyNews(50)).thenReturn("[]");
+        when(factSheetData.getRecentMarketNews(5)).thenReturn("[]");
+        when(factSheetData.getRecentSecEx991Summaries(any(), eq(75))).thenReturn("[]");
 
         CompanyDto company = createCompany("NVDA");
 
         AgentContext ctx = AgentContext.builder()
                 .company(company)
+                .analysisDate(LocalDate.of(2026, 10, 16))
                 .factSheetData(factSheetData)
                 .build();
 
@@ -71,10 +80,13 @@ class NewsAgentTest {
 
     @Test
     void run_whenOnlySecEx991Present_executesLlmCall() {
-        when(factSheetData.getRecentNews()).thenReturn("[]");
-        when(factSheetData.getRecentSecEx991Summaries()).thenReturn("[{\"headline\":\"Q3 Earnings Release\"}]");
+        when(factSheetData.getRecentCompanyNews(50)).thenReturn("[]");
+        when(factSheetData.getRecentMarketNews(5)).thenReturn("[]");
+        when(factSheetData.getRecentSecEx991Summaries(eq(LocalDate.of(2026, 10, 16)), eq(75)))
+                .thenReturn("[{\"headline\":\"Q3 Earnings Release\"}]");
 
-        when(promptRegistry.getPrompt(PromptType.NEWS)).thenReturn("News prompt for {{ ticker }}. News: {{ recent_news }}. SEC: {{ recent_sec_ex99_1_summaries }}.");
+        when(promptRegistry.getPrompt(PromptType.NEWS))
+                .thenReturn("News prompt for {{ ticker }}. News: {{ recent_news }}. SEC: {{ recent_sec_ex99_1_summaries }}.");
 
         StandardAgentOutput expectedOutput = StandardAgentOutput.builder()
                 .headline("Q3 Earnings beat estimates")
@@ -101,10 +113,13 @@ class NewsAgentTest {
 
     @Test
     void run_whenNewsPresent_executesLlmCall() {
-        when(factSheetData.getRecentNews()).thenReturn("[{\"headline\":\"Nvidia releases Blackwell\"}]");
-        when(factSheetData.getRecentSecEx991Summaries()).thenReturn("[]");
+        when(factSheetData.getRecentCompanyNews(50)).thenReturn("[{\"headline\":\"Nvidia releases Blackwell\"}]");
+        when(factSheetData.getRecentMarketNews(5)).thenReturn("[]");
+        when(factSheetData.getRecentSecEx991Summaries(eq(LocalDate.of(2026, 10, 16)), eq(75)))
+                .thenReturn("[]");
 
-        when(promptRegistry.getPrompt(PromptType.NEWS)).thenReturn("News prompt for {{ ticker }} on {{ analysis_date }}. Focus: {{ analysis_focus }}. News: {{ recent_news }}. SEC: {{ recent_sec_ex99_1_summaries }}.");
+        when(promptRegistry.getPrompt(PromptType.NEWS))
+                .thenReturn("News prompt for {{ ticker }} on {{ analysis_date }}. Focus: {{ analysis_focus }}. News: {{ recent_news }}. SEC: {{ recent_sec_ex99_1_summaries }}.");
 
         StandardAgentOutput expectedOutput = StandardAgentOutput.builder()
                 .headline("Blackwell launch boosts sentiment")

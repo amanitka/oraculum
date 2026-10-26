@@ -110,7 +110,7 @@ class CompanyFactSheetDataServiceTest {
                 .thenReturn(List.of(signal));
 
         CompanyNewsDto news = mock(CompanyNewsDto.class);
-        when(harvesterLiveApi.fetchCompanyNews(eq("AAPL"), any(LocalDate.class), any(LocalDate.class), eq(50)))
+        when(harvesterLiveApi.fetchCompanyNews(eq("AAPL"), any(LocalDate.class), any(LocalDate.class)))
                 .thenReturn(List.of(news));
 
         InsiderTransactionSummaryDto insiderSummary = mock(InsiderTransactionSummaryDto.class);
@@ -151,18 +151,17 @@ class CompanyFactSheetDataServiceTest {
     }
 
     @Test
-    void create_delegatesNewsFetchToHarvesterLiveApi() {
+    void create_delegatesUnfilteredNewsFetchToHarvesterLiveApi() {
         LocalDate historyDate = LocalDate.now().minusDays(30);
         when(analystProperties.news().getNewsHistoryDate()).thenReturn(historyDate);
-        when(analystProperties.news().articleLimit()).thenReturn(40);
 
         CompanyNewsDto newsItem = mock(CompanyNewsDto.class);
-        when(harvesterLiveApi.fetchCompanyNews(eq("AAPL"), eq(historyDate), any(LocalDate.class), eq(40)))
+        when(harvesterLiveApi.fetchCompanyNews(eq("AAPL"), eq(historyDate), any(LocalDate.class)))
                 .thenReturn(List.of(newsItem));
 
         CompanyFactSheetData data = service.create(company, new CitationRegistry());
 
-        verify(harvesterLiveApi).fetchCompanyNews(eq("AAPL"), eq(historyDate), any(LocalDate.class), eq(40));
+        verify(harvesterLiveApi).fetchCompanyNews(eq("AAPL"), eq(historyDate), any(LocalDate.class));
         assertThat(data.getRecentNewsList()).containsExactly(newsItem);
     }
 }

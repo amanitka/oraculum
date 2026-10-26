@@ -21,38 +21,38 @@ import java.util.stream.Collectors;
 public enum FinancialDataProfile {
 
     /**
-     * Annual (last 5 years) for multi-year trend + quarterly (all periods) for sequential momentum.
+     * Annual (last 5 years) for multi-year trend + quarterly (last 8 quarters) for sequential momentum.
      * Used by agents analyzing growth trajectory and profitability evolution over time.
      */
     HISTORICAL_OPERATING(
             DataWindow.of(StatementVariant.ANNUAL, 5),
-            DataWindow.of(StatementVariant.QUARTERLY, Integer.MAX_VALUE)
+            DataWindow.of(StatementVariant.QUARTERLY, 8)
     ),
 
     /**
-     * TTM (all periods) for normalized run-rate valuation + annual (last 5 years) for long-term
+     * TTM (last 8 periods) for normalized run-rate valuation + annual (last 5 years) for long-term
      * business quality benchmarking. Used by agents computing valuation multiples.
      */
     CURRENT_VALUATION(
             DataWindow.of(StatementVariant.ANNUAL, 5),
-            DataWindow.of(StatementVariant.TTM, Integer.MAX_VALUE)
+            DataWindow.of(StatementVariant.TTM, 8)
     ),
 
     /**
-     * Annual (last 5 years) for long-term solvency signals + TTM (all periods) for current
+     * Annual (last 5 years) for long-term solvency signals + TTM (last 8 periods) for current
      * leverage and liquidity. Used by risk-focused agents.
      */
     BALANCE_SHEET_RISK(
             DataWindow.of(StatementVariant.ANNUAL, 5),
-            DataWindow.of(StatementVariant.TTM, Integer.MAX_VALUE)
+            DataWindow.of(StatementVariant.TTM, 8)
     ),
 
     /**
-     * TTM only (all periods) — captures the full trailing cycle of cash inflows/outflows.
+     * TTM (last 8 periods) + quarterly (last 8 periods) — captures the trailing cycle of cash inflows/outflows.
      * Used by agents evaluating FCF quality and capex intensity.
      */
     CASH_GENERATION(
-            DataWindow.of(StatementVariant.TTM, Integer.MAX_VALUE),
+            DataWindow.of(StatementVariant.TTM, 8),
             DataWindow.of(StatementVariant.QUARTERLY, 8)
     ),
 

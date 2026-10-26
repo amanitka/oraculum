@@ -42,7 +42,7 @@ public record AnalystProperties(Refresh refresh,
         }
     }
 
-    public record News(int historyLimit, int articleLimit) {
+    public record News(int historyLimit, int articleLimit, int marketContextLimit) {
         public LocalDate getNewsHistoryDate() {
             return LocalDate.now().minusDays(historyLimit);
         }

@@ -53,15 +53,16 @@ You MUST respond with valid JSON using exactly this schema:
     "overall": 0.0
   },
   "confidence_reasons": ["string (Reason 1)", "string (Reason 2)"],
-  "strengths": ["string (Strength 1)", "string (Strength 2)"],
-  "weaknesses": ["string (Weakness 1)", "string (Weakness 2)"],
+  "strengths": ["string (Strength 1 with [citation_id])", "string (Strength 2 with [citation_id])"],
+  "weaknesses": ["string (Weakness 1 with [citation_id])", "string (Weakness 2 with [citation_id])"],
   "evidence": [
     {
       "metric": "string (e.g. 'Tier 1 Net Flow', 'Sector Rotation Relative Flow', 'Put/Call Ratio')",
       "value": "string (e.g. '+$1.2B', '+12.4%', '0.62')",
       "previous_value": "string",
       "trend": "IMPROVING | DETERIORATING | STABLE",
-      "significance": "string (Why this matters)"
+      "source_type": "REPORTED | CALCULATED | DERIVED | ESTIMATED",
+      "significance": "string (Why this matters, with [citation_id])"
     }
   ],
   "metrics": {

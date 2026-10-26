@@ -31,9 +31,14 @@ public record CanonicalFacts(
     @JsonProperty("net_margin_a")          Float netMarginA,
     @JsonProperty("gross_margin_a")        Float grossMarginA,
     @JsonProperty("roe_a")                 Float roeA,
-    @JsonProperty("report_date_a")         LocalDate reportDateA
+    @JsonProperty("report_date_a")         LocalDate reportDateA,
+    @JsonProperty("latest_trade_date")     LocalDate latestTradeDate
 ) {
     public static CanonicalFacts from(CompanyFinancialRatiosDto ttm, CompanyFinancialRatiosDto annual) {
+        return from(ttm, annual, null);
+    }
+
+    public static CanonicalFacts from(CompanyFinancialRatiosDto ttm, CompanyFinancialRatiosDto annual, LocalDate latestTradeDate) {
         return new CanonicalFacts(
                 ttm    != null ? ttm.reportDate()              : null,
                 ttm    != null ? ttm.epsYoyGrowth()            : null,
@@ -55,7 +60,8 @@ public record CanonicalFacts(
                 annual != null ? annual.netMargin()            : null,
                 annual != null ? annual.grossMargin()          : null,
                 annual != null ? annual.returnOnEquity()       : null,
-                annual != null ? annual.reportDate()           : null
+                annual != null ? annual.reportDate()           : null,
+                latestTradeDate
         );
     }
 }

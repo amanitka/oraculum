@@ -102,9 +102,15 @@ public class AgentDataRenderer {
         if (agentData.has("conviction")) {
             tilesRow.add(createTile("Conviction", renderConvictionMeter(agentData.get("conviction").asInt(0))));
             hasTiles = true;
+        } else if (agentData.path("metrics").has("bullish_conviction")) {
+            tilesRow.add(createTile("Conviction", renderConvictionMeter(agentData.path("metrics").get("bullish_conviction").asInt(0))));
+            hasTiles = true;
         }
         if (agentData.has("management_sentiment")) {
             tilesRow.add(createTile("Sentiment", renderSentimentBadge(agentData.get("management_sentiment").asString())));
+            hasTiles = true;
+        } else if (agentData.path("metrics").has("management_sentiment")) {
+            tilesRow.add(createTile("Sentiment", renderSentimentBadge(agentData.path("metrics").get("management_sentiment").asString())));
             hasTiles = true;
         } else if (agentData.has("sentiment")) {
             tilesRow.add(createTile("Sentiment", renderSentimentBadge(agentData.get("sentiment").asString())));

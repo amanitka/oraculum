@@ -114,4 +114,32 @@ class CriticAgentTest {
         assertThat(result.recommendedReruns().getFirst().specialist()).isEqualTo(AgentType.VALUATION);
         assertThat(result.counterThesis()).contains("Adversarial counter-thesis");
     }
+
+    @Test
+    void run_whenOnlyNarrativeReconciledContradictions_isConsistentRemainsTrue() {
+        Contradiction reconciled = new Contradiction(
+                "Fiscal year label offset between SEC and SimFin",
+                List.of("FUNDAMENTALS", "EARNINGS_ESTIMATES"),
+                CorrectionType.TIME_WINDOW_MISMATCH,
+                Resolution.NARRATIVE_RECONCILED
+        );
+        when(preCriticValidationService.validate(context)).thenReturn(List.of(reconciled));
+
+        CriticAgentOutput llmResult = new CriticAgentOutput(
+                List.of(),
+                false,
+                List.of(),
+                "Counter-thesis text"
+        );
+        LlmResponse<CriticAgentOutput> response = new LlmResponse<>(
+                llmResult, new LlmMetrics(null, null, 150, 50, 200, 120L)
+        );
+        when(llmRouterApi.executeCall(any(LlmCallRequest.class))).thenReturn(response);
+
+        AgentOutput<CriticAgentOutput> output = agent.run(context);
+
+        assertThat(output.result().contradictionsFound()).hasSize(1);
+        assertThat(output.result().isConsistent()).isTrue();
+        assertThat(output.result().recommendedReruns()).isEmpty();
+    }
 }

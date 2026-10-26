@@ -71,8 +71,11 @@ public class DataQualityMetricsCalculator {
         long daysAgo = latest != null ? Math.max(0, ChronoUnit.DAYS.between(latest, analysisDate)) : 30;
 
         double freshness = calculateBufferFreshness(daysAgo, MARKET_BUFFER_DAYS, 14.0);
-        String freshReason = String.format("Data freshness: %d%% (%d days since latest market close)",
-                (int) Math.round(freshness * 100.0), daysAgo);
+        String freshReason = latest != null
+                ? String.format("Data freshness: %d%% (latest close %s, %d days ago)",
+                        (int) Math.round(freshness * 100.0), latest, daysAgo)
+                : String.format("Data freshness: %d%% (%d days since latest market close)",
+                        (int) Math.round(freshness * 100.0), daysAgo);
         String compReason = String.format("Data completeness: %d%% based on verified input fields",
                 (int) Math.round(completeness * 100.0));
 
