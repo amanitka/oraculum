@@ -12,6 +12,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 class ValuationScenarioCalculatorTest {
 
@@ -129,6 +130,34 @@ class ValuationScenarioCalculatorTest {
         ValuationScenarioDto result = calculator.calculate(100.0f, estimates, LocalDate.of(2025, 1, 1), dcf);
 
         assertThat(result.flagReverseDcfPeDivergence()).isTrue();
+    }
+
+    @Test
+    void calculate_buildsSensitivityMatrix_fy2Percentages_withExactValues() {
+        List<EarningsEstimateDto> estimates = List.of(
+                createEstimate("annual", LocalDate.of(2025, 12, 31), 10.0, 9.0, 11.0),
+                createEstimate("annual", LocalDate.of(2026, 12, 31), 15.91, 12.85, 18.75)
+        );
+        List<Float> multiples = List.of(12.0f, 16.0f, 20.0f);
+
+        ValuationScenarioDto result = calculator.calculate(212.21f, estimates, LocalDate.of(2025, 1, 1), null, multiples);
+
+        assertThat(result.sensitivityMatrix()).isNotNull();
+        List<SensitivityCell> cells = result.sensitivityMatrix().cells();
+
+        // 12x multiple with LOW EPS (12.85) at 212.21: implied ~154.20 -> -27%
+        SensitivityCell cell12Low = cells.stream()
+                .filter(c -> c.multiple().equals(12.0f) && "LOW".equals(c.epsScenario()))
+                .findFirst().orElseThrow();
+        assertThat(cell12Low.pctMoveVsCurrent()).isCloseTo(-27.3f, within(0.5f));
+        assertThat(Math.round(cell12Low.pctMoveVsCurrent())).isEqualTo(-27);
+
+        // 20x multiple with HIGH EPS (18.75) at 212.21: implied 375.00 -> +77%
+        SensitivityCell cell20High = cells.stream()
+                .filter(c -> c.multiple().equals(20.0f) && "HIGH".equals(c.epsScenario()))
+                .findFirst().orElseThrow();
+        assertThat(cell20High.pctMoveVsCurrent()).isCloseTo(76.7f, within(0.5f));
+        assertThat(Math.round(cell20High.pctMoveVsCurrent())).isEqualTo(77);
     }
 
     private EarningsEstimateDto createEstimate(String horizon, LocalDate date, double avg, double low, double high) {

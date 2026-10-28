@@ -19,49 +19,30 @@ import com.oraculum.llm.api.dto.LlmMetrics;
 import com.oraculum.llm.api.dto.LlmResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
 class CriticAgentTest {
 
-    @Mock
-    private LlmRouterApi llmRouterApi;
-
-    @Mock
-    private PromptRegistry promptRegistry;
-
-    @Mock
-    private JsonMapper jsonMapper;
-
-    @Mock
-    private PreCriticValidationService preCriticValidationService;
-
-    @InjectMocks
+    private List<Contradiction> stubbedValidationChecks;
+    private CriticAgentOutput stubbedLlmOutput;
     private CriticAgent agent;
-
     private AgentContext context;
 
     @BeforeEach
     void setUp() {
-        CompanyDto company = mock(CompanyDto.class);
-        when(company.ticker()).thenReturn("NVDA");
+        stubbedValidationChecks = new ArrayList<>();
+        stubbedLlmOutput = new CriticAgentOutput(List.of(), true, List.of(), "Default counter thesis");
 
+        CompanyDto company = new CompanyDto(
+                1, "NVDA", "US", "NVIDIA Corp", null, null, null, null, null, null, null, null, null, null
+        );
         AgentWorkflowState state = new AgentWorkflowState();
         context = AgentContext.builder()
                 .correlationId(UUID.randomUUID())
@@ -70,11 +51,30 @@ class CriticAgentTest {
                 .state(state)
                 .build();
 
-        when(promptRegistry.getPrompt(PromptType.CRITIC)).thenReturn("Prompt for {{ ticker }} checks: {{ deterministic_checks }}");
-        try {
-            when(jsonMapper.writeValueAsString(any())).thenReturn("[]");
-        } catch (Exception ignored) {
-        }
+        PromptRegistry promptRegistry = new PromptRegistry() {
+            @Override
+            public String getPrompt(PromptType type) {
+                return "Prompt for {{ ticker }} checks: {{ deterministic_checks }}";
+            }
+        };
+
+        PreCriticValidationService preCriticValidationService = new PreCriticValidationService() {
+            @Override
+            public List<Contradiction> validate(AgentContext ctx) {
+                return stubbedValidationChecks;
+            }
+        };
+
+        LlmRouterApi llmRouterApi = new LlmRouterApi() {
+            @Override
+            public <T> LlmResponse<T> executeCall(LlmCallRequest<T> request) {
+                return (LlmResponse<T>) new LlmResponse<>(
+                        stubbedLlmOutput, new LlmMetrics(null, null, 150, 50, 200, 120L)
+                );
+            }
+        };
+
+        agent = new CriticAgent(llmRouterApi, promptRegistry, new JsonMapper(), preCriticValidationService);
     }
 
     @Test
@@ -84,24 +84,19 @@ class CriticAgentTest {
 
     @Test
     void run_mergesDeterministicChecksAndAppendsReruns() {
-        Contradiction deterministic = new Contradiction(
+        stubbedValidationChecks = List.of(new Contradiction(
                 "Reverse DCF growth hurdle mismatch",
                 List.of("VALUATION"),
                 CorrectionType.REASONING_ERROR,
                 Resolution.RERUN_APPLIED
-        );
-        when(preCriticValidationService.validate(context)).thenReturn(List.of(deterministic));
+        ));
 
-        CriticAgentOutput llmResult = new CriticAgentOutput(
+        stubbedLlmOutput = new CriticAgentOutput(
                 List.of(),
                 true,
                 List.of(),
                 "Adversarial counter-thesis: Hyperscaler capex digestion poses sharp margin risk."
         );
-        LlmResponse<CriticAgentOutput> response = new LlmResponse<>(
-                llmResult, new LlmMetrics(null, null, 150, 50, 200, 120L)
-        );
-        when(llmRouterApi.executeCall(any(LlmCallRequest.class))).thenReturn(response);
 
         AgentOutput<CriticAgentOutput> output = agent.run(context);
 
@@ -117,24 +112,19 @@ class CriticAgentTest {
 
     @Test
     void run_whenOnlyNarrativeReconciledContradictions_isConsistentRemainsTrue() {
-        Contradiction reconciled = new Contradiction(
+        stubbedValidationChecks = List.of(new Contradiction(
                 "Fiscal year label offset between SEC and SimFin",
                 List.of("FUNDAMENTALS", "EARNINGS_ESTIMATES"),
                 CorrectionType.TIME_WINDOW_MISMATCH,
                 Resolution.NARRATIVE_RECONCILED
-        );
-        when(preCriticValidationService.validate(context)).thenReturn(List.of(reconciled));
+        ));
 
-        CriticAgentOutput llmResult = new CriticAgentOutput(
+        stubbedLlmOutput = new CriticAgentOutput(
                 List.of(),
                 false,
                 List.of(),
                 "Counter-thesis text"
         );
-        LlmResponse<CriticAgentOutput> response = new LlmResponse<>(
-                llmResult, new LlmMetrics(null, null, 150, 50, 200, 120L)
-        );
-        when(llmRouterApi.executeCall(any(LlmCallRequest.class))).thenReturn(response);
 
         AgentOutput<CriticAgentOutput> output = agent.run(context);
 

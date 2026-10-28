@@ -241,6 +241,28 @@ class CitationVerifierServiceTest {
     }
 
     @Test
+    void testVerifyRecordCitations_agentEvidence_combinedValuePreviousValueAndDelta() {
+        Map<Integer, Object> citations = new HashMap<>();
+        citations.put(10, Map.of("gross_margin", 0.753));
+        citations.put(11, Map.of("gross_margin", 0.701));
+
+        AgentEvidence ev = new AgentEvidence(
+                "Gross Margin",
+                "75.3%",
+                "70.1%",
+                "IMPROVING",
+                "CALCULATED",
+                "Gross margin expanded to 75.3% from 70.1%, delta +5.2% [10][11]."
+        );
+
+        AgentEvidence verified = service.verifyRecordCitations(ev, citations, null);
+        assertThat(verified.significance())
+                .isEqualTo("Gross margin expanded to 75.3% from 70.1%, delta +5.2% [10][11].");
+        assertThat(verified.significance()).doesNotContain("?");
+        assertThat(verified.significance()).doesNotContain("!");
+    }
+
+    @Test
     void testVerifyCitations_singleCitationComparative_noContradiction() {
         Map<Integer, Object> citations = new HashMap<>();
         citations.put(2, Map.of("gross_margin", 0.753));
