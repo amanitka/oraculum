@@ -159,6 +159,8 @@ class SynthesizerGuardrailServiceTest {
         AnalysisResult guarded = guardrailService.applyGuardrails(rawResult, ctx, null);
 
         assertThat(guarded.conviction()).isEqualTo(3);
+        assertThat(guarded.convictionReasons()).anyMatch(r -> r.contains("Valuation method conflict"));
+        assertThat(guarded.decisionSummary()).isNotNull();
     }
 
     @Test
@@ -182,6 +184,8 @@ class SynthesizerGuardrailServiceTest {
         AnalysisResult guarded = guardrailService.applyGuardrails(rawResult, ctx, null);
 
         assertThat(guarded.conviction()).isEqualTo(3);
+        assertThat(guarded.convictionReasons()).anyMatch(r -> r.contains("Low TTM earnings quality"));
+        assertThat(guarded.decisionSummary()).isNotNull();
     }
 
     @Test
@@ -283,6 +287,9 @@ class SynthesizerGuardrailServiceTest {
         AnalysisResult guarded = guardrailService.applyGuardrails(rawResult, ctx, null);
 
         assertThat(guarded.conviction()).isEqualTo(3);
+        assertThat(guarded.convictionReasons()).anyMatch(r -> r.contains("debt issuance"));
+        assertThat(guarded.decisionSummary()).isNotNull();
+        assertThat(guarded.decisionDrivers()).isNotEmpty();
     }
 
     @Test
@@ -356,6 +363,8 @@ class SynthesizerGuardrailServiceTest {
         AnalysisResult guarded = guardrailService.applyGuardrails(rawResult, ctx, null);
 
         assertThat(guarded.conviction()).isEqualTo(3);
+        assertThat(guarded.convictionReasons()).anyMatch(r -> r.contains("EPS estimate dispersion"));
+        assertThat(guarded.decisionSummary()).isNotNull();
     }
 
     @Test

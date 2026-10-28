@@ -24,6 +24,7 @@ import java.util.Objects;
 public class AnalysisOverviewRenderer {
 
     private final MarkdownRenderer markdownRenderer;
+    private final DecisionSnapshotRenderer decisionSnapshotRenderer;
 
     static Map<String, Double> normalizeFactorScores(Map<String, Double> factorScores) {
         if (factorScores == null || factorScores.isEmpty()) {
@@ -60,6 +61,13 @@ public class AnalysisOverviewRenderer {
         container.addClassNames(LumoUtility.Width.FULL);
 
         container.add(createSnapshotHeader(snapshot));
+
+        if (decisionSnapshotRenderer != null) {
+            Component decisionSection = decisionSnapshotRenderer.renderDecisionSupportSection(snapshot);
+            if (decisionSection != null) {
+                container.add(decisionSection);
+            }
+        }
 
         if (snapshot.thesis() != null && !snapshot.thesis().isBlank()) {
             container.add(createSnapshotThesis(snapshot.thesis(), analysis));

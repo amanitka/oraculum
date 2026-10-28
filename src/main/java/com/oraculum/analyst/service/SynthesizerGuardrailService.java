@@ -10,17 +10,20 @@ import com.oraculum.analyst.api.dto.AnalysisResult.ScenarioCase;
 import com.oraculum.analyst.api.dto.AnalysisResult.ScenariosResult;
 import com.oraculum.analyst.dto.ValuationScenarioDto;
 import com.oraculum.analyst.dto.ValuationScenarioDto.SensitivityMatrix;
+import com.oraculum.analyst.service.valuation.DecisionSummaryCalculator;
 import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.dto.CompanyFinancialRatiosDto;
 import com.oraculum.company.api.dto.ReverseDcfDto;
 import com.oraculum.company.api.dto.ReverseDcfMatrixCellDto;
 import com.oraculum.company.api.dto.ValuationZone;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -34,6 +37,17 @@ public class SynthesizerGuardrailService {
             Pattern.CASE_INSENSITIVE
     );
 
+    private final DecisionSummaryCalculator decisionSummaryCalculator;
+
+    @Autowired
+    public SynthesizerGuardrailService(DecisionSummaryCalculator decisionSummaryCalculator) {
+        this.decisionSummaryCalculator = decisionSummaryCalculator;
+    }
+
+    public SynthesizerGuardrailService() {
+        this(new DecisionSummaryCalculator());
+    }
+
     public AnalysisResult applyGuardrails(
             AnalysisResult rawResult,
             AgentContext ctx,
@@ -43,13 +57,24 @@ public class SynthesizerGuardrailService {
             return null;
         }
         AnalysisResult result = enforceValuationVerdictGuardrail(rawResult, ctx);
-        result = enforceConvictionGuardrail(result, ctx, criticOutput);
         result = enforceFactorScores(result, ctx);
+        result = enforceConvictionGuardrail(result, ctx, criticOutput);
+        result = populateDecisionSupportLayer(result, ctx);
         return sanitizeComplianceLanguage(result);
     }
 
+    private AnalysisResult populateDecisionSupportLayer(AnalysisResult result, AgentContext ctx) {
+        if (decisionSummaryCalculator == null) {
+            return result;
+        }
+        return result.toBuilder()
+                .decisionSummary(decisionSummaryCalculator.buildDecisionSummary(result, ctx))
+                .decisionDrivers(decisionSummaryCalculator.buildDecisionDrivers(ctx))
+                .build();
+    }
+
     private AnalysisResult enforceValuationVerdictGuardrail(AnalysisResult result, AgentContext ctx) {
-        if (ctx.factSheetData() == null) {
+        if (ctx == null || ctx.factSheetData() == null) {
             return result;
         }
         ReverseDcfDto dcf = ctx.factSheetData().getReverseDcfResult();
@@ -95,41 +120,56 @@ public class SynthesizerGuardrailService {
             CriticAgentOutput criticOutput
     ) {
         List<Double> scores = extractSpecialistScores(ctx);
-        if (scores.size() < 3) {
-            return result;
+        List<String> reasons = new ArrayList<>();
+        int targetConviction = result.conviction();
+
+        if (scores.size() >= 3) {
+            double stdDev = calculateStandardDeviation(scores);
+            int unresolved = criticOutput != null ? criticOutput.unresolvedContradictions().size() : 0;
+            targetConviction = calculateTargetConviction(stdDev, unresolved);
+            reasons.add(String.format(Locale.ROOT,
+                    "Base conviction %d/5 from specialist score dispersion (stdDev %.2f) and %d unresolved contradictions",
+                    targetConviction, stdDev, unresolved));
+            targetConviction = applyConvictionCaps(targetConviction, ctx, reasons);
+            log.info("Specialist scores stdDev: {}, unresolved contradictions: {}, calculated conviction: {} (raw: {})",
+                    stdDev, unresolved, targetConviction, result.conviction());
+        } else {
+            targetConviction = applyConvictionCaps(targetConviction, ctx, reasons);
         }
-        double stdDev = calculateStandardDeviation(scores);
-        int unresolved = criticOutput != null ? criticOutput.unresolvedContradictions().size() : 0;
-        int targetConviction = calculateTargetConviction(stdDev, unresolved);
-
-        targetConviction = applyConvictionCaps(targetConviction, ctx);
-
-        log.info("Specialist scores stdDev: {}, unresolved contradictions: {}, calculated conviction: {} (raw: {})",
-                stdDev, unresolved, targetConviction, result.conviction());
 
         return result.toBuilder()
                 .conviction(targetConviction)
+                .convictionReasons(reasons)
                 .build();
     }
 
-    private int applyConvictionCaps(int conviction, AgentContext ctx) {
-        if (ctx.factSheetData() == null) {
+    private int applyConvictionCaps(int conviction, AgentContext ctx, List<String> reasons) {
+        if (ctx == null || ctx.factSheetData() == null) {
             return conviction;
         }
         int capped = conviction;
         ValuationScenarioDto scenarios = ctx.factSheetData().getValuationScenariosObject();
         if (scenarios != null && Boolean.TRUE.equals(scenarios.flagReverseDcfPeDivergence())) {
             capped = Math.min(capped, 3);
+            reasons.add("Capped at 3/5: Valuation method conflict between moderate P/E and demanding Reverse DCF growth hurdle");
         }
         if (isHighEpsDispersion(scenarios)) {
             capped = Math.min(capped, 3);
+            reasons.add("Capped at 3/5: High analyst EPS estimate dispersion (>35% spread)");
         }
         Float eq = extractEarningsQuality(ctx);
         if (eq != null && eq < 0.70f) {
             capped = Math.min(capped, 3);
+            reasons.add(String.format(Locale.ROOT, "Capped at 3/5: Low TTM earnings quality ratio (%.2fx OCF/NI < 0.70x)", eq));
         }
         if (hasDebtFundedPayoutFlag(ctx)) {
             capped = Math.min(capped, 3);
+            reasons.add("Capped at 3/5: Shareholder payout exceeded organic FCF with concurrent debt issuance");
+        }
+        Integer staleness = decisionSummaryCalculator != null ? decisionSummaryCalculator.calculatePriceStalenessDays(ctx) : null;
+        if (staleness != null && staleness > 4) {
+            capped = Math.min(capped, 3);
+            reasons.add(String.format(Locale.ROOT, "Capped at 3/5: Share price data is %d days old relative to analysis date", staleness));
         }
         return capped;
     }
@@ -263,6 +303,9 @@ public class SynthesizerGuardrailService {
     }
 
     private List<Double> extractSpecialistScores(AgentContext ctx) {
+        if (ctx == null || ctx.state() == null) {
+            return List.of();
+        }
         List<Double> scores = new ArrayList<>();
         Map<AgentType, Object> outputs = ctx.state().getSpecialistOutputs();
         for (Object output : outputs.values()) {

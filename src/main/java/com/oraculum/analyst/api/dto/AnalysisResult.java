@@ -4,9 +4,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.oraculum.analyst.api.domain.AnalysisOutlook;
 import com.oraculum.analyst.api.domain.ValuationAssessment;
-
 import lombok.Builder;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -40,6 +40,9 @@ public record AnalysisResult(
         @JsonProperty("conviction")
         int conviction,
 
+        @JsonProperty("conviction_reasons")
+        List<String> convictionReasons,
+
         // ── Executive snapshot ───────────────────────────────────────────────
         @JsonProperty("thesis")
         String thesis,
@@ -60,7 +63,14 @@ public record AnalysisResult(
         List<String> thesisBreakers,
 
         @JsonProperty("scenarios")
-        ScenariosResult scenarios
+        ScenariosResult scenarios,
+
+        // ── Deterministic decision support layer ──────────────────────────────
+        @JsonProperty("decision_summary")
+        DecisionSummary decisionSummary,
+
+        @JsonProperty("decision_drivers")
+        List<DecisionDriver> decisionDrivers
 ) {
     public AnalysisResult(
             String executiveSummary,
@@ -76,7 +86,27 @@ public record AnalysisResult(
             String whatWouldChangeThis
     ) {
         this(executiveSummary, recommendationReasoning, factorScores, outlook, valuation, conviction,
-             thesis, topBullPoints, topBearPoints, valuationOneLiner, whatWouldChangeThis, null, null);
+             null, thesis, topBullPoints, topBearPoints, valuationOneLiner, whatWouldChangeThis, null, null, null, null);
+    }
+
+    public AnalysisResult(
+            String executiveSummary,
+            String recommendationReasoning,
+            Map<String, Double> factorScores,
+            AnalysisOutlook outlook,
+            ValuationAssessment valuation,
+            int conviction,
+            String thesis,
+            List<String> topBullPoints,
+            List<String> topBearPoints,
+            String valuationOneLiner,
+            String whatWouldChangeThis,
+            List<String> thesisBreakers,
+            ScenariosResult scenarios
+    ) {
+        this(executiveSummary, recommendationReasoning, factorScores, outlook, valuation, conviction,
+             null, thesis, topBullPoints, topBearPoints, valuationOneLiner, whatWouldChangeThis,
+             thesisBreakers, scenarios, null, null);
     }
 
     public AnalysisResult withExecutiveSummary(String newExecutiveSummary) {
@@ -97,5 +127,45 @@ public record AnalysisResult(
             @JsonProperty("implied_upside") String impliedUpside,
             @JsonProperty("implied_move") String impliedMove,
             @JsonProperty("implied_downside") String impliedDownside
+    ) {}
+
+    @Builder(toBuilder = true)
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record DecisionSummary(
+            @JsonProperty("business_quality") String businessQuality,
+            @JsonProperty("valuation_vs_expectations") String valuationVsExpectations,
+            @JsonProperty("method_agreement") String methodAgreement,
+            @JsonProperty("market_setup") String marketSetup,
+            @JsonProperty("key_valuation_tension") String keyValuationTension,
+            @JsonProperty("decisive_question") String decisiveQuestion,
+            @JsonProperty("current_share_price") Float currentSharePrice,
+            @JsonProperty("price_date") LocalDate priceDate,
+            @JsonProperty("price_staleness_days") Integer priceStalenessDays,
+            @JsonProperty("next_catalyst") String nextCatalyst,
+            @JsonProperty("required_fcf_cagr_pct") Float requiredFcfCagrPct,
+            @JsonProperty("historical_fcf_cagr_pct") Float historicalFcfCagrPct,
+            @JsonProperty("ttm_fcf_growth_pct") Float ttmFcfGrowthPct,
+            @JsonProperty("target_fiscal_year") String targetFiscalYear,
+            @JsonProperty("implied_eps_by_multiple") List<ImpliedEpsSnapshot> impliedEpsByMultiple
+    ) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record ImpliedEpsSnapshot(
+            @JsonProperty("multiple") Float multiple,
+            @JsonProperty("anchor_label") String anchorLabel,
+            @JsonProperty("required_eps_for_current_price") Float requiredEpsForCurrentPrice,
+            @JsonProperty("consensus_eps_avg") Float consensusEpsAvg,
+            @JsonProperty("consensus_vs_required_pct") Float consensusVsRequiredPct
+    ) {}
+
+    @Builder(toBuilder = true)
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record DecisionDriver(
+            @JsonProperty("factor") String factor,
+            @JsonProperty("status") String status,
+            @JsonProperty("importance") String importance,
+            @JsonProperty("current_value") String currentValue,
+            @JsonProperty("benchmark_or_required") String benchmarkOrRequired,
+            @JsonProperty("what_changes_view") String whatChangesView
     ) {}
 }
