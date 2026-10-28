@@ -26,6 +26,12 @@ import java.util.Locale;
 @Component
 public class DecisionSummaryCalculator {
 
+    public static final double DEFAULT_THRESHOLD = 6.0;
+
+    private static Float round1(double val) {
+        return (float) (Math.round(val * 10.0) / 10.0);
+    }
+
     public DecisionSummary buildDecisionSummary(AnalysisResult result, AgentContext ctx) {
         CompanyFactSheetData factSheet = ctx != null ? ctx.factSheetData() : null;
         ValuationScenarioDto scenarios = factSheet != null ? factSheet.getValuationScenariosObject() : null;
@@ -89,7 +95,7 @@ public class DecisionSummaryCalculator {
     private String deriveBusinessQuality(AnalysisResult result, AgentContext ctx) {
         Double fundScore = resolveAgentScore(result, ctx, "fundamental_health", AgentType.FUNDAMENTALS);
         Double cfScore = resolveAgentScore(result, ctx, null, AgentType.CASH_FLOW);
-        double avg = averageNonNull(fundScore, cfScore, 6.0);
+        double avg = averageNonNull(fundScore, cfScore);
         if (avg >= 8.0) return "EXCEPTIONAL";
         if (avg >= 6.8) return "STRONG";
         if (avg >= 5.0) return "MODERATE";
@@ -373,14 +379,10 @@ public class DecisionSummaryCalculator {
         return null;
     }
 
-    private double averageNonNull(Double a, Double b, double fallback) {
+    private double averageNonNull(Double a, Double b) {
         if (a != null && b != null) return (a + b) / 2.0;
         if (a != null) return a;
         if (b != null) return b;
-        return fallback;
-    }
-
-    private static Float round1(double val) {
-        return (float) (Math.round(val * 10.0) / 10.0);
+        return DEFAULT_THRESHOLD;
     }
 }
