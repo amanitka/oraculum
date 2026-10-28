@@ -10,8 +10,11 @@ import com.oraculum.analyst.agent.dto.StandardAgentOutput;
 import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.api.domain.ValuationAssessment;
 import com.oraculum.analyst.api.dto.AnalysisResult;
+import com.oraculum.analyst.api.dto.AnalysisResult.ScenarioCase;
+import com.oraculum.analyst.api.dto.AnalysisResult.ScenariosResult;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
 import com.oraculum.analyst.dto.ValuationScenarioDto;
+import com.oraculum.analyst.dto.ValuationScenarioDto.SensitivityMatrix;
 import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.dto.CompanyFinancialRatiosDto;
 import com.oraculum.company.api.dto.ReverseDcfDto;
@@ -226,6 +229,137 @@ class SynthesizerGuardrailServiceTest {
                 .contains("cautious positioning")
                 .contains("share buybacks")
                 .contains("sell-through");
+    }
+
+    @Test
+    void applyGuardrails_factorScores_overwritesSynthesizerScoresWithSpecialists() {
+        state.putAgentOutput(AgentType.FUNDAMENTALS, StandardAgentOutput.builder().score(9.0).build());
+        state.putAgentOutput(AgentType.VALUATION, StandardAgentOutput.builder().score(8.0).build());
+        state.putAgentOutput(AgentType.EARNINGS_ESTIMATES, StandardAgentOutput.builder().score(7.0).build());
+        state.putAgentOutput(AgentType.RISK, StandardAgentOutput.builder().score(6.0).build());
+
+        AnalysisResult rawResult = AnalysisResult.builder()
+                .valuation(ValuationAssessment.FAIRLY_VALUED)
+                .factorScores(Map.of("fundamental_health", 5.0, "valuation", 5.0, "growth_prospects", 5.0, "risk_profile", 5.0))
+                .build();
+
+        AgentContext ctx = AgentContext.builder()
+                .factSheetData(CompanyFactSheetData.builder().build())
+                .state(state)
+                .build();
+
+        AnalysisResult guarded = guardrailService.applyGuardrails(rawResult, ctx, null);
+
+        assertThat(guarded.factorScores().get("fundamental_health")).isEqualTo(9.0);
+        assertThat(guarded.factorScores().get("valuation")).isEqualTo(8.0);
+        assertThat(guarded.factorScores().get("growth_prospects")).isEqualTo(7.0);
+        assertThat(guarded.factorScores().get("risk_profile")).isEqualTo(6.0);
+    }
+
+    @Test
+    void applyGuardrails_factorScores_partialSpecialists_preservesMissingOrDefaults() {
+        state.putAgentOutput(AgentType.FUNDAMENTALS, StandardAgentOutput.builder().score(8.5).build());
+
+        AnalysisResult rawResult = AnalysisResult.builder()
+                .valuation(ValuationAssessment.FAIRLY_VALUED)
+                .factorScores(Map.of("valuation", 6.2))
+                .build();
+
+        AgentContext ctx = AgentContext.builder()
+                .factSheetData(CompanyFactSheetData.builder().build())
+                .state(state)
+                .build();
+
+        AnalysisResult guarded = guardrailService.applyGuardrails(rawResult, ctx, null);
+
+        assertThat(guarded.factorScores().get("fundamental_health")).isEqualTo(8.5);
+        assertThat(guarded.factorScores().get("valuation")).isEqualTo(6.2);
+        assertThat(guarded.factorScores().get("growth_prospects")).isEqualTo(5.0);
+        assertThat(guarded.factorScores().get("risk_profile")).isEqualTo(5.0);
+    }
+
+    @Test
+    void applyGuardrails_highEpsDispersion_capsConvictionAtThree() {
+        setupSpecialistScores(8.5, 8.7, 8.6);
+        SensitivityMatrix matrix = new SensitivityMatrix("FY26", 2.0f, 4.0f, 6.0f, List.of(), List.of(), null);
+        ValuationScenarioDto scenarios = new ValuationScenarioDto(
+                100.0f, 15.0f, 12.0f, null, null, null, false, null, matrix, false
+        );
+        CompanyFactSheetData factSheetData = CompanyFactSheetData.builder()
+                .valuationScenarios(scenarios)
+                .build();
+
+        AnalysisResult rawResult = AnalysisResult.builder()
+                .valuation(ValuationAssessment.FAIRLY_VALUED)
+                .conviction(5)
+                .build();
+
+        AgentContext ctx = AgentContext.builder()
+                .factSheetData(factSheetData)
+                .state(state)
+                .build();
+
+        AnalysisResult guarded = guardrailService.applyGuardrails(rawResult, ctx, null);
+
+        assertThat(guarded.conviction()).isEqualTo(3);
+    }
+
+    @Test
+    void applyGuardrails_normalEpsDispersion_doesNotCapConviction() {
+        setupSpecialistScores(8.5, 8.7, 8.6);
+        SensitivityMatrix matrix = new SensitivityMatrix("FY26", 3.8f, 4.0f, 4.2f, List.of(), List.of(), null);
+        ValuationScenarioDto scenarios = new ValuationScenarioDto(
+                100.0f, 15.0f, 12.0f, null, null, null, false, null, matrix, false
+        );
+        CompanyFactSheetData factSheetData = CompanyFactSheetData.builder()
+                .valuationScenarios(scenarios)
+                .build();
+
+        AnalysisResult rawResult = AnalysisResult.builder()
+                .valuation(ValuationAssessment.FAIRLY_VALUED)
+                .conviction(5)
+                .build();
+
+        AgentContext ctx = AgentContext.builder()
+                .factSheetData(factSheetData)
+                .state(state)
+                .build();
+
+        AnalysisResult guarded = guardrailService.applyGuardrails(rawResult, ctx, null);
+
+        assertThat(guarded.conviction()).isEqualTo(5);
+    }
+
+    @Test
+    void applyGuardrails_sanitizesAllSnapshotFieldsAndScenarios() {
+        ScenariosResult scenarios = new ScenariosResult(
+                new ScenarioCase("Strong buy driver", "Expect strong buy flow", "BUY upside", "None", "None"),
+                new ScenarioCase("Base sell pressure", "Key sell level", "None", "Hold or sell", "None"),
+                new ScenarioCase("Bear strong sell panic", "Margin hit sell", "None", "None", "SELL downside")
+        );
+        AnalysisResult rawResult = AnalysisResult.builder()
+                .valuation(ValuationAssessment.FAIRLY_VALUED)
+                .whatWouldChangeThis("If management issues a SELL warning")
+                .topBullPoints(List.of("Catalyst to BUY now"))
+                .topBearPoints(List.of("Reason to SELL soon"))
+                .thesisBreakers(List.of("Triggers a strong sell condition"))
+                .scenarios(scenarios)
+                .build();
+
+        AgentContext ctx = AgentContext.builder()
+                .factSheetData(CompanyFactSheetData.builder().build())
+                .state(state)
+                .build();
+
+        AnalysisResult guarded = guardrailService.applyGuardrails(rawResult, ctx, null);
+
+        assertThat(guarded.whatWouldChangeThis()).contains("cautious positioning");
+        assertThat(guarded.topBullPoints().getFirst()).contains("favorable investment case");
+        assertThat(guarded.topBearPoints().getFirst()).contains("cautious positioning");
+        assertThat(guarded.thesisBreakers().getFirst()).contains("cautious positioning");
+        assertThat(guarded.scenarios().bull().description()).contains("favorable investment case");
+        assertThat(guarded.scenarios().base().keyAssumption()).contains("cautious positioning");
+        assertThat(guarded.scenarios().bear().impliedDownside()).contains("cautious positioning");
     }
 
     private void setupSpecialistScores(double s1, double s2, double s3) {

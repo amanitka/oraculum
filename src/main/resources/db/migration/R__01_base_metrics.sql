@@ -575,15 +575,32 @@ WITH fundamental_timeline AS (SELECT
 SELECT
     *,
     CASE
-       WHEN quality_score >= 70
-            AND (earnings_yield > 0.06 OR fcf_yield > 0.06 OR COALESCE(revenue_yoy_growth, 0) > 0.30)
-            AND financial_trend_score >= 7        THEN 'STRONG_BUY'
-       WHEN quality_score >= 50
-            AND (earnings_yield > 0.04 OR fcf_yield > 0.04 OR COALESCE(revenue_yoy_growth, 0) > 0.20)
-            AND financial_trend_score >= 5        THEN 'BUY'
        WHEN financial_trend_score <= 2
-            OR quality_score < 30               THEN 'AVOID'
-       ELSE 'HOLD'
+            OR quality_score < 30
+            OR (is_negative_equity = 1 AND COALESCE(fcf_yield, 0) <= 0)
+            OR (interest_coverage_ratio IS NOT NULL AND interest_coverage_ratio < 1.5)
+            OR (flag_debt_funded_payout = 1 AND quality_score < 50)
+       THEN 'CAUTIOUS'
+       WHEN quality_score >= 70
+            AND financial_trend_score >= 7
+            AND COALESCE(flag_high_non_operating_income, 0) = 0
+            AND COALESCE(flag_debt_funded_payout, 0) = 0
+            AND COALESCE(pct_from_200d_ma, 0) > -15.0
+            AND (
+                (earnings_yield > 0.06 AND fcf_yield > 0.05)
+                OR (COALESCE(revenue_yoy_growth, 0) > 0.25 AND fcf_yield > 0.02 AND is_cash_earnings = 1)
+            )
+       THEN 'HIGH_CONVICTION'
+       WHEN quality_score >= 55
+            AND financial_trend_score >= 5
+            AND COALESCE(flag_debt_funded_payout, 0) = 0
+            AND COALESCE(pct_from_200d_ma, 0) > -25.0
+            AND (
+                (earnings_yield > 0.04 AND fcf_yield > 0.035)
+                OR (COALESCE(revenue_yoy_growth, 0) > 0.15 AND fcf_yield > 0.01)
+            )
+       THEN 'FAVORABLE'
+       ELSE 'NEUTRAL'
        END AS composite_signal
 FROM signals_base;
 

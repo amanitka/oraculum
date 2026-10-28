@@ -140,16 +140,20 @@ public final class ViewHelper {
     }
 
     /**
-     * Creates a themed badge for screener signal values (STRONG_BUY, BUY, AVOID, SELL).
+     * Creates a themed badge for screener signal values (HIGH_CONVICTION, FAVORABLE, NEUTRAL, CAUTIOUS).
      */
     public static Span signalBadge(String signalCode) {
         ScreenerSignal signal = ScreenerSignal.fromCode(signalCode);
         String text = signal != null ? signal.getDisplayName() : (signalCode != null ? signalCode : "N/A");
         Span badge = new Span(text);
+        badge.getStyle().set("white-space", "nowrap");
         badge.getElement().getThemeList().add("badge");
-        if (signal == ScreenerSignal.STRONG_BUY || signal == ScreenerSignal.BUY) {
+        if (signal == ScreenerSignal.HIGH_CONVICTION) {
             badge.getElement().getThemeList().add("success");
-        } else if (signal == ScreenerSignal.AVOID) {
+            badge.getElement().getThemeList().add("primary");
+        } else if (signal == ScreenerSignal.FAVORABLE) {
+            badge.getElement().getThemeList().add("success");
+        } else if (signal == ScreenerSignal.CAUTIOUS) {
             badge.getElement().getThemeList().add("error");
         } else {
             badge.getElement().getThemeList().add("contrast");

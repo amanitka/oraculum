@@ -6,7 +6,10 @@ import com.oraculum.analyst.agent.dto.SpecialistOutput;
 import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.api.domain.ValuationAssessment;
 import com.oraculum.analyst.api.dto.AnalysisResult;
+import com.oraculum.analyst.api.dto.AnalysisResult.ScenarioCase;
+import com.oraculum.analyst.api.dto.AnalysisResult.ScenariosResult;
 import com.oraculum.analyst.dto.ValuationScenarioDto;
+import com.oraculum.analyst.dto.ValuationScenarioDto.SensitivityMatrix;
 import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.dto.CompanyFinancialRatiosDto;
 import com.oraculum.company.api.dto.ReverseDcfDto;
@@ -98,16 +101,7 @@ public class SynthesizerGuardrailService {
         int unresolved = criticOutput != null ? criticOutput.unresolvedContradictions().size() : 0;
         int targetConviction = calculateTargetConviction(stdDev, unresolved);
 
-        if (ctx.factSheetData() != null) {
-            ValuationScenarioDto scenarios = ctx.factSheetData().getValuationScenariosObject();
-            if (scenarios != null && Boolean.TRUE.equals(scenarios.flagReverseDcfPeDivergence())) {
-                targetConviction = Math.min(targetConviction, 3);
-            }
-            Float eq = extractEarningsQuality(ctx);
-            if (eq != null && eq < 0.70f) {
-                targetConviction = Math.min(targetConviction, 3);
-            }
-        }
+        targetConviction = applyConvictionCaps(targetConviction, ctx);
 
         log.info("Specialist scores stdDev: {}, unresolved contradictions: {}, calculated conviction: {} (raw: {})",
                 stdDev, unresolved, targetConviction, result.conviction());
@@ -115,6 +109,39 @@ public class SynthesizerGuardrailService {
         return result.toBuilder()
                 .conviction(targetConviction)
                 .build();
+    }
+
+    private int applyConvictionCaps(int conviction, AgentContext ctx) {
+        if (ctx.factSheetData() == null) {
+            return conviction;
+        }
+        int capped = conviction;
+        ValuationScenarioDto scenarios = ctx.factSheetData().getValuationScenariosObject();
+        if (scenarios != null && Boolean.TRUE.equals(scenarios.flagReverseDcfPeDivergence())) {
+            capped = Math.min(capped, 3);
+        }
+        if (isHighEpsDispersion(scenarios)) {
+            capped = Math.min(capped, 3);
+        }
+        Float eq = extractEarningsQuality(ctx);
+        if (eq != null && eq < 0.70f) {
+            capped = Math.min(capped, 3);
+        }
+        return capped;
+    }
+
+    private boolean isHighEpsDispersion(ValuationScenarioDto scenarios) {
+        if (scenarios == null || scenarios.sensitivityMatrix() == null) {
+            return false;
+        }
+        SensitivityMatrix matrix = scenarios.sensitivityMatrix();
+        Float low = matrix.epsLow();
+        Float avg = matrix.epsAvg();
+        Float high = matrix.epsHigh();
+        if (low == null || avg == null || high == null || avg <= 0) {
+            return false;
+        }
+        return ((high - low) / avg) > 0.35f;
     }
 
     private Float extractEarningsQuality(AgentContext ctx) {
@@ -127,38 +154,81 @@ public class SynthesizerGuardrailService {
     }
 
     private AnalysisResult enforceFactorScores(AnalysisResult result, AgentContext ctx) {
-        Map<String, Double> scores = result.factorScores();
-        if (scores == null || scores.isEmpty()) {
-            scores = new LinkedHashMap<>();
-            scores.put("fundamental_health", getSpecialistScore(ctx, AgentType.FUNDAMENTALS));
-            scores.put("valuation", getSpecialistScore(ctx, AgentType.VALUATION));
-            scores.put("growth_prospects", getSpecialistScore(ctx, AgentType.EARNINGS_ESTIMATES));
-            scores.put("risk_profile", getSpecialistScore(ctx, AgentType.RISK));
-            return result.toBuilder().factorScores(scores).build();
-        }
-        return result;
+        Map<String, Double> scores = result.factorScores() != null
+                ? new LinkedHashMap<>(result.factorScores())
+                : new LinkedHashMap<>();
+
+        setSpecialistScoreIfPresent(scores, "fundamental_health", ctx, AgentType.FUNDAMENTALS);
+        setSpecialistScoreIfPresent(scores, "valuation", ctx, AgentType.VALUATION);
+        setSpecialistScoreIfPresent(scores, "growth_prospects", ctx, AgentType.EARNINGS_ESTIMATES);
+        setSpecialistScoreIfPresent(scores, "risk_profile", ctx, AgentType.RISK);
+
+        return result.toBuilder().factorScores(scores).build();
     }
 
-    private double getSpecialistScore(AgentContext ctx, AgentType type) {
+    private void setSpecialistScoreIfPresent(Map<String, Double> scores, String key, AgentContext ctx, AgentType type) {
+        Double specialistScore = getSpecialistScoreOrNull(ctx, type);
+        if (specialistScore != null) {
+            scores.put(key, specialistScore);
+        } else if (!scores.containsKey(key)) {
+            scores.put(key, 5.0);
+        }
+    }
+
+    private Double getSpecialistScoreOrNull(AgentContext ctx, AgentType type) {
+        if (ctx == null || ctx.state() == null) {
+            return null;
+        }
         Object output = ctx.state().getAgentOutput(type);
         if (output instanceof SpecialistOutput spec) {
             return spec.score();
         }
-        return 5.0;
+        return null;
     }
 
     private AnalysisResult sanitizeComplianceLanguage(AnalysisResult result) {
-        String thesis = sanitizeText(result.thesis());
-        String execSummary = sanitizeText(result.executiveSummary());
-        String reasoning = sanitizeText(result.recommendationReasoning());
-        String valuationOneLiner = sanitizeText(result.valuationOneLiner());
-
         return result.toBuilder()
-                .thesis(thesis)
-                .executiveSummary(execSummary)
-                .recommendationReasoning(reasoning)
-                .valuationOneLiner(valuationOneLiner)
+                .thesis(sanitizeText(result.thesis()))
+                .executiveSummary(sanitizeText(result.executiveSummary()))
+                .recommendationReasoning(sanitizeText(result.recommendationReasoning()))
+                .valuationOneLiner(sanitizeText(result.valuationOneLiner()))
+                .whatWouldChangeThis(sanitizeText(result.whatWouldChangeThis()))
+                .topBullPoints(sanitizeList(result.topBullPoints()))
+                .topBearPoints(sanitizeList(result.topBearPoints()))
+                .thesisBreakers(sanitizeList(result.thesisBreakers()))
+                .scenarios(sanitizeScenarios(result.scenarios()))
                 .build();
+    }
+
+    private List<String> sanitizeList(List<String> list) {
+        if (list == null) {
+            return null;
+        }
+        return list.stream().map(this::sanitizeText).toList();
+    }
+
+    private ScenariosResult sanitizeScenarios(ScenariosResult scenarios) {
+        if (scenarios == null) {
+            return null;
+        }
+        return new ScenariosResult(
+                sanitizeScenarioCase(scenarios.bull()),
+                sanitizeScenarioCase(scenarios.base()),
+                sanitizeScenarioCase(scenarios.bear())
+        );
+    }
+
+    private ScenarioCase sanitizeScenarioCase(ScenarioCase c) {
+        if (c == null) {
+            return null;
+        }
+        return new ScenarioCase(
+                sanitizeText(c.description()),
+                sanitizeText(c.keyAssumption()),
+                sanitizeText(c.impliedUpside()),
+                sanitizeText(c.impliedMove()),
+                sanitizeText(c.impliedDownside())
+        );
     }
 
     private String sanitizeText(String text) {

@@ -73,17 +73,17 @@ You MUST respond with exactly one raw JSON object matching this schema:
     "bull": {
       "description": "string — 1-2 sentences describing the bull case scenario",
       "key_assumption": "string — the single most important assumption for this case",
-      "implied_upside": "string — approximate range relative to current price anchored in valuation scenarios or fundamental expansion; do NOT copy boilerplate percentage ranges"
+      "implied_upside": "string — approximate range relative to current price anchored in valuation scenarios sensitivity_matrix (pct_move_vs_current); do NOT copy boilerplate percentage ranges"
     },
     "base": {
       "description": "string — 1-2 sentences describing the base case scenario",
       "key_assumption": "string — the single most important assumption for this case",
-      "implied_move": "string — approximate baseline range relative to current price"
+      "implied_move": "string — approximate baseline range relative to current price anchored in valuation scenarios sensitivity_matrix (pct_move_vs_current)"
     },
     "bear": {
       "description": "string — 1-2 sentences describing the bear case scenario",
       "key_assumption": "string — the single most important assumption for this case",
-      "implied_downside": "string — approximate range relative to current price anchored in downside valuation scenarios or multiple compression; do NOT copy boilerplate percentage ranges"
+      "implied_downside": "string — approximate range relative to current price anchored in downside valuation scenarios sensitivity_matrix (pct_move_vs_current); do NOT copy boilerplate percentage ranges"
     }
   }
 }
@@ -123,10 +123,10 @@ You MUST respond with exactly one raw JSON object matching this schema:
 - `what_would_change_this`: one sentence — the single most important measurable trigger that would change the valuation assessment.
 - `thesis_breakers`: exactly 3 items. Each must be a specific, measurable, monitorable condition (e.g., "Revenue growth falls below 15% for 2 consecutive quarters") — not vague sentiment.
 - `scenarios`: ground each case in specific metrics from the report. Bull case = strongest growth/margin signals; Bear case = most material risks; Base case = most likely path. Do not cite exact stock price targets; express as approximate percentage ranges relative to current price.
-  - **Scenario Valuation Anchoring**: In each scenario, explicitly anchor the assumptions to the Reverse DCF `sensitivity_matrix` implied FCF growth rates:
-    - *Bull case*: Reference lower-hurdle cells (e.g., 8–9% discount rate requiring ~12–15% FCF growth).
-    - *Base case*: Reference the baseline cell (10.0% discount rate, 3.0% terminal growth).
-    - *Bear case*: Reference high-hurdle cells (e.g., 11–12% discount rate requiring >20–23% FCF growth due to elevated capital costs).
+  - **Scenario Valuation Anchoring**: In each scenario, explicitly anchor both the growth assumptions to the Reverse DCF `sensitivity_matrix` implied FCF growth rates AND the implied price moves to `valuation_scenarios.sensitivity_matrix` (`pct_move_vs_current`):
+    - *Bull case*: Reference lower-hurdle cells (e.g., 8–9% discount rate requiring ~12–15% FCF growth). Use the high-end percentage range from `valuation_scenarios.sensitivity_matrix` (e.g., `+15% to +25%`) for `implied_upside`.
+    - *Base case*: Reference the baseline cell (10.0% discount rate, 3.0% terminal growth). Use the consensus baseline percentage move from `valuation_scenarios.sensitivity_matrix` (e.g., `-5% to +5%`) for `implied_move`.
+    - *Bear case*: Reference high-hurdle cells (e.g., 11–12% discount rate requiring >20–23% FCF growth due to elevated capital costs). Use downside multiple compression percentage move from `valuation_scenarios.sensitivity_matrix` (e.g., `-20% to -35%`) for `implied_downside`.
 **Strict JSON formatting**
 - OUTPUT ONLY VALID JSON. No conversational text, no explanatory phrases, no greetings.
 - Do NOT wrap the JSON in markdown code blocks. Your response must start with `{` and end with `}`.

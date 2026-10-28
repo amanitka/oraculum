@@ -4,10 +4,10 @@ import lombok.Getter;
 
 @Getter
 public enum ScreenerSignal {
-    STRONG_BUY("Strong Buy"),
-    BUY("Buy"),
-    HOLD("Hold"),
-    AVOID("Avoid");
+    HIGH_CONVICTION("High Conviction"),
+    FAVORABLE("Favorable"),
+    NEUTRAL("Neutral"),
+    CAUTIOUS("Cautious");
 
     private final String displayName;
 
