@@ -2,6 +2,7 @@ package com.oraculum.ui.views.components.renderer;
 
 import com.oraculum.analyst.api.domain.ValuationAssessment;
 import com.oraculum.analyst.api.dto.AnalysisResult;
+import com.oraculum.analyst.api.dto.AnalysisResult.DecisionSummary;
 import com.oraculum.analyst.api.dto.CompanyAnalysisDto;
 import com.oraculum.ui.ViewHelper;
 import com.vaadin.flow.component.Component;
@@ -61,36 +62,78 @@ public class AnalysisOverviewRenderer {
         container.addClassNames(LumoUtility.Width.FULL);
 
         container.add(createSnapshotHeader(snapshot));
+        addPriceBarIfPresent(container, snapshot);
+        addThesisIfPresent(container, snapshot, analysis);
+        addCoreScorecard(container, snapshot);
+        addPointsIfPresent(container, snapshot, analysis);
+        addValuationMechanics(container, snapshot);
+        addFooterAndAudit(container, snapshot, analysis);
 
+        return container;
+    }
 
-        boolean hasDecisionSection = false;
-        if (decisionSnapshotRenderer != null) {
-            Component decisionSection = decisionSnapshotRenderer.renderDecisionSupportSection(snapshot);
-            if (decisionSection != null) {
-                container.add(decisionSection);
-                hasDecisionSection = true;
+    private void addPriceBarIfPresent(Div container, AnalysisResult snapshot) {
+        if (decisionSnapshotRenderer != null && snapshot.decisionSummary() != null) {
+            Component priceBar = decisionSnapshotRenderer.renderPriceAndCatalystBar(snapshot.decisionSummary());
+            if (priceBar != null) {
+                container.add(priceBar);
             }
         }
+    }
 
+    private void addThesisIfPresent(Div container, AnalysisResult snapshot, CompanyAnalysisDto analysis) {
         if (snapshot.thesis() != null && !snapshot.thesis().isBlank()) {
             container.add(createSnapshotThesis(snapshot.thesis(), analysis));
         }
+    }
 
-        if (!hasDecisionSection && snapshot.factorScores() != null && !snapshot.factorScores().isEmpty()) {
+    private void addCoreScorecard(Div container, AnalysisResult snapshot) {
+        DecisionSummary s = snapshot.decisionSummary();
+        if (decisionSnapshotRenderer != null && s != null) {
+            Component pillars = decisionSnapshotRenderer.renderUnifiedPillarsGrid(snapshot, s);
+            if (pillars != null) {
+                container.add(pillars);
+            }
+            Component question = decisionSnapshotRenderer.renderDecisiveQuestionCard(s);
+            if (question != null) {
+                container.add(question);
+            }
+        } else if (snapshot.factorScores() != null && !snapshot.factorScores().isEmpty()) {
             container.add(createFactorScoresCard(snapshot.factorScores()));
         }
+    }
 
+    private void addPointsIfPresent(Div container, AnalysisResult snapshot, CompanyAnalysisDto analysis) {
         Component points = createSnapshotPoints(snapshot, analysis);
         if (points != null) {
             container.add(points);
         }
+    }
 
+    private void addValuationMechanics(Div container, AnalysisResult snapshot) {
+        if (decisionSnapshotRenderer != null && snapshot.decisionSummary() != null) {
+            Component expectations = decisionSnapshotRenderer.renderImpliedExpectationsCard(snapshot.decisionSummary());
+            if (expectations != null) {
+                container.add(expectations);
+            }
+            Component drivers = decisionSnapshotRenderer.renderDecisionDriversCard(snapshot.decisionDrivers());
+            if (drivers != null) {
+                container.add(drivers);
+            }
+        }
+    }
+
+    private void addFooterAndAudit(Div container, AnalysisResult snapshot, CompanyAnalysisDto analysis) {
         Component footer = createSnapshotFooter(snapshot, analysis);
         if (footer != null) {
             container.add(footer);
         }
-
-        return container;
+        if (decisionSnapshotRenderer != null && snapshot.convictionReasons() != null && !snapshot.convictionReasons().isEmpty()) {
+            Component audit = decisionSnapshotRenderer.renderConvictionReasonsCard(snapshot.convictionReasons());
+            if (audit != null) {
+                container.add(audit);
+            }
+        }
     }
 
     public Component renderScenariosTab(AnalysisResult snapshot, CompanyAnalysisDto analysis) {

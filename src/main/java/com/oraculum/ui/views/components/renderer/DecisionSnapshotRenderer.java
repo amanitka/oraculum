@@ -7,7 +7,6 @@ import com.oraculum.analyst.api.dto.AnalysisResult.ImpliedEpsSnapshot;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H5;
-import com.vaadin.flow.component.html.H6;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -206,8 +205,8 @@ public class DecisionSnapshotRenderer {
         Div card = new Div();
         card.setWidthFull();
         card.getStyle()
-                .set("background", "rgba(var(--lumo-contrast-rgb), 0.03)")
-                .set("border", "1px solid var(--lumo-contrast-10pct)")
+                .set("background", "rgba(241, 196, 15, 0.04)")
+                .set("border", "1px solid rgba(241, 196, 15, 0.2)")
                 .set("border-left", "4px solid var(--lumo-warning-color)")
                 .set("border-radius", "8px")
                 .set("padding", "14px 16px")
@@ -294,28 +293,34 @@ public class DecisionSnapshotRenderer {
         Div box = new Div();
         box.getStyle()
                 .set("flex", "1 1 300px")
-                .set("background", "rgba(var(--lumo-contrast-rgb), 0.02)")
-                .set("border", "1px solid var(--lumo-contrast-5pct)")
-                .set("border-radius", "6px")
-                .set("padding", "12px 14px");
+                .set("background", "rgba(59, 130, 246, 0.04)")
+                .set("border", "1px solid rgba(59, 130, 246, 0.2)")
+                .set("border-radius", "8px")
+                .set("padding", "14px 16px");
 
-        H6 title = new H6("10-YEAR REVERSE DCF HURDLE");
-        title.getStyle().set("margin", "0 0 8px 0").set("color", "var(--lumo-secondary-text-color)");
+        H5 title = new H5("📈 10-YEAR REVERSE DCF HURDLE");
+        title.getStyle()
+                .set("margin", "0 0 10px 0")
+                .set("color", "#3b82f6")
+                .set("font-size", "0.85rem")
+                .set("font-weight", "700")
+                .set("text-transform", "uppercase")
+                .set("letter-spacing", "0.5px");
 
         HorizontalLayout highlight = new HorizontalLayout();
         highlight.setAlignItems(FlexComponent.Alignment.BASELINE);
-        highlight.getStyle().set("gap", "6px").set("margin-bottom", "8px");
+        highlight.getStyle().set("gap", "8px").set("margin-bottom", "10px");
 
         Span cagr = new Span(String.format(Locale.US, "%.1f%%", s.requiredFcfCagrPct()));
-        cagr.getStyle().set("font-size", "1.5rem").set("font-weight", "800").set("color", "var(--lumo-warning-color)");
+        cagr.getStyle().set("font-size", "1.6rem").set("font-weight", "800").set("color", "var(--lumo-warning-color)");
         Span unit = new Span("10Y FCF CAGR required");
-        unit.getStyle().set("font-size", "0.82rem").set("color", "var(--lumo-secondary-text-color)");
+        unit.getStyle().set("font-size", "0.85rem").set("color", "var(--lumo-secondary-text-color)");
         highlight.add(cagr, unit);
 
         VerticalLayout stats = new VerticalLayout();
         stats.setPadding(false);
         stats.setSpacing(false);
-        stats.getStyle().set("gap", "4px").set("font-size", "0.82rem");
+        stats.getStyle().set("gap", "6px").set("font-size", "0.85rem");
 
         if (s.ttmFcfGrowthPct() != null) {
             stats.add(buildStatLine("Recent TTM FCF Growth", String.format(Locale.US, "%.1f%%", s.ttmFcfGrowthPct())));
@@ -343,18 +348,25 @@ public class DecisionSnapshotRenderer {
         Div box = new Div();
         box.getStyle()
                 .set("flex", "1.3 1 360px")
-                .set("background", "rgba(var(--lumo-contrast-rgb), 0.02)")
-                .set("border", "1px solid var(--lumo-contrast-5pct)")
-                .set("border-radius", "6px")
-                .set("padding", "12px 14px");
+                .set("background", "rgba(168, 85, 247, 0.04)")
+                .set("border", "1px solid rgba(168, 85, 247, 0.2)")
+                .set("border-radius", "8px")
+                .set("padding", "14px 16px");
 
-        H6 title = new H6("REVERSE P/E MAP (TARGET " + (targetFy != null ? targetFy : "FY28") + " EPS)");
-        title.getStyle().set("margin", "0 0 8px 0").set("color", "var(--lumo-secondary-text-color)");
+        String fyLabel = (targetFy != null ? targetFy : "FY28");
+        H5 title = new H5("🎯 REVERSE P/E MAP (TARGET " + fyLabel + " EPS)");
+        title.getStyle()
+                .set("margin", "0 0 10px 0")
+                .set("color", "#a855f7")
+                .set("font-size", "0.85rem")
+                .set("font-weight", "700")
+                .set("text-transform", "uppercase")
+                .set("letter-spacing", "0.5px");
 
         VerticalLayout list = new VerticalLayout();
         list.setPadding(false);
         list.setSpacing(false);
-        list.getStyle().set("gap", "6px");
+        list.getStyle().set("gap", "8px");
 
         for (ImpliedEpsSnapshot e : entries) {
             list.add(buildPeMapRow(e));
@@ -368,7 +380,7 @@ public class DecisionSnapshotRenderer {
         row.setWidthFull();
         row.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
         row.setAlignItems(FlexComponent.Alignment.CENTER);
-        row.getStyle().set("font-size", "0.82rem");
+        row.getStyle().set("font-size", "0.84rem");
 
         String label = e.anchorLabel() != null ? e.anchorLabel() : String.format(Locale.US, "%.1fx", e.multiple());
         Span left = new Span(label);
@@ -395,28 +407,30 @@ public class DecisionSnapshotRenderer {
             return null;
         }
         Div card = createSectionBox("🚦 KEY DECISION DRIVERS & THESIS TRIGGERS");
-        VerticalLayout rows = new VerticalLayout();
-        rows.setPadding(false);
-        rows.setSpacing(false);
-        rows.getStyle().set("gap", "8px").set("margin-top", "10px");
+        HorizontalLayout grid = new HorizontalLayout();
+        grid.setWidthFull();
+        grid.getStyle().set("gap", "12px").set("flex-wrap", "wrap").set("margin-top", "10px");
 
         for (DecisionDriver d : drivers) {
-            rows.add(buildDriverRow(d));
+            grid.add(buildDriverTile(d));
         }
-        card.add(rows);
+        card.add(grid);
         return card;
     }
 
-    private Component buildDriverRow(DecisionDriver d) {
-        Div row = new Div();
-        row.setWidthFull();
-        String borderCol = resolveDriverBorderColor(d.status());
-        row.getStyle()
-                .set("padding", "10px 14px")
-                .set("border-radius", "6px")
-                .set("background", "rgba(var(--lumo-contrast-rgb), 0.02)")
-                .set("border", "1px solid var(--lumo-contrast-5pct)")
-                .set("border-left", "3px solid " + borderCol);
+    private Component buildDriverTile(DecisionDriver d) {
+        Div tile = new Div();
+        tile.getStyle()
+                .set("flex", "1 1 320px")
+                .set("padding", "12px 14px")
+                .set("border-radius", "8px")
+                .set("background", resolveDriverBackground(d.status()))
+                .set("border", "1px solid " + resolveDriverBorderColor(d.status(), 0.2))
+                .set("border-left", "4px solid " + resolveDriverBorderColor(d.status(), 1.0))
+                .set("display", "flex")
+                .set("flex-direction", "column")
+                .set("justify-content", "space-between")
+                .set("gap", "8px");
 
         HorizontalLayout top = new HorizontalLayout();
         top.setWidthFull();
@@ -424,27 +438,46 @@ public class DecisionSnapshotRenderer {
         top.setAlignItems(FlexComponent.Alignment.CENTER);
 
         Span factor = new Span(d.factor());
-        factor.addClassName(LumoUtility.FontWeight.SEMIBOLD);
-        factor.getStyle().set("font-size", "0.85rem");
+        factor.addClassName(LumoUtility.FontWeight.BOLD);
+        factor.getStyle().set("font-size", "0.85rem").set("color", "var(--lumo-header-text-color)");
         top.add(factor, createPillBadge(d.status(), resolveDimensionTheme(d.status())));
 
         Div details = new Div();
-        details.getStyle().set("margin-top", "4px").set("font-size", "0.80rem");
+        details.getStyle().set("font-size", "0.80rem");
 
         Span curSpan = new Span("Current: " + d.currentValue() + "  |  Hurdle: " + d.benchmarkOrRequired());
         curSpan.getStyle().set("display", "block").set("color", "var(--lumo-body-text-color)");
 
         Span trigSpan = new Span("⚡ Trigger: " + d.whatChangesView());
-        trigSpan.getStyle().set("display", "block").set("color", "var(--lumo-secondary-text-color)").set("margin-top", "2px");
+        trigSpan.getStyle().set("display", "block").set("color", "var(--lumo-secondary-text-color)").set("margin-top", "4px");
 
         details.add(curSpan, trigSpan);
-        row.add(top, details);
-        return row;
+        tile.add(top, details);
+        return tile;
     }
 
-    private String resolveDriverBorderColor(String status) {
-        if (status == null) return "var(--lumo-contrast-20pct)";
+    private String resolveDriverBackground(String status) {
+        if (status == null) return "rgba(var(--lumo-contrast-rgb), 0.02)";
         return switch (status) {
+            case "SUPPORTIVE" -> "rgba(46, 204, 113, 0.04)";
+            case "DEMANDING" -> "rgba(230, 126, 34, 0.04)";
+            case "WARNING" -> "rgba(241, 196, 15, 0.04)";
+            case "RISK" -> "rgba(231, 76, 60, 0.04)";
+            default -> "rgba(var(--lumo-contrast-rgb), 0.02)";
+        };
+    }
+
+    private String resolveDriverBorderColor(String status, double opacity) {
+        if (opacity < 1.0) {
+            return switch (status != null ? status : "") {
+                case "SUPPORTIVE" -> "rgba(46, 204, 113, 0.2)";
+                case "DEMANDING" -> "rgba(230, 126, 34, 0.2)";
+                case "WARNING" -> "rgba(241, 196, 15, 0.2)";
+                case "RISK" -> "rgba(231, 76, 60, 0.2)";
+                default -> "var(--lumo-contrast-10pct)";
+            };
+        }
+        return switch (status != null ? status : "") {
             case "SUPPORTIVE" -> "#2ecc71";
             case "DEMANDING" -> "#e67e22";
             case "WARNING" -> "#f1c40f";
@@ -457,21 +490,45 @@ public class DecisionSnapshotRenderer {
         if (reasons == null || reasons.isEmpty()) {
             return null;
         }
-        Div card = createSectionBox("🛡️ CONVICTION AUDIT & GUARDRAILS");
-        card.getStyle().set("padding", "10px 14px");
+        Div card = createSectionBox("🛡️ CONVICTION AUDIT & ACTIVE GUARDRAILS");
+        card.getStyle()
+                .set("background", "rgba(var(--lumo-contrast-rgb), 0.03)")
+                .set("border", "1px solid var(--lumo-contrast-10pct)")
+                .set("border-radius", "8px")
+                .set("padding", "12px 16px")
+                .set("margin-top", "14px");
 
-        VerticalLayout list = new VerticalLayout();
-        list.setPadding(false);
-        list.setSpacing(false);
-        list.getStyle().set("gap", "4px").set("margin-top", "6px");
+        HorizontalLayout list = new HorizontalLayout();
+        list.setWidthFull();
+        list.getStyle().set("gap", "10px").set("flex-wrap", "wrap").set("margin-top", "8px");
 
         for (String reason : reasons) {
-            Span item = new Span("• " + reason);
-            item.getStyle().set("font-size", "0.80rem").set("color", "var(--lumo-secondary-text-color)");
-            list.add(item);
+            list.add(buildAuditChip(reason));
         }
         card.add(list);
         return card;
+    }
+
+    private Component buildAuditChip(String reason) {
+        Div chip = new Div();
+        chip.getStyle()
+                .set("flex", "1 1 280px")
+                .set("padding", "8px 12px")
+                .set("border-radius", "6px")
+                .set("background", "rgba(var(--lumo-contrast-rgb), 0.02)")
+                .set("border", "1px solid var(--lumo-contrast-10pct)")
+                .set("font-size", "0.80rem")
+                .set("color", "var(--lumo-secondary-text-color)");
+
+        String cleaned = reason.replaceFirst("^Capped at \\d/5:\\s*", "🔒 Cap: ");
+        if (cleaned.startsWith("Base conviction")) {
+            chip.getStyle().set("border-left", "3px solid var(--lumo-primary-color)");
+            chip.setText("📊 " + cleaned);
+        } else {
+            chip.getStyle().set("border-left", "3px solid var(--lumo-warning-color)");
+            chip.setText(cleaned);
+        }
+        return chip;
     }
 
     private Div createSectionBox(String titleText) {

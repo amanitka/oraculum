@@ -1,8 +1,16 @@
 package com.oraculum.ui.views.components.renderer;
 
+import com.oraculum.analyst.api.domain.AnalysisOutlook;
+import com.oraculum.analyst.api.domain.ValuationAssessment;
+import com.oraculum.analyst.api.dto.AnalysisResult;
+import com.oraculum.analyst.api.dto.AnalysisResult.DecisionDriver;
+import com.oraculum.analyst.api.dto.AnalysisResult.DecisionSummary;
+import com.vaadin.flow.component.Component;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -78,5 +86,57 @@ class AnalysisOverviewRendererTest {
 
         assertThat(result.get("fundamental_health")).isEqualTo(0.0);
         assertThat(result.get("valuation")).isEqualTo(0.0);
+    }
+
+    @Test
+    void renderOverviewTab_withDecisionSummary_rendersUnifiedLayoutInOrder() {
+        MarkdownRenderer markdownRenderer = new MarkdownRenderer(new JsonMapper());
+        DecisionSnapshotRenderer decisionRenderer = new DecisionSnapshotRenderer();
+        AnalysisOverviewRenderer renderer = new AnalysisOverviewRenderer(markdownRenderer, decisionRenderer);
+
+        DecisionSummary summary = DecisionSummary.builder()
+                .businessQuality("EXCEPTIONAL")
+                .valuationVsExpectations("DEMANDING")
+                .methodAgreement("CONFLICTING_PEAK_MARGIN_RISK")
+                .marketSetup("PULLBACK_IN_UPTREND")
+                .decisiveQuestion("Can FCF compound at 16.7%?")
+                .keyValuationTension("Low P/E vs high DCF hurdle")
+                .currentSharePrice(210.96f)
+                .build();
+
+        AnalysisResult result = AnalysisResult.builder()
+                .valuation(ValuationAssessment.FAIRLY_VALUED)
+                .outlook(AnalysisOutlook.BULLISH)
+                .conviction(3)
+                .thesis("Solid business model with high margins.")
+                .factorScores(Map.of("fundamental_health", 9.0, "valuation", 6.4, "growth_prospects", 8.1, "risk_profile", 7.6))
+                .topBullPoints(List.of("Strong AI capex"))
+                .topBearPoints(List.of("Margin compression"))
+                .valuationOneLiner("Trading at 26.7x P/E")
+                .whatWouldChangeThis("Sustained slowdown below 40%")
+                .decisionSummary(summary)
+                .decisionDrivers(List.of(DecisionDriver.builder().factor("Growth").status("DEMANDING").importance("HIGH").currentValue("76%").benchmarkOrRequired("16.7%").whatChangesView("Slowdown").build()))
+                .convictionReasons(List.of("Capped at 3/5: valuation method conflict"))
+                .build();
+
+        Component rendered = renderer.renderOverviewTab(result, null);
+
+        assertThat(rendered).isNotNull();
+        String text = rendered.getElement().getTextRecursively();
+        assertThat(text)
+                .contains("Fairly Valued")
+                .contains("FUNDAMENTAL HEALTH")
+                .contains("EXCEPTIONAL")
+                .contains("VALUATION HURDLE")
+                .contains("DEMANDING")
+                .contains("Can FCF compound at 16.7%?")
+                .contains("Key Bull Drivers")
+                .contains("Key Risks & Headwinds")
+                .contains("KEY DECISION DRIVERS & THESIS TRIGGERS")
+                .contains("Growth")
+                .contains("Valuation Context:")
+                .contains("Watch Trigger:")
+                .contains("CONVICTION AUDIT & ACTIVE GUARDRAILS")
+                .contains("Cap: valuation method conflict");
     }
 }
