@@ -13,6 +13,8 @@ import com.oraculum.analyst.api.event.CompanyAnalysisProgressEvent;
 import com.oraculum.analyst.config.AnalystProperties;
 import com.oraculum.analyst.dto.CompanyAnalysisResult;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
+import com.oraculum.analyst.service.citation.CitationManagementService;
+import com.oraculum.analyst.service.citation.CitationVerifierService;
 import com.oraculum.company.api.CompanyMetadataApi;
 import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.company.api.dto.TickerKeyDto;

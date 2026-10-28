@@ -49,6 +49,7 @@ public class ValuationAgent implements Agent<StandardAgentOutput> {
                 .replace("{{ macroeconomic_context }}", ctx.state().getMacroEconomicSummary())
                 .replace("{{ historical_valuation_percentiles }}", factSheet.getHistoricalValuationPercentiles())
                 .replace("{{ reverse_dcf }}", factSheet.getReverseDcfAnalysis())
+                .replace("{{ valuation_scenarios }}", factSheet.getValuationScenarios())
                 .replace("{{ ticker }}", ctx.ticker())
                 .replace("{{ analysis_date }}", ctx.analysisDate().toString());
 

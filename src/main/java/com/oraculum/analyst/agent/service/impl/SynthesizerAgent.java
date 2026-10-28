@@ -62,6 +62,7 @@ public class SynthesizerAgent implements Agent<AnalysisResult> {
                 .replace("{{ critic_counter_thesis }}", counterThesis)
                 .replace("{{ canonical_facts }}", ctx.factSheetData() != null && ctx.factSheetData().getCanonicalFacts() != null ? ctx.factSheetData().getCanonicalFacts() : "{}")
                 .replace("{{ unaddressed_warning }}", getWarningMessage(criticOutput))
+                .replace("{{ valuation_scenarios }}", ctx.factSheetData() != null && ctx.factSheetData().getValuationScenarios() != null ? ctx.factSheetData().getValuationScenarios() : "{}")
                 .replace("{{ ticker }}", ctx.ticker() != null ? ctx.ticker() : "");
 
         LlmResponse<AnalysisResult> response = llmRouterApi.executeCall(

@@ -1,4 +1,4 @@
-package com.oraculum.analyst.service;
+package com.oraculum.analyst.service.citation;
 
 import lombok.Getter;
 
@@ -29,7 +29,8 @@ public class CitationMetrics {
             return "No citations found.";
         }
         int flagRate = (unverifiedCitations + brokenCitations) * 100 / totalCitations;
-        return String.format("%d%% valid (%d/%d), %d unverified, %d broken (Flag rate: %d%%)", 
-                (validCitations * 100 / totalCitations), validCitations, totalCitations, unverifiedCitations, brokenCitations, flagRate);
+        int validRate = validCitations * 100 / totalCitations;
+        return String.format("%d%% valid (%d/%d), %d unverified, %d broken (Flag rate: %d%%)",
+                validRate, validCitations, totalCitations, unverifiedCitations, brokenCitations, flagRate);
     }
 }

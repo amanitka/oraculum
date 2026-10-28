@@ -1,5 +1,6 @@
-package com.oraculum.analyst.service;
+package com.oraculum.analyst.service.citation;
 
+import com.oraculum.analyst.agent.dto.AgentEvidence;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
@@ -147,21 +148,17 @@ class CitationVerifierServiceTest {
         String report = "The EPS is 8.99 [1, 2].";
         String result = service.verifyCitations(report, citations);
 
-        // 8.99 matches 1, but doesn't match 2
         assertThat(result).isEqualTo("The EPS is 8.99 [1, 2 ?].\n\n*Note: Citations marked with [?] contain extrapolated metrics or claims that could not be strictly verified. Citations marked with [!] reference missing or hallucinated sources.*");
     }
 
     @Test
     void testVerifyCitations_hallucinatedEpsNumberWithRevisionCount_markedUnverified() {
         Map<Integer, Object> citations = new HashMap<>();
-        // Payload has 27 revisions, but annual EPS is 8.99, NOT 2.7462
         citations.put(319, Map.of(
                 "eps_estimate_average", 8.99,
                 "eps_estimate_revision_up_trailing_30_days", 27
         ));
 
-        // Text claims EPS is 2.7462 and 27 revisions.
-        // 2.7462 must NOT match 27 via power-of-10, and must NOT be marked valid just because 27 matched!
         String report = "Q4 EPS consensus was 2.7462 with 27 revisions [319].";
         String result = service.verifyCitations(report, citations);
 
@@ -223,5 +220,34 @@ class CitationVerifierServiceTest {
         String result = service.verifyCitations(report, citations);
 
         assertThat(result).isEqualTo("TTM days sales outstanding rose to 75.97 days from 58.62 days, and TTM days inventory outstanding rose to 150.20 days from 143.67 days [113][114].");
+    }
+
+    @Test
+    void testVerifyRecordCitations_agentEvidence_supportedByValue_noQuestionMark() {
+        Map<Integer, Object> citations = new HashMap<>();
+        citations.put(2, Map.of("gross_margin", 0.753));
+
+        AgentEvidence ev = new AgentEvidence(
+                "Gross Margin",
+                "75.3%",
+                "70.1%",
+                "IMPROVING",
+                "CALCULATED",
+                "Gross margin expanded by 5.2 percentage points YoY [2]."
+        );
+
+        AgentEvidence verified = service.verifyRecordCitations(ev, citations, null);
+        assertThat(verified.significance()).isEqualTo("Gross margin expanded by 5.2 percentage points YoY [2].");
+    }
+
+    @Test
+    void testVerifyCitations_singleCitationComparative_noContradiction() {
+        Map<Integer, Object> citations = new HashMap<>();
+        citations.put(2, Map.of("gross_margin", 0.753));
+
+        String report = "Gross margin expanded to 75.3% from 70.1% [2].";
+        String result = service.verifyCitations(report, citations);
+
+        assertThat(result).isEqualTo("Gross margin expanded to 75.3% from 70.1% [2].");
     }
 }

@@ -53,7 +53,17 @@ public record CompanyFinancialRatiosSlim(
         // ── Consistency streaks ──────────────────────────────────────────────────
         @JsonProperty("revenue_growth_streak")     Integer revenueGrowthStreak,
         @JsonProperty("positive_fcf_streak")       Integer positiveFcfStreak,
-        @JsonProperty("positive_earnings_streak")  Integer positiveEarningsStreak
+        @JsonProperty("positive_earnings_streak")  Integer positiveEarningsStreak,
+
+        // ── Forensic / Cash flow quality signals ────────────────────────────────
+        @JsonProperty("non_operating_income_share_pretax_pct") Float nonOperatingIncomeSharePretaxPct,
+        @JsonProperty("shareholder_payout_to_fcf_ratio_pct")   Float shareholderPayoutToFcfRatioPct,
+        @JsonProperty("short_term_debt_delta")                 Float shortTermDebtDelta,
+        @JsonProperty("non_capex_investing_outflow")           Float nonCapexInvestingOutflow,
+        @JsonProperty("non_capex_investing_to_fcf_ratio_pct")  Float nonCapexInvestingToFcfRatioPct,
+        @JsonProperty("flag_high_non_operating_income")        Integer flagHighNonOperatingIncome,
+        @JsonProperty("flag_payout_exceeds_fcf")                Integer flagPayoutExceedsFcf,
+        @JsonProperty("flag_debt_funded_payout")                Integer flagDebtFundedPayout
 
 ) {
     public static CompanyFinancialRatiosSlim from(CompanyFinancialRatiosDto dto, String citationId) {
@@ -93,7 +103,15 @@ public record CompanyFinancialRatiosSlim(
                 dto.isNegativeEquity(),
                 dto.revenueGrowthStreak(),
                 dto.positiveFcfStreak(),
-                dto.positiveEarningsStreak()
+                dto.positiveEarningsStreak(),
+                dto.nonOperatingIncomeSharePretaxPct(),
+                dto.shareholderPayoutToFcfRatioPct(),
+                dto.shortTermDebtDelta(),
+                dto.nonCapexInvestingOutflow(),
+                dto.nonCapexInvestingToFcfRatioPct(),
+                dto.flagHighNonOperatingIncome(),
+                dto.flagPayoutExceedsFcf(),
+                dto.flagDebtFundedPayout()
         );
     }
 

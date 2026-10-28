@@ -30,6 +30,11 @@ WITH raw_data AS (SELECT
                      NULLIF(income.statement_data ->> 'Net Income'::text,                                       ''::text)::double precision AS net_income,
                      NULLIF(income.statement_data ->> 'Operating Income (Loss)'::text,                          ''::text)::double precision AS operating_income,
                      NULLIF(income.statement_data ->> 'Interest Expense, Net'::text,                            ''::text)::double precision AS interest_expense_net,
+                     COALESCE(NULLIF(income.statement_data ->> 'Non-Operating Income (Loss)'::text,            ''::text)::double precision,
+                              NULLIF(income.statement_data ->> 'Non-Operating Income'::text,                   ''::text)::double precision) AS non_op_income,
+                     COALESCE(NULLIF(income.statement_data ->> 'Pretax Income (Loss)'::text,                    ''::text)::double precision,
+                              NULLIF(income.statement_data ->> 'Pretax Income (Loss), Adj.'::text,              ''::text)::double precision,
+                              NULLIF(income.statement_data ->> 'Pretax Income'::text,                           ''::text)::double precision) AS pretax_income,
                      NULLIF(cash_flow.statement_data ->> 'Depreciation & Amortization'::text,                   ''::text)::double precision AS da,
                      NULLIF(balance.statement_data ->> 'Total Equity'::text,                                    ''::text)::double precision AS equity,
                      NULLIF(balance.statement_data ->> 'Total Assets'::text,                                    ''::text)::double precision AS assets,
@@ -37,12 +42,24 @@ WITH raw_data AS (SELECT
                      NULLIF(balance.statement_data ->> 'Total Current Liabilities'::text,                       ''::text)::double precision AS cur_liabilities,
                      NULLIF(balance.statement_data ->> 'Total Liabilities'::text,                               ''::text)::double precision AS liabilities,
                      NULLIF(balance.statement_data ->> 'Cash, Cash Equivalents & Short Term Investments'::text, ''::text)::double precision AS cash,
+                     COALESCE(NULLIF(balance.statement_data ->> 'Short Term Debt'::text,                         ''::text)::double precision,
+                              NULLIF(balance.statement_data ->> 'Short-Term Debt'::text,                        ''::text)::double precision,
+                              NULLIF(balance.statement_data ->> 'Current Debt'::text,                           ''::text)::double precision) AS short_term_debt,
                      NULLIF(balance.statement_data ->> 'Accounts & Notes Receivable'::text,                     ''::text)::double precision AS receivables,
                      NULLIF(balance.statement_data ->> 'Inventories'::text,                                     ''::text)::double precision AS inventories,
                      NULLIF(income.statement_data ->> 'Shares (Basic)'::text,                                   ''::text)::double precision AS shares_basic,
                      NULLIF(income.statement_data ->> 'Shares (Diluted)'::text,                                 ''::text)::double precision AS shares_diluted,
                      NULLIF(cash_flow.statement_data ->> 'Net Cash from Operating Activities'::text,            ''::text)::double precision AS ncf_ops,
-                     NULLIF(cash_flow.statement_data ->> 'Change in Fixed Assets & Intangibles'::text,          ''::text)::double precision AS capex
+                     NULLIF(cash_flow.statement_data ->> 'Change in Fixed Assets & Intangibles'::text,          ''::text)::double precision AS capex,
+                     COALESCE(NULLIF(cash_flow.statement_data ->> 'Cash from (Repurchase of) Equity'::text,     ''::text)::double precision,
+                              NULLIF(cash_flow.statement_data ->> 'Repurchase of Equity'::text,                 ''::text)::double precision) AS repurchase_equity,
+                     COALESCE(NULLIF(cash_flow.statement_data ->> 'Dividends Paid'::text,                       ''::text)::double precision,
+                              NULLIF(cash_flow.statement_data ->> 'Cash Dividends Paid'::text,                  ''::text)::double precision) AS dividends_paid,
+                     COALESCE(NULLIF(cash_flow.statement_data ->> 'Net Cash from Acquisitions & Divestitures'::text, ''::text)::double precision,
+                              NULLIF(cash_flow.statement_data ->> 'Acquisitions Net'::text,                     ''::text)::double precision) AS acquisitions,
+                     COALESCE(NULLIF(cash_flow.statement_data ->> 'Net Change in Long Term Investment'::text,   ''::text)::double precision,
+                              NULLIF(cash_flow.statement_data ->> 'Change in Investments'::text,                ''::text)::double precision) AS lt_investments,
+                     NULLIF(cash_flow.statement_data ->> 'Net Cash from Investing Activities'::text,            ''::text)::double precision AS ncf_investing
                   FROM t_income_statement income
                   LEFT JOIN t_balance_sheet balance ON balance.company_id  = income.company_id
                                                    AND balance.currency    = income.currency
@@ -79,7 +96,15 @@ WITH raw_data AS (SELECT
                        COALESCE(ncf_ops, 0)          - ABS(COALESCE(capex, 0))                                                                  AS fcf,  -- capex is negative in SimFin → ABS() required
                        COALESCE(cur_assets, 0)       - ABS(COALESCE(liabilities, 0))                                                            AS ncav,  -- ABS() guards 66 anomalous negative-liability rows
                        COALESCE(cash, 0) + (COALESCE(receivables, 0) * 0.75) + (COALESCE(inventories, 0) * 0.5) - ABS(COALESCE(liabilities, 0)) AS nnwc,  -- same guard
-                       COALESCE(shares_diluted, shares_basic)                                                                                   AS shares
+                       COALESCE(shares_diluted, shares_basic)                                                                                   AS shares,
+                       ABS(COALESCE(repurchase_equity, 0)) + ABS(COALESCE(dividends_paid, 0))                                                   AS total_shareholder_payout,
+                       CASE
+                           WHEN acquisitions IS NOT NULL OR lt_investments IS NOT NULL
+                           THEN ABS(COALESCE(acquisitions, 0)) + ABS(COALESCE(lt_investments, 0))
+                           WHEN ncf_investing IS NOT NULL AND capex IS NOT NULL
+                           THEN GREATEST(0.0::double precision, ABS(ncf_investing) - ABS(capex))
+                           ELSE NULL
+                       END                                                                                                                      AS non_capex_investing_outflow
                     FROM raw_data
                     ),
      computed_ratios AS (SELECT
@@ -103,7 +128,22 @@ WITH raw_data AS (SELECT
                             (inventories / NULLIF(ABS(COALESCE(cost_of_revenue, 0)), 0)) * (CASE WHEN UPPER(variant) = 'QUARTERLY' THEN 91.25 ELSE 365.0 END) AS days_inventory_outstanding,
                             revenue          / NULLIF(assets, 0)                                                     AS asset_turnover,
                             net_income       / NULLIF(shares, 0)                                                     AS eps,
-                            fcf              / NULLIF(shares, 0)                                                     AS fcf_per_share
+                            fcf              / NULLIF(shares, 0)                                                     AS fcf_per_share,
+                            CASE
+                                WHEN pretax_income IS NOT NULL AND ABS(pretax_income) > 0.0001
+                                THEN (COALESCE(non_op_income, 0) / pretax_income) * 100.0
+                                ELSE NULL
+                            END                                                                                       AS non_operating_income_share_pretax_pct,
+                            CASE
+                                WHEN fcf > 0 AND total_shareholder_payout > 0
+                                THEN (total_shareholder_payout / fcf) * 100.0
+                                ELSE NULL
+                            END                                                                                       AS shareholder_payout_to_fcf_ratio_pct,
+                            CASE
+                                WHEN fcf > 0 AND non_capex_investing_outflow IS NOT NULL
+                                THEN (non_capex_investing_outflow / fcf) * 100.0
+                                ELSE NULL
+                            END                                                                                       AS non_capex_investing_to_fcf_ratio_pct
                          FROM normalized
                          ),
      -- =================================================================
@@ -125,7 +165,8 @@ WITH raw_data AS (SELECT
                    LAG(gross_margin)   OVER w_seq AS prev_gm,
                    LAG(asset_turnover) OVER w_seq AS prev_at,
                    LAG(op_margin)      OVER w_seq AS prev_om,
-                   LAG(net_margin)     OVER w_seq AS prev_nm
+                   LAG(net_margin)     OVER w_seq AS prev_nm,
+                   LAG(short_term_debt) OVER w_seq AS prev_short_term_debt
                 FROM computed_ratios
                 WINDOW w_yoy AS (PARTITION BY company_id, fiscal_period, UPPER(variant) ORDER BY fiscal_year),
                        w_seq AS (PARTITION BY company_id,                UPPER(variant) ORDER BY fiscal_year, fiscal_period)
@@ -220,7 +261,15 @@ WITH raw_data AS (SELECT
                           (CASE WHEN equity     <  0          THEN 1 ELSE 0 END)      AS is_negative_equity,
                           (CASE WHEN gross_margin > prev_gm
                                 AND op_margin    > prev_om
-                                AND net_margin   > prev_nm   THEN 1 ELSE 0 END)       AS margin_expansion_signal
+                                AND net_margin   > prev_nm   THEN 1 ELSE 0 END)       AS margin_expansion_signal,
+                          short_term_debt - prev_short_term_debt                      AS short_term_debt_delta,
+                          non_operating_income_share_pretax_pct,
+                          shareholder_payout_to_fcf_ratio_pct,
+                          non_capex_investing_outflow,
+                          non_capex_investing_to_fcf_ratio_pct,
+                          (CASE WHEN ABS(non_operating_income_share_pretax_pct) > 15.0 THEN 1 ELSE 0 END) AS flag_high_non_operating_income,
+                          (CASE WHEN shareholder_payout_to_fcf_ratio_pct > 100.0 THEN 1 ELSE 0 END) AS flag_payout_exceeds_fcf,
+                          (CASE WHEN (short_term_debt - prev_short_term_debt) > 0 AND shareholder_payout_to_fcf_ratio_pct > 80.0 THEN 1 ELSE 0 END) AS flag_debt_funded_payout
                        FROM streaks
                        )
 SELECT
@@ -292,7 +341,15 @@ SELECT
           ELSE 0 END) * 2.0 +
     (CASE WHEN financial_trend_score >= 7 AND revenue_growth_streak >= 3 THEN 10
           WHEN financial_trend_score >= 4 THEN 5
-          ELSE 0 END) * 1.5 AS quality_score
+          ELSE 0 END) * 1.5 AS quality_score,
+    non_operating_income_share_pretax_pct,
+    shareholder_payout_to_fcf_ratio_pct,
+    short_term_debt_delta,
+    non_capex_investing_outflow,
+    non_capex_investing_to_fcf_ratio_pct,
+    flag_high_non_operating_income,
+    flag_payout_exceeds_fcf,
+    flag_debt_funded_payout
 FROM final_metrics;
 
 -- MATERIALIZE Fundamental Ratios
@@ -356,7 +413,15 @@ WITH fundamental_timeline AS (SELECT
                                  positive_fcf_streak,
                                  positive_earnings_streak,
                                  is_cash_earnings,
-                                 is_negative_equity
+                                 is_negative_equity,
+                                 non_operating_income_share_pretax_pct,
+                                 shareholder_payout_to_fcf_ratio_pct,
+                                 short_term_debt_delta,
+                                 non_capex_investing_outflow,
+                                 non_capex_investing_to_fcf_ratio_pct,
+                                 flag_high_non_operating_income,
+                                 flag_payout_exceeds_fcf,
+                                 flag_debt_funded_payout
                               FROM mv_company_financial_ratios
                               WHERE variant = 'TTM'
                               ),
@@ -492,7 +557,15 @@ WITH fundamental_timeline AS (SELECT
                          f.positive_earnings_streak,
                          f.is_cash_earnings,
                          f.is_negative_equity,
-                         f.quality_score
+                         f.quality_score,
+                         f.non_operating_income_share_pretax_pct,
+                         f.shareholder_payout_to_fcf_ratio_pct,
+                         f.short_term_debt_delta,
+                         f.non_capex_investing_outflow,
+                         f.non_capex_investing_to_fcf_ratio_pct,
+                         f.flag_high_non_operating_income,
+                         f.flag_payout_exceeds_fcf,
+                         f.flag_debt_funded_payout
                       FROM share_price p
                       LEFT JOIN t_company c ON c.id = p.company_id
                       LEFT JOIN fundamental_timeline f ON p.company_id = f.company_id

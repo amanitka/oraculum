@@ -73,17 +73,17 @@ You MUST respond with exactly one raw JSON object matching this schema:
     "bull": {
       "description": "string — 1-2 sentences describing the bull case scenario",
       "key_assumption": "string — the single most important assumption for this case",
-      "implied_upside": "string — e.g. '+30-40% upside relative to current price'"
+      "implied_upside": "string — approximate range relative to current price anchored in valuation scenarios or fundamental expansion; do NOT copy boilerplate percentage ranges"
     },
     "base": {
       "description": "string — 1-2 sentences describing the base case scenario",
       "key_assumption": "string — the single most important assumption for this case",
-      "implied_move": "string — e.g. '+5-15% annualized return'"
+      "implied_move": "string — approximate baseline range relative to current price"
     },
     "bear": {
       "description": "string — 1-2 sentences describing the bear case scenario",
       "key_assumption": "string — the single most important assumption for this case",
-      "implied_downside": "string — e.g. '-20-30% downside relative to current price'"
+      "implied_downside": "string — approximate range relative to current price anchored in downside valuation scenarios or multiple compression; do NOT copy boilerplate percentage ranges"
     }
   }
 }
@@ -141,7 +141,8 @@ You MUST respond with exactly one raw JSON object matching this schema:
   "company_profile": {{ company_profile }},
   "specialists": {{ specialist_output }},
   "critic": {{ critic_output }},
-  "canonical_facts": {{ canonical_facts }}
+  "canonical_facts": {{ canonical_facts }},
+  "valuation_scenarios": {{ valuation_scenarios }}
 }
 ```
 

@@ -1,4 +1,4 @@
-package com.oraculum.analyst.service;
+package com.oraculum.analyst.service.citation;
 
 import com.oraculum.analyst.agent.dto.AgentContext;
 import com.oraculum.analyst.agent.dto.AgentWorkflowState;
@@ -21,7 +21,8 @@ public class CitationManagementService {
 
     private static final Pattern BRACKET_PATTERN = Pattern.compile("\\[([\\d,\\s\\?]+)\\]");
     private static final Pattern DIGIT_PATTERN = Pattern.compile("\\d+");
-    private static final String FOOTNOTE_DISCLAIMER = "\n\n*Note: Citations marked with [?] contain extrapolated metrics or claims that could not be strictly verified against the raw numerical data.*";
+    private static final String FOOTNOTE_DISCLAIMER =
+            "\n\n*Note: Citations marked with [?] contain extrapolated metrics or claims that could not be strictly verified against the raw numerical data.*";
 
     private final JsonMapper jsonMapper;
 

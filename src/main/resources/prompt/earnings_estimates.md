@@ -10,6 +10,11 @@ And recent SEC Exhibit 99.1 (Earnings Release) summaries:
 {{ recent_sec_ex99_1_summaries }}
 ```
 
+And pre-computed Valuation & Reconciliation Scenarios:
+```json
+{{ valuation_scenarios }}
+```
+
 ### Analysis Focus
 {{ analysis_focus }}
 
@@ -34,7 +39,7 @@ ALL VALUES BELOW ARE DECIMALS:  0.503 = 50.3%,  1.2379 = 123.79%
 4. Compute the **revision momentum and percentage magnitude**: Look at net revisions (ups minus downs) over the trailing 7 and 30 days, and calculate the percentage revision magnitude: revision_pct = ((avg_now - avg_90d) / avg_90d) * 100. Explicitly report the percentage change in consensus estimates alongside revision counts.
 5. Assess the spread between high and low estimates to evaluate analyst consensus confidence. A wider spread implies greater uncertainty.
 6. Notice if the number of analysts covering future periods decreases significantly, which can also signal declining visibility.
-7. Compare the forward estimates to the baseline: Calculate the Forward P/E for the next fiscal year (using {{ current_price }} and upcoming 'eps_estimate_average'). Note whether consensus estimates reflect Adjusted/Non-GAAP or GAAP EPS to maintain an apples-to-apples comparison with historical baseline earnings.
+7. Compare the forward estimates to the baseline: Review the pre-computed Forward P/E from `valuation_scenarios` for FY1 and FY2. If `quarterly_vs_annual_divergence` is true, note the reconciliation discrepancy (`quarterly_reconciliation_note`) between quarterly sum and annual consensus (e.g. GAAP actuals vs non-GAAP consensus).
 8. Summarize your findings in a structured, concise Markdown format.
 
 ### SCORING RUBRIC

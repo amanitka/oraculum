@@ -50,7 +50,8 @@ public class EarningsEstimatesAgent implements Agent<StandardAgentOutput> {
                 .replace("{{ trailing_pe }}", peStr)
                 .replace("{{ historical_eps_growth }}", epsGrowthStr)
                 .replace("{{ canonical_facts }}", ctx.factSheetData().getCanonicalFacts())
-                .replace("{{ recent_sec_ex99_1_summaries }}", ctx.factSheetData().getRecentSecEx991Summaries());
+                .replace("{{ recent_sec_ex99_1_summaries }}", ctx.factSheetData().getRecentSecEx991Summaries())
+                .replace("{{ valuation_scenarios }}", ctx.factSheetData().getValuationScenarios());
 
         return appendCriticFeedbackIfPresent(prompt, ctx);
     }

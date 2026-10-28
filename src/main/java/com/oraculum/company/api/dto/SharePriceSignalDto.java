@@ -64,6 +64,14 @@ public record SharePriceSignalDto(
         Integer isCashEarnings,
         Integer isNegativeEquity,
         Float qualityScore,
+        Float nonOperatingIncomeSharePretaxPct,
+        Float shareholderPayoutToFcfRatioPct,
+        Float shortTermDebtDelta,
+        Float nonCapexInvestingOutflow,
+        Float nonCapexInvestingToFcfRatioPct,
+        Integer flagHighNonOperatingIncome,
+        Integer flagPayoutExceedsFcf,
+        Integer flagDebtFundedPayout,
         String compositeSignal
 ) {
     public static SharePriceSignalDto fromEntity(SharePriceSignalEntity entity) {
@@ -129,6 +137,14 @@ public record SharePriceSignalDto(
                 entity.getIsCashEarnings(),
                 entity.getIsNegativeEquity(),
                 entity.getQualityScore(),
+                entity.getNonOperatingIncomeSharePretaxPct(),
+                entity.getShareholderPayoutToFcfRatioPct(),
+                entity.getShortTermDebtDelta(),
+                entity.getNonCapexInvestingOutflow(),
+                entity.getNonCapexInvestingToFcfRatioPct(),
+                entity.getFlagHighNonOperatingIncome(),
+                entity.getFlagPayoutExceedsFcf(),
+                entity.getFlagDebtFundedPayout(),
                 entity.getCompositeSignal()
         );
     }

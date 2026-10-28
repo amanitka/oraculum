@@ -160,4 +160,28 @@ public class CompanyFinancialRatiosEntity {
 
     @Column(name = "quality_score")
     private Float qualityScore;
+
+    @Column(name = "non_operating_income_share_pretax_pct")
+    private Float nonOperatingIncomeSharePretaxPct;
+
+    @Column(name = "shareholder_payout_to_fcf_ratio_pct")
+    private Float shareholderPayoutToFcfRatioPct;
+
+    @Column(name = "short_term_debt_delta")
+    private Float shortTermDebtDelta;
+
+    @Column(name = "non_capex_investing_outflow")
+    private Float nonCapexInvestingOutflow;
+
+    @Column(name = "non_capex_investing_to_fcf_ratio_pct")
+    private Float nonCapexInvestingToFcfRatioPct;
+
+    @Column(name = "flag_high_non_operating_income")
+    private Integer flagHighNonOperatingIncome;
+
+    @Column(name = "flag_payout_exceeds_fcf")
+    private Integer flagPayoutExceedsFcf;
+
+    @Column(name = "flag_debt_funded_payout")
+    private Integer flagDebtFundedPayout;
 }

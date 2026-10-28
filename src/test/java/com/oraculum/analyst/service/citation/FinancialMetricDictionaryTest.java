@@ -1,4 +1,4 @@
-package com.oraculum.analyst.service;
+package com.oraculum.analyst.service.citation;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

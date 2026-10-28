@@ -52,7 +52,15 @@ public record CompanyFinancialRatiosDto(String id,
                                         Integer revenueGrowthStreak,
                                         Integer positiveFcfStreak,
                                         Integer positiveEarningsStreak,
-                                        Float qualityScore) {
+                                        Float qualityScore,
+                                        Float nonOperatingIncomeSharePretaxPct,
+                                        Float shareholderPayoutToFcfRatioPct,
+                                        Float shortTermDebtDelta,
+                                        Float nonCapexInvestingOutflow,
+                                        Float nonCapexInvestingToFcfRatioPct,
+                                        Integer flagHighNonOperatingIncome,
+                                        Integer flagPayoutExceedsFcf,
+                                        Integer flagDebtFundedPayout) {
 
     public static CompanyFinancialRatiosDto fromEntity(CompanyFinancialRatiosEntity entity) {
         if (entity == null)
@@ -102,7 +110,15 @@ public record CompanyFinancialRatiosDto(String id,
                 entity.getRevenueGrowthStreak(),
                 entity.getPositiveFcfStreak(),
                 entity.getPositiveEarningsStreak(),
-                entity.getQualityScore());
+                entity.getQualityScore(),
+                entity.getNonOperatingIncomeSharePretaxPct(),
+                entity.getShareholderPayoutToFcfRatioPct(),
+                entity.getShortTermDebtDelta(),
+                entity.getNonCapexInvestingOutflow(),
+                entity.getNonCapexInvestingToFcfRatioPct(),
+                entity.getFlagHighNonOperatingIncome(),
+                entity.getFlagPayoutExceedsFcf(),
+                entity.getFlagDebtFundedPayout());
     }
 
     public static Comparator<CompanyFinancialRatiosDto> getComparator() {

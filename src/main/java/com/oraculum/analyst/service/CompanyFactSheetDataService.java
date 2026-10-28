@@ -10,7 +10,9 @@ import com.oraculum.company.api.domain.TickerDocumentType;
 import com.oraculum.company.api.dto.*;
 import com.oraculum.economy.api.EconomyDataApi;
 import com.oraculum.harvester.api.HarvesterLiveApi;
+import com.oraculum.analyst.dto.ValuationScenarioDto;
 import com.oraculum.harvester.api.dto.CompanyNewsDto;
+import com.oraculum.harvester.api.dto.EarningsEstimateDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.json.JsonMapper;
@@ -33,6 +35,7 @@ public class CompanyFactSheetDataService {
     private final AnalystProperties analystProperties;
     private final CompanyValuationApi companyValuationApi;
     private final CompanyInstitutionalFlowApi companyInstitutionalFlowApi;
+    private final ValuationScenarioCalculator valuationScenarioCalculator;
 
     private Map<StatementVariant, List<IncomeStatementDto>> getIncomeStatements(CompanyDto company, LocalDate annualAfter, LocalDate quarterlyAfter) {
         return companyFinancialDataApi.getIncomeStatementsByCompanyId(company.id(), annualAfter)
@@ -120,6 +123,10 @@ public class CompanyFactSheetDataService {
         List<SharePriceSignalDto> dailySignals = getDailySharePriceSignals(company, analystProperties.sharePrice().getSharePriceHistoryDate());
         List<SharePriceSignalDto> monthlySignals = getMonthlySharePriceSignals(company, analystProperties.sharePrice().getMonthlySharePriceHistoryDate());
         Map<StatementVariant, List<CompanyFinancialRatiosDto>> ratios = getCompanyFinancialRatios(company, annualAfter, quarterlyAfter);
+        List<EarningsEstimateDto> estimates = harvesterLiveApi.fetchEarningsEstimates(company.ticker()).orElse(List.of());
+        ReverseDcfDto reverseDcf = companyValuationApi.calculateReverseDcf(company.id());
+        Float latestPrice = (dailySignals != null && !dailySignals.isEmpty()) ? dailySignals.getFirst().sharePrice() : null;
+        ValuationScenarioDto scenarios = valuationScenarioCalculator.calculate(latestPrice, estimates, LocalDate.now(), reverseDcf);
 
         return CompanyFactSheetData.builder()
                 .jsonMapper(jsonMapper)
@@ -135,13 +142,14 @@ public class CompanyFactSheetDataService {
                 .recentNews(getRecentNews(company))
                 .insiderTransactionSummary(getInsiderTransactionSummary(company))
                 .insiderTransactionsByPerson(getInsiderTransactionsByPerson(company))
-                .earningsEstimates(harvesterLiveApi.fetchEarningsEstimates(company.ticker()).orElse(List.of()))
+                .earningsEstimates(estimates)
                 .macroeconomicSummary(economyDataApi.getMacroeconomicSummary())
                 .recentSecDocuments(getRecentSecDocuments(company))
-                .reverseDcfResult(companyValuationApi.calculateReverseDcf(company.id()))
+                .reverseDcfResult(reverseDcf)
                 .historicalValuationPercentiles(companyValuationApi.calculateHistoricalValuationPercentiles(company.id()))
                 .institutionalFlowHistory(getInstitutionalFlowHistory(company))
                 .allSectorsInstitutionalFlow(getAllSectorsInstitutionalFlow())
+                .valuationScenarios(scenarios)
                 .build();
     }
 

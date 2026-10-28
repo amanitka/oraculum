@@ -166,7 +166,8 @@ class DataQualityMetricsCalculatorTest {
                 0.2f, 5000f, 1000f, 0.4f, 0.25f, 0.16f, 1.5f,
                 1.2f, 0.5f, 5.0f, 10f, 45f, 30f, 0.1f, 0.12f, 0.15f,
                 0.08f, 0.1f, 8, 1.1f, 1, 0, 1,
-                4, 4, 4, 8.5f
+                4, 4, 4, 8.5f,
+                null, null, null, null, null, 0, 0, 0
         );
     }
 

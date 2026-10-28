@@ -25,6 +25,10 @@ Your task is to evaluate valuation across three distinct analytical lenses:
 - Review `reverse_dcf.sensitivity_matrix` across the 8–12% discount and 2–4% terminal rate spectrum to evaluate the range of implied growth (from deep discount to speculative) and whether the hurdle remains favorable under more demanding cost of capital assumptions.
 - Assess whether implied growth is realistic, aggressive, or conservative given competitive position.
 
+#### Lens 4: Forward Scenarios & Consensus Reconciliations
+- Cross-reference `reverse_dcf` with `valuation_scenarios` (forward P/E on FY1 and FY2 consensus estimates, next quarter date/estimates, and sensitivity matrix).
+- Check `flag_reverse_dcf_divergence`: if true, explicitly highlight that the market prices aggressive multi-year FCF growth while consensus near-term forward P/E appears moderate.
+
 #### Synthesis
 - Integrate all three lenses into a cohesive, detailed `summary` paragraph explaining historical multiples, peer relative value, and reverse DCF implied growth expectations.
 
@@ -106,7 +110,8 @@ Rules:
   "industry_ratios": {{ industry_ratios }},
   "daily_share_price_signals": {{ daily_share_price_signals }},
   "historical_valuation_percentiles": {{ historical_valuation_percentiles }},
-  "reverse_dcf": {{ reverse_dcf }}
+  "reverse_dcf": {{ reverse_dcf }},
+  "valuation_scenarios": {{ valuation_scenarios }}
 }
 ```
 

@@ -11,29 +11,25 @@ import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.api.domain.ValuationAssessment;
 import com.oraculum.analyst.api.dto.AnalysisResult;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
+import com.oraculum.analyst.dto.ValuationScenarioDto;
+import com.oraculum.company.api.domain.StatementVariant;
+import com.oraculum.company.api.dto.CompanyFinancialRatiosDto;
 import com.oraculum.company.api.dto.ReverseDcfDto;
 import com.oraculum.company.api.dto.ReverseDcfMatrixCellDto;
 import com.oraculum.company.api.dto.ReverseDcfSensitivityMatrixDto;
 import com.oraculum.company.api.dto.ValuationZone;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
 class SynthesizerGuardrailServiceTest {
 
     private SynthesizerGuardrailService guardrailService;
-
-    @Mock
-    private CompanyFactSheetData factSheetData;
-
     private AgentWorkflowState state;
 
     @BeforeEach
@@ -44,14 +40,14 @@ class SynthesizerGuardrailServiceTest {
 
     @Test
     void applyGuardrails_aggressiveDcfHurdle_adjustsUndervaluedToFairlyValued() {
-        List<ReverseDcfMatrixCellDto> cells = List.of(
+        ReverseDcfDto dcf = createDcfWithCells(List.of(
                 new ReverseDcfMatrixCellDto(10.0, 3.0, 18.0, ValuationZone.AGGRESSIVE, true),
                 new ReverseDcfMatrixCellDto(11.0, 3.0, 21.0, ValuationZone.SPECULATIVE, false),
                 new ReverseDcfMatrixCellDto(9.0, 3.0, 15.0, ValuationZone.AGGRESSIVE, false)
-        ); // 3/3 = 100% aggressive/speculative
-        ReverseDcfSensitivityMatrixDto matrix = new ReverseDcfSensitivityMatrixDto(List.of(10.0), List.of(3.0), cells);
-        ReverseDcfDto dcf = new ReverseDcfDto(100.0, 10.0, 0.1, 0.1, 10, 0.03, 18.0, 12.0, "5Y", false, "High hurdle", matrix);
-        when(factSheetData.getReverseDcfResult()).thenReturn(dcf);
+        ));
+        CompanyFactSheetData factSheetData = CompanyFactSheetData.builder()
+                .reverseDcfResult(dcf)
+                .build();
 
         AnalysisResult rawResult = AnalysisResult.builder()
                 .valuation(ValuationAssessment.UNDERVALUED)
@@ -72,14 +68,14 @@ class SynthesizerGuardrailServiceTest {
 
     @Test
     void applyGuardrails_fairDcfHurdle_preservesUndervalued() {
-        List<ReverseDcfMatrixCellDto> cells = List.of(
+        ReverseDcfDto dcf = createDcfWithCells(List.of(
                 new ReverseDcfMatrixCellDto(10.0, 3.0, 8.0, ValuationZone.FAIR, true),
                 new ReverseDcfMatrixCellDto(9.0, 3.0, 6.0, ValuationZone.DEEP_DISCOUNT, false),
                 new ReverseDcfMatrixCellDto(11.0, 3.0, 11.0, ValuationZone.FAIR, false)
-        );
-        ReverseDcfSensitivityMatrixDto matrix = new ReverseDcfSensitivityMatrixDto(List.of(10.0), List.of(3.0), cells);
-        ReverseDcfDto dcf = new ReverseDcfDto(100.0, 10.0, 0.1, 0.1, 10, 0.03, 8.0, 12.0, "5Y", false, "Low hurdle", matrix);
-        when(factSheetData.getReverseDcfResult()).thenReturn(dcf);
+        ));
+        CompanyFactSheetData factSheetData = CompanyFactSheetData.builder()
+                .reverseDcfResult(dcf)
+                .build();
 
         AnalysisResult rawResult = AnalysisResult.builder()
                 .valuation(ValuationAssessment.UNDERVALUED)
@@ -100,18 +96,15 @@ class SynthesizerGuardrailServiceTest {
 
     @Test
     void applyGuardrails_derivesConvictionFromSpecialistDispersions() {
-        // High consensus: 8.5, 8.7, 8.6 -> stdDev < 0.1
-        state.putAgentOutput(AgentType.FUNDAMENTALS, StandardAgentOutput.builder().score(8.5).build());
-        state.putAgentOutput(AgentType.VALUATION, StandardAgentOutput.builder().score(8.7).build());
-        state.putAgentOutput(AgentType.CASH_FLOW, StandardAgentOutput.builder().score(8.6).build());
+        setupSpecialistScores(8.5, 8.7, 8.6);
 
         AnalysisResult rawResult = AnalysisResult.builder()
                 .valuation(ValuationAssessment.FAIRLY_VALUED)
-                .conviction(1) // Raw model under-reported conviction
+                .conviction(1)
                 .build();
 
         AgentContext ctx = AgentContext.builder()
-                .factSheetData(factSheetData)
+                .factSheetData(CompanyFactSheetData.builder().build())
                 .state(state)
                 .build();
 
@@ -122,17 +115,33 @@ class SynthesizerGuardrailServiceTest {
 
     @Test
     void applyGuardrails_reducesConvictionWhenUnresolvedContradictionsExist() {
-        state.putAgentOutput(AgentType.FUNDAMENTALS, StandardAgentOutput.builder().score(9.0).build());
-        state.putAgentOutput(AgentType.VALUATION, StandardAgentOutput.builder().score(5.0).build());
-        state.putAgentOutput(AgentType.CASH_FLOW, StandardAgentOutput.builder().score(8.0).build());
+        setupSpecialistScores(9.0, 5.0, 8.0);
+        CriticAgentOutput criticOutput = createCriticWithUnresolvedContradiction();
 
-        Contradiction unresolved = new Contradiction(
-                "Unresolved margin divergence",
-                List.of("FUNDAMENTALS", "VALUATION"),
-                CorrectionType.DATA_SOURCE_CONFLICT,
-                Resolution.UNRESOLVED
+        AnalysisResult rawResult = AnalysisResult.builder()
+                .valuation(ValuationAssessment.FAIRLY_VALUED)
+                .conviction(5)
+                .build();
+
+        AgentContext ctx = AgentContext.builder()
+                .factSheetData(CompanyFactSheetData.builder().build())
+                .state(state)
+                .build();
+
+        AnalysisResult guarded = guardrailService.applyGuardrails(rawResult, ctx, criticOutput);
+
+        assertThat(guarded.conviction()).isLessThanOrEqualTo(3);
+    }
+
+    @Test
+    void applyGuardrails_reverseDcfPeDivergence_capsConvictionAtThree() {
+        setupSpecialistScores(8.5, 8.7, 8.6);
+        ValuationScenarioDto scenarios = new ValuationScenarioDto(
+                100.0f, 15.0f, 12.0f, null, null, null, false, null, null, true
         );
-        CriticAgentOutput criticOutput = new CriticAgentOutput(List.of(unresolved), false, List.of());
+        CompanyFactSheetData factSheetData = CompanyFactSheetData.builder()
+                .valuationScenarios(scenarios)
+                .build();
 
         AnalysisResult rawResult = AnalysisResult.builder()
                 .valuation(ValuationAssessment.FAIRLY_VALUED)
@@ -144,8 +153,113 @@ class SynthesizerGuardrailServiceTest {
                 .state(state)
                 .build();
 
-        AnalysisResult guarded = guardrailService.applyGuardrails(rawResult, ctx, criticOutput);
+        AnalysisResult guarded = guardrailService.applyGuardrails(rawResult, ctx, null);
 
-        assertThat(guarded.conviction()).isLessThanOrEqualTo(3);
+        assertThat(guarded.conviction()).isEqualTo(3);
+    }
+
+    @Test
+    void applyGuardrails_lowEarningsQuality_capsConvictionAtThree() {
+        setupSpecialistScores(8.5, 8.7, 8.6);
+        CompanyFinancialRatiosDto ratio = createRatioWithEarningsQuality(0.55f);
+        CompanyFactSheetData factSheetData = CompanyFactSheetData.builder()
+                .companyFinancialRatios(Map.of(StatementVariant.TTM, List.of(ratio)))
+                .build();
+
+        AnalysisResult rawResult = AnalysisResult.builder()
+                .valuation(ValuationAssessment.FAIRLY_VALUED)
+                .conviction(5)
+                .build();
+
+        AgentContext ctx = AgentContext.builder()
+                .factSheetData(factSheetData)
+                .state(state)
+                .build();
+
+        AnalysisResult guarded = guardrailService.applyGuardrails(rawResult, ctx, null);
+
+        assertThat(guarded.conviction()).isEqualTo(3);
+    }
+
+    @Test
+    void applyGuardrails_emptyFactorScores_populatesFromSpecialists() {
+        state.putAgentOutput(AgentType.FUNDAMENTALS, StandardAgentOutput.builder().score(8.0).build());
+        state.putAgentOutput(AgentType.VALUATION, StandardAgentOutput.builder().score(7.0).build());
+        state.putAgentOutput(AgentType.EARNINGS_ESTIMATES, StandardAgentOutput.builder().score(6.5).build());
+        state.putAgentOutput(AgentType.RISK, StandardAgentOutput.builder().score(7.5).build());
+
+        AnalysisResult rawResult = AnalysisResult.builder()
+                .valuation(ValuationAssessment.FAIRLY_VALUED)
+                .factorScores(Map.of())
+                .build();
+
+        AgentContext ctx = AgentContext.builder()
+                .factSheetData(CompanyFactSheetData.builder().build())
+                .state(state)
+                .build();
+
+        AnalysisResult guarded = guardrailService.applyGuardrails(rawResult, ctx, null);
+
+        assertThat(guarded.factorScores()).isNotNull();
+        assertThat(guarded.factorScores().get("fundamental_health")).isEqualTo(8.0);
+        assertThat(guarded.factorScores().get("valuation")).isEqualTo(7.0);
+        assertThat(guarded.factorScores().get("growth_prospects")).isEqualTo(6.5);
+        assertThat(guarded.factorScores().get("risk_profile")).isEqualTo(7.5);
+    }
+
+    @Test
+    void applyGuardrails_sanitizesAdviceWords_preservesCompoundWords() {
+        AnalysisResult rawResult = AnalysisResult.builder()
+                .valuation(ValuationAssessment.FAIRLY_VALUED)
+                .thesis("We recommend to BUY the stock due to share buybacks and sell-through strength. Do not SELL.")
+                .build();
+
+        AgentContext ctx = AgentContext.builder()
+                .factSheetData(CompanyFactSheetData.builder().build())
+                .state(state)
+                .build();
+
+        AnalysisResult guarded = guardrailService.applyGuardrails(rawResult, ctx, null);
+
+        assertThat(guarded.thesis())
+                .contains("favorable investment case")
+                .contains("cautious positioning")
+                .contains("share buybacks")
+                .contains("sell-through");
+    }
+
+    private void setupSpecialistScores(double s1, double s2, double s3) {
+        state.putAgentOutput(AgentType.FUNDAMENTALS, StandardAgentOutput.builder().score(s1).build());
+        state.putAgentOutput(AgentType.VALUATION, StandardAgentOutput.builder().score(s2).build());
+        state.putAgentOutput(AgentType.CASH_FLOW, StandardAgentOutput.builder().score(s3).build());
+    }
+
+    private ReverseDcfDto createDcfWithCells(List<ReverseDcfMatrixCellDto> cells) {
+        ReverseDcfSensitivityMatrixDto matrix = new ReverseDcfSensitivityMatrixDto(List.of(10.0), List.of(3.0), cells);
+        return new ReverseDcfDto(100.0, 10.0, 0.1, 0.1, 10, 0.03, 18.0, 12.0, "5Y", false, "Hurdle test", matrix);
+    }
+
+    private CriticAgentOutput createCriticWithUnresolvedContradiction() {
+        Contradiction unresolved = new Contradiction(
+                "Unresolved margin divergence",
+                List.of("FUNDAMENTALS", "VALUATION"),
+                CorrectionType.DATA_SOURCE_CONFLICT,
+                Resolution.UNRESOLVED
+        );
+        return new CriticAgentOutput(List.of(unresolved), false, List.of());
+    }
+
+    private CompanyFinancialRatiosDto createRatioWithEarningsQuality(float eqRatio) {
+        LocalDate date = LocalDate.of(2026, 1, 1);
+        return new CompanyFinancialRatiosDto(
+                "id", 1, "TEST", "USD", null, StatementVariant.TTM,
+                2026, "Q3", date, date, date,
+                1000f, 800f, 500f, 400f, 100f, 0.2f, 0.25f, 0.15f,
+                0.2f, 5000f, 1000f, 0.4f, 0.25f, 0.16f, 1.5f,
+                1.2f, 0.5f, 5.0f, 10f, 45f, 30f, 0.1f, 0.12f, 0.15f,
+                0.08f, 0.1f, 8, eqRatio, 1, 0, 1,
+                4, 4, 4, 8.5f,
+                null, null, null, null, null, 0, 0, 0
+        );
     }
 }

@@ -1,4 +1,4 @@
-package com.oraculum.analyst.service;
+package com.oraculum.analyst.service.citation;
 
 import com.oraculum.analyst.agent.dto.AgentContext;
 import com.oraculum.analyst.agent.dto.AgentWorkflowState;

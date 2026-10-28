@@ -1,4 +1,4 @@
-package com.oraculum.analyst.service;
+package com.oraculum.analyst.service.citation;
 
 import org.springframework.stereotype.Component;
 
@@ -39,16 +39,26 @@ public class FinancialMetricDictionary {
 
     private static Map<String, List<String>> createMetricMap() {
         Map<String, List<String>> map = new LinkedHashMap<>();
+        addWorkingCapitalMetrics(map);
+        addCashFlowMetrics(map);
+        addRatioAndMarginMetrics(map);
+        addValuationAndReturnMetrics(map);
+        addGrowthAndConsensusMetrics(map);
+        addInsiderAndInstitutionalMetrics(map);
+        addMacroMetrics(map);
+        return Collections.unmodifiableMap(map);
+    }
 
-        // Working Capital & Efficiency
+    private static void addWorkingCapitalMetrics(Map<String, List<String>> map) {
         map.put("dso", List.of("daysSalesOutstanding", "dso"));
         map.put("days sales outstanding", List.of("daysSalesOutstanding", "dso"));
         map.put("dio", List.of("daysInventoryOutstanding", "dio"));
         map.put("days inventory outstanding", List.of("daysInventoryOutstanding", "dio"));
         map.put("ccc", List.of("cashConversionCycle"));
         map.put("cash conversion cycle", List.of("cashConversionCycle"));
+    }
 
-        // Cash Flow Statement (Alpha Vantage, SimFin, FMP schemas)
+    private static void addCashFlowMetrics(Map<String, List<String>> map) {
         map.put("operating cash flow", List.of("Net Cash from Operating Activities", "operatingCashFlow", "ocf", "netOperatingCashFlow"));
         map.put("operating cash", List.of("Net Cash from Operating Activities", "operatingCashFlow", "ocf"));
         map.put("cash from operations", List.of("Net Cash from Operating Activities", "operatingCashFlow", "ocf"));
@@ -63,8 +73,9 @@ public class FinancialMetricDictionary {
         map.put("dividends", List.of("Dividends Paid", "dividendsPaid"));
         map.put("share repurchases", List.of("Cash from (Repurchase of) Equity", "repurchaseOfEquity", "shareRepurchase"));
         map.put("buybacks", List.of("Cash from (Repurchase of) Equity", "repurchaseOfEquity", "shareRepurchase"));
+    }
 
-        // Ratios & Balance Sheet
+    private static void addRatioAndMarginMetrics(Map<String, List<String>> map) {
         map.put("current ratio", List.of("currentRatio"));
         map.put("quick ratio", List.of("quickRatio"));
         map.put("debt to equity", List.of("debtToEquity", "debtEquityRatio"));
@@ -76,6 +87,9 @@ public class FinancialMetricDictionary {
         map.put("fcf margin", List.of("fcfMargin", "fcf_margin"));
         map.put("ebitda margin", List.of("ebitdaMargin", "ebitda_margin"));
         map.put("margin", List.of("grossMargin", "operatingMargin", "netMargin", "profitMargin", "gross_margin", "operating_margin", "net_margin"));
+    }
+
+    private static void addValuationAndReturnMetrics(Map<String, List<String>> map) {
         map.put("p/e", List.of("peRatio", "priceEarningsRatio", "forwardPE", "trailingPE"));
         map.put("pe ratio", List.of("peRatio", "priceEarningsRatio", "forwardPE", "trailingPE"));
         map.put("price to earnings", List.of("peRatio", "priceEarningsRatio", "forwardPE", "trailingPE"));
@@ -89,14 +103,13 @@ public class FinancialMetricDictionary {
         map.put("earnings quality", List.of("earningsQualityRatio"));
         map.put("capex to revenue", List.of("capexToRevenue"));
         map.put("asset turnover", List.of("assetTurnover"));
+    }
 
-        // Growth metrics
+    private static void addGrowthAndConsensusMetrics(Map<String, List<String>> map) {
         map.put("revenue growth", List.of("revenueYoyGrowth", "revenue_growth_yoy_pct", "growth_yoy_pct"));
         map.put("net income growth", List.of("netIncomeYoyGrowth"));
         map.put("ebitda growth", List.of("ebitdaYoyGrowth"));
         map.put("fcf growth", List.of("fcfYoyGrowth"));
-
-        // Consensus & Revisions
         map.put("revisions up", List.of("eps_estimate_revision_up_trailing_30_days", "revenue_estimate_revision_up_trailing_30_days"));
         map.put("revised up", List.of("eps_estimate_revision_up_trailing_30_days", "revenue_estimate_revision_up_trailing_30_days"));
         map.put("revisions down", List.of("eps_estimate_revision_down_trailing_30_days", "revenue_estimate_revision_down_trailing_30_days"));
@@ -107,8 +120,9 @@ public class FinancialMetricDictionary {
         map.put("eps", List.of("eps", "earningsPerShare", "dilutedEps", "basicEps", "eps_estimate_average"));
         map.put("revenue consensus", List.of("revenue_estimate_average"));
         map.put("revenue", List.of("revenue", "totalRevenue", "sales", "revenue_estimate_average"));
+    }
 
-        // Insider Trading & 13F Institutional
+    private static void addInsiderAndInstitutionalMetrics(Map<String, List<String>> map) {
         map.put("insider sells", List.of("sellsValue3m", "sellsValue6m", "sellsShares3m", "sellsCount3m"));
         map.put("insider sales", List.of("sellsValue3m", "sellsValue6m", "sellsShares3m", "sellsCount3m"));
         map.put("insider buys", List.of("buysValue3m", "buysValue6m", "buysShares3m", "buysCount3m"));
@@ -118,8 +132,9 @@ public class FinancialMetricDictionary {
         map.put("top 5", List.of("top5HoldersPct", "top5HoldersValueUsd"));
         map.put("funds buying", List.of("fundsBuyingCount"));
         map.put("funds selling", List.of("fundsSellingCount"));
+    }
 
-        // Macro (FRED)
+    private static void addMacroMetrics(Map<String, List<String>> map) {
         List<String> commonFredProps = List.of("latestValue", "value1yAgo", "yoyChangePct", "yoyChangeBps", "value", "previous_value");
         map.put("gdp", combine(List.of("GDPC1", "gdp", "gross domestic product"), commonFredProps));
         map.put("durable goods", combine(List.of("DGORDER", "durable goods"), commonFredProps));
@@ -135,8 +150,6 @@ public class FinancialMetricDictionary {
         map.put("ppi", combine(List.of("PPIACO", "producer price", "ppi"), commonFredProps));
         map.put("retail sales", combine(List.of("RSAFS", "retail sales"), commonFredProps));
         map.put("mortgage", combine(List.of("MORTGAGE30US", "mortgage"), commonFredProps));
-
-        return Collections.unmodifiableMap(map);
     }
 
     private static List<String> combine(List<String> list1, List<String> list2) {

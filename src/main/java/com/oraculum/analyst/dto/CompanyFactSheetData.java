@@ -47,6 +47,7 @@ public class CompanyFactSheetData {
     private final List<MacroSummaryDto> macroeconomicSummary;
     private final Map<TickerDocumentType, Map<TickerDocumentSubtype, List<TickerDocumentDto>>> recentSecDocuments;
     private final ReverseDcfDto reverseDcfResult;
+    private final ValuationScenarioDto valuationScenarios;
     private final List<HistoricalValuationSummaryDto> historicalValuationPercentiles;
     private final List<CompanyInstitutionalFlowDto> institutionalFlowHistory;
     private final List<SectorInstitutionalFlowTrendDto> allSectorsInstitutionalFlow;
@@ -145,6 +146,9 @@ public class CompanyFactSheetData {
      * Returns raw DTOs for code-level consumers (e.g. CanonicalFactsService).
      */
     public List<CompanyFinancialRatiosDto> getCompanyFinancialRatiosList(StatementVariant variant) {
+        if (companyFinancialRatios == null) {
+            return List.of();
+        }
         return Optional.ofNullable(companyFinancialRatios.get(variant)).orElse(List.of());
     }
 
@@ -523,6 +527,14 @@ public class CompanyFactSheetData {
 
     public String getReverseDcfAnalysis() {
         return wrapWithCitation(ReverseDcfDto.class, company.ticker() + "_reverse_dcf", reverseDcfResult);
+    }
+
+    public String getValuationScenarios() {
+        return wrapWithCitation(ValuationScenarioDto.class, company.ticker() + "_valuation_scenarios", valuationScenarios);
+    }
+
+    public ValuationScenarioDto getValuationScenariosObject() {
+        return valuationScenarios;
     }
 
     public String getHistoricalValuationPercentiles() {
