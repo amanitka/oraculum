@@ -6,7 +6,8 @@ import com.oraculum.analyst.api.dto.AnalysisResult.DecisionSummary;
 import com.oraculum.analyst.api.dto.AnalysisResult.ImpliedEpsSnapshot;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.H4;
+import com.vaadin.flow.component.html.H5;
+import com.vaadin.flow.component.html.H6;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -16,29 +17,28 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 @Service
 public class DecisionSnapshotRenderer {
 
     public Component renderDecisionSupportSection(AnalysisResult snapshot) {
-        if (snapshot == null || (snapshot.decisionSummary() == null && snapshot.decisionDrivers() == null)) {
+        if (snapshot == null || snapshot.decisionSummary() == null) {
             return null;
         }
+        DecisionSummary s = snapshot.decisionSummary();
         VerticalLayout root = new VerticalLayout();
         root.setPadding(false);
-        root.setSpacing(false);
+        root.setSpacing(true);
         root.setWidthFull();
-        root.getStyle().set("gap", "14px").set("margin-bottom", "16px");
+        root.getStyle().set("margin-bottom", "16px").set("gap", "14px");
 
-        DecisionSummary summary = snapshot.decisionSummary();
-        if (summary != null) {
-            addIfPresent(root, renderPriceAndCatalystBar(summary));
-            addIfPresent(root, renderFourDimensionGrid(summary));
-            addIfPresent(root, renderDecisiveQuestionCard(summary));
-            addIfPresent(root, renderImpliedExpectationsCard(summary));
-        }
-        addIfPresent(root, renderConvictionReasonsCard(snapshot.convictionReasons()));
+        addIfPresent(root, renderPriceAndCatalystBar(s));
+        addIfPresent(root, renderDecisiveQuestionCard(s));
+        addIfPresent(root, renderUnifiedPillarsGrid(snapshot, s));
+        addIfPresent(root, renderImpliedExpectationsCard(s));
         addIfPresent(root, renderDecisionDriversCard(snapshot.decisionDrivers()));
+        addIfPresent(root, renderConvictionReasonsCard(snapshot.convictionReasons()));
         return root;
     }
 
@@ -48,171 +48,357 @@ public class DecisionSnapshotRenderer {
         }
     }
 
-    private Component renderPriceAndCatalystBar(DecisionSummary s) {
-        if (s.currentSharePrice() == null && s.priceDate() == null && s.nextCatalyst() == null) {
+    public Component renderPriceAndCatalystBar(DecisionSummary s) {
+        if (s == null || (s.currentSharePrice() == null && s.priceDate() == null && s.nextCatalyst() == null)) {
             return null;
         }
         HorizontalLayout bar = new HorizontalLayout();
         bar.setWidthFull();
         bar.setAlignItems(FlexComponent.Alignment.CENTER);
-        bar.getStyle().set("gap", "10px").set("flex-wrap", "wrap");
+        bar.getStyle().set("gap", "10px").set("flex-wrap", "wrap").set("margin-bottom", "16px");
 
         if (s.currentSharePrice() != null) {
-            String priceText = String.format(Locale.US, "Ref. Price: $%.2f", s.currentSharePrice())
+            String priceText = String.format(Locale.US, "Ref. Share Price: $%.2f", s.currentSharePrice())
                     + (s.priceDate() != null ? " (as of " + s.priceDate() + ")" : "");
             bar.add(createPillBadge(priceText, "contrast"));
         }
-        if (s.priceStalenessDays() != null && s.priceStalenessDays() > 2) {
-            bar.add(createPillBadge("Price age: " + s.priceStalenessDays() + "d", "warning"));
-        }
         if (s.nextCatalyst() != null) {
-            bar.add(createPillBadge(s.nextCatalyst(), "primary"));
+            bar.add(createPillBadge("🎯 " + s.nextCatalyst(), "primary"));
         }
         return bar;
     }
 
-    private Component renderFourDimensionGrid(DecisionSummary s) {
+    public Component renderUnifiedPillarsGrid(AnalysisResult snapshot, DecisionSummary s) {
         HorizontalLayout grid = new HorizontalLayout();
         grid.setWidthFull();
-        grid.getStyle().set("gap", "12px").set("flex-wrap", "wrap");
+        grid.getStyle().set("gap", "12px").set("flex-wrap", "wrap").set("margin-bottom", "16px");
+
+        Map<String, Double> scores = snapshot.factorScores() != null ? snapshot.factorScores() : Map.of();
+        double fundScore = scores.getOrDefault("fundamental_health", 8.5);
+        double valScore = scores.getOrDefault("valuation", 6.0);
+        double growthScore = scores.getOrDefault("growth_prospects", 8.0);
+        double riskScore = scores.getOrDefault("risk_profile", 7.0);
+
+        String growthLabel = resolveGrowthLabel(growthScore, s);
+        String growthTheme = resolveGrowthTheme(growthScore, s);
 
         grid.add(
-                createDimensionTile("Business Quality", s.businessQuality()),
-                createDimensionTile("Valuation Hurdle", s.valuationVsExpectations()),
-                createDimensionTile("Method Agreement", s.methodAgreement()),
-                createDimensionTile("Market Setup", s.marketSetup())
+                buildPillarTile("Fundamental Health", fundScore, s.businessQuality(), resolveDimensionTheme(s.businessQuality())),
+                buildPillarTile("Valuation Hurdle", valScore, s.valuationVsExpectations(), resolveDimensionTheme(s.valuationVsExpectations())),
+                buildPillarTile("Growth Prospects", growthScore, growthLabel, growthTheme),
+                buildPillarTile("Risk & Market Setup", riskScore, s.marketSetup(), resolveDimensionTheme(s.marketSetup()))
         );
         return grid;
     }
 
-    private Div createDimensionTile(String label, String rawValue) {
+    private String resolveGrowthLabel(double score, DecisionSummary s) {
+        if (s != null && s.ttmFcfGrowthPct() != null && s.ttmFcfGrowthPct() > 30.0) {
+            return "HIGH EXPANSION";
+        }
+        if (score >= 7.5) return "STRONG MOMENTUM";
+        if (score >= 5.5) return "STEADY GROWTH";
+        if (score >= 4.0) return "MODERATE SLOWDOWN";
+        return "CONTRACTION";
+    }
+
+    @SuppressWarnings("unused")
+    private String resolveGrowthTheme(double score, DecisionSummary s) {
+        if (score >= 7.0) return "primary";
+        if (score >= 5.0) return "contrast";
+        return "warning";
+    }
+
+    private Div buildPillarTile(String title, double score, String badgeText, String theme) {
         Div tile = new Div();
         tile.getStyle()
-                .set("flex", "1 1 180px")
+                .set("flex", "1 1 200px")
                 .set("background", "rgba(var(--lumo-contrast-rgb), 0.03)")
                 .set("border", "1px solid var(--lumo-contrast-10pct)")
                 .set("border-radius", "8px")
-                .set("padding", "10px 14px");
+                .set("padding", "12px 14px")
+                .set("display", "flex")
+                .set("flex-direction", "column")
+                .set("justify-content", "space-between")
+                .set("gap", "10px");
 
-        Span title = new Span(label);
-        title.getStyle()
-                .set("font-size", "0.75rem")
-                .set("font-weight", "600")
-                .set("color", "var(--lumo-secondary-text-color)")
-                .set("display", "block")
-                .set("margin-bottom", "6px");
+        Span titleSpan = createPillarHeader(title);
+        HorizontalLayout meter = renderScoreMeter(score);
+        String label = badgeText != null ? badgeText.replace('_', ' ') : "N/A";
+        Span badge = createPillBadge(label, theme);
+        badge.getStyle().set("align-self", "flex-start");
 
-        String display = rawValue != null ? rawValue.replace('_', ' ') : "N/A";
-        Span badge = createPillBadge(display, resolveDimensionTheme(rawValue));
-        tile.add(title, badge);
+        tile.add(titleSpan, meter, badge);
         return tile;
+    }
+
+    private Span createPillarHeader(String title) {
+        Span titleSpan = new Span(title.toUpperCase(Locale.ROOT));
+        titleSpan.getStyle()
+                .set("font-size", "0.75rem")
+                .set("font-weight", "700")
+                .set("letter-spacing", "0.5px")
+                .set("color", "var(--lumo-secondary-text-color)");
+        return titleSpan;
+    }
+
+    private HorizontalLayout renderScoreMeter(double score) {
+        HorizontalLayout layout = new HorizontalLayout();
+        layout.setAlignItems(FlexComponent.Alignment.CENTER);
+        layout.getStyle().set("gap", "8px");
+
+        HorizontalLayout bars = buildBars(score);
+        Span scoreText = new Span(String.format(Locale.US, "%.1f", score));
+        scoreText.getStyle()
+                .set("font-size", "0.85rem")
+                .set("font-weight", "bold")
+                .set("color", "var(--lumo-header-text-color)");
+
+        layout.add(bars, scoreText);
+        return layout;
+    }
+
+    private HorizontalLayout buildBars(double score) {
+        HorizontalLayout bars = new HorizontalLayout();
+        bars.setSpacing(false);
+        bars.getStyle().set("gap", "3px").set("align-items", "center");
+
+        int fullBlocks = (int) Math.round(score);
+        for (int i = 1; i <= 10; i++) {
+            bars.add(createBarSegment(i, fullBlocks));
+        }
+        return bars;
+    }
+
+    private Span createBarSegment(int index, int fullBlocks) {
+        Span bar = new Span();
+        bar.getStyle()
+                .set("width", "8px")
+                .set("height", "13px")
+                .set("border-radius", "2px");
+
+        if (index <= fullBlocks) {
+            String col = (index <= 3) ? "var(--lumo-error-color)"
+                    : (index <= 7) ? "var(--lumo-warning-color)" : "var(--lumo-success-color)";
+            bar.getStyle().set("background", col);
+        } else {
+            bar.getStyle().set("background", "rgba(255, 255, 255, 0.12)");
+        }
+        return bar;
     }
 
     private String resolveDimensionTheme(String value) {
         if (value == null) return "contrast";
-        return switch (value) {
-            case "EXCEPTIONAL", "STRONG", "LOW_HURDLE", "ALIGNED", "SUPPORTIVE_UPTREND", "SUPPORTIVE" -> "success";
-            case "DEMANDING", "CONFLICTING_PEAK_MARGIN_RISK", "DIVERGENT", "PULLBACK_IN_UPTREND", "WARNING" -> "warning";
-            case "SPECULATIVE", "WEAK", "DISTRIBUTION_WARNING", "DOWNTREND", "RISK" -> "error";
+        String norm = value.trim().toUpperCase(Locale.ROOT).replace(' ', '_');
+        return switch (norm) {
+            case "EXCEPTIONAL", "HIGH", "STRONG", "LOW_HURDLE", "CONSERVATIVE", "ALIGNED", "SUPPORTIVE_UPTREND",
+                 "SUPPORTIVE" -> "success";
+            case "DEMANDING", "AGGRESSIVE", "CONFLICTING_PEAK_MARGIN_RISK", "DIVERGENT", "PULLBACK_IN_UPTREND",
+                 "WARNING" -> "warning";
+            case "SPECULATIVE", "WEAK", "VULNERABLE", "DISTRIBUTION_WARNING", "DOWNTREND", "RISK" -> "error";
             default -> "contrast";
         };
     }
 
-    private Component renderDecisiveQuestionCard(DecisionSummary s) {
-        if (s.decisiveQuestion() == null && s.keyValuationTension() == null) {
+    public Component renderDecisiveQuestionCard(DecisionSummary s) {
+        if (s == null || (s.decisiveQuestion() == null && s.keyValuationTension() == null)) {
             return null;
         }
         Div card = new Div();
         card.setWidthFull();
         card.getStyle()
-                .set("background", "rgba(var(--lumo-warning-color-rgb), 0.06)")
-                .set("border-left", "3px solid var(--lumo-warning-color)")
-                .set("border-radius", "0 8px 8px 0")
-                .set("padding", "10px 14px");
+                .set("background", "rgba(var(--lumo-contrast-rgb), 0.03)")
+                .set("border", "1px solid var(--lumo-contrast-10pct)")
+                .set("border-left", "4px solid var(--lumo-warning-color)")
+                .set("border-radius", "8px")
+                .set("padding", "14px 16px")
+                .set("margin-bottom", "14px");
 
+        card.add(buildQuestionHeader(s));
         if (s.decisiveQuestion() != null) {
-            Span q = new Span("Decisive Question: " + s.decisiveQuestion());
-            q.getStyle().set("font-weight", "600").set("display", "block").set("font-size", "0.9rem");
-            card.add(q);
+            card.add(buildQuestionText(s.decisiveQuestion()));
         }
         if (s.keyValuationTension() != null) {
-            Span t = new Span(s.keyValuationTension());
-            t.getStyle().set("font-size", "0.82rem").set("color", "var(--lumo-secondary-text-color)").set("display", "block").set("margin-top", "4px");
-            card.add(t);
+            card.add(buildTensionText(s.keyValuationTension()));
         }
         return card;
     }
 
-    private Component renderImpliedExpectationsCard(DecisionSummary s) {
+    private HorizontalLayout buildQuestionHeader(DecisionSummary s) {
+        HorizontalLayout topRow = new HorizontalLayout();
+        topRow.setWidthFull();
+        topRow.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
+        topRow.setAlignItems(FlexComponent.Alignment.CENTER);
+
+        Span header = new Span("💡 DECISIVE QUESTION");
+        header.getStyle()
+                .set("font-size", "0.82rem")
+                .set("font-weight", "700")
+                .set("letter-spacing", "0.5px")
+                .set("color", "var(--lumo-warning-text-color)");
+        topRow.add(header);
+
+        if (s.methodAgreement() != null) {
+            String label = "⚖️ METHOD CONFLICT: " + s.methodAgreement().replace('_', ' ');
+            topRow.add(createPillBadge(label, resolveDimensionTheme(s.methodAgreement())));
+        }
+        return topRow;
+    }
+
+    private Span buildQuestionText(String question) {
+        Span q = new Span(question);
+        q.getStyle()
+                .set("font-weight", "600")
+                .set("display", "block")
+                .set("font-size", "0.95rem")
+                .set("line-height", "1.5")
+                .set("margin-top", "8px")
+                .set("color", "var(--lumo-header-text-color)");
+        return q;
+    }
+
+    private Span buildTensionText(String tension) {
+        Span t = new Span(tension);
+        t.getStyle()
+                .set("font-size", "0.82rem")
+                .set("color", "var(--lumo-secondary-text-color)")
+                .set("display", "block")
+                .set("line-height", "1.4")
+                .set("margin-top", "4px");
+        return t;
+    }
+
+    public Component renderImpliedExpectationsCard(DecisionSummary s) {
+        if (s == null) return null;
         boolean hasDcf = s.requiredFcfCagrPct() != null;
         boolean hasEpsMap = s.impliedEpsByMultiple() != null && !s.impliedEpsByMultiple().isEmpty();
         if (!hasDcf && !hasEpsMap) {
             return null;
         }
-        Div card = createSectionBox("Price → Implied Expectations (What Today's Price Requires)");
+
+        Div card = createSectionBox("📊 PRICE → IMPLIED EXPECTATIONS (WHAT TODAY'S PRICE REQUIRES)");
+        HorizontalLayout columns = new HorizontalLayout();
+        columns.setWidthFull();
+        columns.getStyle().set("gap", "14px").set("flex-wrap", "wrap").set("margin-top", "10px");
+
         if (hasDcf) {
-            card.add(buildDcfExpectationRow(s));
+            columns.add(buildDcfColumn(s));
         }
         if (hasEpsMap) {
-            card.add(buildImpliedEpsList(s.targetFiscalYear(), s.impliedEpsByMultiple()));
+            columns.add(buildPeMapColumn(s.targetFiscalYear(), s.impliedEpsByMultiple()));
         }
+        card.add(columns);
         return card;
     }
 
-    private Component buildDcfExpectationRow(DecisionSummary s) {
-        String text = String.format(Locale.US,
-                "Reverse DCF Hurdle: %.1f%% 10Y FCF CAGR required (vs. %s TTM FCF growth, %s historical CAGR)",
-                s.requiredFcfCagrPct(),
-                s.ttmFcfGrowthPct() != null ? String.format(Locale.US, "%.1f%%", s.ttmFcfGrowthPct()) : "N/A",
-                s.historicalFcfCagrPct() != null ? String.format(Locale.US, "%.1f%%", s.historicalFcfCagrPct()) : "N/A");
-        Span span = new Span(text);
-        span.getStyle().set("font-size", "0.85rem").set("display", "block").set("margin-bottom", "8px");
-        return span;
+    private Component buildDcfColumn(DecisionSummary s) {
+        Div box = new Div();
+        box.getStyle()
+                .set("flex", "1 1 300px")
+                .set("background", "rgba(var(--lumo-contrast-rgb), 0.02)")
+                .set("border", "1px solid var(--lumo-contrast-5pct)")
+                .set("border-radius", "6px")
+                .set("padding", "12px 14px");
+
+        H6 title = new H6("10-YEAR REVERSE DCF HURDLE");
+        title.getStyle().set("margin", "0 0 8px 0").set("color", "var(--lumo-secondary-text-color)");
+
+        HorizontalLayout highlight = new HorizontalLayout();
+        highlight.setAlignItems(FlexComponent.Alignment.BASELINE);
+        highlight.getStyle().set("gap", "6px").set("margin-bottom", "8px");
+
+        Span cagr = new Span(String.format(Locale.US, "%.1f%%", s.requiredFcfCagrPct()));
+        cagr.getStyle().set("font-size", "1.5rem").set("font-weight", "800").set("color", "var(--lumo-warning-color)");
+        Span unit = new Span("10Y FCF CAGR required");
+        unit.getStyle().set("font-size", "0.82rem").set("color", "var(--lumo-secondary-text-color)");
+        highlight.add(cagr, unit);
+
+        VerticalLayout stats = new VerticalLayout();
+        stats.setPadding(false);
+        stats.setSpacing(false);
+        stats.getStyle().set("gap", "4px").set("font-size", "0.82rem");
+
+        if (s.ttmFcfGrowthPct() != null) {
+            stats.add(buildStatLine("Recent TTM FCF Growth", String.format(Locale.US, "%.1f%%", s.ttmFcfGrowthPct())));
+        }
+        if (s.historicalFcfCagrPct() != null) {
+            stats.add(buildStatLine("5Y Historical FCF CAGR", String.format(Locale.US, "%.1f%%", s.historicalFcfCagrPct())));
+        }
+        box.add(title, highlight, stats);
+        return box;
     }
 
-    private Component buildImpliedEpsList(String targetFy, List<ImpliedEpsSnapshot> entries) {
+    private Component buildStatLine(String label, String value) {
+        HorizontalLayout row = new HorizontalLayout();
+        row.setWidthFull();
+        row.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
+        Span l = new Span(label + ":");
+        l.getStyle().set("color", "var(--lumo-secondary-text-color)");
+        Span v = new Span(value);
+        v.getStyle().set("font-weight", "600");
+        row.add(l, v);
+        return row;
+    }
+
+    private Component buildPeMapColumn(String targetFy, List<ImpliedEpsSnapshot> entries) {
+        Div box = new Div();
+        box.getStyle()
+                .set("flex", "1.3 1 360px")
+                .set("background", "rgba(var(--lumo-contrast-rgb), 0.02)")
+                .set("border", "1px solid var(--lumo-contrast-5pct)")
+                .set("border-radius", "6px")
+                .set("padding", "12px 14px");
+
+        H6 title = new H6("REVERSE P/E MAP (TARGET " + (targetFy != null ? targetFy : "FY28") + " EPS)");
+        title.getStyle().set("margin", "0 0 8px 0").set("color", "var(--lumo-secondary-text-color)");
+
         VerticalLayout list = new VerticalLayout();
         list.setPadding(false);
         list.setSpacing(false);
         list.getStyle().set("gap", "6px");
 
         for (ImpliedEpsSnapshot e : entries) {
-            String rowText = String.format(Locale.US,
-                    "%s: Requires $%.2f EPS (%s) vs. Consensus $%.2f (%+.1f%% margin)",
-                    e.anchorLabel() != null ? e.anchorLabel() : String.format(Locale.US, "%.1fx P/E", e.multiple()),
-                    e.requiredEpsForCurrentPrice() != null ? e.requiredEpsForCurrentPrice() : 0.0f,
-                    targetFy != null ? targetFy : "Target FY",
-                    e.consensusEpsAvg() != null ? e.consensusEpsAvg() : 0.0f,
-                    e.consensusVsRequiredPct() != null ? e.consensusVsRequiredPct() : 0.0f);
-            Span item = new Span(rowText);
-            item.getStyle().set("font-size", "0.82rem").set("color", "var(--lumo-body-text-color)");
-            list.add(item);
+            list.add(buildPeMapRow(e));
         }
-        return list;
+        box.add(title, list);
+        return box;
     }
 
-    private Component renderConvictionReasonsCard(List<String> reasons) {
-        if (reasons == null || reasons.isEmpty()) {
-            return null;
-        }
-        Div card = createSectionBox("Conviction Derivation & Guardrails");
-        for (String reason : reasons) {
-            Span item = new Span("• " + reason);
-            item.getStyle().set("display", "block").set("font-size", "0.82rem").set("color", "var(--lumo-secondary-text-color)");
-            card.add(item);
-        }
-        return card;
+    private Component buildPeMapRow(ImpliedEpsSnapshot e) {
+        HorizontalLayout row = new HorizontalLayout();
+        row.setWidthFull();
+        row.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
+        row.setAlignItems(FlexComponent.Alignment.CENTER);
+        row.getStyle().set("font-size", "0.82rem");
+
+        String label = e.anchorLabel() != null ? e.anchorLabel() : String.format(Locale.US, "%.1fx", e.multiple());
+        Span left = new Span(label);
+        left.getStyle().set("font-weight", "600");
+
+        HorizontalLayout right = new HorizontalLayout();
+        right.setAlignItems(FlexComponent.Alignment.CENTER);
+        right.getStyle().set("gap", "8px");
+
+        Span req = new Span(String.format(Locale.US, "Requires $%.2f", e.requiredEpsForCurrentPrice() != null ? e.requiredEpsForCurrentPrice() : 0.0f));
+        req.getStyle().set("color", "var(--lumo-secondary-text-color)");
+
+        float margin = e.consensusVsRequiredPct() != null ? e.consensusVsRequiredPct() : 0.0f;
+        String theme = margin >= 20.0f ? "success" : (margin >= 0.0f ? "contrast" : "warning");
+        Span badge = createPillBadge(String.format(Locale.US, "%+.1f%% buffer", margin), theme);
+
+        right.add(req, badge);
+        row.add(left, right);
+        return row;
     }
 
-    private Component renderDecisionDriversCard(List<DecisionDriver> drivers) {
+    public Component renderDecisionDriversCard(List<DecisionDriver> drivers) {
         if (drivers == null || drivers.isEmpty()) {
             return null;
         }
-        Div card = createSectionBox("Key Decision Drivers & Thesis Triggers");
+        Div card = createSectionBox("🚦 KEY DECISION DRIVERS & THESIS TRIGGERS");
         VerticalLayout rows = new VerticalLayout();
         rows.setPadding(false);
         rows.setSpacing(false);
-        rows.getStyle().set("gap", "8px");
+        rows.getStyle().set("gap", "8px").set("margin-top", "10px");
 
         for (DecisionDriver d : drivers) {
             rows.add(buildDriverRow(d));
@@ -224,28 +410,68 @@ public class DecisionSnapshotRenderer {
     private Component buildDriverRow(DecisionDriver d) {
         Div row = new Div();
         row.setWidthFull();
+        String borderCol = resolveDriverBorderColor(d.status());
         row.getStyle()
-                .set("padding", "8px 10px")
+                .set("padding", "10px 14px")
                 .set("border-radius", "6px")
                 .set("background", "rgba(var(--lumo-contrast-rgb), 0.02)")
-                .set("border", "1px solid var(--lumo-contrast-5pct)");
+                .set("border", "1px solid var(--lumo-contrast-5pct)")
+                .set("border-left", "3px solid " + borderCol);
 
-        HorizontalLayout header = new HorizontalLayout();
-        header.setWidthFull();
-        header.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
-        header.setAlignItems(FlexComponent.Alignment.CENTER);
+        HorizontalLayout top = new HorizontalLayout();
+        top.setWidthFull();
+        top.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
+        top.setAlignItems(FlexComponent.Alignment.CENTER);
 
         Span factor = new Span(d.factor());
         factor.addClassName(LumoUtility.FontWeight.SEMIBOLD);
         factor.getStyle().set("font-size", "0.85rem");
-        header.add(factor, createPillBadge(d.status(), resolveDimensionTheme(d.status())));
+        top.add(factor, createPillBadge(d.status(), resolveDimensionTheme(d.status())));
 
-        Span details = new Span(String.format("Current: %s  |  Benchmark: %s  |  Trigger: %s",
-                d.currentValue(), d.benchmarkOrRequired(), d.whatChangesView()));
-        details.getStyle().set("display", "block").set("font-size", "0.78rem").set("color", "var(--lumo-secondary-text-color)").set("margin-top", "4px");
+        Div details = new Div();
+        details.getStyle().set("margin-top", "4px").set("font-size", "0.80rem");
 
-        row.add(header, details);
+        Span curSpan = new Span("Current: " + d.currentValue() + "  |  Hurdle: " + d.benchmarkOrRequired());
+        curSpan.getStyle().set("display", "block").set("color", "var(--lumo-body-text-color)");
+
+        Span trigSpan = new Span("⚡ Trigger: " + d.whatChangesView());
+        trigSpan.getStyle().set("display", "block").set("color", "var(--lumo-secondary-text-color)").set("margin-top", "2px");
+
+        details.add(curSpan, trigSpan);
+        row.add(top, details);
         return row;
+    }
+
+    private String resolveDriverBorderColor(String status) {
+        if (status == null) return "var(--lumo-contrast-20pct)";
+        return switch (status) {
+            case "SUPPORTIVE" -> "#2ecc71";
+            case "DEMANDING" -> "#e67e22";
+            case "WARNING" -> "#f1c40f";
+            case "RISK" -> "#e74c3c";
+            default -> "var(--lumo-contrast-20pct)";
+        };
+    }
+
+    public Component renderConvictionReasonsCard(List<String> reasons) {
+        if (reasons == null || reasons.isEmpty()) {
+            return null;
+        }
+        Div card = createSectionBox("🛡️ CONVICTION AUDIT & GUARDRAILS");
+        card.getStyle().set("padding", "10px 14px");
+
+        VerticalLayout list = new VerticalLayout();
+        list.setPadding(false);
+        list.setSpacing(false);
+        list.getStyle().set("gap", "4px").set("margin-top", "6px");
+
+        for (String reason : reasons) {
+            Span item = new Span("• " + reason);
+            item.getStyle().set("font-size", "0.80rem").set("color", "var(--lumo-secondary-text-color)");
+            list.add(item);
+        }
+        card.add(list);
+        return card;
     }
 
     private Div createSectionBox(String titleText) {
@@ -255,9 +481,16 @@ public class DecisionSnapshotRenderer {
                 .set("background", "rgba(var(--lumo-contrast-rgb), 0.03)")
                 .set("border", "1px solid var(--lumo-contrast-10pct)")
                 .set("border-radius", "8px")
-                .set("padding", "12px 16px");
-        H4 title = new H4(titleText);
-        title.getStyle().set("margin", "0 0 8px 0").set("font-size", "0.9rem");
+                .set("padding", "14px 16px");
+
+        H5 title = new H5(titleText);
+        title.getStyle()
+                .set("margin", "0")
+                .set("font-size", "0.85rem")
+                .set("font-weight", "700")
+                .set("letter-spacing", "0.5px")
+                .set("text-transform", "uppercase")
+                .set("color", "var(--lumo-header-text-color)");
         card.add(title);
         return card;
     }

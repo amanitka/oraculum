@@ -26,8 +26,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class DecisionSummaryCalculatorTest {
 
@@ -47,7 +45,7 @@ class DecisionSummaryCalculatorTest {
         state.putAgentOutput(AgentType.SHARE_PRICE, StandardAgentOutput.builder().score(6.5).build());
 
         ReverseDcfSummary dcfSummary = new ReverseDcfSummary(
-                16.68f, "AGGRESSIVE", 9.5f, 22.0f, 18.5f, 80, 83.1f
+                16.68f, "AGGRESSIVE", 9.5f, 22.0f, 18.5f, 88, 83.1f
         );
         SensitivityMatrix matrix = new SensitivityMatrix(
                 "2028-01-31", 12.85f, 15.91f, 18.75f,
@@ -101,7 +99,7 @@ class DecisionSummaryCalculatorTest {
     @Test
     void buildDecisionDrivers_createsStructuredDriversWithTrafficLightStatuses() {
         ReverseDcfSummary dcfSummary = new ReverseDcfSummary(
-                16.68f, "AGGRESSIVE", 9.5f, 22.0f, 18.5f, 80, 83.1f
+                16.68f, "AGGRESSIVE", 9.5f, 22.0f, 18.5f, 88, 83.1f
         );
         ValuationScenarioDto scenarios = new ValuationScenarioDto(
                 210.96f, 22.66f, 13.26f,
@@ -131,7 +129,7 @@ class DecisionSummaryCalculatorTest {
         assertThat(drivers.get(0).factor()).isEqualTo("Implied FCF Growth Hurdle");
         assertThat(drivers.get(0).status()).isEqualTo("DEMANDING");
         assertThat(drivers.get(1).factor()).isEqualTo("Forward Earnings vs. Implied EPS");
-        assertThat(drivers.get(1).status()).isEqualTo("WARNING");
+        assertThat(drivers.get(1).status()).isEqualTo("SUPPORTIVE");
         assertThat(drivers.get(2).factor()).isEqualTo("Cash Conversion & Working Capital (DSO)");
         assertThat(drivers.get(2).status()).isEqualTo("WARNING"); // Qtr OCF/NI 0.40 < 0.70
         assertThat(drivers.get(3).factor()).isEqualTo("Shareholder Payout & Debt Coverage");
@@ -145,13 +143,16 @@ class DecisionSummaryCalculatorTest {
             float ma200,
             int distDays
     ) {
-        SharePriceSignalDto signal = mock(SharePriceSignalDto.class);
-        when(signal.tradeDate()).thenReturn(tradeDate);
-        when(signal.sharePrice()).thenReturn(price);
-        when(signal.ma50()).thenReturn(ma50);
-        when(signal.ma200()).thenReturn(ma200);
-        when(signal.downDaysHighVol5d()).thenReturn(distDays);
-        return signal;
+        return new SharePriceSignalDto(
+                tradeDate, 1, "NVDA", "us", "N", "USD",
+                price, 100000, 0.0f, -2.0f, 14.0f,
+                price, ma50, ma200, 220.0f, 140.0f, -4.0f, 90.0f, distDays, 1.0f,
+                2026, "Q2", tradeDate, 5.0e12f, 29.2f, 0.034f, 52.0f, 25.0f, 40.0f,
+                null, null, 0, 5.0e12f, 25.0f, 0.5f, 0.6f, 0.5f, 3.0f, 0.2f, 0.019f,
+                25.0f, 52.0f, 0.4f, 0.72f, 0.62f, 0.5f, 2.5f, 50.0f, null, 0,
+                0.7f, 0.8f, 8, 4, 4, 4, 1, 0, 90.0f,
+                null, null, null, null, null, 0, 0, 0, "NEUTRAL"
+        );
     }
 
     private CompanyFinancialRatiosDto createRatio(

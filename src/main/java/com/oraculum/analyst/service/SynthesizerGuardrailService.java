@@ -33,7 +33,7 @@ public class SynthesizerGuardrailService {
 
     private static final Pattern ADVICE_WORD_PATTERN = Pattern.compile(
             "(?<![a-zA-Z0-9-])\\b(strong buy|strong sell|buy|sell)\\b(?![a-zA-Z0-9-])" +
-            "(?!(?:\\s+[a-zA-Z0-9-]+){0,2}\\s+\\b(?:chips|gpus|cpus|products|capacity|equipment|hardware|software|services|components|memory|systems|servers|licenses|supplies|goods|ads|advertising|semiconductors|accelerators|wafers|inventory|assets|businesses|companies)\\b)",
+            "(?!(?:\\s+[a-zA-Z0-9'-]+){0,4}\\s+\\b(?:chips|silicon|gpus|cpus|processors|products|capacity|compute|cloud|infrastructure|networking|equipment|hardware|software|services|components|memory|systems|servers|licenses|supplies|goods|ads|advertising|semiconductors|accelerators|wafers|inventory|assets|businesses|companies)\\b)",
             Pattern.CASE_INSENSITIVE
     );
 
@@ -160,16 +160,11 @@ public class SynthesizerGuardrailService {
         Float eq = extractEarningsQuality(ctx);
         if (eq != null && eq < 0.70f) {
             capped = Math.min(capped, 3);
-            reasons.add(String.format(Locale.ROOT, "Capped at 3/5: Low TTM earnings quality ratio (%.2fx OCF/NI < 0.70x)", eq));
+            reasons.add(String.format(Locale.ROOT, "Capped at 3/5: Low TTM earnings quality ratio (%.1f%% OCF/NI < 70.0%%)", eq * 100.0f));
         }
         if (hasDebtFundedPayoutFlag(ctx)) {
             capped = Math.min(capped, 3);
             reasons.add("Capped at 3/5: Shareholder payout exceeded organic FCF with concurrent debt issuance");
-        }
-        Integer staleness = decisionSummaryCalculator != null ? decisionSummaryCalculator.calculatePriceStalenessDays(ctx) : null;
-        if (staleness != null && staleness > 4) {
-            capped = Math.min(capped, 3);
-            reasons.add(String.format(Locale.ROOT, "Capped at 3/5: Share price data is %d days old relative to analysis date", staleness));
         }
         return capped;
     }
@@ -293,13 +288,23 @@ public class SynthesizerGuardrailService {
     private String sanitizeText(String text) {
         if (text == null) return null;
         return ADVICE_WORD_PATTERN.matcher(text).replaceAll(mr -> {
-            String word = mr.group(1).toLowerCase();
+            int start = mr.start();
+            String prefix = text.substring(Math.max(0, start - 25), start).toLowerCase(Locale.ROOT);
+            if (isCommercialPrefix(prefix)) {
+                return mr.group(0);
+            }
+            String word = mr.group(1).toLowerCase(Locale.ROOT);
             return switch (word) {
                 case "buy", "strong buy" -> "favorable investment case";
                 case "sell", "strong sell" -> "cautious positioning";
                 default -> mr.group(0);
             };
         });
+    }
+
+    private static boolean isCommercialPrefix(String prefix) {
+        return prefix.endsWith("to ")
+                && (prefix.contains("plan") || prefix.contains("agree") || prefix.contains("promise") || prefix.contains("intend"));
     }
 
     private List<Double> extractSpecialistScores(AgentContext ctx) {

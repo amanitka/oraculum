@@ -106,7 +106,7 @@ public class DecisionSummaryCalculator {
         if (dcfSummary != null && dcfSummary.baseCaseValuationZone() != null) {
             String zone = dcfSummary.baseCaseValuationZone();
             Integer aggPct = dcfSummary.aggressiveOrSpeculativeCellsPct();
-            if ("SPECULATIVE".equals(zone) || (aggPct != null && aggPct >= 85)) {
+            if ("SPECULATIVE".equals(zone)) {
                 return "SPECULATIVE";
             }
             if ("AGGRESSIVE".equals(zone) || (aggPct != null && aggPct >= 50)) {
@@ -264,7 +264,7 @@ public class DecisionSummaryCalculator {
                 scenarios.forwardPeFy1() != null ? String.format(Locale.ROOT, "%.1fx", scenarios.forwardPeFy1()) : "N/A",
                 scenarios.forwardPeFy2() != null ? String.format(Locale.ROOT, "%.1fx", scenarios.forwardPeFy2()) : "N/A");
         String required = buildForwardPeBenchmarkText(scenarios.sensitivityMatrix());
-        boolean conflict = Boolean.TRUE.equals(scenarios.flagReverseDcfPeDivergence());
+        boolean conflict = Boolean.TRUE.equals(scenarios.flagEpsReconciliationDivergence()) || (scenarios.forwardPeFy2() != null && scenarios.forwardPeFy2() > 30.0f);
 
         drivers.add(DecisionDriver.builder()
                 .factor("Forward Earnings vs. Implied EPS")

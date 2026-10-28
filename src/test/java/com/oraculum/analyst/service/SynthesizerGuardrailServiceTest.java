@@ -239,7 +239,7 @@ class SynthesizerGuardrailServiceTest {
     void applyGuardrails_preservesCommercialBuyAndSellPhrases() {
         AnalysisResult rawResult = AnalysisResult.builder()
                 .valuation(ValuationAssessment.FAIRLY_VALUED)
-                .thesis("OpenAI plans to buy Google chips while hyperscalers buy computing capacity and sell cloud services.")
+                .thesis("OpenAI's reported plan to buy Google custom silicon while hyperscalers buy computing capacity and sell cloud services.")
                 .build();
 
         AgentContext ctx = AgentContext.builder()
@@ -250,7 +250,7 @@ class SynthesizerGuardrailServiceTest {
         AnalysisResult guarded = guardrailService.applyGuardrails(rawResult, ctx, null);
 
         assertThat(guarded.thesis())
-                .contains("buy Google chips")
+                .contains("buy Google custom silicon")
                 .contains("buy computing capacity")
                 .contains("sell cloud services")
                 .doesNotContain("favorable investment case");

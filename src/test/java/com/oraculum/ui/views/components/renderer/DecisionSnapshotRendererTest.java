@@ -68,7 +68,7 @@ class DecisionSnapshotRendererTest {
         Component rendered = renderer.renderDecisionSupportSection(result);
 
         assertThat(rendered).isNotNull();
-        assertThat(rendered.getElement().getText())
+        assertThat(rendered.getElement().getTextRecursively())
                 .contains("EXCEPTIONAL")
                 .contains("DEMANDING")
                 .contains("Can FCF compound at ≥16.7% annually over 10 years?")

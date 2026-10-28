@@ -62,10 +62,13 @@ public class AnalysisOverviewRenderer {
 
         container.add(createSnapshotHeader(snapshot));
 
+
+        boolean hasDecisionSection = false;
         if (decisionSnapshotRenderer != null) {
             Component decisionSection = decisionSnapshotRenderer.renderDecisionSupportSection(snapshot);
             if (decisionSection != null) {
                 container.add(decisionSection);
+                hasDecisionSection = true;
             }
         }
 
@@ -73,7 +76,7 @@ public class AnalysisOverviewRenderer {
             container.add(createSnapshotThesis(snapshot.thesis(), analysis));
         }
 
-        if (snapshot.factorScores() != null && !snapshot.factorScores().isEmpty()) {
+        if (!hasDecisionSection && snapshot.factorScores() != null && !snapshot.factorScores().isEmpty()) {
             container.add(createFactorScoresCard(snapshot.factorScores()));
         }
 
