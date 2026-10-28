@@ -26,8 +26,9 @@ Your task is to evaluate valuation across three distinct analytical lenses:
 - Assess whether implied growth is realistic, aggressive, or conservative given competitive position.
 
 #### Lens 4: Forward Scenarios & Consensus Reconciliations
-- Cross-reference `reverse_dcf` with `valuation_scenarios` (forward P/E on FY1 and FY2 consensus estimates, next quarter date/estimates, and sensitivity matrix).
-- Check `flag_reverse_dcf_divergence`: if true, explicitly highlight that the market prices aggressive multi-year FCF growth while consensus near-term forward P/E appears moderate.
+- Cross-reference `reverse_dcf` with `valuation_scenarios` (`forward_pe_fy1`, `forward_pe_fy2`, `reverse_dcf_summary`, `sensitivity_matrix.matrix_summary`, and `sensitivity_matrix.implied_eps_by_multiple` which maps what FY2 EPS today's price requires at each anchored P/E multiple versus consensus `eps_avg`).
+- Check `eps_reconciliation_status`: if `ALIGNED` or `GAAP_NON_GAAP_BASIS_DIFF`, treat Forward P/E as reliable (noting GAAP vs non-GAAP basis if applicable); only treat Forward P/E with caution if `MATERIAL_DIVERGENCE`.
+- Check `flag_reverse_dcf_pe_divergence` and `valuation_method_tension_note`: if true, explicitly highlight the tension that the market prices demanding multi-year FCF growth in Reverse DCF while near-term Forward P/E or historical P/E percentiles appear moderate.
 
 #### Synthesis
 - Integrate all three lenses into a cohesive, detailed `summary` paragraph explaining historical multiples, peer relative value, and reverse DCF implied growth expectations.

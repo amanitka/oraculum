@@ -7,6 +7,7 @@ import com.oraculum.company.api.domain.TickerDocumentType;
 import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.company.api.dto.HistoricalValuationSummaryDto;
 import com.oraculum.company.api.dto.IncomeStatementDto;
+import com.oraculum.company.api.dto.IndustryFinancialRatiosDto;
 import com.oraculum.company.api.dto.ReverseDcfDto;
 import com.oraculum.company.api.dto.ReverseDcfSensitivityMatrixDto;
 import com.oraculum.company.api.dto.TickerDocumentDto;
@@ -186,5 +187,25 @@ class CompanyFactSheetDataTest {
 
         String json = data.getIncomeStatementHistory(StatementVariant.QUARTERLY, 8);
         assertThat(json).contains("\"Period End Label\":\"Q2 (ended 2026-07-31)\"");
+    }
+
+    @Test
+    void getLatestIndustryRatios_injectsCitationIdIntoArrayElements() {
+        IndustryFinancialRatiosDto ratio = new IndustryFinancialRatiosDto(
+                "Semiconductors", StatementVariant.TTM, 42,
+                0.089f, 0.506f, 0.106f, 0.43f, 2.5f, 0.149f, 0.12f, 0.14f
+        );
+
+        CompanyFactSheetData data = CompanyFactSheetData.builder()
+                .jsonMapper(jsonMapper)
+                .citationRegistry(citationRegistry)
+                .company(company)
+                .industryFinancialRatios(Map.of(StatementVariant.TTM, List.of(ratio)))
+                .build();
+
+        String json = data.getLatestIndustryRatios(StatementVariant.TTM);
+        assertThat(json).contains("\"citation_id\":\"1\"");
+        assertThat(json).contains("\"industryName\":\"Semiconductors\"");
+        assertThat(citationRegistry.getCitations()).containsKey(1);
     }
 }

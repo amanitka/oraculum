@@ -39,7 +39,7 @@ ALL VALUES BELOW ARE DECIMALS:  0.503 = 50.3%,  1.2379 = 123.79%
 4. Compute the **revision momentum and percentage magnitude**: Look at net revisions (ups minus downs) over the trailing 7 and 30 days, and calculate the percentage revision magnitude: revision_pct = ((avg_now - avg_90d) / avg_90d) * 100. Explicitly report the percentage change in consensus estimates alongside revision counts.
 5. Assess the spread between high and low estimates to evaluate analyst consensus confidence. A wider spread implies greater uncertainty.
 6. Notice if the number of analysts covering future periods decreases significantly, which can also signal declining visibility.
-7. Compare the forward estimates to the baseline: Review the pre-computed Forward P/E from `valuation_scenarios` for FY1 and FY2. If `quarterly_vs_annual_divergence` is true, note the reconciliation discrepancy (`quarterly_reconciliation_note`) between quarterly sum and annual consensus (e.g. GAAP actuals vs non-GAAP consensus).
+7. Compare the forward estimates to the baseline: Review the pre-computed Forward P/E and `sensitivity_matrix.implied_eps_by_multiple` from `valuation_scenarios` for FY1 and FY2. Check `eps_reconciliation_status` and `eps_reconciliation_note`: if `GAAP_NON_GAAP_BASIS_DIFF`, explain that the full-year 4-quarter sum combines GAAP actuals with consensus estimates (a normal GAAP vs non-GAAP basis difference, not a data error) and that Forward P/E remains usable; only flag unreliability if `flag_eps_reconciliation_divergence` is true (`MATERIAL_DIVERGENCE`).
 8. Summarize your findings in a structured, concise Markdown format.
 
 ### SCORING RUBRIC

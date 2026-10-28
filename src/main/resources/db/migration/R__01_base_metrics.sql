@@ -45,12 +45,16 @@ WITH raw_data AS (SELECT
                      COALESCE(NULLIF(balance.statement_data ->> 'Short Term Debt'::text,                         ''::text)::double precision,
                               NULLIF(balance.statement_data ->> 'Short-Term Debt'::text,                        ''::text)::double precision,
                               NULLIF(balance.statement_data ->> 'Current Debt'::text,                           ''::text)::double precision) AS short_term_debt,
+                     COALESCE(NULLIF(balance.statement_data ->> 'Long Term Debt'::text,                          ''::text)::double precision,
+                              NULLIF(balance.statement_data ->> 'Long-Term Debt'::text,                         ''::text)::double precision) AS long_term_debt,
                      NULLIF(balance.statement_data ->> 'Accounts & Notes Receivable'::text,                     ''::text)::double precision AS receivables,
                      NULLIF(balance.statement_data ->> 'Inventories'::text,                                     ''::text)::double precision AS inventories,
                      NULLIF(income.statement_data ->> 'Shares (Basic)'::text,                                   ''::text)::double precision AS shares_basic,
                      NULLIF(income.statement_data ->> 'Shares (Diluted)'::text,                                 ''::text)::double precision AS shares_diluted,
                      NULLIF(cash_flow.statement_data ->> 'Net Cash from Operating Activities'::text,            ''::text)::double precision AS ncf_ops,
                      NULLIF(cash_flow.statement_data ->> 'Change in Fixed Assets & Intangibles'::text,          ''::text)::double precision AS capex,
+                     COALESCE(NULLIF(cash_flow.statement_data ->> 'Cash from (Repayment of) Debt'::text,         ''::text)::double precision,
+                              NULLIF(cash_flow.statement_data ->> 'Net Cash from Debt'::text,                    ''::text)::double precision) AS cash_from_debt,
                      COALESCE(NULLIF(cash_flow.statement_data ->> 'Cash from (Repurchase of) Equity'::text,     ''::text)::double precision,
                               NULLIF(cash_flow.statement_data ->> 'Repurchase of Equity'::text,                 ''::text)::double precision) AS repurchase_equity,
                      COALESCE(NULLIF(cash_flow.statement_data ->> 'Dividends Paid'::text,                       ''::text)::double precision,
@@ -98,6 +102,11 @@ WITH raw_data AS (SELECT
                        COALESCE(cash, 0) + (COALESCE(receivables, 0) * 0.75) + (COALESCE(inventories, 0) * 0.5) - ABS(COALESCE(liabilities, 0)) AS nnwc,  -- same guard
                        COALESCE(shares_diluted, shares_basic)                                                                                   AS shares,
                        ABS(COALESCE(repurchase_equity, 0)) + ABS(COALESCE(dividends_paid, 0))                                                   AS total_shareholder_payout,
+                       CASE
+                           WHEN short_term_debt IS NOT NULL OR long_term_debt IS NOT NULL
+                           THEN COALESCE(short_term_debt, 0) + COALESCE(long_term_debt, 0)
+                           ELSE NULL
+                       END                                                                                                                      AS total_debt,
                        CASE
                            WHEN acquisitions IS NOT NULL OR lt_investments IS NOT NULL
                            THEN ABS(COALESCE(acquisitions, 0)) + ABS(COALESCE(lt_investments, 0))
@@ -153,20 +162,21 @@ WITH raw_data AS (SELECT
      -- =================================================================
      lagged AS (SELECT
                    *,
-                   LAG(revenue)        OVER w_yoy AS prev_rev,
-                   LAG(net_income)     OVER w_yoy AS prev_ni,
-                   LAG(ebitda)         OVER w_yoy AS prev_ebitda,
-                   LAG(fcf)            OVER w_yoy AS prev_fcf,
-                   LAG(eps)            OVER w_yoy AS prev_eps,
-                   LAG(roa)            OVER w_seq AS prev_roa,
-                   LAG(debt_to_equity) OVER w_seq AS prev_d2e,
-                   LAG(current_ratio)  OVER w_seq AS prev_cr,
-                   LAG(shares)         OVER w_seq AS prev_shares,
-                   LAG(gross_margin)   OVER w_seq AS prev_gm,
-                   LAG(asset_turnover) OVER w_seq AS prev_at,
-                   LAG(op_margin)      OVER w_seq AS prev_om,
-                   LAG(net_margin)     OVER w_seq AS prev_nm,
-                   LAG(short_term_debt) OVER w_seq AS prev_short_term_debt
+                   LAG(revenue)         OVER w_yoy AS prev_rev,
+                   LAG(net_income)      OVER w_yoy AS prev_ni,
+                   LAG(ebitda)          OVER w_yoy AS prev_ebitda,
+                   LAG(fcf)             OVER w_yoy AS prev_fcf,
+                   LAG(eps)             OVER w_yoy AS prev_eps,
+                   LAG(roa)             OVER w_seq AS prev_roa,
+                   LAG(debt_to_equity)  OVER w_seq AS prev_d2e,
+                   LAG(current_ratio)   OVER w_seq AS prev_cr,
+                   LAG(shares)          OVER w_seq AS prev_shares,
+                   LAG(gross_margin)    OVER w_seq AS prev_gm,
+                   LAG(asset_turnover)  OVER w_seq AS prev_at,
+                   LAG(op_margin)       OVER w_seq AS prev_om,
+                   LAG(net_margin)      OVER w_seq AS prev_nm,
+                   LAG(short_term_debt) OVER w_seq AS prev_short_term_debt,
+                   LAG(total_debt)      OVER w_seq AS prev_total_debt
                 FROM computed_ratios
                 WINDOW w_yoy AS (PARTITION BY company_id, fiscal_period, UPPER(variant) ORDER BY fiscal_year),
                        w_seq AS (PARTITION BY company_id,                UPPER(variant) ORDER BY fiscal_year, fiscal_period)
@@ -269,7 +279,10 @@ WITH raw_data AS (SELECT
                           non_capex_investing_to_fcf_ratio_pct,
                           (CASE WHEN ABS(non_operating_income_share_pretax_pct) > 15.0 THEN 1 ELSE 0 END) AS flag_high_non_operating_income,
                           (CASE WHEN shareholder_payout_to_fcf_ratio_pct > 100.0 THEN 1 ELSE 0 END) AS flag_payout_exceeds_fcf,
-                          (CASE WHEN (short_term_debt - prev_short_term_debt) > 0 AND shareholder_payout_to_fcf_ratio_pct > 80.0 THEN 1 ELSE 0 END) AS flag_debt_funded_payout
+                          (CASE WHEN shareholder_payout_to_fcf_ratio_pct > 80.0
+                                 AND (COALESCE(total_debt - prev_total_debt, 0) > 0
+                                      OR COALESCE(short_term_debt - prev_short_term_debt, 0) > 0
+                                      OR COALESCE(cash_from_debt, 0) > 0) THEN 1 ELSE 0 END) AS flag_debt_funded_payout
                        FROM streaks
                        )
 SELECT

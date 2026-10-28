@@ -29,7 +29,8 @@ import java.util.regex.Pattern;
 public class SynthesizerGuardrailService {
 
     private static final Pattern ADVICE_WORD_PATTERN = Pattern.compile(
-            "(?<![a-zA-Z0-9-])\\b(buy|strong buy|sell|strong sell)\\b(?![a-zA-Z0-9-])",
+            "(?<![a-zA-Z0-9-])\\b(strong buy|strong sell|buy|sell)\\b(?![a-zA-Z0-9-])" +
+            "(?!(?:\\s+[a-zA-Z0-9-]+){0,2}\\s+\\b(?:chips|gpus|cpus|products|capacity|equipment|hardware|software|services|components|memory|systems|servers|licenses|supplies|goods|ads|advertising|semiconductors|accelerators|wafers|inventory|assets|businesses|companies)\\b)",
             Pattern.CASE_INSENSITIVE
     );
 
@@ -127,7 +128,25 @@ public class SynthesizerGuardrailService {
         if (eq != null && eq < 0.70f) {
             capped = Math.min(capped, 3);
         }
+        if (hasDebtFundedPayoutFlag(ctx)) {
+            capped = Math.min(capped, 3);
+        }
         return capped;
+    }
+
+    private boolean hasDebtFundedPayoutFlag(AgentContext ctx) {
+        if (ctx.factSheetData() == null) {
+            return false;
+        }
+        return isLatestDebtFunded(ctx.factSheetData().getCompanyFinancialRatiosList(StatementVariant.TTM))
+                || isLatestDebtFunded(ctx.factSheetData().getCompanyFinancialRatiosList(StatementVariant.QUARTERLY));
+    }
+
+    private boolean isLatestDebtFunded(List<CompanyFinancialRatiosDto> list) {
+        if (list == null || list.isEmpty() || list.getFirst() == null) {
+            return false;
+        }
+        return Integer.valueOf(1).equals(list.getFirst().flagDebtFundedPayout());
     }
 
     private boolean isHighEpsDispersion(ValuationScenarioDto scenarios) {

@@ -232,6 +232,60 @@ class SynthesizerGuardrailServiceTest {
     }
 
     @Test
+    void applyGuardrails_preservesCommercialBuyAndSellPhrases() {
+        AnalysisResult rawResult = AnalysisResult.builder()
+                .valuation(ValuationAssessment.FAIRLY_VALUED)
+                .thesis("OpenAI plans to buy Google chips while hyperscalers buy computing capacity and sell cloud services.")
+                .build();
+
+        AgentContext ctx = AgentContext.builder()
+                .factSheetData(CompanyFactSheetData.builder().build())
+                .state(state)
+                .build();
+
+        AnalysisResult guarded = guardrailService.applyGuardrails(rawResult, ctx, null);
+
+        assertThat(guarded.thesis())
+                .contains("buy Google chips")
+                .contains("buy computing capacity")
+                .contains("sell cloud services")
+                .doesNotContain("favorable investment case");
+    }
+
+    @Test
+    void applyGuardrails_debtFundedPayout_capsConvictionAtThree() {
+        setupSpecialistScores(8.5, 8.7, 8.6);
+        LocalDate date = LocalDate.of(2026, 7, 31);
+        CompanyFinancialRatiosDto ratio = new CompanyFinancialRatiosDto(
+                "id", 1, "TEST", "USD", null, StatementVariant.QUARTERLY,
+                2026, "Q2", date, date, date,
+                1000f, 800f, 500f, 400f, 100f, 0.2f, 0.25f, 0.15f,
+                0.2f, 5000f, 1000f, 0.4f, 0.25f, 0.16f, 1.5f,
+                1.2f, 0.5f, 5.0f, 10f, 45f, 30f, 0.1f, 0.12f, 0.15f,
+                0.08f, 0.1f, 8, 0.95f, 1, 0, 1,
+                4, 4, 4, 8.5f,
+                null, 120.8f, 0.0f, null, null, 0, 1, 1
+        );
+        CompanyFactSheetData factSheetData = CompanyFactSheetData.builder()
+                .companyFinancialRatios(Map.of(StatementVariant.QUARTERLY, List.of(ratio)))
+                .build();
+
+        AnalysisResult rawResult = AnalysisResult.builder()
+                .valuation(ValuationAssessment.FAIRLY_VALUED)
+                .conviction(5)
+                .build();
+
+        AgentContext ctx = AgentContext.builder()
+                .factSheetData(factSheetData)
+                .state(state)
+                .build();
+
+        AnalysisResult guarded = guardrailService.applyGuardrails(rawResult, ctx, null);
+
+        assertThat(guarded.conviction()).isEqualTo(3);
+    }
+
+    @Test
     void applyGuardrails_factorScores_overwritesSynthesizerScoresWithSpecialists() {
         state.putAgentOutput(AgentType.FUNDAMENTALS, StandardAgentOutput.builder().score(9.0).build());
         state.putAgentOutput(AgentType.VALUATION, StandardAgentOutput.builder().score(8.0).build());

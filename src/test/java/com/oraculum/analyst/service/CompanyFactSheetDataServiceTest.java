@@ -64,6 +64,8 @@ class CompanyFactSheetDataServiceTest {
     @Mock
     private CompanyInstitutionalFlowApi companyInstitutionalFlowApi;
     @Mock
+    private ValuationScenarioCalculator valuationScenarioCalculator;
+    @Mock
     private JsonMapper jsonMapper;
     @Mock(answer = org.mockito.Answers.RETURNS_DEEP_STUBS)
     private AnalystProperties analystProperties;

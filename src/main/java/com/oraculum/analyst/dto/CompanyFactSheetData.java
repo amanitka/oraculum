@@ -259,7 +259,11 @@ public class CompanyFactSheetData {
         List<IndustryFinancialRatiosDto> ratios = industryFinancialRatios.get(variant);
         if (ratios == null || ratios.isEmpty()) return "[]";
         String key = (company != null ? company.industryName() : "") + "_" + variant;
-        return formatter.wrapWithCitation(IndustryFinancialRatiosDto.class, key, ratios);
+        return formatter.wrapListWithCitations(
+                IndustryFinancialRatiosDto.class,
+                ratios,
+                dto -> key + "_" + (dto.industryName() != null ? dto.industryName() : "")
+        );
     }
 
     public String getInsiderTransactionSummary() {

@@ -3,6 +3,8 @@ package com.oraculum.analyst.service;
 import com.oraculum.analyst.config.AnalystProperties;
 import com.oraculum.analyst.dto.CitationRegistry;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
+import com.oraculum.analyst.dto.ValuationScenarioDto;
+import com.oraculum.analyst.dto.ValuationScenarioInputDto;
 import com.oraculum.company.api.*;
 import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.domain.TickerDocumentSubtype;
@@ -10,7 +12,6 @@ import com.oraculum.company.api.domain.TickerDocumentType;
 import com.oraculum.company.api.dto.*;
 import com.oraculum.economy.api.EconomyDataApi;
 import com.oraculum.harvester.api.HarvesterLiveApi;
-import com.oraculum.analyst.dto.ValuationScenarioDto;
 import com.oraculum.harvester.api.dto.CompanyNewsDto;
 import com.oraculum.harvester.api.dto.EarningsEstimateDto;
 import lombok.RequiredArgsConstructor;
@@ -125,8 +126,18 @@ public class CompanyFactSheetDataService {
         Map<StatementVariant, List<CompanyFinancialRatiosDto>> ratios = getCompanyFinancialRatios(company, annualAfter, quarterlyAfter);
         List<EarningsEstimateDto> estimates = harvesterLiveApi.fetchEarningsEstimates(company.ticker()).orElse(List.of());
         ReverseDcfDto reverseDcf = companyValuationApi.calculateReverseDcf(company.id());
-        Float latestPrice = (dailySignals != null && !dailySignals.isEmpty()) ? dailySignals.getFirst().sharePrice() : null;
-        ValuationScenarioDto scenarios = valuationScenarioCalculator.calculate(latestPrice, estimates, LocalDate.now(), reverseDcf);
+        List<HistoricalValuationSummaryDto> historicalValuation = companyValuationApi.calculateHistoricalValuationPercentiles(company.id());
+
+        ValuationScenarioDto scenarios = computeValuationScenarios(
+                ValuationScenarioInputDto.builder()
+                        .currentSharePrice(getLatestSharePrice(dailySignals))
+                        .estimates(estimates)
+                        .analysisDate(LocalDate.now())
+                        .reverseDcfResult(reverseDcf)
+                        .quarterlyRatios(getQuarterlyRatios(ratios))
+                        .historicalValuation(historicalValuation)
+                        .build()
+        );
 
         return CompanyFactSheetData.builder()
                 .jsonMapper(jsonMapper)
@@ -146,11 +157,26 @@ public class CompanyFactSheetDataService {
                 .macroeconomicSummary(economyDataApi.getMacroeconomicSummary())
                 .recentSecDocuments(getRecentSecDocuments(company))
                 .reverseDcfResult(reverseDcf)
-                .historicalValuationPercentiles(companyValuationApi.calculateHistoricalValuationPercentiles(company.id()))
+                .historicalValuationPercentiles(historicalValuation)
                 .institutionalFlowHistory(getInstitutionalFlowHistory(company))
                 .allSectorsInstitutionalFlow(getAllSectorsInstitutionalFlow())
                 .valuationScenarios(scenarios)
                 .build();
+    }
+
+    private ValuationScenarioDto computeValuationScenarios(ValuationScenarioInputDto input) {
+        if (valuationScenarioCalculator == null || input == null) {
+            return null;
+        }
+        return valuationScenarioCalculator.calculate(input);
+    }
+
+    private Float getLatestSharePrice(List<SharePriceSignalDto> dailySignals) {
+        return (dailySignals != null && !dailySignals.isEmpty()) ? dailySignals.getFirst().sharePrice() : null;
+    }
+
+    private List<CompanyFinancialRatiosDto> getQuarterlyRatios(Map<StatementVariant, List<CompanyFinancialRatiosDto>> ratios) {
+        return ratios != null ? ratios.getOrDefault(StatementVariant.QUARTERLY, List.of()) : List.of();
     }
 
     private List<CompanyInstitutionalFlowDto> getInstitutionalFlowHistory(CompanyDto company) {
