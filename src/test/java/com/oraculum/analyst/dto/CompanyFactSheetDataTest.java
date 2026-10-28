@@ -123,16 +123,15 @@ class CompanyFactSheetDataTest {
                 .recentNews(List.of(marketNoise, direct))
                 .build();
 
-        String companyJson = data.getRecentCompanyNews();
+        String companyJson = data.getRecentCompanyNews(50);
         assertThat(companyJson).contains("Nvidia launches next-gen AI rack");
         assertThat(companyJson).doesNotContain("3 Insurance Stocks from our Screener");
 
-        String marketJson = data.getRecentMarketNews();
+        String marketJson = data.getRecentMarketNews(5);
         assertThat(marketJson).contains("3 Insurance Stocks from our Screener");
         assertThat(marketJson).doesNotContain("Nvidia launches next-gen AI rack");
 
-        assertThat(data.getRecentCompanyNewsList()).containsExactly(direct);
-        assertThat(data.getRecentMarketNewsList()).containsExactly(marketNoise);
+        assertThat(data.getRecentNewsList()).contains(direct, marketNoise);
     }
 
     @Test
