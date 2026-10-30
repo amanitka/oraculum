@@ -7,19 +7,11 @@ import com.oraculum.analyst.agent.dto.CriticAgentOutput.Resolution;
 import com.oraculum.analyst.agent.dto.StandardAgentOutput;
 import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.company.api.domain.StatementVariant;
-import com.oraculum.company.api.dto.CompanyFinancialRatiosDto;
-import com.oraculum.company.api.dto.CompanyInstitutionalFlowDto;
-import com.oraculum.company.api.dto.ReverseDcfDto;
-import com.oraculum.company.api.dto.ReverseDcfMatrixCellDto;
-import com.oraculum.company.api.dto.ValuationZone;
+import com.oraculum.company.api.dto.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -30,6 +22,7 @@ public class PreCriticValidationService {
         checkDcfAgainstValuationScore(ctx, findings);
         checkFiscalYearCalendarAlignment(ctx, findings);
         checkSmartMoneyAttribution(ctx, findings);
+        checkMarginExpansionSignalAlignment(ctx, findings);
         return findings;
     }
 
@@ -146,6 +139,50 @@ public class PreCriticValidationService {
         if (smOutput.headline() != null) sb.append(smOutput.headline()).append(" ");
         if (smOutput.summary() != null) sb.append(smOutput.summary()).append(" ");
         if (smOutput.strengths() != null) sb.append(String.join(" ", smOutput.strengths()));
+        return sb.toString();
+    }
+
+    private void checkMarginExpansionSignalAlignment(AgentContext ctx, List<Contradiction> findings) {
+        if (ctx.factSheetData() == null || ctx.state() == null) {
+            return;
+        }
+        Object fundObj = ctx.state().getAgentOutput(AgentType.FUNDAMENTALS);
+        if (!(fundObj instanceof StandardAgentOutput fundOutput)) {
+            return;
+        }
+        List<CompanyFinancialRatiosDto> ttmRatios = ctx.factSheetData().getCompanyFinancialRatiosList(StatementVariant.TTM);
+        if (ttmRatios == null || ttmRatios.isEmpty() || ttmRatios.getFirst() == null) {
+            return;
+        }
+        Integer actualTtmSignal = ttmRatios.getFirst().marginExpansionSignal();
+        if (actualTtmSignal == null) {
+            return;
+        }
+        evaluateNarrativeMarginSignalContradiction(fundOutput, actualTtmSignal, findings);
+    }
+
+    private void evaluateNarrativeMarginSignalContradiction(StandardAgentOutput fundOutput, int actualSignal, List<Contradiction> findings) {
+        String narrative = buildFundamentalsNarrative(fundOutput).toLowerCase(Locale.ROOT);
+        boolean mentionsZeroAtTtm = narrative.contains("margin expansion signal is not positive at annual/ttm")
+                || narrative.contains("margin_expansion_signal was 0 at ttm")
+                || (narrative.contains("margin_expansion_signal was 0") && narrative.contains("ttm") && !narrative.contains("annual margin_expansion_signal was 0"));
+
+        if (actualSignal == 1 && mentionsZeroAtTtm) {
+            findings.add(new Contradiction(
+                    "Fundamentals agent asserted margin_expansion_signal was not positive at TTM level, whereas TTM financial ratios report marginExpansionSignal = 1.",
+                    List.of(AgentType.FUNDAMENTALS.name()),
+                    CorrectionType.UNSUPPORTED_CLAIM,
+                    Resolution.NARRATIVE_RECONCILED
+            ));
+        }
+    }
+
+    private String buildFundamentalsNarrative(StandardAgentOutput output) {
+        StringBuilder sb = new StringBuilder();
+        if (output.headline() != null) sb.append(output.headline()).append(" ");
+        if (output.summary() != null) sb.append(output.summary()).append(" ");
+        if (output.strengths() != null) sb.append(String.join(" ", output.strengths())).append(" ");
+        if (output.weaknesses() != null) sb.append(String.join(" ", output.weaknesses()));
         return sb.toString();
     }
 }

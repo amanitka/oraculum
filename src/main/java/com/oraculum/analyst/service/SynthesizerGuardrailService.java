@@ -32,8 +32,23 @@ import java.util.regex.Pattern;
 public class SynthesizerGuardrailService {
 
     private static final Pattern ADVICE_WORD_PATTERN = Pattern.compile(
-            "(?<![a-zA-Z0-9-])\\b(strong buy|strong sell|buy|sell)\\b(?![a-zA-Z0-9-])" +
-            "(?!(?:\\s+[a-zA-Z0-9'-]+){0,4}\\s+\\b(?:chips|silicon|gpus|cpus|processors|products|capacity|compute|cloud|infrastructure|networking|equipment|hardware|software|services|components|memory|systems|servers|licenses|supplies|goods|ads|advertising|semiconductors|accelerators|wafers|inventory|assets|businesses|companies)\\b)",
+            "(?i)\\b(?:recommend(?:s|ed|ing)?\\s+to\\s+|catalyst\\s+to\\s+)(buy)\\b|" +
+            "(?i)\\b(?:reason\\s+to\\s+|do\\s+not\\s+|hold\\s+or\\s+)(sell)\\b|" +
+            "(?i)\\b(strong buy)\\b|" +
+            "(?i)\\b(strong sell)\\b|" +
+            "(?i)\\b(buy)\\s+(?:now|upside)\\b|" +
+            "(?i)\\b(sell)\\s+(?:soon|warning|downside)\\b|" +
+            "(?i)\\b(?:key|base)\\s+(sell)\\s+(?:level|pressure)\\b|" +
+            "(?i)\\b(?:margin\\s+hit\\s+)(sell)\\b"
+    );
+
+    private static final Pattern INTERNAL_JARGON_PATTERN = Pattern.compile(
+            "(?i)\\b(cash flow|risk|fundamentals|valuation|share price|smart money|macroeconomic|news|critic|synthesizer)-owned\\s*",
+            Pattern.CASE_INSENSITIVE
+    );
+
+    private static final Pattern AGENT_METRIC_ATTRIBUTION_PATTERN = Pattern.compile(
+            "(?i)\\b(?:the\\s+)?(cash flow|risk|fundamentals|valuation|share price|smart money|macroeconomic|news|critic)\\s+agent\\s+(?:scores|notes|highlights|evaluates|flags)\\b",
             Pattern.CASE_INSENSITIVE
     );
 
@@ -286,25 +301,41 @@ public class SynthesizerGuardrailService {
     }
 
     private String sanitizeText(String text) {
-        if (text == null) return null;
+        if (text == null) {
+            return null;
+        }
+        String sanitizedAdvice = sanitizeAdviceLanguage(text);
+        return sanitizeInternalJargon(sanitizedAdvice);
+    }
+
+    private String sanitizeAdviceLanguage(String text) {
         return ADVICE_WORD_PATTERN.matcher(text).replaceAll(mr -> {
-            int start = mr.start();
-            String prefix = text.substring(Math.max(0, start - 25), start).toLowerCase(Locale.ROOT);
-            if (isCommercialPrefix(prefix)) {
-                return mr.group(0);
+            String full = mr.group(0);
+            String lower = full.toLowerCase(Locale.ROOT);
+            if (lower.contains("strong buy") || lower.contains("buy")) {
+                return full.replaceAll("(?i)\\bstrong buy\\b|\\bbuy\\b", "favorable investment case");
             }
-            String word = mr.group(1).toLowerCase(Locale.ROOT);
-            return switch (word) {
-                case "buy", "strong buy" -> "favorable investment case";
-                case "sell", "strong sell" -> "cautious positioning";
-                default -> mr.group(0);
-            };
+            if (lower.contains("strong sell") || lower.contains("sell")) {
+                return full.replaceAll("(?i)\\bstrong sell\\b|\\bsell\\b", "cautious positioning");
+            }
+            return full;
         });
     }
 
-    private static boolean isCommercialPrefix(String prefix) {
-        return prefix.endsWith("to ")
-                && (prefix.contains("plan") || prefix.contains("agree") || prefix.contains("promise") || prefix.contains("intend"));
+    private String sanitizeInternalJargon(String text) {
+        String clean = INTERNAL_JARGON_PATTERN.matcher(text).replaceAll("");
+        return AGENT_METRIC_ATTRIBUTION_PATTERN.matcher(clean).replaceAll(mr -> {
+            String agentName = mr.group(1).toLowerCase(Locale.ROOT);
+            return switch (agentName) {
+                case "cash flow" -> "cash flow analysis shows";
+                case "share price" -> "technical price analysis shows";
+                case "fundamentals" -> "fundamental analysis shows";
+                case "valuation" -> "valuation analysis shows";
+                case "risk" -> "risk assessment shows";
+                case "smart money" -> "institutional flow analysis shows";
+                default -> "analysis shows";
+            };
+        });
     }
 
     private List<Double> extractSpecialistScores(AgentContext ctx) {

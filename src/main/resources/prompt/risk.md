@@ -47,7 +47,7 @@ Do NOT invert this scale. A safe, fortress company gets a HIGH score (e.g. 8.5-1
 
 ### METRIC OWNERSHIP
 You OWN: debt-to-equity, current ratio, interest coverage, cash reserves, NCAV/NNWC, SEC risk factors, off-balance-sheet commitments, obsolescence/lifecycle risks, qualitative business risks.
-You REFERENCE (do not re-derive): price momentum (owned by Share Price), FCF trends (owned by Cash Flow), margin health (owned by Fundamentals). Cite the other agent's conclusion in one sentence; do not reanalyze their data.
+You REFERENCE (do not re-derive): price momentum from market data, FCF trends from cash flow data, margin health from income statement data. Cite the factual observation in one sentence; do NOT use meta-language such as "Share Price Agent notes" or "Fundamentals Agent score". Refer directly to market price action and financial statements.
 
 ### SCORING RUBRIC
 Derive your `score` using this weighted framework:

@@ -16,25 +16,16 @@ import com.oraculum.company.api.dto.ReverseDcfSensitivityMatrixDto;
 import com.oraculum.company.api.dto.ValuationZone;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
 class PreCriticValidationServiceTest {
 
     private PreCriticValidationService validationService;
-
-    @Mock
-    private CompanyFactSheetData factSheetData;
-
     private AgentWorkflowState state;
 
     @BeforeEach
@@ -54,7 +45,9 @@ class PreCriticValidationServiceTest {
         ReverseDcfDto dcf = new ReverseDcfDto(
                 1000.0, 50.0, 0.05, 10.0, 10, 3.0, 18.5, 15.0, "5Y", false, "Hurdle high", matrix
         );
-        when(factSheetData.getReverseDcfResult()).thenReturn(dcf);
+        CompanyFactSheetData factSheetData = CompanyFactSheetData.builder()
+                .reverseDcfResult(dcf)
+                .build();
 
         StandardAgentOutput valOutput = StandardAgentOutput.builder()
                 .score(7.8)
@@ -79,8 +72,10 @@ class PreCriticValidationServiceTest {
     @Test
     void validate_fiscalYearShift_detectsTimeWindowMismatch() {
         LocalDate reportDate = LocalDate.of(2025, 7, 31);
-        CompanyFinancialRatiosDto ratio = mockRatioWithFiscalYear(2026, reportDate);
-        when(factSheetData.getCompanyFinancialRatiosList(StatementVariant.TTM)).thenReturn(List.of(ratio));
+        CompanyFinancialRatiosDto ratio = createRatio(2026, reportDate, null);
+        CompanyFactSheetData factSheetData = CompanyFactSheetData.builder()
+                .companyFinancialRatios(Map.of(StatementVariant.TTM, List.of(ratio)))
+                .build();
 
         AgentContext ctx = AgentContext.builder()
                 .factSheetData(factSheetData)
@@ -104,7 +99,9 @@ class PreCriticValidationServiceTest {
                 .summary("Top funds accumulated heavily during the quarter")
                 .build();
         state.putAgentOutput(AgentType.SMART_MONEY, smOutput);
-        when(factSheetData.getInstitutionalFlowHistory()).thenReturn(List.of());
+        CompanyFactSheetData factSheetData = CompanyFactSheetData.builder()
+                .institutionalFlowHistory(List.of())
+                .build();
 
         AgentContext ctx = AgentContext.builder()
                 .factSheetData(factSheetData)
@@ -119,10 +116,44 @@ class PreCriticValidationServiceTest {
         assertThat(c.resolution()).isEqualTo(Resolution.NARRATIVE_RECONCILED);
     }
 
-    private CompanyFinancialRatiosDto mockRatioWithFiscalYear(int fiscalYear, LocalDate reportDate) {
-        CompanyFinancialRatiosDto ratio = mock(CompanyFinancialRatiosDto.class);
-        when(ratio.fiscalYear()).thenReturn(fiscalYear);
-        when(ratio.reportDate()).thenReturn(reportDate);
-        return ratio;
+    @Test
+    void validate_marginExpansionSignalConflict_detectsUnsupportedClaim() {
+        StandardAgentOutput fundOutput = StandardAgentOutput.builder()
+                .score(9.0)
+                .headline("Exceptional operational growth")
+                .summary("Margin expansion signal is not positive at annual/TTM level despite gross margin expansion.")
+                .build();
+        state.putAgentOutput(AgentType.FUNDAMENTALS, fundOutput);
+
+        CompanyFinancialRatiosDto ratio = createRatio(2026, LocalDate.of(2026, 7, 31), 1);
+        CompanyFactSheetData factSheetData = CompanyFactSheetData.builder()
+                .companyFinancialRatios(Map.of(StatementVariant.TTM, List.of(ratio)))
+                .build();
+
+        AgentContext ctx = AgentContext.builder()
+                .factSheetData(factSheetData)
+                .state(state)
+                .build();
+
+        List<Contradiction> findings = validationService.validate(ctx);
+
+        assertThat(findings).anyMatch(c ->
+                c.agentsInvolved().contains("FUNDAMENTALS")
+                        && c.correctionType() == CorrectionType.UNSUPPORTED_CLAIM
+                        && c.description().contains("margin_expansion_signal was not positive at TTM level")
+        );
+    }
+
+    private CompanyFinancialRatiosDto createRatio(int fiscalYear, LocalDate reportDate, Integer marginExpansionSignal) {
+        return new CompanyFinancialRatiosDto(
+                "test-id", 1, "TEST", "USD", null, StatementVariant.TTM,
+                fiscalYear, "FY", reportDate, reportDate, reportDate,
+                null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null,
+                marginExpansionSignal, null, null, null, null,
+                null, null, null, null, null, null, null, null
+        );
     }
 }

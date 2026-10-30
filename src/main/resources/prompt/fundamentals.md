@@ -39,8 +39,8 @@ Do not hallucinate data. Your analysis must be based strictly on the provided JS
 
 ### METRIC OWNERSHIP
 You OWN: revenue growth, earnings growth, margins (gross/operating/net), ROE, ROA, margin expansion signals, earnings streaks, financial trend scores.
-You REFERENCE (do not re-derive): FCF (owned by Cash Flow), valuation multiples (owned by Valuation), debt ratios (owned by Risk).
-When referencing another agent's metric, state it in one sentence maximum and note the owning agent.
+You REFERENCE (do not re-derive): FCF from cash flow data, valuation multiples from valuation data, debt ratios from balance sheet and solvency data.
+When referencing metrics outside your primary domain, state them neutrally in one sentence based on reported financial facts. NEVER use internal system meta-language such as "Cash Flow-owned", "Risk-owned", or "Agent scores/notes". Refer directly to company financials.
 
 ### SCORING RUBRIC
 Derive your `score` using this weighted framework:

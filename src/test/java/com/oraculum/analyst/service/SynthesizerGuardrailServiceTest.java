@@ -257,6 +257,29 @@ class SynthesizerGuardrailServiceTest {
     }
 
     @Test
+    void applyGuardrails_removesInternalAgentJargon() {
+        AnalysisResult rawResult = AnalysisResult.builder()
+                .valuation(ValuationAssessment.FAIRLY_VALUED)
+                .thesis("The Risk-owned leverage picture remains supportive, while Cash Flow-owned positive FCF streaks extend. The Share Price Agent notes a temporary downturn.")
+                .build();
+
+        AgentContext ctx = AgentContext.builder()
+                .factSheetData(CompanyFactSheetData.builder().build())
+                .state(state)
+                .build();
+
+        AnalysisResult guarded = guardrailService.applyGuardrails(rawResult, ctx, null);
+
+        assertThat(guarded.thesis())
+                .doesNotContain("Risk-owned")
+                .doesNotContain("Cash Flow-owned")
+                .doesNotContain("Share Price Agent notes")
+                .contains("leverage picture remains supportive")
+                .contains("positive FCF streaks extend")
+                .contains("technical price analysis shows a temporary downturn");
+    }
+
+    @Test
     void applyGuardrails_debtFundedPayout_capsConvictionAtThree() {
         setupSpecialistScores(8.5, 8.7, 8.6);
         LocalDate date = LocalDate.of(2026, 7, 31);
