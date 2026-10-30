@@ -18,6 +18,7 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.server.streams.DownloadEvent;
@@ -60,20 +61,42 @@ public class AnalysisResultRenderer {
             return tabSheet;
         }
 
-        tabSheet.add("Overview", createOverviewTab(analysis));
+        boolean hasDriversTab = analysisOverviewRenderer.hasValuationAndDriversContent(analysis.getAnalysisResult());
+        Tab[] driversTabRef = new Tab[1];
+        Runnable openDrivers = hasDriversTab ? () -> selectTabIfPresent(tabSheet, driversTabRef[0]) : null;
+
+        tabSheet.add("Overview", createOverviewTab(analysis, openDrivers));
+        if (hasDriversTab) {
+            driversTabRef[0] = tabSheet.add("Valuation & Drivers", createValuationAndDriversTab(analysis));
+        }
         tabSheet.add("Scenarios", createScenariosTab(analysis));
         tabSheet.add("Report", createReportTab(analysis));
         tabSheet.add("Details", createWorkflowDetailsTab(analysis));
         return tabSheet;
     }
 
-    private Component createOverviewTab(CompanyAnalysisDto analysis) {
+    private void selectTabIfPresent(TabSheet tabSheet, Tab tab) {
+        if (tab != null) {
+            tabSheet.setSelectedTab(tab);
+        }
+    }
+
+    private Component createOverviewTab(CompanyAnalysisDto analysis, Runnable openDriversCallback) {
         VerticalLayout layout = createBaseContainer();
         if (analysis.getAnalysisResult() != null) {
-            Component overviewCard = analysisOverviewRenderer.renderOverviewTab(analysis.getAnalysisResult(), analysis);
+            Component overviewCard = analysisOverviewRenderer.renderOverviewTab(analysis.getAnalysisResult(), analysis, openDriversCallback);
             if (overviewCard != null) layout.add(overviewCard);
         } else if (analysis.getAnalysisData() != null && !analysis.getAnalysisData().isBlank()) {
             layout.add(renderLegacyJsonReportFallback(analysis.getAnalysisData()));
+        }
+        return wrapInScroller(layout);
+    }
+
+    private Component createValuationAndDriversTab(CompanyAnalysisDto analysis) {
+        VerticalLayout layout = createBaseContainer();
+        if (analysis.getAnalysisResult() != null) {
+            Component driversCard = analysisOverviewRenderer.renderValuationAndDriversTab(analysis.getAnalysisResult(), analysis);
+            if (driversCard != null) layout.add(driversCard);
         }
         return wrapInScroller(layout);
     }
@@ -243,7 +266,7 @@ public class AnalysisResultRenderer {
                 .set("max-width", "100%")
                 .set("box-sizing", "border-box")
                 .set("margin", "0 auto")
-                .set("padding", "24px 16px");
+                .set("padding", "16px");
         return layout;
     }
 

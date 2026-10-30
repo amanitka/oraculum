@@ -12,6 +12,7 @@ import tools.jackson.databind.json.JsonMapper;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.data.Offset.offset;
@@ -37,7 +38,6 @@ class AnalysisOverviewRendererTest {
 
     @Test
     void normalizeFactorScores_preservesLowScoreWhenStandardScaleUsed() {
-        // If max score > 1.0 (e.g. 8.5), a genuine low score like 0.8 is preserved and NOT multiplied by 10
         Map<String, Double> input = Map.of(
                 "fundamental_health", 8.5,
                 "valuation", 0.8,
@@ -89,7 +89,7 @@ class AnalysisOverviewRendererTest {
     }
 
     @Test
-    void renderOverviewTab_withDecisionSummary_rendersUnifiedLayoutInOrder() {
+    void renderOverviewTab_streamlinedExecutiveLayout_movesHeavyBlocksToDriversTab() {
         MarkdownRenderer markdownRenderer = new MarkdownRenderer(new JsonMapper());
         DecisionSnapshotRenderer decisionRenderer = new DecisionSnapshotRenderer();
         AnalysisOverviewRenderer renderer = new AnalysisOverviewRenderer(markdownRenderer, decisionRenderer);
@@ -102,6 +102,7 @@ class AnalysisOverviewRendererTest {
                 .decisiveQuestion("Can FCF compound at 16.7%?")
                 .keyValuationTension("Low P/E vs high DCF hurdle")
                 .currentSharePrice(210.96f)
+                .requiredFcfCagrPct(16.7f)
                 .build();
 
         AnalysisResult result = AnalysisResult.builder()
@@ -115,28 +116,62 @@ class AnalysisOverviewRendererTest {
                 .valuationOneLiner("Trading at 26.7x P/E")
                 .whatWouldChangeThis("Sustained slowdown below 40%")
                 .decisionSummary(summary)
-                .decisionDrivers(List.of(DecisionDriver.builder().factor("Growth").status("DEMANDING").importance("HIGH").currentValue("76%").benchmarkOrRequired("16.7%").whatChangesView("Slowdown").build()))
+                .decisionDrivers(List.of(DecisionDriver.builder()
+                        .factor("Implied FCF Growth Hurdle")
+                        .status("DEMANDING")
+                        .importance("HIGH")
+                        .currentValue("76%")
+                        .benchmarkOrRequired("16.7%")
+                        .whatChangesView("Slowdown")
+                        .build()))
                 .convictionReasons(List.of("Capped at 3/5: valuation method conflict"))
                 .build();
 
-        Component rendered = renderer.renderOverviewTab(result, null);
+        AtomicBoolean openedDrivers = new AtomicBoolean(false);
+        Component overview = renderer.renderOverviewTab(result, null, () -> openedDrivers.set(true));
 
-        assertThat(rendered).isNotNull();
-        String text = rendered.getElement().getTextRecursively();
-        assertThat(text)
+        assertThat(overview).isNotNull();
+        String overviewText = overview.getElement().getTextRecursively();
+        assertThat(overviewText)
+                .contains("HOLD / WATCHLIST")
+                .contains("Business Outlook:")
+                .contains("Bullish")
+                .contains("Valuation Setup:")
                 .contains("Fairly Valued")
                 .contains("FUNDAMENTAL HEALTH")
                 .contains("EXCEPTIONAL")
                 .contains("VALUATION HURDLE")
                 .contains("DEMANDING")
                 .contains("Can FCF compound at 16.7%?")
+                .contains("WHAT TODAY'S PRICE REQUIRES")
                 .contains("Key Bull Drivers")
                 .contains("Key Risks & Headwinds")
-                .contains("KEY DECISION DRIVERS & THESIS TRIGGERS")
-                .contains("Growth")
-                .contains("Valuation Context:")
                 .contains("Watch Trigger:")
-                .contains("CONVICTION AUDIT & ACTIVE GUARDRAILS")
-                .contains("Cap: valuation method conflict");
+                .contains("Valuation & Drivers")
+                .doesNotContain("Decision Drivers & Monitoring Triggers")
+                .doesNotContain("Conviction Audit & Active Guardrails");
+
+        Component driversTab = renderer.renderValuationAndDriversTab(result, null);
+        assertThat(driversTab).isNotNull();
+        assertThat(driversTab.getElement().getTextRecursively())
+                .contains("Valuation Context")
+                .contains("Methodology Reconciliation")
+                .contains("Decision Drivers & Monitoring Triggers")
+                .contains("Implied FCF Growth Hurdle")
+                .contains("Conviction Audit & Active Guardrails");
+    }
+
+    @Test
+    void hasValuationAndDriversContent_checksActualRenderableFields() {
+        MarkdownRenderer markdownRenderer = new MarkdownRenderer(new JsonMapper());
+        AnalysisOverviewRenderer renderer = new AnalysisOverviewRenderer(markdownRenderer, new DecisionSnapshotRenderer());
+
+        assertThat(renderer.hasValuationAndDriversContent(null)).isFalse();
+        assertThat(renderer.hasValuationAndDriversContent(AnalysisResult.builder()
+                .decisionSummary(DecisionSummary.builder().businessQuality("HIGH").build())
+                .build())).isFalse();
+        assertThat(renderer.hasValuationAndDriversContent(AnalysisResult.builder()
+                .convictionReasons(List.of("Base conviction 4/5"))
+                .build())).isTrue();
     }
 }

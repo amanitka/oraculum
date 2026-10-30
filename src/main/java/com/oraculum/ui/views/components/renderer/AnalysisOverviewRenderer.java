@@ -1,17 +1,24 @@
 package com.oraculum.ui.views.components.renderer;
 
-import com.oraculum.analyst.api.domain.ValuationAssessment;
 import com.oraculum.analyst.api.dto.AnalysisResult;
 import com.oraculum.analyst.api.dto.AnalysisResult.DecisionSummary;
+import com.oraculum.analyst.api.dto.AnalysisResult.ScenariosResult;
 import com.oraculum.analyst.api.dto.CompanyAnalysisDto;
-import com.oraculum.ui.ViewHelper;
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.html.*;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.H5;
+import com.vaadin.flow.component.html.ListItem;
+import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.html.UnorderedList;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.theme.lumo.LumoUtility;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedHashMap;
@@ -21,11 +28,25 @@ import java.util.Map;
 import java.util.Objects;
 
 @Service
-@RequiredArgsConstructor
 public class AnalysisOverviewRenderer {
 
     private final MarkdownRenderer markdownRenderer;
     private final DecisionSnapshotRenderer decisionSnapshotRenderer;
+    private final VerdictHeroRenderer verdictHeroRenderer;
+
+    @Autowired
+    public AnalysisOverviewRenderer(MarkdownRenderer markdownRenderer,
+                                    DecisionSnapshotRenderer decisionSnapshotRenderer,
+                                    VerdictHeroRenderer verdictHeroRenderer) {
+        this.markdownRenderer = markdownRenderer;
+        this.decisionSnapshotRenderer = decisionSnapshotRenderer;
+        this.verdictHeroRenderer = verdictHeroRenderer;
+    }
+
+    public AnalysisOverviewRenderer(MarkdownRenderer markdownRenderer,
+                                    DecisionSnapshotRenderer decisionSnapshotRenderer) {
+        this(markdownRenderer, decisionSnapshotRenderer, new VerdictHeroRenderer(markdownRenderer));
+    }
 
     static Map<String, Double> normalizeFactorScores(Map<String, Double> factorScores) {
         if (factorScores == null || factorScores.isEmpty()) {
@@ -49,391 +70,232 @@ public class AnalysisOverviewRenderer {
     private static double calculateMultiplier(double maxScore) {
         if (maxScore > 0.0 && maxScore <= 1.0) {
             return 10.0;
-        } else if (maxScore > 10.0) {
-            return 0.1;
         }
-        return 1.0;
+        return maxScore > 10.0 ? 0.1 : 1.0;
+    }
+
+    public boolean hasValuationAndDriversContent(AnalysisResult snapshot) {
+        if (snapshot == null) {
+            return false;
+        }
+        boolean hasContext = snapshot.valuationOneLiner() != null && !snapshot.valuationOneLiner().isBlank();
+        DecisionSummary s = snapshot.decisionSummary();
+        boolean hasTension = s != null && s.keyValuationTension() != null && !s.keyValuationTension().isBlank();
+        boolean hasDrivers = snapshot.decisionDrivers() != null && !snapshot.decisionDrivers().isEmpty();
+        boolean hasAudit = snapshot.convictionReasons() != null && !snapshot.convictionReasons().isEmpty();
+        return hasContext || hasTension || hasDrivers || hasAudit;
     }
 
     public Component renderOverviewTab(AnalysisResult snapshot, CompanyAnalysisDto analysis) {
-        if (snapshot == null) return null;
+        return renderOverviewTab(snapshot, analysis, null);
+    }
 
+    public Component renderOverviewTab(AnalysisResult snapshot, CompanyAnalysisDto analysis, Runnable onOpenDriversTab) {
+        if (snapshot == null) {
+            return null;
+        }
         Div container = new Div();
         container.addClassNames(LumoUtility.Width.FULL);
 
-        container.add(createSnapshotHeader(snapshot));
-        addPriceBarIfPresent(container, snapshot);
-        addThesisIfPresent(container, snapshot, analysis);
-        addCoreScorecard(container, snapshot);
-        addPointsIfPresent(container, snapshot, analysis);
-        addValuationMechanics(container, snapshot);
-        addFooterAndAudit(container, snapshot, analysis);
-
+        addIfNotNull(container, verdictHeroRenderer.renderHeroCard(snapshot, analysis));
+        addPillarSignals(container, snapshot);
+        addImpliedExpectations(container, snapshot.decisionSummary());
+        addIfNotNull(container, createSnapshotPoints(snapshot, analysis));
+        addIfNotNull(container, createOverviewWatchpointBar(snapshot, analysis, onOpenDriversTab));
         return container;
     }
 
-    private void addPriceBarIfPresent(Div container, AnalysisResult snapshot) {
-        if (decisionSnapshotRenderer != null && snapshot.decisionSummary() != null) {
-            Component priceBar = decisionSnapshotRenderer.renderPriceAndCatalystBar(snapshot.decisionSummary());
-            if (priceBar != null) {
-                container.add(priceBar);
-            }
+    public Component renderValuationAndDriversTab(AnalysisResult snapshot, CompanyAnalysisDto analysis) {
+        if (snapshot == null || decisionSnapshotRenderer == null) {
+            return null;
         }
-    }
-
-    private void addThesisIfPresent(Div container, AnalysisResult snapshot, CompanyAnalysisDto analysis) {
-        if (snapshot.thesis() != null && !snapshot.thesis().isBlank()) {
-            container.add(createSnapshotThesis(snapshot.thesis(), analysis));
-        }
-    }
-
-    private void addCoreScorecard(Div container, AnalysisResult snapshot) {
-        DecisionSummary s = snapshot.decisionSummary();
-        if (decisionSnapshotRenderer != null && s != null) {
-            Component pillars = decisionSnapshotRenderer.renderUnifiedPillarsGrid(snapshot, s);
-            if (pillars != null) {
-                container.add(pillars);
-            }
-            Component question = decisionSnapshotRenderer.renderDecisiveQuestionCard(s);
-            if (question != null) {
-                container.add(question);
-            }
-        } else if (snapshot.factorScores() != null && !snapshot.factorScores().isEmpty()) {
-            container.add(createFactorScoresCard(snapshot.factorScores()));
-        }
-    }
-
-    private void addPointsIfPresent(Div container, AnalysisResult snapshot, CompanyAnalysisDto analysis) {
-        Component points = createSnapshotPoints(snapshot, analysis);
-        if (points != null) {
-            container.add(points);
-        }
-    }
-
-    private void addValuationMechanics(Div container, AnalysisResult snapshot) {
-        if (decisionSnapshotRenderer != null && snapshot.decisionSummary() != null) {
-            Component expectations = decisionSnapshotRenderer.renderImpliedExpectationsCard(snapshot.decisionSummary());
-            if (expectations != null) {
-                container.add(expectations);
-            }
-            Component drivers = decisionSnapshotRenderer.renderDecisionDriversCard(snapshot.decisionDrivers());
-            if (drivers != null) {
-                container.add(drivers);
-            }
-        }
-    }
-
-    private void addFooterAndAudit(Div container, AnalysisResult snapshot, CompanyAnalysisDto analysis) {
-        Component footer = createSnapshotFooter(snapshot, analysis);
-        if (footer != null) {
-            container.add(footer);
-        }
-        if (decisionSnapshotRenderer != null && snapshot.convictionReasons() != null && !snapshot.convictionReasons().isEmpty()) {
-            Component audit = decisionSnapshotRenderer.renderConvictionReasonsCard(snapshot.convictionReasons());
-            if (audit != null) {
-                container.add(audit);
-            }
-        }
+        return decisionSnapshotRenderer.renderValuationAndDriversTab(snapshot, analysis, markdownRenderer);
     }
 
     public Component renderScenariosTab(AnalysisResult snapshot, CompanyAnalysisDto analysis) {
-        if (snapshot == null) return null;
-
+        if (snapshot == null) {
+            return null;
+        }
         Div container = new Div();
         container.addClassNames(LumoUtility.Width.FULL);
 
         if (snapshot.scenarios() != null) {
             container.add(createSnapshotScenarios(snapshot.scenarios(), analysis));
         }
-
         if (snapshot.thesisBreakers() != null && !snapshot.thesisBreakers().isEmpty()) {
             container.add(createSnapshotThesisBreakers(snapshot.thesisBreakers(), analysis));
         }
-
         return container;
     }
 
-    private Component createSnapshotHeader(AnalysisResult snapshot) {
-        VerticalLayout container = new VerticalLayout();
-        container.setPadding(false);
-        container.setSpacing(false);
-        container.setWidthFull();
-
-        HorizontalLayout topRow = new HorizontalLayout();
-        topRow.setWidthFull();
-        topRow.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
-        topRow.setAlignItems(FlexComponent.Alignment.CENTER);
-        topRow.getStyle().set("margin-top", "6px").set("margin-bottom", "16px");
-
-        HorizontalLayout badges = new HorizontalLayout();
-        badges.setAlignItems(FlexComponent.Alignment.CENTER);
-        badges.getStyle().set("gap", "12px");
-
-        ValuationAssessment valuation = snapshot.valuation();
-        String verdictText = valuation != null ? valuation.getDisplayLabel() : "Pending";
-
-        Span verdictBadge = new Span(verdictText);
-        verdictBadge.getElement().getThemeList().add("badge");
-        if (valuation == ValuationAssessment.UNDERVALUED) {
-            verdictBadge.getElement().getThemeList().add("success");
-        } else if (valuation == ValuationAssessment.OVERVALUED) {
-            verdictBadge.getElement().getThemeList().add("error");
-        } else {
-            verdictBadge.getElement().getThemeList().add("contrast");
+    private void addPillarSignals(Div container, AnalysisResult snapshot) {
+        DecisionSummary s = snapshot.decisionSummary();
+        if (decisionSnapshotRenderer != null && s != null) {
+            addIfNotNull(container, decisionSnapshotRenderer.renderUnifiedPillarsGrid(snapshot, s));
+        } else if (snapshot.factorScores() != null && !snapshot.factorScores().isEmpty()) {
+            container.add(createLegacyFactorScoresGrid(snapshot.factorScores()));
         }
-        verdictBadge.getStyle()
-                .set("font-size", "0.95rem")
-                .set("padding", "6px 14px")
-                .set("font-weight", "bold")
-                .set("letter-spacing", "1px");
-
-        badges.add(verdictBadge);
-        if (snapshot.outlook() != null) {
-            badges.add(ViewHelper.outlookBadge(snapshot.outlook()));
-        }
-
-        topRow.add(badges, buildConvictionMeter(snapshot.conviction()));
-        container.add(topRow);
-        return container;
     }
 
-    private HorizontalLayout buildConvictionMeter(int conviction) {
-        HorizontalLayout layout = new HorizontalLayout();
-        layout.setAlignItems(FlexComponent.Alignment.CENTER);
-        layout.getStyle().set("gap", "10px");
-
-        HorizontalLayout meter = new HorizontalLayout();
-        meter.setSpacing(false);
-        meter.getStyle().set("gap", "4px").set("align-items", "center");
-
-        for (int i = 1; i <= 5; i++) {
-            Span bar = new Span();
-            bar.getStyle()
-                    .set("width", "12px")
-                    .set("height", "16px")
-                    .set("border-radius", "3px")
-                    .set("background", i <= conviction ? "var(--lumo-primary-color)" : "rgba(255, 255, 255, 0.15)");
-            meter.add(bar);
+    private void addImpliedExpectations(Div container, DecisionSummary s) {
+        if (decisionSnapshotRenderer != null && s != null) {
+            addIfNotNull(container, decisionSnapshotRenderer.renderImpliedExpectationsCard(s));
         }
-
-        Span convictionText = new Span("Conviction " + conviction + "/5");
-        convictionText.addClassNames(LumoUtility.FontWeight.BOLD, LumoUtility.FontSize.MEDIUM);
-        convictionText.getStyle().set("color", "var(--lumo-secondary-text-color)");
-
-        layout.add(meter, convictionText);
-        return layout;
     }
 
-    private Component createSnapshotThesis(String thesis, CompanyAnalysisDto analysis) {
-        Div thesisCard = new Div();
-        thesisCard.setWidthFull();
-        thesisCard.getStyle()
-                .set("background", "rgba(var(--lumo-primary-color-rgb), 0.05)")
-                .set("border-left", "3px solid var(--lumo-primary-color)")
-                .set("border-radius", "0 8px 8px 0")
-                .set("padding", "12px 16px")
-                .set("margin-bottom", "16px");
-
-        String jsonData = analysis != null ? analysis.getAnalysisData() : null;
-        Component contentComponent = markdownRenderer.renderMarkdownWithCitations(thesis, jsonData);
-        contentComponent.getStyle()
-                .set("margin", "0")
-                .set("font-size", "0.95rem")
-                .set("line-height", "1.6")
-                .set("color", "var(--lumo-header-text-color)");
-
-        thesisCard.add(contentComponent);
-        return thesisCard;
-    }
-
-    private Component createFactorScoresCard(Map<String, Double> factorScores) {
-        HorizontalLayout scoresLayout = new HorizontalLayout();
-        scoresLayout.setWidthFull();
-        scoresLayout.getStyle()
+    private Component createLegacyFactorScoresGrid(Map<String, Double> factorScores) {
+        Div grid = new Div();
+        grid.setWidthFull();
+        grid.getStyle()
+                .set("display", "grid")
+                .set("grid-template-columns", "repeat(auto-fit, minmax(200px, 1fr))")
                 .set("gap", "12px")
-                .set("margin-bottom", "16px")
-                .set("flex-wrap", "wrap");
+                .set("margin-bottom", "14px");
 
-        Map<String, Double> normalizedScores = normalizeFactorScores(factorScores);
-        normalizedScores.forEach((factor, score) -> {
-            Div tile = new Div();
-            tile.getStyle()
-                    .set("flex", "1 1 180px")
-                    .set("background", "rgba(var(--lumo-contrast-rgb), 0.03)")
-                    .set("border", "1px solid var(--lumo-contrast-10pct)")
-                    .set("border-radius", "8px")
-                    .set("padding", "10px 14px");
-
-            Span titleSpan = new Span(RendererUtil.formatKeyTitle(factor));
-            titleSpan.getStyle()
-                    .set("font-size", "0.8rem")
-                    .set("font-weight", "600")
-                    .set("color", "var(--lumo-secondary-text-color)")
-                    .set("display", "block")
-                    .set("margin-bottom", "6px");
-
-            tile.add(titleSpan, renderScoreBarMeter(score));
-            scoresLayout.add(tile);
-        });
-
-        return scoresLayout;
+        normalizeFactorScores(factorScores).forEach((factor, score) -> grid.add(buildLegacyFactorTile(factor, score)));
+        return grid;
     }
 
-    private HorizontalLayout renderScoreBarMeter(double score) {
-        HorizontalLayout layout = new HorizontalLayout();
-        layout.setAlignItems(FlexComponent.Alignment.CENTER);
-        layout.getStyle().set("gap", "8px");
+    private Div buildLegacyFactorTile(String factor, double score) {
+        Div tile = SnapshotUiSupport.createNeutralCard();
+        tile.getStyle().set("padding", "12px 14px");
 
-        HorizontalLayout bars = buildBars(score);
-        Span scoreText = new Span(String.format(Locale.US, "%.1f", score));
-        scoreText.getStyle()
-                .set("font-size", "0.85rem")
-                .set("font-weight", "bold")
-                .set("color", "var(--lumo-header-text-color)");
+        HorizontalLayout top = new HorizontalLayout();
+        top.setWidthFull();
+        top.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
+        top.setAlignItems(FlexComponent.Alignment.BASELINE);
 
-        layout.add(bars, scoreText);
-        return layout;
-    }
+        Span titleSpan = new Span(RendererUtil.formatKeyTitle(factor).toUpperCase(Locale.ROOT));
+        titleSpan.getStyle().set("font-size", "0.72rem").set("font-weight", "700").set("color", "var(--lumo-secondary-text-color)");
+        Span scoreSpan = new Span(String.format(Locale.US, "%.1f", score));
+        scoreSpan.getStyle().set("font-size", "1.05rem").set("font-weight", "700").set("color", "var(--lumo-header-text-color)");
+        top.add(titleSpan, scoreSpan);
 
-    private HorizontalLayout buildBars(double score) {
-        HorizontalLayout bars = new HorizontalLayout();
-        bars.setSpacing(false);
-        bars.getStyle().set("gap", "3px").set("align-items", "center");
+        Div track = new Div();
+        track.setWidthFull();
+        track.getStyle().set("height", "4px").set("background", "rgba(255,255,255,0.08)").set("border-radius", "2px").set("margin-top", "8px");
+        Div fill = new Div();
+        String col = score >= 7.5 ? SnapshotUiSupport.COLOR_GREEN : (score >= 4.5 ? SnapshotUiSupport.COLOR_AMBER : SnapshotUiSupport.COLOR_RED);
+        fill.getStyle().set("width", String.format(Locale.US, "%.0f%%", score * 10.0)).set("height", "100%").set("background", col).set("border-radius", "2px");
+        track.add(fill);
 
-        int fullBlocks = (int) Math.round(score);
-        for (int i = 1; i <= 10; i++) {
-            bars.add(createBarSegment(i, fullBlocks));
-        }
-        return bars;
-    }
-
-    private Span createBarSegment(int index, int fullBlocks) {
-        Span bar = new Span();
-        bar.getStyle()
-                .set("width", "8px")
-                .set("height", "13px")
-                .set("border-radius", "2px");
-
-        if (index <= fullBlocks) {
-            if (index <= 3) {
-                bar.getStyle().set("background", "var(--lumo-error-color)");
-            } else if (index <= 7) {
-                bar.getStyle().set("background", "var(--lumo-warning-color)");
-            } else {
-                bar.getStyle().set("background", "var(--lumo-success-color)");
-            }
-        } else {
-            bar.getStyle().set("background", "rgba(255, 255, 255, 0.12)");
-        }
-        return bar;
+        tile.add(top, track);
+        return tile;
     }
 
     private Component createSnapshotPoints(AnalysisResult snapshot, CompanyAnalysisDto analysis) {
-        HorizontalLayout pointsLayout = new HorizontalLayout();
-        pointsLayout.setWidthFull();
-        pointsLayout.setSpacing(true);
-        pointsLayout.getStyle().set("margin-bottom", "16px");
-
-        if (snapshot.topBullPoints() != null && !snapshot.topBullPoints().isEmpty()) {
-            pointsLayout.add(createPointsCard("Key Bull Drivers", snapshot.topBullPoints(), true, analysis));
+        boolean hasBull = snapshot.topBullPoints() != null && !snapshot.topBullPoints().isEmpty();
+        boolean hasBear = snapshot.topBearPoints() != null && !snapshot.topBearPoints().isEmpty();
+        if (!hasBull && !hasBear) {
+            return null;
         }
-        if (snapshot.topBearPoints() != null && !snapshot.topBearPoints().isEmpty()) {
-            pointsLayout.add(createPointsCard("Key Risks & Headwinds", snapshot.topBearPoints(), false, analysis));
-        }
+        Div pointsGrid = new Div();
+        pointsGrid.setWidthFull();
+        int cols = (hasBull && hasBear) ? 2 : 1;
+        pointsGrid.getStyle()
+                .set("display", "grid")
+                .set("grid-template-columns", "repeat(" + cols + ", minmax(0, 1fr))")
+                .set("gap", "14px")
+                .set("margin-bottom", "14px");
 
-        return pointsLayout.getComponentCount() > 0 ? pointsLayout : null;
+        if (hasBull) {
+            pointsGrid.add(createPointsCard("Key Bull Drivers", snapshot.topBullPoints(), true, analysis));
+        }
+        if (hasBear) {
+            pointsGrid.add(createPointsCard("Key Risks & Headwinds", snapshot.topBearPoints(), false, analysis));
+        }
+        return pointsGrid;
     }
 
     private Component createPointsCard(String titleText, List<String> items, boolean isBull, CompanyAnalysisDto analysis) {
-        VerticalLayout card = new VerticalLayout();
-        card.setPadding(true);
-        card.setSpacing(false);
-        card.setWidthFull();
-
         String bg = isBull ? "rgba(46, 204, 113, 0.05)" : "rgba(231, 76, 60, 0.05)";
         String borderColor = isBull ? "rgba(46, 204, 113, 0.2)" : "rgba(231, 76, 60, 0.2)";
-        String headerColor = isBull ? "#2ecc71" : "#e74c3c";
-        String icon = isBull ? "▲ " : "▼ ";
+        String headerColor = isBull ? SnapshotUiSupport.COLOR_GREEN : SnapshotUiSupport.COLOR_RED;
 
-        card.getStyle()
-                .set("background", bg)
-                .set("border", "1px solid " + borderColor)
-                .set("border-radius", "8px")
-                .set("padding", "14px 16px");
+        Div card = SnapshotUiSupport.createTintedCard(bg, borderColor);
+        card.getStyle().set("padding", "14px 16px");
 
-        H5 header = new H5(icon + titleText);
+        H5 header = new H5((isBull ? "▲ " : "▼ ") + titleText);
         header.getStyle()
                 .set("margin", "0 0 10px 0")
                 .set("color", headerColor)
-                .set("font-size", "0.85rem")
+                .set("font-size", "0.82rem")
                 .set("font-weight", "700")
                 .set("text-transform", "uppercase")
-                .set("letter-spacing", "0.5px");
-        card.add(header);
+                .set("letter-spacing", "0.05em");
+        card.add(header, buildPointsList(items, analysis));
+        return card;
+    }
 
+    private UnorderedList buildPointsList(List<String> items, CompanyAnalysisDto analysis) {
         UnorderedList list = new UnorderedList();
         list.getStyle()
                 .set("margin", "0")
                 .set("padding-left", "1.2rem")
-                .set("font-size", "0.88rem")
-                .set("line-height", "1.55");
+                .set("font-size", "0.86rem")
+                .set("line-height", "1.5");
 
         String jsonData = analysis != null ? analysis.getAnalysisData() : null;
         for (String item : items) {
-            ListItem li = new ListItem();
-            li.getStyle().set("margin-bottom", "6px");
-            li.add(markdownRenderer.renderMarkdownWithCitations(item, jsonData));
+            ListItem li = new ListItem(markdownRenderer.renderMarkdownWithCitations(item, jsonData));
+            li.getStyle().set("margin-bottom", "5px");
             list.add(li);
         }
-        card.add(list);
-        return card;
+        return list;
     }
 
-    private Component createSnapshotFooter(AnalysisResult snapshot, CompanyAnalysisDto analysis) {
-        boolean hasValuation = snapshot.valuationOneLiner() != null && !snapshot.valuationOneLiner().isBlank();
+    private Component createOverviewWatchpointBar(AnalysisResult snapshot, CompanyAnalysisDto analysis, Runnable onOpenDriversTab) {
         boolean hasWatch = snapshot.whatWouldChangeThis() != null && !snapshot.whatWouldChangeThis().isBlank();
+        boolean showDriversAction = onOpenDriversTab != null && hasValuationAndDriversContent(snapshot);
+        if (!hasWatch && !showDriversAction) {
+            return null;
+        }
 
-        if (!hasValuation && !hasWatch) return null;
+        HorizontalLayout bar = new HorizontalLayout();
+        bar.setWidthFull();
+        bar.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
+        bar.setAlignItems(FlexComponent.Alignment.CENTER);
+        bar.getStyle()
+                .set("background", "rgba(var(--lumo-contrast-rgb), 0.02)")
+                .set("border", "1px solid var(--lumo-contrast-10pct)")
+                .set("border-radius", "8px")
+                .set("padding", "10px 16px")
+                .set("gap", "16px")
+                .set("flex-wrap", "wrap")
+                .set("box-sizing", "border-box");
 
-        HorizontalLayout footer = new HorizontalLayout();
-        footer.setWidthFull();
-        footer.setSpacing(true);
+        if (hasWatch) {
+            bar.add(buildWatchTriggerInline(snapshot.whatWouldChangeThis(), analysis));
+        }
+        if (showDriversAction) {
+            bar.add(buildOpenDriversButton(onOpenDriversTab));
+        }
+        return bar;
+    }
+
+    private Div buildWatchTriggerInline(String watchText, CompanyAnalysisDto analysis) {
+        Div left = new Div();
+        left.getStyle().set("flex", "1 1 360px");
+
+        Span titleSpan = new Span("Watch Trigger: ");
+        titleSpan.getStyle().set("font-weight", "700").set("font-size", "0.82rem").set("color", SnapshotUiSupport.COLOR_AMBER);
 
         String jsonData = analysis != null ? analysis.getAnalysisData() : null;
-        if (hasValuation) {
-            footer.add(createFooterPill("Valuation Context", snapshot.valuationOneLiner(),
-                    "🏷️", "rgba(255, 255, 255, 0.03)", "rgba(255, 255, 255, 0.1)", jsonData));
-        }
-        if (hasWatch) {
-            footer.add(createFooterPill("Watch Trigger", snapshot.whatWouldChangeThis(),
-                    "⚡", "rgba(241, 196, 15, 0.05)", "rgba(241, 196, 15, 0.2)", jsonData));
-        }
+        Component md = markdownRenderer.renderMarkdownWithCitations(watchText, jsonData);
+        md.getStyle().set("display", "inline").set("font-size", "0.83rem").set("color", "var(--lumo-secondary-text-color)");
 
-        return footer;
+        left.add(titleSpan, md);
+        return left;
     }
 
-    private Component createFooterPill(String title, String content, String iconStr, String bg, String borderColor, String jsonData) {
-        Div box = new Div();
-        box.setWidthFull();
-        box.getStyle()
-                .set("background", bg)
-                .set("border", "1px solid " + borderColor)
-                .set("border-radius", "8px")
-                .set("padding", "10px 14px");
-
-        Span iconSpan = new Span(iconStr + " ");
-        Span titleSpan = new Span(title + ": ");
-        titleSpan.getStyle().set("font-weight", "700").set("font-size", "0.85rem");
-
-        Component contentComponent = markdownRenderer.renderMarkdownWithCitations(content, jsonData);
-        contentComponent.getStyle().set("display", "inline").set("font-size", "0.85rem").set("color", "var(--lumo-secondary-text-color)");
-
-        box.add(iconSpan, titleSpan, contentComponent);
-        return box;
+    private Button buildOpenDriversButton(Runnable onOpenDriversTab) {
+        Button btn = new Button("Valuation & Drivers", VaadinIcon.ARROW_RIGHT.create(), _ -> onOpenDriversTab.run());
+        btn.setIconAfterText(true);
+        btn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
+        return btn;
     }
 
     private Component createSnapshotThesisBreakers(List<String> thesisBreakers, CompanyAnalysisDto analysis) {
-        if (thesisBreakers == null || thesisBreakers.isEmpty()) return new Span();
         VerticalLayout container = new VerticalLayout();
         container.setPadding(true);
         container.setSpacing(true);
@@ -445,39 +307,44 @@ public class AnalysisOverviewRenderer {
                 .set("margin-top", "16px")
                 .set("margin-bottom", "16px");
 
+        container.add(buildThesisBreakersTitleRow());
+        String jsonData = analysis != null ? analysis.getAnalysisData() : null;
+        for (String breaker : thesisBreakers) {
+            container.add(buildBreakerRow(breaker, jsonData));
+        }
+        return container;
+    }
+
+    private HorizontalLayout buildThesisBreakersTitleRow() {
         HorizontalLayout titleRow = new HorizontalLayout();
         titleRow.setAlignItems(FlexComponent.Alignment.CENTER);
         titleRow.getStyle().set("gap", "8px");
 
-        com.vaadin.flow.component.icon.Icon warningIcon = com.vaadin.flow.component.icon.VaadinIcon.WARNING.create();
-        warningIcon.setColor("#ffb300");
+        Icon warningIcon = VaadinIcon.WARNING.create();
+        warningIcon.setColor(SnapshotUiSupport.COLOR_AMBER);
         warningIcon.setSize("18px");
 
         H5 title = new H5("Thesis Breakers & Monitoring Triggers");
-        title.getStyle().set("margin", "0").set("color", "#ffb300").set("font-weight", "bold");
+        title.getStyle().set("margin", "0").set("color", SnapshotUiSupport.COLOR_AMBER).set("font-weight", "bold");
         titleRow.add(warningIcon, title);
-        container.add(titleRow);
-
-        String jsonData = analysis != null ? analysis.getAnalysisData() : null;
-        for (String breaker : thesisBreakers) {
-            HorizontalLayout itemRow = new HorizontalLayout();
-            itemRow.setAlignItems(FlexComponent.Alignment.START);
-            itemRow.getStyle().set("gap", "8px");
-
-            Span dot = new Span("•");
-            dot.getStyle().set("color", "#ffb300").set("font-weight", "bold");
-
-            Component textComp = markdownRenderer.renderMarkdownWithCitations(breaker, jsonData);
-            textComp.getStyle().set("font-size", "0.9rem").set("color", "var(--lumo-body-text-color)");
-            itemRow.add(dot, textComp);
-            container.add(itemRow);
-        }
-
-        return container;
+        return titleRow;
     }
 
-    private Component createSnapshotScenarios(AnalysisResult.ScenariosResult scenarios, CompanyAnalysisDto analysis) {
-        if (scenarios == null) return new Span();
+    private HorizontalLayout buildBreakerRow(String breaker, String jsonData) {
+        HorizontalLayout itemRow = new HorizontalLayout();
+        itemRow.setAlignItems(FlexComponent.Alignment.START);
+        itemRow.getStyle().set("gap", "8px");
+
+        Span dot = new Span("•");
+        dot.getStyle().set("color", SnapshotUiSupport.COLOR_AMBER).set("font-weight", "bold");
+
+        Component textComp = markdownRenderer.renderMarkdownWithCitations(breaker, jsonData);
+        textComp.getStyle().set("font-size", "0.9rem").set("color", "var(--lumo-body-text-color)");
+        itemRow.add(dot, textComp);
+        return itemRow;
+    }
+
+    private Component createSnapshotScenarios(ScenariosResult scenarios, CompanyAnalysisDto analysis) {
         VerticalLayout container = new VerticalLayout();
         container.setPadding(false);
         container.setSpacing(false);
@@ -489,20 +356,23 @@ public class AnalysisOverviewRenderer {
         cardsLayout.getStyle().set("gap", "16px").set("flex-wrap", "wrap");
 
         if (scenarios.bull() != null) {
-            cardsLayout.add(createScenarioCard("Bull Case", scenarios.bull().description(), scenarios.bull().keyAssumption(), scenarios.bull().impliedUpside(), "#2ecc71", "rgba(46, 204, 113, 0.05)", "rgba(46, 204, 113, 0.2)", analysis));
+            cardsLayout.add(createScenarioCard("Bull Case", scenarios.bull().description(), scenarios.bull().keyAssumption(),
+                    scenarios.bull().impliedUpside(), SnapshotUiSupport.COLOR_GREEN, "rgba(46, 204, 113, 0.05)", "rgba(46, 204, 113, 0.2)", analysis));
         }
         if (scenarios.base() != null) {
-            cardsLayout.add(createScenarioCard("Base Case", scenarios.base().description(), scenarios.base().keyAssumption(), scenarios.base().impliedMove(), "#3498db", "rgba(52, 152, 219, 0.05)", "rgba(52, 152, 219, 0.2)", analysis));
+            cardsLayout.add(createScenarioCard("Base Case", scenarios.base().description(), scenarios.base().keyAssumption(),
+                    scenarios.base().impliedMove(), SnapshotUiSupport.COLOR_BLUE, "rgba(52, 152, 219, 0.05)", "rgba(52, 152, 219, 0.2)", analysis));
         }
         if (scenarios.bear() != null) {
-            cardsLayout.add(createScenarioCard("Bear Case", scenarios.bear().description(), scenarios.bear().keyAssumption(), scenarios.bear().impliedDownside(), "#e74c3c", "rgba(231, 76, 60, 0.05)", "rgba(231, 76, 60, 0.2)", analysis));
+            cardsLayout.add(createScenarioCard("Bear Case", scenarios.bear().description(), scenarios.bear().keyAssumption(),
+                    scenarios.bear().impliedDownside(), SnapshotUiSupport.COLOR_RED, "rgba(231, 76, 60, 0.05)", "rgba(231, 76, 60, 0.2)", analysis));
         }
-
         container.add(cardsLayout);
         return container;
     }
 
-    private Component createScenarioCard(String title, String descText, String assumptionText, String moveText, String accentColor, String bgTint, String borderColor, CompanyAnalysisDto analysis) {
+    private Component createScenarioCard(String title, String descText, String assumptionText, String moveText,
+                                         String accentColor, String bgTint, String borderColor, CompanyAnalysisDto analysis) {
         VerticalLayout card = new VerticalLayout();
         card.setPadding(true);
         card.setSpacing(true);
@@ -517,13 +387,21 @@ public class AnalysisOverviewRenderer {
         card.add(cardTitle);
 
         String jsonData = analysis != null ? analysis.getAnalysisData() : null;
+        addScenarioText(card, descText, jsonData);
+        addScenarioAssumption(card, assumptionText, jsonData);
+        addScenarioMove(card, moveText, accentColor, jsonData);
+        return card;
+    }
 
+    private void addScenarioText(VerticalLayout card, String descText, String jsonData) {
         if (descText != null && !descText.isBlank()) {
             Component descComp = markdownRenderer.renderMarkdownWithCitations(descText, jsonData);
             descComp.getStyle().set("font-size", "0.85rem").set("line-height", "1.4");
             card.add(descComp);
         }
+    }
 
+    private void addScenarioAssumption(VerticalLayout card, String assumptionText, String jsonData) {
         if (assumptionText != null && !assumptionText.isBlank()) {
             VerticalLayout assumptionLayout = new VerticalLayout();
             assumptionLayout.setSpacing(false);
@@ -535,16 +413,19 @@ public class AnalysisOverviewRenderer {
             assumptionLayout.add(titleSpan, assumptionComp);
             card.add(assumptionLayout);
         }
+    }
 
+    private void addScenarioMove(VerticalLayout card, String moveText, String accentColor, String jsonData) {
         if (moveText != null && !moveText.isBlank()) {
             Component moveComp = markdownRenderer.renderMarkdownWithCitations(moveText, jsonData);
-            moveComp.getStyle()
-                    .set("font-weight", "bold")
-                    .set("color", accentColor)
-                    .set("font-size", "0.9rem");
+            moveComp.getStyle().set("font-weight", "bold").set("color", accentColor).set("font-size", "0.9rem");
             card.add(moveComp);
         }
+    }
 
-        return card;
+    private void addIfNotNull(Div parent, Component child) {
+        if (child != null) {
+            parent.add(child);
+        }
     }
 }
