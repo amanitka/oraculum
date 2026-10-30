@@ -1,6 +1,8 @@
 package com.oraculum.ui.views.components.renderer;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -13,14 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
 
-import com.vaadin.flow.component.details.Details;
-import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.grid.GridVariant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -84,7 +79,7 @@ public class AgentDataRenderer {
         boolean hasTiles = false;
 
         if (agentData.has("score")) {
-            tilesRow.add(createTile("Score", renderScoreContent(agentData.get("score"))));
+            tilesRow.add(buildAgentScoreTile(agentData));
             hasTiles = true;
         }
         if (agentData.has("confidence")) {
@@ -164,10 +159,10 @@ public class AgentDataRenderer {
     }
 
     private void addMetricsIfPresent(VerticalLayout layout, JsonNode agentData) {
-        if (agentData.has("metrics")) {
+        if (agentData.has("factor_scores")) {
+            layout.add(renderFactorScoresSection(agentData.get("factor_scores")));
+        } else if (agentData.has("metrics")) {
             layout.add(renderMetrics(agentData.get("metrics"), "Key Metrics"));
-        } else if (agentData.has("factor_scores")) {
-            layout.add(renderMetrics(agentData.get("factor_scores"), "Factor Scores"));
         }
     }
 
@@ -481,45 +476,78 @@ public class AgentDataRenderer {
         return headline;
     }
 
-    private Component renderScoreContent(JsonNode value) {
-        double score = value.asDouble(0.0);
+    private Div buildAgentScoreTile(JsonNode agentData) {
+        double score = agentData.get("score").asDouble(0.0);
         if (score > 10.0) {
             score = score / 10.0;
         }
-        HorizontalLayout layout = new HorizontalLayout();
-        layout.setAlignItems(FlexComponent.Alignment.CENTER);
-        layout.getStyle().set("gap", "12px");
+        String badgeText = resolveScoreBadge(agentData, score);
+        String badgeTheme = SnapshotUiSupport.resolveDimensionTheme(badgeText);
+        Div tile = SnapshotUiSupport.createScoreCard("Score", score, badgeText, badgeTheme);
+        tile.getStyle().set("flex", "1 1 180px");
+        return tile;
+    }
 
-        HorizontalLayout meter = new HorizontalLayout();
-        meter.setSpacing(false);
-        meter.getStyle().set("gap", "3px").set("align-items", "center");
-
-        int fullBlocks = (int) score;
-        for (int i = 1; i <= 10; i++) {
-            Span bar = new Span();
-            bar.getStyle()
-                    .set("width", "12px")
-                    .set("height", "16px")
-                    .set("border-radius", "2px");
-            if (i <= fullBlocks) {
-                if (i <= 3) {
-                    bar.getStyle().set("background", "var(--lumo-error-color)");
-                } else if (i <= 7) {
-                    bar.getStyle().set("background", "var(--lumo-warning-color)");
-                } else {
-                    bar.getStyle().set("background", "var(--lumo-success-color)");
-                }
-            } else {
-                bar.getStyle().set("background", "rgba(var(--lumo-contrast-rgb), 0.1)");
-            }
-            meter.add(bar);
+    private String resolveScoreBadge(JsonNode agentData, double score) {
+        if (agentData.has("valuation_zone") && !agentData.get("valuation_zone").asString().isBlank()) {
+            return agentData.get("valuation_zone").asString();
         }
+        if (agentData.has("rating") && !agentData.get("rating").asString().isBlank()) {
+            return agentData.get("rating").asString();
+        }
+        return SnapshotUiSupport.resolveScoreBadgeLabel(score);
+    }
 
-        Span text = new Span(String.format(Locale.US, "%.1f / 10.0", score));
-        text.addClassNames(LumoUtility.FontWeight.BOLD, LumoUtility.FontSize.SMALL);
+    private Component renderFactorScoresSection(JsonNode factorScores) {
+        if (factorScores == null || factorScores.isEmpty()) {
+            return new Span();
+        }
+        VerticalLayout section = new VerticalLayout();
+        section.setPadding(false);
+        section.setSpacing(false);
+        section.setWidthFull();
+        section.getStyle().set("margin-bottom", "20px");
 
-        layout.add(meter, text);
-        return layout;
+        H4 header = new H4("Factor Scores");
+        header.getStyle()
+                .set("margin-top", "24px")
+                .set("margin-bottom", "14px")
+                .set("border-bottom", "1px solid var(--lumo-contrast-10pct)")
+                .set("padding-bottom", "8px")
+                .set("font-size", "1.1rem")
+                .set("color", "var(--lumo-header-text-color)");
+        section.add(header);
+
+        Div grid = new Div();
+        grid.setWidthFull();
+        grid.getStyle()
+                .set("display", "grid")
+                .set("grid-template-columns", "repeat(auto-fit, minmax(200px, 1fr))")
+                .set("gap", "12px");
+
+        for (Map.Entry<String, JsonNode> entry : factorScores.properties()) {
+            double score = entry.getValue().asDouble(0.0);
+            if (score > 10.0) {
+                score = score / 10.0;
+            }
+            String title = formatFactorScoreTitle(entry.getKey());
+            String badgeText = SnapshotUiSupport.resolveScoreBadgeLabel(score);
+            String badgeTheme = SnapshotUiSupport.resolveScoreBadgeTheme(score);
+            grid.add(SnapshotUiSupport.createScoreCard(title, score, badgeText, badgeTheme));
+        }
+        section.add(grid);
+        return section;
+    }
+
+    private String formatFactorScoreTitle(String key) {
+        if (key == null || key.isBlank()) return "Score";
+        return switch (key.toLowerCase(Locale.ROOT)) {
+            case "fundamental_health", "fundamental" -> "Fundamental Health";
+            case "valuation" -> "Valuation Hurdle";
+            case "growth_prospects", "growth" -> "Growth Prospects";
+            case "risk_profile", "risk" -> "Risk & Market Setup";
+            default -> SnapshotUiSupport.formatDimensionLabel(key);
+        };
     }
 
     private Component renderConfidenceContent(JsonNode confidence, JsonNode reasons, String jsonData) {
@@ -568,7 +596,7 @@ public class AgentDataRenderer {
         } else {
             badgeText = (int) (confVal * 100) + "%";
         }
-        
+
         Span badge = new Span();
         if (label != null) {
             Span labelSpan = new Span(label);
@@ -576,12 +604,12 @@ public class AgentDataRenderer {
             badge.add(labelSpan);
         }
         badge.add(new Span(badgeText));
-        
+
         badge.getElement().getThemeList().add("badge");
         if (confVal >= 0.8) badge.getElement().getThemeList().add("success");
         else if (confVal >= 0.5) badge.getElement().getThemeList().add("contrast");
         else badge.getElement().getThemeList().add("error");
-        
+
         return badge;
     }
 
@@ -703,73 +731,48 @@ public class AgentDataRenderer {
 
         grid.addColumn(item -> item.path("metric").asString(""))
                 .setHeader("Metric")
-                .setAutoWidth(true)
+                .setWidth("220px")
                 .setFlexGrow(1);
 
         grid.addComponentColumn(item -> {
             Span currentSpan = new Span(item.path("value").asString(""));
             currentSpan.getStyle().set("font-weight", "bold").set("color", "var(--lumo-header-text-color)");
             return currentSpan;
-        }).setHeader("Current").setAutoWidth(true).setFlexGrow(0);
+        }).setHeader("Current").setWidth("130px").setFlexGrow(0);
 
         grid.addComponentColumn(item -> {
             String prev = item.path("previous_value").asString("");
             Span prevSpan = new Span(prev.isBlank() ? "-" : prev);
             prevSpan.getStyle().set("color", "var(--lumo-secondary-text-color)");
             return prevSpan;
-        }).setHeader("Previous").setAutoWidth(true).setFlexGrow(0);
+        }).setHeader("Previous").setWidth("130px").setFlexGrow(0);
 
         grid.addComponentColumn(item -> renderTrendIcon(item.path("trend").asString("")))
                 .setHeader("Trend")
-                .setAutoWidth(true)
+                .setWidth("70px")
                 .setFlexGrow(0);
 
         grid.addComponentColumn(item -> {
             String sourceType = item.path("source_type").asString("");
             if (sourceType.isBlank()) return new Span("-");
-            Span badge = new Span(sourceType);
-            badge.getElement().getThemeList().add("badge");
-            badge.getStyle().set("font-size", "0.75rem").set("font-weight", "600");
-            switch (sourceType.toUpperCase()) {
-                case "REPORTED" -> {
-                    badge.getElement().getThemeList().add("primary");
-                    badge.getStyle().set("background-color", "rgba(50, 150, 250, 0.15)").set("color", "#4fc3f7");
-                }
-                case "CALCULATED" -> {
-                    badge.getStyle().set("background-color", "rgba(156, 39, 176, 0.15)").set("color", "#ba68c8");
-                }
-                case "DERIVED" -> {
-                    badge.getElement().getThemeList().add("contrast");
-                    badge.getStyle().set("background-color", "rgba(255, 152, 0, 0.15)").set("color", "#ffb74d");
-                }
-                case "ESTIMATED" -> {
-                    badge.getElement().getThemeList().add("success");
-                    badge.getStyle().set("background-color", "rgba(76, 175, 80, 0.15)").set("color", "#81c784");
-                }
-                default -> badge.getElement().getThemeList().add("contrast");
-            }
-            return badge;
-        }).setHeader("Type").setAutoWidth(true).setFlexGrow(0);
+            String formatted = SnapshotUiSupport.formatDimensionLabel(sourceType);
+            String theme = switch (sourceType.toUpperCase(Locale.ROOT)) {
+                case "REPORTED" -> "primary";
+                case "CALCULATED" -> "contrast";
+                case "DERIVED" -> "warning";
+                case "ESTIMATED" -> "success";
+                default -> "contrast";
+            };
+            return SnapshotUiSupport.createStatusBadge(formatted, theme);
+        }).setHeader("Type").setWidth("110px").setFlexGrow(0);
 
         grid.addComponentColumn(item -> {
             String sig = item.path("significance").asString("");
             if (sig.isBlank()) return new Span("-");
-
             Component sigComp = markdownRenderer.renderMarkdownWithCitations(sig, jsonData);
-            sigComp.getStyle().set("font-size", "0.85rem").set("line-height", "1.4");
-
-            if (sig.length() <= 65) {
-                return sigComp;
-            }
-
-            String summaryText = sig.substring(0, 60) + "…";
-            Details details = new Details(summaryText, sigComp);
-            details.getStyle()
-                    .set("font-size", "0.85rem")
-                    .set("margin", "0")
-                    .set("padding", "0");
-            return details;
-        }).setHeader("Why It Matters").setFlexGrow(3);
+            sigComp.getStyle().set("font-size", "0.85rem").set("line-height", "1.45");
+            return sigComp;
+        }).setHeader("Why It Matters").setFlexGrow(4);
 
         List<JsonNode> itemList = new ArrayList<>();
         value.forEach(itemList::add);
@@ -812,50 +815,181 @@ public class AgentDataRenderer {
         VerticalLayout layout = new VerticalLayout();
         layout.setPadding(false);
         layout.setSpacing(false);
+        layout.setWidthFull();
         layout.getStyle().set("margin-bottom", "20px");
 
         H4 header = new H4(title);
         header.getStyle()
                 .set("margin-top", "24px")
-                .set("margin-bottom", "16px")
+                .set("margin-bottom", "14px")
                 .set("border-bottom", "1px solid var(--lumo-contrast-10pct)")
-                .set("padding-bottom", "8px");
+                .set("padding-bottom", "8px")
+                .set("font-size", "1.1rem")
+                .set("color", "var(--lumo-header-text-color)");
         layout.add(header);
 
-        HorizontalLayout flex = new HorizontalLayout();
-        flex.setWidthFull();
-        flex.getStyle().set("gap", "12px").set("flex-wrap", "wrap");
+        Div grid = new Div();
+        grid.setWidthFull();
+        grid.getStyle()
+                .set("display", "grid")
+                .set("grid-template-columns", "repeat(auto-fill, minmax(180px, 1fr))")
+                .set("grid-auto-flow", "dense")
+                .set("gap", "12px");
 
         for (Map.Entry<String, JsonNode> entry : value.properties()) {
-            Div chip = new Div();
-            chip.getStyle()
-                    .set("display", "flex")
-                    .set("flex-direction", "column")
-                    .set("background", "rgba(var(--lumo-contrast-rgb), 0.04)")
-                    .set("border", "1px solid var(--lumo-contrast-15pct)")
-                    .set("border-radius", "8px")
-                    .set("padding", "12px 16px")
-                    .set("min-width", "140px")
-                    .set("gap", "4px");
-
-            Span keySpan = new Span(RendererUtil.formatKeyTitle(entry.getKey()));
-            keySpan.getStyle()
-                    .set("color", "var(--lumo-secondary-text-color)")
-                    .set("font-size", "0.75rem")
-                    .set("text-transform", "uppercase")
-                    .set("letter-spacing", "0.5px");
-
-            Span valSpan = new Span(entry.getValue().asString());
-            valSpan.getStyle()
-                    .set("font-weight", "bold")
-                    .set("color", "var(--lumo-primary-text-color)")
-                    .set("font-size", "1.15rem");
-
-            chip.add(keySpan, valSpan);
-            flex.add(chip);
+            grid.add(buildMetricCard(entry.getKey(), entry.getValue()));
         }
-        layout.add(flex);
+        layout.add(grid);
         return layout;
+    }
+
+    private Div buildMetricCard(String rawKey, JsonNode valNode) {
+        Div card = SnapshotUiSupport.createNeutralCard();
+        card.getStyle()
+                .set("padding", "10px 14px")
+                .set("display", "flex")
+                .set("flex-direction", "column")
+                .set("justify-content", "space-between")
+                .set("gap", "6px");
+
+        String valStr = extractMetricString(valNode);
+        if (valStr.length() > 65) {
+            card.getStyle().set("grid-column", "span 2");
+        }
+
+        Span keySpan = new Span(SnapshotUiSupport.formatMetricLabel(rawKey));
+        keySpan.getStyle()
+                .set("color", "var(--lumo-secondary-text-color)")
+                .set("font-size", "0.74rem")
+                .set("font-weight", "600")
+                .set("letter-spacing", "0.02em")
+                .set("line-height", "1.25");
+
+        card.add(keySpan, buildMetricValueComponent(rawKey, valStr));
+        return card;
+    }
+
+    private Component buildMetricValueComponent(String rawKey, String valStr) {
+        if (isStatusOrEnum(rawKey, valStr)) {
+            String theme = SnapshotUiSupport.resolveDimensionTheme(valStr);
+            Span badge = SnapshotUiSupport.createStatusBadge(SnapshotUiSupport.formatDimensionLabel(valStr), theme);
+            badge.getStyle().set("align-self", "flex-start");
+            return badge;
+        }
+
+        int colonIdx = valStr.indexOf(':');
+        if (colonIdx > 0 && colonIdx <= 25 && valStr.length() > 30) {
+            String prefix = valStr.substring(0, colonIdx).trim();
+            if (isSentimentPrefix(prefix)) {
+                return buildPrefixedDescriptiveBlock(prefix, valStr.substring(colonIdx + 1).trim());
+            }
+        }
+
+        if (valStr.length() > 25) {
+            return buildDescriptiveText(valStr);
+        }
+        return buildStandardValueSpan(rawKey, valStr);
+    }
+
+    private Component buildPrefixedDescriptiveBlock(String prefix, String body) {
+        VerticalLayout block = new VerticalLayout();
+        block.setPadding(false);
+        block.setSpacing(false);
+        block.getStyle().set("gap", "4px");
+
+        String theme = resolvePrefixTheme(prefix);
+        Span badge = SnapshotUiSupport.createStatusBadge(SnapshotUiSupport.formatDimensionLabel(prefix), theme);
+        badge.getStyle().set("align-self", "flex-start");
+
+        Span textSpan = new Span(body);
+        textSpan.getStyle()
+                .set("font-size", "0.80rem")
+                .set("font-weight", "500")
+                .set("line-height", "1.35")
+                .set("color", "var(--lumo-body-text-color)");
+
+        block.add(badge, textSpan);
+        return block;
+    }
+
+    private Span buildDescriptiveText(String text) {
+        Span span = new Span(text);
+        span.getStyle()
+                .set("font-size", "0.82rem")
+                .set("font-weight", "500")
+                .set("line-height", "1.35")
+                .set("color", "var(--lumo-header-text-color)");
+        return span;
+    }
+
+    private Span buildStandardValueSpan(String rawKey, String valStr) {
+        String displayVal = formatShortMetricValue(rawKey, valStr);
+        Span span = new Span(!displayVal.isBlank() ? displayVal : "-");
+        span.getStyle()
+                .set("font-weight", "700")
+                .set("color", "var(--lumo-header-text-color)")
+                .set("font-size", "1.05rem")
+                .set("line-height", "1.2");
+        return span;
+    }
+
+    private String formatShortMetricValue(String rawKey, String valStr) {
+        if (valStr == null || valStr.isBlank()) return "-";
+        try {
+            double d = Double.parseDouble(valStr);
+            String kLower = rawKey.toLowerCase(Locale.ROOT);
+            if (kLower.contains("eps") && !kLower.contains("pct") && !kLower.contains("revision") && !kLower.contains("spread")) {
+                return String.format(Locale.US, "$%.2f", d);
+            }
+        } catch (NumberFormatException ignored) {
+            // Not a pure number
+        }
+        return valStr;
+    }
+
+    private String extractMetricString(JsonNode valNode) {
+        if (valNode == null || valNode.isNull()) return "";
+        String s = valNode.isString() ? valNode.asString("") : valNode.asString();
+        return s.replace("null down", "0 down").replace("null up", "0 up");
+    }
+
+    private boolean isStatusOrEnum(String key, String val) {
+        if (val == null || val.isBlank()) return false;
+        if (isCategoricalZone(key, val)) return true;
+        String kLower = key.toLowerCase(Locale.ROOT);
+        if (kLower.contains("status") || kLower.contains("flag") || kLower.contains("divergence")) {
+            return true;
+        }
+        String trimmed = val.trim();
+        return trimmed.matches("^[A-Z][A-Z0-9_]{2,}$");
+    }
+
+    private boolean isCategoricalZone(String key, String val) {
+        if (key.toLowerCase(Locale.ROOT).contains("zone")) return true;
+        String upper = val.toUpperCase(Locale.ROOT);
+        return upper.equals("AGGRESSIVE") || upper.equals("SPECULATIVE") || upper.equals("REALISTIC")
+                || upper.equals("CONSERVATIVE") || upper.equals("HIGH") || upper.equals("MODERATE");
+    }
+
+    private boolean isSentimentPrefix(String prefix) {
+        String p = prefix.trim().toLowerCase(Locale.ROOT);
+        return p.contains("mixed") || p.contains("negative") || p.contains("positive")
+                || p.contains("bullish") || p.contains("bearish") || p.contains("neutral")
+                || p.contains("warning") || p.contains("caution");
+    }
+
+    private String resolvePrefixTheme(String prefix) {
+        String p = prefix.trim().toLowerCase(Locale.ROOT);
+        if (p.contains("bullish") || (p.contains("positive") && !p.contains("mixed"))) {
+            return "success";
+        }
+        if (p.contains("bearish") || (p.contains("negative") && !p.contains("mixed"))) {
+            return "error";
+        }
+        if (p.contains("mixed") || p.contains("warning") || p.contains("caution")) {
+            return "warning";
+        }
+        return "contrast";
     }
 
     private Component renderSummary(JsonNode value, String jsonData, String title) {

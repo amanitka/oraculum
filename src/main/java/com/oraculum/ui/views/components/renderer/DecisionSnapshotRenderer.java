@@ -67,82 +67,21 @@ public class DecisionSnapshotRenderer {
         double riskScore = scores.getOrDefault("risk_profile", 0.0);
 
         grid.add(
-                buildPillarTile("Fundamental Health", fundScore, s.businessQuality(), SnapshotUiSupport.resolveDimensionTheme(s.businessQuality())),
-                buildPillarTile("Valuation Hurdle", valScore, s.valuationVsExpectations(), SnapshotUiSupport.resolveDimensionTheme(s.valuationVsExpectations())),
-                buildPillarTile("Growth Prospects", growthScore, resolveGrowthLabel(growthScore, s), resolveGrowthTheme(growthScore)),
-                buildPillarTile("Risk & Market Setup", riskScore, s.marketSetup(), SnapshotUiSupport.resolveDimensionTheme(s.marketSetup()))
+                SnapshotUiSupport.createScoreCard("Fundamental Health", fundScore, s.businessQuality(), SnapshotUiSupport.resolveDimensionTheme(s.businessQuality())),
+                SnapshotUiSupport.createScoreCard("Valuation Hurdle", valScore, s.valuationVsExpectations(), SnapshotUiSupport.resolveDimensionTheme(s.valuationVsExpectations())),
+                SnapshotUiSupport.createScoreCard("Growth Prospects", growthScore, resolveGrowthLabel(growthScore, s), resolveGrowthTheme(growthScore)),
+                SnapshotUiSupport.createScoreCard("Risk & Market Setup", riskScore, s.marketSetup(), SnapshotUiSupport.resolveDimensionTheme(s.marketSetup()))
         );
         return grid;
     }
 
-    private Div buildPillarTile(String title, double score, String badgeRaw, String badgeTheme) {
-        Div tile = SnapshotUiSupport.createNeutralCard();
-        tile.getStyle()
-                .set("padding", "12px 14px")
-                .set("display", "flex")
-                .set("flex-direction", "column")
-                .set("gap", "8px");
-
-        Span badge = SnapshotUiSupport.createStatusBadge(SnapshotUiSupport.formatDimensionLabel(badgeRaw), badgeTheme);
-        badge.getStyle().set("align-self", "flex-start");
-
-        tile.add(buildPillarHeaderRow(title, score), buildSlimScoreTrack(score), badge);
-        return tile;
-    }
-
-    private HorizontalLayout buildPillarHeaderRow(String title, double score) {
-        HorizontalLayout header = new HorizontalLayout();
-        header.setWidthFull();
-        header.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
-        header.setAlignItems(FlexComponent.Alignment.BASELINE);
-
-        Span titleSpan = new Span(title.toUpperCase(Locale.ROOT));
-        titleSpan.getStyle()
-                .set("font-size", "0.72rem")
-                .set("font-weight", "700")
-                .set("letter-spacing", "0.05em")
-                .set("color", "var(--lumo-secondary-text-color)");
-
-        Span scoreSpan = new Span(String.format(Locale.US, "%.1f", score));
-        scoreSpan.getStyle()
-                .set("font-size", "1.05rem")
-                .set("font-weight", "700")
-                .set("color", "var(--lumo-header-text-color)");
-
-        header.add(titleSpan, scoreSpan);
-        return header;
-    }
-
-    private Div buildSlimScoreTrack(double score) {
-        Div track = new Div();
-        track.setWidthFull();
-        track.getStyle()
-                .set("height", "4px")
-                .set("background", "rgba(255, 255, 255, 0.08)")
-                .set("border-radius", "2px")
-                .set("overflow", "hidden");
-
-        double pct = Math.clamp(score * 10.0, 0.0, 100.0);
-        String fillCol = score >= 7.5 ? SnapshotUiSupport.COLOR_GREEN
-                : (score >= 4.5 ? SnapshotUiSupport.COLOR_AMBER : SnapshotUiSupport.COLOR_RED);
-
-        Div fill = new Div();
-        fill.getStyle()
-                .set("width", String.format(Locale.US, "%.0f%%", pct))
-                .set("height", "100%")
-                .set("background", fillCol)
-                .set("border-radius", "2px");
-        track.add(fill);
-        return track;
-    }
-
     private String resolveGrowthLabel(double score, DecisionSummary s) {
         if (s != null && s.ttmFcfGrowthPct() != null && s.ttmFcfGrowthPct() > 30.0f) {
-            return "HIGH EXPANSION";
+            return "High Expansion";
         }
-        if (score >= 7.5) return "STRONG MOMENTUM";
-        if (score >= 5.5) return "STEADY GROWTH";
-        return score >= 4.0 ? "MODERATE" : "CONTRACTION";
+        if (score >= 7.5) return "Strong Momentum";
+        if (score >= 5.5) return "Steady Growth";
+        return score >= 4.0 ? "Moderate" : "Contraction";
     }
 
     private String resolveGrowthTheme(double score) {
@@ -439,7 +378,9 @@ public class DecisionSnapshotRenderer {
 
         H5 factorTitle = new H5(d.factor());
         factorTitle.getStyle().set("margin", "0").set("color", palette.accent()).set("font-weight", "700");
-        top.add(factorTitle, SnapshotUiSupport.createStatusBadge(d.status(), SnapshotUiSupport.resolveDimensionTheme(d.status())));
+        top.add(factorTitle, SnapshotUiSupport.createStatusBadge(
+                SnapshotUiSupport.formatDimensionLabel(d.status()),
+                SnapshotUiSupport.resolveDimensionTheme(d.status())));
 
         card.add(top, buildDriverMetricsRow(d), buildDriverTriggerBlock(d.whatChangesView()));
         return card;

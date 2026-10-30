@@ -7,11 +7,7 @@ import com.oraculum.analyst.api.dto.CompanyAnalysisDto;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
-import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.H5;
-import com.vaadin.flow.component.html.ListItem;
-import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.html.UnorderedList;
+import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
@@ -23,7 +19,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -84,10 +79,6 @@ public class AnalysisOverviewRenderer {
         boolean hasDrivers = snapshot.decisionDrivers() != null && !snapshot.decisionDrivers().isEmpty();
         boolean hasAudit = snapshot.convictionReasons() != null && !snapshot.convictionReasons().isEmpty();
         return hasContext || hasTension || hasDrivers || hasAudit;
-    }
-
-    public Component renderOverviewTab(AnalysisResult snapshot, CompanyAnalysisDto analysis) {
-        return renderOverviewTab(snapshot, analysis, null);
     }
 
     public Component renderOverviewTab(AnalysisResult snapshot, CompanyAnalysisDto analysis, Runnable onOpenDriversTab) {
@@ -152,35 +143,13 @@ public class AnalysisOverviewRenderer {
                 .set("gap", "12px")
                 .set("margin-bottom", "14px");
 
-        normalizeFactorScores(factorScores).forEach((factor, score) -> grid.add(buildLegacyFactorTile(factor, score)));
+        normalizeFactorScores(factorScores).forEach((factor, score) -> {
+            String title = SnapshotUiSupport.formatDimensionLabel(factor);
+            String badge = SnapshotUiSupport.resolveScoreBadgeLabel(score);
+            String theme = SnapshotUiSupport.resolveScoreBadgeTheme(score);
+            grid.add(SnapshotUiSupport.createScoreCard(title, score, badge, theme));
+        });
         return grid;
-    }
-
-    private Div buildLegacyFactorTile(String factor, double score) {
-        Div tile = SnapshotUiSupport.createNeutralCard();
-        tile.getStyle().set("padding", "12px 14px");
-
-        HorizontalLayout top = new HorizontalLayout();
-        top.setWidthFull();
-        top.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
-        top.setAlignItems(FlexComponent.Alignment.BASELINE);
-
-        Span titleSpan = new Span(RendererUtil.formatKeyTitle(factor).toUpperCase(Locale.ROOT));
-        titleSpan.getStyle().set("font-size", "0.72rem").set("font-weight", "700").set("color", "var(--lumo-secondary-text-color)");
-        Span scoreSpan = new Span(String.format(Locale.US, "%.1f", score));
-        scoreSpan.getStyle().set("font-size", "1.05rem").set("font-weight", "700").set("color", "var(--lumo-header-text-color)");
-        top.add(titleSpan, scoreSpan);
-
-        Div track = new Div();
-        track.setWidthFull();
-        track.getStyle().set("height", "4px").set("background", "rgba(255,255,255,0.08)").set("border-radius", "2px").set("margin-top", "8px");
-        Div fill = new Div();
-        String col = score >= 7.5 ? SnapshotUiSupport.COLOR_GREEN : (score >= 4.5 ? SnapshotUiSupport.COLOR_AMBER : SnapshotUiSupport.COLOR_RED);
-        fill.getStyle().set("width", String.format(Locale.US, "%.0f%%", score * 10.0)).set("height", "100%").set("background", col).set("border-radius", "2px");
-        track.add(fill);
-
-        tile.add(top, track);
-        return tile;
     }
 
     private Component createSnapshotPoints(AnalysisResult snapshot, CompanyAnalysisDto analysis) {

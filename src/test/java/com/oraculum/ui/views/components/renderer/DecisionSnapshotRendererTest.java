@@ -56,10 +56,10 @@ class DecisionSnapshotRendererTest {
         assertThat(grid).isNotNull();
         String text = grid.getElement().getTextRecursively();
         assertThat(text)
-                .contains("FUNDAMENTAL HEALTH", "9.0", "EXCEPTIONAL")
-                .contains("VALUATION HURDLE", "6.4", "SPECULATIVE")
-                .contains("GROWTH PROSPECTS", "8.1", "HIGH EXPANSION")
-                .contains("RISK & MARKET SETUP", "7.6", "PULLBACK IN UPTREND");
+                .contains("FUNDAMENTAL HEALTH", "9.0", "Exceptional")
+                .contains("VALUATION HURDLE", "6.4", "Speculative")
+                .contains("GROWTH PROSPECTS", "8.1", "High Expansion")
+                .contains("RISK & MARKET SETUP", "7.6", "Pullback in Uptrend");
 
         assertNoPillThemeRecursively(grid.getElement());
     }
@@ -85,7 +85,7 @@ class DecisionSnapshotRendererTest {
         String text = card.getElement().getTextRecursively();
         assertThat(text)
                 .contains("WHAT TODAY'S PRICE REQUIRES")
-                .contains("Method Conflict: CONFLICTING PEAK MARGIN RISK")
+                .contains("Method Conflict: Conflicting Peak Margin Risk")
                 .contains("16.7%", "FCF CAGR")
                 .contains("Recent TTM: 76.5%", "5Y CAGR: 83.1%")
                 .contains("Consensus EPS: $15.91")
@@ -126,13 +126,54 @@ class DecisionSnapshotRendererTest {
         assertThat(text)
                 .contains("Valuation Context")
                 .contains("Methodology Reconciliation")
+                .contains("Conflicting Peak Margin Risk")
                 .contains("5th percentile P/E vs 16.7% 10Y FCF CAGR required")
                 .contains("Decision Drivers & Monitoring Triggers")
                 .contains("Implied FCF Growth Hurdle")
+                .contains("Demanding")
                 .contains("Conviction Audit & Active Guardrails (Final Conviction 3/5)")
                 .contains("Capped at 3/5: Valuation method conflict");
 
         assertNoPillThemeRecursively(tab.getElement());
+    }
+
+    @Test
+    void formatDimensionLabel_formatsUpperSnakeCaseToTitleCase() {
+        assertThat(SnapshotUiSupport.formatDimensionLabel("WARNING")).isEqualTo("Warning");
+        assertThat(SnapshotUiSupport.formatDimensionLabel("RISK")).isEqualTo("Risk");
+        assertThat(SnapshotUiSupport.formatDimensionLabel("DEMANDING")).isEqualTo("Demanding");
+        assertThat(SnapshotUiSupport.formatDimensionLabel("CONFLICTING_PEAK_MARGIN_RISK")).isEqualTo("Conflicting Peak Margin Risk");
+        assertThat(SnapshotUiSupport.formatDimensionLabel("PULLBACK_IN_UPTREND")).isEqualTo("Pullback in Uptrend");
+        assertThat(SnapshotUiSupport.formatDimensionLabel("EXCEPTIONAL")).isEqualTo("Exceptional");
+        assertThat(SnapshotUiSupport.formatDimensionLabel("GAAP_NON_GAAP_BASIS_DIFF")).isEqualTo("GAAP / Non-GAAP Basis Diff");
+        assertThat(SnapshotUiSupport.formatDimensionLabel("MATERIAL_DIVERGENCE")).isEqualTo("Material Divergence");
+        assertThat(SnapshotUiSupport.formatDimensionLabel("DIFF")).isEqualTo("Diff");
+        assertThat(SnapshotUiSupport.formatDimensionLabel(null)).isEqualTo("N/A");
+        assertThat(SnapshotUiSupport.formatDimensionLabel("")).isEqualTo("N/A");
+
+        assertThat(SnapshotUiSupport.resolveDimensionTheme("GAAP_NON_GAAP_BASIS_DIFF")).isEqualTo("warning");
+        assertThat(SnapshotUiSupport.resolveDimensionTheme("DIFF")).isEqualTo("warning");
+        assertThat(SnapshotUiSupport.resolveDimensionTheme("MATERIAL_DIVERGENCE")).isEqualTo("error");
+    }
+
+    @Test
+    void formatMetricLabel_formatsKnownAndGenericMetrics() {
+        assertThat(SnapshotUiSupport.formatMetricLabel("pe_ttm")).isEqualTo("P/E (TTM)");
+        assertThat(SnapshotUiSupport.formatMetricLabel("ev_ebitda")).isEqualTo("EV/EBITDA");
+        assertThat(SnapshotUiSupport.formatMetricLabel("forward_pe_fy1")).isEqualTo("Forward P/E (FY1)");
+        assertThat(SnapshotUiSupport.formatMetricLabel("reverse_dcf_zone")).isEqualTo("Reverse DCF Zone");
+        assertThat(SnapshotUiSupport.formatMetricLabel("custom_growth_rate")).isEqualTo("Custom Growth Rate");
+        assertThat(SnapshotUiSupport.formatMetricLabel("tier1_activity")).isEqualTo("Tier 1 Activity");
+        assertThat(SnapshotUiSupport.formatMetricLabel("eps_reconciliation_status")).isEqualTo("EPS Reconciliation Status");
+        assertThat(SnapshotUiSupport.formatMetricLabel("fy2028_eps_revision_90d_pct")).isEqualTo("FY2028 EPS Revision 90d %");
+    }
+
+    @Test
+    void createScoreCard_rendersScoreHeaderProgressTrackAndBadge() {
+        Component card = SnapshotUiSupport.createScoreCard("Macro Score", 5.8, "Moderate", "contrast");
+        assertThat(card).isNotNull();
+        String text = card.getElement().getTextRecursively();
+        assertThat(text).contains("MACRO SCORE", "5.8", "Moderate");
     }
 
     private void assertNoPillThemeRecursively(Element element) {
