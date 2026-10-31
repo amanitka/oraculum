@@ -112,13 +112,27 @@ public class PreCriticValidationService {
                 : List.of();
         if (flows == null || flows.isEmpty()) {
             verifyAccumulationClaimsWithoutFlows(smOutput, findings);
+        } else {
+            boolean hasIncompleteSample = flows.stream()
+                    .anyMatch(f -> Boolean.TRUE.equals(f.flagIncompleteFilerSample()));
+            if (hasIncompleteSample) {
+                verifyIncompleteSampleHandling(smOutput, findings);
+            }
         }
     }
 
-    private void verifyAccumulationClaimsWithoutFlows(
-            StandardAgentOutput smOutput,
-            List<Contradiction> findings
-    ) {
+    private void verifyIncompleteSampleHandling(StandardAgentOutput smOutput, List<Contradiction> findings) {
+        if (smOutput.confidence() != null && smOutput.confidence().data() != null && smOutput.confidence().data() > 0.75f) {
+            findings.add(new Contradiction(
+                    "Smart Money agent reports high data confidence (>0.75) despite flag_incomplete_filer_sample indicating delayed or missing 13F filings from major institutional holders.",
+                    List.of(AgentType.SMART_MONEY.name()),
+                    CorrectionType.OVERCONFIDENCE,
+                    Resolution.NARRATIVE_RECONCILED
+            ));
+        }
+    }
+
+    private void verifyAccumulationClaimsWithoutFlows(StandardAgentOutput smOutput, List<Contradiction> findings) {
         String narrative = buildSmartMoneyNarrative(smOutput).toLowerCase(Locale.ROOT);
         boolean claimsAccumulation = narrative.contains("increased")
                 || narrative.contains("accumulated")

@@ -3,7 +3,11 @@
 -- Description: Core 13F holding delta calculation function.
 --              Calculates quarter-over-quarter position changes
 --              directly from t_sec_holding with optional cusip and cik filters.
+--              Distinguishes genuine position liquidations from missing filers
+--              (data gaps where an institution filed no 13F in current period).
 -- =================================================================
+
+DROP FUNCTION IF EXISTS public.fn_sec_holding_delta(DATE, DATE, VARCHAR, VARCHAR);
 
 CREATE OR REPLACE FUNCTION public.fn_sec_holding_delta(
     p_current_period  DATE,
@@ -24,13 +28,19 @@ RETURNS TABLE (
     shares_previous    BIGINT,
     shares_change      BIGINT,
     is_new_position    BOOLEAN,
-    is_closed_position BOOLEAN
+    is_closed_position BOOLEAN,
+    is_missing_filer   BOOLEAN
 )
 LANGUAGE sql STABLE AS $$
   WITH target_periods AS (SELECT
                              p_current_period AS cur_period,
                              COALESCE(p_previous_period, (date_trunc('quarter', p_current_period) - INTERVAL '1 day')::DATE) AS prv_period
                           ),
+       cur_filers AS (
+           SELECT DISTINCT h.cik
+           FROM t_sec_holding h
+           JOIN target_periods tp ON h.report_period = tp.cur_period
+       ),
        ranked_holdings AS (SELECT
                               h.cik,
                               h.report_period,
@@ -90,10 +100,12 @@ LANGUAGE sql STABLE AS $$
       prv.shares_amount                                               AS shares_previous,
       COALESCE(cur.shares_amount, 0) - COALESCE(prv.shares_amount, 0) AS shares_change,
       (prv.cik IS NULL)                                               AS is_new_position,
-      (cur.cik IS NULL)                                               AS is_closed_position
+      (cur.cik IS NULL AND cf.cik IS NOT NULL)                        AS is_closed_position,
+      (cur.cik IS NULL AND cf.cik IS NULL)                            AS is_missing_filer
   FROM current_holdings cur
   FULL OUTER JOIN previous_holdings prv ON prv.cik = cur.cik
                                        AND prv.cusip = cur.cusip
                                        AND (prv.option_type IS NOT DISTINCT FROM cur.option_type)
+  LEFT JOIN cur_filers cf ON cf.cik = prv.cik
   CROSS JOIN target_periods tp;
 $$;

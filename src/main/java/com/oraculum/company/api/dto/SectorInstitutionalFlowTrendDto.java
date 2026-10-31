@@ -12,6 +12,8 @@ public record SectorInstitutionalFlowTrendDto(
         LocalDate reportPeriod,
         Long totalInstValueUsd,
         Long netValueChangeUsd,
+        Long capitalFlowUsd,
+        Long priceValuationEffectUsd,
         Long totalInstShares,
         Long netSharesChange,
         Long companiesCount
@@ -23,6 +25,8 @@ public record SectorInstitutionalFlowTrendDto(
                 entity.getReportPeriod(),
                 entity.getTotalInstValueUsd(),
                 entity.getNetValueChangeUsd(),
+                entity.getCapitalFlowUsd(),
+                entity.getPriceValuationEffectUsd(),
                 entity.getTotalInstShares(),
                 entity.getNetSharesChange(),
                 entity.getCompaniesCount()
@@ -30,6 +34,9 @@ public record SectorInstitutionalFlowTrendDto(
     }
 
     public Float flowPct() {
+        if (capitalFlowUsd != null && totalInstValueUsd != null && totalInstValueUsd > 0) {
+            return (float) (capitalFlowUsd * 100.0 / totalInstValueUsd);
+        }
         if (netValueChangeUsd == null || totalInstValueUsd == null || totalInstValueUsd <= 0) {
             return 0.0f;
         }

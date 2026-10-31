@@ -1,8 +1,9 @@
 -- =================================================================
 -- VIEW: v_company_institutional_flow
 -- Description: Institutional 13F ownership summary and flows per company.
---              Enriched with dynamic quarter indexing (1 = latest quarter)
---              and percentage shares flow for UI heatmaps and LLM analysis.
+--              Enriched with dynamic quarter indexing (1 = latest quarter),
+--              percentage shares flow, decomposed capital flow vs. price effect,
+--              and flag_incomplete_filer_sample data gap tracking.
 -- =================================================================
 DROP VIEW IF EXISTS public.v_company_institutional_flow CASCADE;
 
@@ -40,6 +41,11 @@ SELECT
        WHEN (s.total_inst_shares - s.net_shares_change) <= 0 AND s.net_shares_change < 0 THEN -100.00
        ELSE LEAST(GREATEST(s.net_shares_change * 100.0 / NULLIF(s.total_inst_shares - s.net_shares_change, 0), -100.00), 9999.00)
      END, 2) AS shares_change_pct,
+   COALESCE(NULLIF(s.capital_flow_usd, 0),
+            ROUND(s.net_shares_change * (s.total_inst_value_usd::NUMERIC / NULLIF(s.total_inst_shares, 0))))::BIGINT AS capital_flow_usd,
+   COALESCE(NULLIF(s.price_valuation_effect_usd, 0),
+            s.net_value_change_usd - ROUND(s.net_shares_change * (s.total_inst_value_usd::NUMERIC / NULLIF(s.total_inst_shares, 0))))::BIGINT AS price_valuation_effect_usd,
+   COALESCE(s.flag_incomplete_filer_sample, FALSE) AS flag_incomplete_filer_sample,
    -- Institutional breadth
    s.funds_buying_count,
    s.funds_selling_count,
@@ -65,7 +71,8 @@ WHERE c.cusip IS NOT NULL;
 -- =================================================================
 -- VIEW: v_sector_institutional_flow
 -- Description: Aggregated quarterly institutional ownership and flows by sector.
---              Built on top of v_company_institutional_flow.
+--              Decomposes total value change into pure capital flow (trading flow)
+--              and price valuation effect. Built on top of v_company_institutional_flow.
 -- =================================================================
 DROP VIEW IF EXISTS public.v_sector_institutional_flow CASCADE;
 
@@ -75,12 +82,13 @@ CREATE VIEW public.v_sector_institutional_flow AS
 SELECT 
    f.sector_name,
    f.report_period,
-   COALESCE(SUM(f.total_inst_value_usd), 0)::BIGINT AS total_inst_value_usd,
-   COALESCE(SUM(f.net_value_change_usd), 0)::BIGINT AS net_value_change_usd,
-   COALESCE(SUM(f.total_inst_shares), 0)::BIGINT    AS total_inst_shares,
-   COALESCE(SUM(f.net_shares_change), 0)::BIGINT    AS net_shares_change,
-   COUNT(DISTINCT f.company_id)::BIGINT             AS companies_count
+   COALESCE(SUM(f.total_inst_value_usd), 0)::BIGINT        AS total_inst_value_usd,
+   COALESCE(SUM(f.net_value_change_usd), 0)::BIGINT        AS net_value_change_usd,
+   COALESCE(SUM(f.capital_flow_usd), 0)::BIGINT            AS capital_flow_usd,
+   COALESCE(SUM(f.price_valuation_effect_usd), 0)::BIGINT  AS price_valuation_effect_usd,
+   COALESCE(SUM(f.total_inst_shares), 0)::BIGINT           AS total_inst_shares,
+   COALESCE(SUM(f.net_shares_change), 0)::BIGINT           AS net_shares_change,
+   COUNT(DISTINCT f.company_id)::BIGINT                    AS companies_count
 FROM public.v_company_institutional_flow f
 WHERE f.sector_name IS NOT NULL AND f.sector_name <> ''
 GROUP BY f.sector_name, f.report_period;
-

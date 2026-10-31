@@ -82,6 +82,15 @@ public class CompanyInstitutionalFlowEntity {
     @Column(name = "shares_change_pct")
     private Float sharesChangePct;
 
+    @Column(name = "capital_flow_usd")
+    private Long capitalFlowUsd;
+
+    @Column(name = "price_valuation_effect_usd")
+    private Long priceValuationEffectUsd;
+
+    @Column(name = "flag_incomplete_filer_sample")
+    private Boolean flagIncompleteFilerSample;
+
     @Column(name = "funds_buying_count")
     private Integer fundsBuyingCount;
 

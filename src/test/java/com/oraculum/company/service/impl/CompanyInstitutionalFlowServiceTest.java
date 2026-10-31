@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -37,13 +36,13 @@ class CompanyInstitutionalFlowServiceTest {
     @Mock
     private SecFilerRepository secFilerRepository;
 
-    @Mock
     private OraculumProperties properties;
 
     private CompanyInstitutionalFlowServiceImpl service;
 
     @BeforeEach
     void setUp() {
+        properties = new OraculumProperties(null, null, null, null);
         service = new CompanyInstitutionalFlowServiceImpl(repository, sectorRepository, secFilerRepository, properties);
     }
 
@@ -58,6 +57,9 @@ class CompanyInstitutionalFlowServiceTest {
         CompanyInstitutionalFlowDto dto = result.get(1);
         assertThat(dto.ticker()).isEqualTo("AAPL");
         assertThat(dto.sharesChangePct()).isEqualTo(10.5f);
+        assertThat(dto.capitalFlowUsd()).isEqualTo(15_000_000L);
+        assertThat(dto.priceValuationEffectUsd()).isEqualTo(5_000_000L);
+        assertThat(dto.flagIncompleteFilerSample()).isFalse();
         verify(repository).findByQuarterIndex(1L);
     }
 
@@ -104,7 +106,7 @@ class CompanyInstitutionalFlowServiceTest {
         LocalDate period = LocalDate.of(2026, 6, 30);
         SectorInstitutionalFlowEntity entity =
                 new SectorInstitutionalFlowEntity(
-                        "Technology", period, 500_000_000_000L, 25_000_000_000L, 10_000_000L, 500_000L, 50L);
+                        "Technology", period, 500_000_000_000L, 25_000_000_000L, 15_000_000_000L, 10_000_000_000L, 10_000_000L, 500_000L, 50L);
         when(sectorRepository.findByReportPeriodOrderByNetValueChangeUsdDesc(period)).thenReturn(List.of(entity));
 
         List<SectorInstitutionalFlowTrendDto> result = service.getSectorInstitutionalFlowByPeriod(period);
@@ -112,6 +114,8 @@ class CompanyInstitutionalFlowServiceTest {
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().sectorName()).isEqualTo("Technology");
         assertThat(result.getFirst().totalInstValueUsd()).isEqualTo(500_000_000_000L);
+        assertThat(result.getFirst().capitalFlowUsd()).isEqualTo(15_000_000_000L);
+        assertThat(result.getFirst().flowPct()).isEqualTo(3.0f);
         assertThat(result.getFirst().companiesCount()).isEqualTo(50L);
         verify(sectorRepository).findByReportPeriodOrderByNetValueChangeUsdDesc(period);
     }
@@ -135,10 +139,10 @@ class CompanyInstitutionalFlowServiceTest {
         SecFilerEntity f1 = new SecFilerEntity("0001067983", "Berkshire Hathaway Inc", true, (short) 1, LocalDate.of(2026, 8, 14));
         when(secFilerRepository.findByTierOrderByManagerNameAsc((short) 1)).thenReturn(List.of(f1));
 
-        OraculumProperties.Data data = mock(OraculumProperties.Data.class);
         OraculumProperties.Data.Sec13F sec13f = new OraculumProperties.Data.Sec13F(null, List.of("0001067983"), Map.of("0001067983", "Warren Buffett"));
-        when(properties.data()).thenReturn(data);
-        when(data.sec13f()).thenReturn(sec13f);
+        OraculumProperties.Data data = new OraculumProperties.Data(null, null, sec13f, null);
+        properties = new OraculumProperties(data, null, null, null);
+        service = new CompanyInstitutionalFlowServiceImpl(repository, sectorRepository, secFilerRepository, properties);
 
         List<SecFilerDto> result = service.getTier1Filers();
 
@@ -160,6 +164,9 @@ class CompanyInstitutionalFlowServiceTest {
         entity.setTotalInstValueUsd(150_000_000L);
         entity.setSharesChangePct(10.5f);
         entity.setNetSharesChange(100_000L);
+        entity.setCapitalFlowUsd(15_000_000L);
+        entity.setPriceValuationEffectUsd(5_000_000L);
+        entity.setFlagIncompleteFilerSample(false);
         entity.setPutCallRatio(1.15f);
         entity.setTopHoldersNames(new String[]{"BlackRock", "Vanguard"});
         entity.setTier1BuyerNames(new String[]{"Citadel"});

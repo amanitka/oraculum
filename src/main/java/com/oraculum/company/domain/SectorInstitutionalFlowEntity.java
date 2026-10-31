@@ -31,6 +31,12 @@ public class SectorInstitutionalFlowEntity {
     @Column(name = "net_value_change_usd")
     private Long netValueChangeUsd;
 
+    @Column(name = "capital_flow_usd")
+    private Long capitalFlowUsd;
+
+    @Column(name = "price_valuation_effect_usd")
+    private Long priceValuationEffectUsd;
+
     @Column(name = "total_inst_shares")
     private Long totalInstShares;
 

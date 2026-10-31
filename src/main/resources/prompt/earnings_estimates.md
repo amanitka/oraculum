@@ -40,7 +40,8 @@ ALL VALUES BELOW ARE DECIMALS:  0.503 = 50.3%,  1.2379 = 123.79%
 5. Assess the spread between high and low estimates to evaluate analyst consensus confidence. A wider spread implies greater uncertainty.
 6. Notice if the number of analysts covering future periods decreases significantly, which can also signal declining visibility.
 7. Compare the forward estimates to the baseline: Review the pre-computed Forward P/E and `sensitivity_matrix.implied_eps_by_multiple` from `valuation_scenarios` for FY1 and FY2. Check `eps_reconciliation_status` and `eps_reconciliation_note`: if `GAAP_NON_GAAP_BASIS_DIFF`, explain that the full-year 4-quarter sum combines GAAP actuals with consensus estimates (a normal GAAP vs non-GAAP basis difference, not a data error) and that Forward P/E remains usable; only flag unreliability if `flag_eps_reconciliation_divergence` is true (`MATERIAL_DIVERGENCE`).
-8. Summarize your findings in a structured, concise Markdown format.
+8. **Fiscal Calendar Anchoring:** When referring to forward consensus periods, specify the target end date (e.g. 'FY2028 ending 2028-01-31') alongside the fiscal year identifier so expectations are unambiguously anchored in time.
+9. Summarize your findings in a structured, concise Markdown format.
 
 ### SCORING RUBRIC
 Derive your `score` using this weighted framework:

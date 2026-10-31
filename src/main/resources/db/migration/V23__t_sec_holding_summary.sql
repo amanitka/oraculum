@@ -26,6 +26,9 @@ CREATE TABLE t_sec_holding_summary (
     -- Quarter-over-Quarter Net Flows (from t_sec_holding_delta)
     net_value_change_usd       BIGINT        NOT NULL DEFAULT 0,
     net_shares_change          BIGINT        NOT NULL DEFAULT 0,
+    capital_flow_usd           BIGINT        NOT NULL DEFAULT 0,
+    price_valuation_effect_usd BIGINT        NOT NULL DEFAULT 0,
+    flag_incomplete_filer_sample BOOLEAN     NOT NULL DEFAULT FALSE,
 
     -- Fund Activity Breadth
     funds_buying_count         INTEGER       NOT NULL DEFAULT 0,
