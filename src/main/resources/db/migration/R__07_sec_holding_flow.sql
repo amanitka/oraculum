@@ -41,10 +41,12 @@ SELECT
        WHEN (s.total_inst_shares - s.net_shares_change) <= 0 AND s.net_shares_change < 0 THEN -100.00
        ELSE LEAST(GREATEST(s.net_shares_change * 100.0 / NULLIF(s.total_inst_shares - s.net_shares_change, 0), -100.00), 9999.00)
      END, 2) AS shares_change_pct,
-   COALESCE(NULLIF(s.capital_flow_usd, 0),
-            ROUND(s.net_shares_change * (s.total_inst_value_usd::NUMERIC / NULLIF(s.total_inst_shares, 0))))::BIGINT AS capital_flow_usd,
-   COALESCE(NULLIF(s.price_valuation_effect_usd, 0),
-            s.net_value_change_usd - ROUND(s.net_shares_change * (s.total_inst_value_usd::NUMERIC / NULLIF(s.total_inst_shares, 0))))::BIGINT AS price_valuation_effect_usd,
+   COALESCE(s.capital_flow_usd,
+            ROUND(COALESCE(s.net_shares_change, 0) * (COALESCE(s.total_inst_value_usd, 0)::NUMERIC / NULLIF(s.total_inst_shares, 0))),
+            0)::BIGINT AS capital_flow_usd,
+   COALESCE(s.price_valuation_effect_usd,
+            COALESCE(s.net_value_change_usd, 0) - COALESCE(ROUND(COALESCE(s.net_shares_change, 0) * (COALESCE(s.total_inst_value_usd, 0)::NUMERIC / NULLIF(s.total_inst_shares, 0))), 0),
+            0)::BIGINT AS price_valuation_effect_usd,
    COALESCE(s.flag_incomplete_filer_sample, FALSE) AS flag_incomplete_filer_sample,
    -- Institutional breadth
    s.funds_buying_count,
