@@ -85,15 +85,6 @@ public class DecisionSummaryCalculator {
         return drivers;
     }
 
-    public Integer calculatePriceStalenessDays(AgentContext ctx) {
-        if (ctx == null || ctx.factSheetData() == null) {
-            return null;
-        }
-        SharePriceSignalDto latest = extractLatestSignal(ctx.factSheetData());
-        LocalDate priceDate = latest != null ? latest.tradeDate() : null;
-        return calculateStalenessDays(priceDate, ctx.analysisDate());
-    }
-
     private String deriveBusinessQuality(AnalysisResult result, AgentContext ctx) {
         Double fundScore = resolveAgentScore(result, ctx, "fundamental_health", AgentType.FUNDAMENTALS);
         Double cfScore = resolveAgentScore(result, ctx, null, AgentType.CASH_FLOW);

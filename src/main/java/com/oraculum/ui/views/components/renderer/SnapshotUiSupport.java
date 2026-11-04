@@ -1,6 +1,7 @@
 package com.oraculum.ui.views.components.renderer;
 
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -8,21 +9,33 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import java.util.Locale;
 
 /**
- * Shared styling primitives for executive snapshot and decision-support renderers.
+ * Shared styling primitives for executive snapshot, decision-support, and agent renderers.
  */
-final class SnapshotUiSupport {
+public final class SnapshotUiSupport {
 
-    static final String COLOR_GREEN = "#2ecc71";
-    static final String COLOR_BLUE = "#3498db";
-    static final String COLOR_AMBER = "#ffb300";
-    static final String COLOR_ORANGE = "#e67e22";
-    static final String COLOR_RED = "#e74c3c";
-    static final String COLOR_SLATE = "#95a5a6";
+    public static final String COLOR_GREEN = "#2ecc71";
+    public static final String COLOR_BLUE = "#3498db";
+    public static final String COLOR_AMBER = "#ffb300";
+    public static final String COLOR_ORANGE = "#e67e22";
+    public static final String COLOR_RED = "#e74c3c";
+    public static final String COLOR_SLATE = "#95a5a6";
 
     private SnapshotUiSupport() {
     }
 
-    static Span createStatusBadge(String text, String theme) {
+    public static H4 createSectionHeader(String title) {
+        H4 header = new H4(title);
+        header.getStyle()
+                .set("margin-top", "24px")
+                .set("margin-bottom", "14px")
+                .set("border-bottom", "1px solid var(--lumo-contrast-10pct)")
+                .set("padding-bottom", "8px")
+                .set("font-size", "1.1rem")
+                .set("color", "var(--lumo-header-text-color)");
+        return header;
+    }
+
+    public static Span createStatusBadge(String text, String theme) {
         Span badge = new Span(text != null && !text.isBlank() ? text : "N/A");
         badge.getElement().getThemeList().add("badge");
         badge.getElement().getThemeList().add(theme != null ? theme : "contrast");
@@ -36,7 +49,7 @@ final class SnapshotUiSupport {
         return badge;
     }
 
-    static String resolveDimensionTheme(String value) {
+    public static String resolveDimensionTheme(String value) {
         if (value == null || value.isBlank()) {
             return "contrast";
         }
@@ -54,51 +67,63 @@ final class SnapshotUiSupport {
         };
     }
 
-    static String formatDimensionLabel(String raw) {
+    public static String formatDimensionLabel(String raw) {
         if (raw == null || raw.isBlank()) {
             return "N/A";
         }
-        String upper = raw.trim().toUpperCase(Locale.ROOT);
-        switch (upper) {
-            case "GAAP_NON_GAAP_BASIS_DIFF", "GAAP_NON_GAAP" -> {
-                return "GAAP / Non-GAAP Basis Diff";
-            }
-            case "MATERIAL_DIVERGENCE" -> {
-                return "Material Divergence";
-            }
-            case "DIFF" -> {
-                return "Diff";
-            }
+        String special = resolveSpecialDimensionLabel(raw.trim().toUpperCase(Locale.ROOT));
+        if (special != null) {
+            return special;
         }
         String[] words = raw.trim().replace('_', ' ').split("\\s+");
         StringBuilder sb = new StringBuilder();
         for (String word : words) {
-            if (word.isEmpty()) {
-                continue;
-            }
-            if (!sb.isEmpty()) {
-                sb.append(' ');
-            }
-            String lower = word.toLowerCase(Locale.ROOT);
-            if (!sb.isEmpty() && isMinorWord(lower)) {
-                sb.append(lower);
-            } else if (lower.equals("tier1")) {
-                sb.append("Tier 1");
-            } else if (lower.matches("^fy\\d{1,4}$")) {
-                sb.append(lower.toUpperCase(Locale.ROOT));
-            } else if (lower.equals("pe")) {
-                sb.append("P/E");
-            } else if (lower.equals("ps")) {
-                sb.append("P/S");
-            } else if (lower.equals("pct")) {
-                sb.append("%");
-            } else if (isAcronym(lower)) {
-                sb.append(lower.toUpperCase(Locale.ROOT));
-            } else {
-                sb.append(Character.toUpperCase(lower.charAt(0))).append(lower.substring(1));
-            }
+            appendFormattedWord(sb, word);
         }
         return sb.toString();
+    }
+
+    private static String resolveSpecialDimensionLabel(String upper) {
+        return switch (upper) {
+            case "GAAP_NON_GAAP_BASIS_DIFF", "GAAP_NON_GAAP" -> "GAAP / Non-GAAP Basis Diff";
+            case "MATERIAL_DIVERGENCE" -> "Material Divergence";
+            case "DIFF" -> "Diff";
+            default -> null;
+        };
+    }
+
+    private static void appendFormattedWord(StringBuilder sb, String word) {
+        if (word.isEmpty()) {
+            return;
+        }
+        boolean isFirst = sb.isEmpty();
+        if (!isFirst) {
+            sb.append(' ');
+        }
+        String lower = word.toLowerCase(Locale.ROOT);
+        if (!isFirst && isMinorWord(lower)) {
+            sb.append(lower);
+        } else {
+            sb.append(formatSingleToken(lower));
+        }
+    }
+
+    private static String formatSingleToken(String lower) {
+        if (lower.equals("tier1")) return "Tier 1";
+        if (lower.matches("^fy\\d{1,4}$")) return lower.toUpperCase(Locale.ROOT);
+        switch (lower) {
+            case "pe" -> {
+                return "P/E";
+            }
+            case "ps" -> {
+                return "P/S";
+            }
+            case "pct" -> {
+                return "%";
+            }
+        }
+        if (isAcronym(lower)) return lower.toUpperCase(Locale.ROOT);
+        return Character.toUpperCase(lower.charAt(0)) + lower.substring(1);
     }
 
     private static boolean isMinorWord(String word) {
@@ -115,7 +140,7 @@ final class SnapshotUiSupport {
         };
     }
 
-    static Div createNeutralCard() {
+    public static Div createNeutralCard() {
         Div card = new Div();
         card.setWidthFull();
         card.getStyle()
@@ -127,7 +152,7 @@ final class SnapshotUiSupport {
         return card;
     }
 
-    static Div createTintedCard(String bgTint, String borderColor) {
+    public static Div createTintedCard(String bgTint, String borderColor) {
         Div card = new Div();
         card.getStyle()
                 .set("background", bgTint)
@@ -138,7 +163,7 @@ final class SnapshotUiSupport {
         return card;
     }
 
-    static Div createScoreCard(String title, double score, String badgeText, String badgeTheme) {
+    public static Div createScoreCard(String title, double score, String badgeText, String badgeTheme) {
         Div tile = createNeutralCard();
         tile.getStyle()
                 .set("padding", "12px 14px")
@@ -156,7 +181,7 @@ final class SnapshotUiSupport {
         return tile;
     }
 
-    static HorizontalLayout buildScoreHeaderRow(String title, double score) {
+    public static HorizontalLayout buildScoreHeaderRow(String title, double score) {
         HorizontalLayout header = new HorizontalLayout();
         header.setWidthFull();
         header.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
@@ -179,7 +204,7 @@ final class SnapshotUiSupport {
         return header;
     }
 
-    static Div buildSlimScoreTrack(double score) {
+    public static Div buildSlimScoreTrack(double score) {
         Div track = new Div();
         track.setWidthFull();
         track.getStyle()
@@ -201,11 +226,11 @@ final class SnapshotUiSupport {
         return track;
     }
 
-    static String resolveScoreBadgeLabel(double score) {
+    public static String resolveScoreBadgeLabel(double score) {
         return resolveScoreBadgeLabel(null, score);
     }
 
-    static String resolveScoreBadgeLabel(String dimensionName, double score) {
+    public static String resolveScoreBadgeLabel(String dimensionName, double score) {
         if (isRiskDimension(dimensionName)) {
             if (score >= 7.0) return "Low Risk";
             if (score >= 5.0) return "Moderate Risk";
@@ -219,11 +244,7 @@ final class SnapshotUiSupport {
         return "High Risk";
     }
 
-    static String resolveScoreBadgeTheme(double score) {
-        return resolveScoreBadgeTheme(null, score);
-    }
-
-    static String resolveScoreBadgeTheme(String dimensionName, double score) {
+    public static String resolveScoreBadgeTheme(double score) {
         if (score >= 7.0) return "success";
         if (score >= 5.0) return "contrast";
         if (score >= 3.5) return "warning";
@@ -235,7 +256,7 @@ final class SnapshotUiSupport {
         return dimensionName.toLowerCase(Locale.ROOT).contains("risk");
     }
 
-    static String formatMetricLabel(String key) {
+    public static String formatMetricLabel(String key) {
         if (key == null || key.isBlank()) return "Metric";
         return switch (key.trim().toLowerCase(Locale.ROOT)) {
             case "share_price" -> "Share Price";

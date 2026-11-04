@@ -29,4 +29,12 @@ class SnapshotUiSupportTest {
         assertThat(SnapshotUiSupport.resolveScoreBadgeLabel("Cash Flow", 5.5)).isEqualTo("Moderate");
         assertThat(SnapshotUiSupport.resolveScoreBadgeLabel("News", 4.0)).isEqualTo("Vulnerable");
     }
+
+    @Test
+    void resolveScoreBadgeTheme_mapsHigherIsBetterScoresToExpectedThemes() {
+        assertThat(SnapshotUiSupport.resolveScoreBadgeTheme(8.0)).isEqualTo("success");
+        assertThat(SnapshotUiSupport.resolveScoreBadgeTheme(5.5)).isEqualTo("contrast");
+        assertThat(SnapshotUiSupport.resolveScoreBadgeTheme(4.0)).isEqualTo("warning");
+        assertThat(SnapshotUiSupport.resolveScoreBadgeTheme(2.0)).isEqualTo("error");
+    }
 }

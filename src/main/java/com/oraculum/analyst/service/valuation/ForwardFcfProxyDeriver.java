@@ -113,17 +113,29 @@ public class ForwardFcfProxyDeriver {
 
     private double calculateMedianFcfMargin(List<CompanyFinancialRatiosDto> annual, CompanyFinancialRatiosDto ttm) {
         List<Double> margins = new ArrayList<>();
+        boolean hasReportedMargin = collectPositiveMargins(margins, annual, ttm);
+        return NumericUtil.medianDouble(margins, hasReportedMargin ? 0.0 : 0.20);
+    }
+
+    private boolean collectPositiveMargins(
+            List<Double> margins,
+            List<CompanyFinancialRatiosDto> annual,
+            CompanyFinancialRatiosDto ttm
+    ) {
+        boolean hasReported = false;
         if (annual != null) {
-            annual.stream()
-                    .map(CompanyFinancialRatiosDto::fcfMargin)
-                    .filter(m -> m != null && m > 0.001f)
-                    .map(Float::doubleValue)
-                    .forEach(margins::add);
+            for (CompanyFinancialRatiosDto r : annual) {
+                if (r != null && r.fcfMargin() != null) {
+                    hasReported = true;
+                    if (r.fcfMargin() > 0.001f) margins.add(r.fcfMargin().doubleValue());
+                }
+            }
         }
-        if (ttm != null && ttm.fcfMargin() != null && ttm.fcfMargin() > 0.001f) {
-            margins.add(ttm.fcfMargin().doubleValue());
+        if (ttm != null && ttm.fcfMargin() != null) {
+            hasReported = true;
+            if (ttm.fcfMargin() > 0.001f) margins.add(ttm.fcfMargin().doubleValue());
         }
-        return NumericUtil.medianDouble(margins, 0.20);
+        return hasReported;
     }
 
     private double calculateMedianFcfConversion(List<CompanyFinancialRatiosDto> annual, CompanyFinancialRatiosDto ttm) {

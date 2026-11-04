@@ -45,10 +45,18 @@ public class ForwardReverseDcfCalculator {
             return null;
         }
         MultiYearFcfProxyResult proxy = deriveForwardProxies(request, fy1, fy2);
-        if (proxy == null || proxy.fy2FcfProxy() == null || proxy.fy2FcfProxy() <= 0) {
+        Double stage2BaseFcf = resolveStage2BaseFcf(proxy);
+        if (stage2BaseFcf == null || stage2BaseFcf <= 0) {
             return null;
         }
         return solveModel(request, fy1, fy2, proxy);
+    }
+
+    private Double resolveStage2BaseFcf(MultiYearFcfProxyResult proxy) {
+        if (proxy == null) {
+            return null;
+        }
+        return proxy.fy2FcfProxy() != null ? proxy.fy2FcfProxy() : proxy.fy1FcfProxy();
     }
 
     private boolean isValidRequest(ForwardReverseDcfRequest request) {
@@ -82,8 +90,9 @@ public class ForwardReverseDcfCalculator {
         double t1 = computeTimeHorizonYears(request.analysisDate(), fy1 != null ? fy1.date() : null, 0.5);
         double t2 = computeTimeHorizonYears(request.analysisDate(), fy2 != null ? fy2.date() : null, t1 + 1.0);
         double fy1Stub = proxy.fy1FcfProxy() != null ? proxy.fy1FcfProxy() * Math.clamp(t1, 0.1, 1.0) : 0.0;
+        double stage2BaseFcf = resolveStage2BaseFcf(proxy);
 
-        ForwardDcfSolverResult solver = solveImpliedGrowthRate(request.marketCap(), fy1Stub, proxy.fy2FcfProxy(), t1, t2);
+        ForwardDcfSolverResult solver = solveImpliedGrowthRate(request.marketCap(), fy1Stub, stage2BaseFcf, t1, t2);
         Float impliedGrowthPct = NumericUtil.round1(solver.impliedGrowth() * 100.0);
         Float consensusGrowth = computeConsensusCagr(fy2, request.ttmRatio(), t2);
         Float historicalCagr = computeHistoricalFcfCagr(request.annualRatios());
