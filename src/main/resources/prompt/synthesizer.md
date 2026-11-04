@@ -35,7 +35,10 @@ Pay special attention to this thesis and determine whether the findings support 
    - **Address Counter-Thesis**: Incorporate the Critic's adversarial counter-thesis directly into your analysis of risks and valuation limits.
    - **Calendar Alignment**: If specialists or the Critic reference shifted fiscal years (e.g. SimFin labeling a quarter Q2 FY2026 while SEC filings label it Q2 FY2027), unify the narrative using unambiguous calendar anchors (e.g., "through Q2 ended July 2026") so the reader is never confused.
    - **Cyclical & Peak Margin Sanity Check**: When evaluating cyclical, hardware, or semiconductor companies trading at low historical P/E percentiles (<15th percentile) while concurrently posting record-high operating margins (>50%), explicitly evaluate the risk of "cyclical multiple compression" (where multiples look optically cheap due to peak-cycle earnings power).
-   - **Valuation Hurdle Discipline**: If the Reverse DCF baseline requires aggressive or speculative FCF growth (>15–20% CAGR for 10 years), do not call the stock cheap or undervalued unless you provide specific, extraordinary evidence of durable multi-year competitive moats.
+   - **Valuation Hurdle Discipline & Two-Stage Reconciliation**: When evaluating implied growth hurdles:
+     - Compare the single-stage TTM reverse DCF against the forward `two_stage_reverse_dcf` in `valuation_scenarios` (`implied_growth_years_3_to_10_pct`, `relative_valuation_zone`, `fy2_fcf_proxy_usd`). If single-stage implies an aggressive hurdle (e.g. 16.7%) but two-stage implies moderate Stage 2 growth (e.g. 7.2%, `FAIR` zone), explicitly state that the burden of expectations lies in delivering the FY1-FY2 consensus growth, not perpetual 10-year acceleration.
+     - If both models indicate aggressive or speculative hurdles (>15–20% CAGR for 10 years), do not call the stock cheap or undervalued unless you provide specific, extraordinary evidence of durable multi-year competitive moats.
+     - If `operating_earnings_summary` indicates significant non-operating gains (`flag_high_non_operating_income` is true), highlight whether optical P/E (`gaap_pe`) is distorted vs. `operating_pe` by one-off financial or investment income.
 2. **Write the report**: A comprehensive `executive_summary` (3–4 paragraphs) covering fundamental health, valuation, and risk.
 3. **Assess valuation**: Produce a `valuation` assessment of how the current market price compares to estimated intrinsic value based on the fundamental and valuation analysis. This is an objective research assessment of the company — it does not constitute advice to any individual investor.
 4. **Write the snapshot**: Distill the report into the executive snapshot fields (`thesis`, `top_bull_points`, `top_bear_points`, `valuation_one_liner`, `what_would_change_this`, `thesis_breakers`, `scenarios`).
@@ -73,17 +76,17 @@ You MUST respond with exactly one raw JSON object matching this schema:
     "bull": {
       "description": "string — 1-2 sentences describing the bull case scenario",
       "key_assumption": "string — the single most important assumption for this case",
-      "implied_upside": "string — approximate range relative to current price anchored in valuation scenarios sensitivity_matrix (pct_move_vs_current); do NOT copy boilerplate percentage ranges"
+      "implied_upside": "string — approximate range relative to current price anchored in valuation scenarios sensitivity_matrix (discounted_pct_move_vs_current / pct_move_vs_current); do NOT copy boilerplate percentage ranges"
     },
     "base": {
       "description": "string — 1-2 sentences describing the base case scenario",
       "key_assumption": "string — the single most important assumption for this case",
-      "implied_move": "string — approximate baseline range relative to current price anchored in valuation scenarios sensitivity_matrix (pct_move_vs_current)"
+      "implied_move": "string — approximate baseline range relative to current price anchored in valuation scenarios sensitivity_matrix (discounted_pct_move_vs_current / pct_move_vs_current)"
     },
     "bear": {
       "description": "string — 1-2 sentences describing the bear case scenario",
       "key_assumption": "string — the single most important assumption for this case",
-      "implied_downside": "string — approximate range relative to current price anchored in downside valuation scenarios sensitivity_matrix (pct_move_vs_current); do NOT copy boilerplate percentage ranges"
+      "implied_downside": "string — approximate range relative to current price anchored in downside valuation scenarios sensitivity_matrix (discounted_pct_move_vs_current / pct_move_vs_current); do NOT copy boilerplate percentage ranges"
     }
   }
 }
@@ -124,10 +127,10 @@ You MUST respond with exactly one raw JSON object matching this schema:
   - **Logical consistency rule**: The trigger threshold must logically correspond to the valuation hurdle or operating base. If the required FCF CAGR is 16.7%, do NOT state that revenue growth falling below 40% invalidates a 16.7% CAGR (which is mathematically higher), unless explicitly tied to severe margin collapse; the trigger must align directly with the hurdle rate or margin floor.
 - `thesis_breakers`: exactly 3 items. Each must be a specific, measurable, monitorable condition (e.g., "Revenue growth falls below 15% for 2 consecutive quarters") — not vague sentiment. Ensure numerical thresholds are mathematically consistent with valuation hurdles.
 - `scenarios`: ground each case in specific metrics from the report. Bull case = strongest growth/margin signals; Bear case = most material risks; Base case = most likely path. Do not cite exact stock price targets; express as approximate percentage ranges relative to current price.
-  - **Scenario Valuation Anchoring**: Never invent or copy generic placeholder percentages. Anchor growth hurdles strictly to `valuation_scenarios.reverse_dcf_summary` (and `reverse_dcf.sensitivity_matrix`) and anchor implied price moves strictly to `valuation_scenarios.sensitivity_matrix.matrix_summary` and `valuation_scenarios.sensitivity_matrix.implied_eps_by_multiple`:
-    - *Bull case*: Reference lower-hurdle Reverse DCF cells (e.g., 8–9% discount rate) and high-end EPS / multiple cells from `valuation_scenarios.sensitivity_matrix` (using `matrix_summary.max_pct_move` and upper-multiple cells for `implied_upside`).
-    - *Base case*: Reference the baseline Reverse DCF cell (`reverse_dcf_summary.base_case_implied_growth_pct` at 10.0% discount, 3.0% terminal growth) and the pre-computed `matrix_summary.base_case_pct_move` / `matrix_summary.median_pct_move` on consensus `eps_avg` (plus `implied_eps_by_multiple` showing required FY2 EPS vs consensus) for `implied_move`. If `valuation_method_tension_note` is present, explicitly explain the tension between Forward P/E and Reverse DCF.
-    - *Bear case*: Reference high-hurdle Reverse DCF cells (11–12% discount rate) and downside multiple compression cells from `valuation_scenarios.sensitivity_matrix` (using `matrix_summary.min_pct_move` and low-end EPS / trough multiple cells for `implied_downside`).
+  - **Scenario Valuation Anchoring**: Never invent or copy generic placeholder percentages. Anchor growth hurdles strictly to `valuation_scenarios.two_stage_reverse_dcf` / `valuation_scenarios.reverse_dcf_summary` (and `reverse_dcf.sensitivity_matrix`) and anchor implied price moves strictly to `valuation_scenarios.sensitivity_matrix.matrix_summary` (preferring PV-discounted `discounted_max_pct_move`, `discounted_base_case_pct_move`, and `discounted_min_pct_move` when available) and `valuation_scenarios.sensitivity_matrix.implied_eps_by_multiple`:
+    - *Bull case*: Reference lower-hurdle Reverse DCF cells (e.g., 8–9% discount rate) and high-end EPS / multiple cells from `valuation_scenarios.sensitivity_matrix` (using `matrix_summary.discounted_max_pct_move` / `max_pct_move` and upper-multiple cells for `implied_upside`).
+    - *Base case*: Reference the baseline Reverse DCF hurdle (`two_stage_reverse_dcf.implied_growth_years_3_to_10_pct` or `reverse_dcf_summary.base_case_implied_growth_pct`) and the pre-computed `matrix_summary.discounted_base_case_pct_move` / `base_case_pct_move` on consensus `eps_avg` (plus `implied_eps_by_multiple` showing required FY2 EPS vs consensus) for `implied_move`. If `valuation_method_tension_note` is present, explicitly explain the relationship between Forward P/E and Reverse DCF.
+    - *Bear case*: Reference high-hurdle Reverse DCF cells (11–12% discount rate) and downside multiple compression cells from `valuation_scenarios.sensitivity_matrix` (using `matrix_summary.discounted_min_pct_move` / `min_pct_move` and low-end EPS / trough multiple cells for `implied_downside`).
 **Strict JSON formatting**
 - OUTPUT ONLY VALID JSON. No conversational text, no explanatory phrases, no greetings.
 - Do NOT wrap the JSON in markdown code blocks. Your response must start with `{` and end with `}`.

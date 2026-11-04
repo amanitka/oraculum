@@ -43,10 +43,11 @@ final class SnapshotUiSupport {
         String norm = value.trim().toUpperCase(Locale.ROOT).replace(' ', '_').replace('/', '_');
         return switch (norm) {
             case "EXCEPTIONAL", "HIGH", "STRONG", "LOW_HURDLE", "CONSERVATIVE",
-                 "ALIGNED", "SUPPORTIVE_UPTREND", "SUPPORTIVE", "BULLISH", "POSITIVE" -> "success";
+                 "ALIGNED", "SUPPORTIVE_UPTREND", "SUPPORTIVE", "BULLISH", "POSITIVE", "LOW_RISK" -> "success";
+            case "MODERATE_RISK" -> "contrast";
             case "DEMANDING", "AGGRESSIVE", "CONFLICTING_PEAK_MARGIN_RISK",
                  "DIVERGENT", "PULLBACK_IN_UPTREND", "WARNING", "GAAP_NON_GAAP_BASIS_DIFF",
-                 "DIFF", "MIXED", "MODERATE", "MIXED_NEGATIVE", "MIXED_POSITIVE" -> "warning";
+                 "DIFF", "MIXED", "MODERATE", "MIXED_NEGATIVE", "MIXED_POSITIVE", "ELEVATED_RISK" -> "warning";
             case "SPECULATIVE", "WEAK", "VULNERABLE", "DISTRIBUTION_WARNING",
                  "DOWNTREND", "RISK", "MATERIAL_DIVERGENCE", "BEARISH", "NEGATIVE", "HIGH_RISK" -> "error";
             default -> "contrast";
@@ -201,6 +202,16 @@ final class SnapshotUiSupport {
     }
 
     static String resolveScoreBadgeLabel(double score) {
+        return resolveScoreBadgeLabel(null, score);
+    }
+
+    static String resolveScoreBadgeLabel(String dimensionName, double score) {
+        if (isRiskDimension(dimensionName)) {
+            if (score >= 7.0) return "Low Risk";
+            if (score >= 5.0) return "Moderate Risk";
+            if (score >= 3.5) return "Elevated Risk";
+            return "High Risk";
+        }
         if (score >= 8.5) return "Exceptional";
         if (score >= 7.0) return "Strong";
         if (score >= 5.0) return "Moderate";
@@ -209,10 +220,19 @@ final class SnapshotUiSupport {
     }
 
     static String resolveScoreBadgeTheme(double score) {
+        return resolveScoreBadgeTheme(null, score);
+    }
+
+    static String resolveScoreBadgeTheme(String dimensionName, double score) {
         if (score >= 7.0) return "success";
         if (score >= 5.0) return "contrast";
         if (score >= 3.5) return "warning";
         return "error";
+    }
+
+    private static boolean isRiskDimension(String dimensionName) {
+        if (dimensionName == null || dimensionName.isBlank()) return false;
+        return dimensionName.toLowerCase(Locale.ROOT).contains("risk");
     }
 
     static String formatMetricLabel(String key) {

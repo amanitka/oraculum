@@ -1,7 +1,8 @@
 package com.oraculum.analyst.service.valuation;
 
-import com.oraculum.analyst.dto.ValuationScenarioDto.ReverseDcfSummary;
-import com.oraculum.analyst.service.valuation.ValuationDivergenceEvaluator.MethodDivergenceResult;
+import com.oraculum.analyst.dto.valuation.ForwardReverseDcfDto;
+import com.oraculum.analyst.dto.valuation.MethodDivergenceResult;
+import com.oraculum.analyst.dto.valuation.ReverseDcfSummaryDto;
 import com.oraculum.company.api.dto.HistoricalValuationSummaryDto;
 import com.oraculum.company.api.dto.ReverseDcfDto;
 import com.oraculum.company.api.dto.ReverseDcfMatrixCellDto;
@@ -42,7 +43,7 @@ class ValuationDivergenceEvaluatorTest {
                 "Aggressive FCF growth implied", matrix
         );
 
-        ReverseDcfSummary summary = evaluator.buildReverseDcfSummary(dcf);
+        ReverseDcfSummaryDto summary = evaluator.buildReverseDcfSummary(dcf);
 
         assertThat(summary).isNotNull();
         assertThat(summary.baseCaseValuationZone()).isEqualTo("AGGRESSIVE");
@@ -52,7 +53,7 @@ class ValuationDivergenceEvaluatorTest {
     }
 
     @Test
-    void evaluateMethodDivergence_aggressiveDcfAndLowForwardPe_triggersConflict() {
+    void evaluateMethodDivergence_aggressiveDcfAndLowForwardPe_triggersConflictWhenTwoStageNotFair() {
         ReverseDcfSensitivityMatrixDto matrix = new ReverseDcfSensitivityMatrixDto(
                 List.of(10.0), List.of(3.0),
                 List.of(new ReverseDcfMatrixCellDto(10.0, 3.0, 16.68, ValuationZone.AGGRESSIVE, true))
@@ -71,6 +72,28 @@ class ValuationDivergenceEvaluatorTest {
                 .contains("METHOD CONFLICT")
                 .contains("AGGRESSIVE zone requiring 16.7%")
                 .contains("10Y P/E percentile 5%");
+    }
+
+    @Test
+    void evaluateMethodDivergence_twoStageFairResolvesTrailingAggressiveConflict() {
+        ReverseDcfSensitivityMatrixDto matrix = new ReverseDcfSensitivityMatrixDto(
+                List.of(10.0), List.of(3.0),
+                List.of(new ReverseDcfMatrixCellDto(10.0, 3.0, 16.68, ValuationZone.AGGRESSIVE, true))
+        );
+        ReverseDcfDto dcf = new ReverseDcfDto(
+                5.1e12, 9.6e10, 0.018, 0.1, 10, 0.03, 16.68, 83.1, "5Y", false, "Aggressive", matrix
+        );
+        ForwardReverseDcfDto twoStage = ForwardReverseDcfDto.builder()
+                .impliedGrowthYears3To10Pct(7.2f)
+                .relativeValuationZone(ValuationZone.FAIR)
+                .build();
+
+        MethodDivergenceResult result = evaluator.evaluateMethodDivergence(dcf, twoStage, 22.7f, List.of());
+
+        assertThat(result.divergent()).isFalse();
+        assertThat(result.note())
+                .contains("TRAILING VS FORWARD DCF RECONCILED")
+                .contains("FAIR zone (7.2% CAGR in Years 3-10)");
     }
 
     @Test

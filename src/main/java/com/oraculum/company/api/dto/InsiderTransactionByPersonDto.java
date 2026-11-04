@@ -1,7 +1,9 @@
 package com.oraculum.company.api.dto;
 
 import com.oraculum.company.domain.InsiderTransactionByPersonEntity;
+import lombok.Builder;
 
+@Builder
 public record InsiderTransactionByPersonDto(
         String ticker,
         String insiderName,

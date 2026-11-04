@@ -32,7 +32,7 @@ public class AgentDataRenderer {
 
     private final MarkdownRenderer markdownRenderer;
 
-    public Component createAgentTabContent(JsonNode agentData, String jsonData) {
+    public Component createAgentTabContent(String agentKey, JsonNode agentData, String jsonData) {
         if (agentData == null || agentData.isEmpty()) {
             return null;
         }
@@ -44,7 +44,7 @@ public class AgentDataRenderer {
         layout.getStyle().set("max-width", "100%").set("box-sizing", "border-box").set("margin", "0 auto");
 
         addHeadlineIfPresent(layout, agentData);
-        addTilesRowIfPresent(layout, agentData, jsonData);
+        addTilesRowIfPresent(layout, agentKey, agentData, jsonData);
         addStrengthsIfPresent(layout, agentData, jsonData);
         addWeaknessesIfPresent(layout, agentData, jsonData);
         addRiskBucketsIfPresent(layout, agentData, jsonData);
@@ -65,21 +65,21 @@ public class AgentDataRenderer {
         }
     }
 
-    private void addTilesRowIfPresent(VerticalLayout layout, JsonNode agentData, String jsonData) {
-        HorizontalLayout tilesRow = buildTilesRow(agentData, jsonData);
+    private void addTilesRowIfPresent(VerticalLayout layout, String agentKey, JsonNode agentData, String jsonData) {
+        HorizontalLayout tilesRow = buildTilesRow(agentKey, agentData, jsonData);
         if (tilesRow != null) {
             layout.add(tilesRow);
         }
     }
 
-    private HorizontalLayout buildTilesRow(JsonNode agentData, String jsonData) {
+    private HorizontalLayout buildTilesRow(String agentKey, JsonNode agentData, String jsonData) {
         HorizontalLayout tilesRow = new HorizontalLayout();
         tilesRow.setWidthFull();
         tilesRow.getStyle().set("gap", "16px").set("margin-bottom", "20px").set("flex-wrap", "wrap");
         boolean hasTiles = false;
 
         if (agentData.has("score")) {
-            tilesRow.add(buildAgentScoreTile(agentData));
+            tilesRow.add(buildAgentScoreTile(agentKey, agentData));
             hasTiles = true;
         }
         if (agentData.has("confidence")) {
@@ -476,26 +476,26 @@ public class AgentDataRenderer {
         return headline;
     }
 
-    private Div buildAgentScoreTile(JsonNode agentData) {
+    private Div buildAgentScoreTile(String agentKey, JsonNode agentData) {
         double score = agentData.get("score").asDouble(0.0);
         if (score > 10.0) {
             score = score / 10.0;
         }
-        String badgeText = resolveScoreBadge(agentData, score);
+        String badgeText = resolveScoreBadge(agentKey, agentData, score);
         String badgeTheme = SnapshotUiSupport.resolveDimensionTheme(badgeText);
         Div tile = SnapshotUiSupport.createScoreCard("Score", score, badgeText, badgeTheme);
         tile.getStyle().set("flex", "1 1 180px");
         return tile;
     }
 
-    private String resolveScoreBadge(JsonNode agentData, double score) {
+    private String resolveScoreBadge(String agentKey, JsonNode agentData, double score) {
         if (agentData.has("valuation_zone") && !agentData.get("valuation_zone").asString().isBlank()) {
             return agentData.get("valuation_zone").asString();
         }
         if (agentData.has("rating") && !agentData.get("rating").asString().isBlank()) {
             return agentData.get("rating").asString();
         }
-        return SnapshotUiSupport.resolveScoreBadgeLabel(score);
+        return SnapshotUiSupport.resolveScoreBadgeLabel(agentKey, score);
     }
 
     private Component renderFactorScoresSection(JsonNode factorScores) {

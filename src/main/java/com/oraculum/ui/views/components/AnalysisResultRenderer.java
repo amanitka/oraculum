@@ -1,5 +1,6 @@
 package com.oraculum.ui.views.components;
 
+import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.api.dto.AnalysisResult;
 import com.oraculum.analyst.api.dto.CompanyAnalysisDto;
 import com.oraculum.ui.views.components.renderer.AgentDataRenderer;
@@ -141,9 +142,9 @@ public class AnalysisResultRenderer {
     private Component renderLegacyJsonReportFallback(String jsonData) {
         try {
             JsonNode rootNode = jsonMapper.readTree(jsonData);
-            JsonNode synthNode = rootNode.path("SYNTHESIZER");
+            JsonNode synthNode = rootNode.path(AgentType.SYNTHESIZER.name());
             if (!synthNode.isMissingNode() && !synthNode.isNull()) {
-                Component tabContent = agentDataRenderer.createAgentTabContent(synthNode, jsonData);
+                Component tabContent = agentDataRenderer.createAgentTabContent(AgentType.SYNTHESIZER.name(), synthNode, jsonData);
                 if (tabContent != null) return tabContent;
             }
         } catch (Exception ignored) {
@@ -246,9 +247,9 @@ public class AnalysisResultRenderer {
             JsonNode rootNode = jsonMapper.readTree(jsonData);
             for (Map.Entry<String, JsonNode> entry : rootNode.properties()) {
                 String key = entry.getKey();
-                if (key.startsWith("SYNTHESIZER") || key.equals(TRACE_CITATIONS_KEY)) continue;
+                if (key.startsWith(AgentType.SYNTHESIZER.name()) || key.equals(TRACE_CITATIONS_KEY)) continue;
 
-                Component tabContent = agentDataRenderer.createAgentTabContent(entry.getValue(), jsonData);
+                Component tabContent = agentDataRenderer.createAgentTabContent(key, entry.getValue(), jsonData);
                 if (tabContent != null) {
                     tabSheet.add(RendererUtil.formatKeyTitle(key), tabContent);
                 }

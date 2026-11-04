@@ -1,12 +1,23 @@
 package com.oraculum.analyst.service.valuation;
 
-import com.oraculum.analyst.dto.ValuationScenarioDto.*;
+import com.oraculum.analyst.dto.valuation.ImpliedEpsEntryDto;
+import com.oraculum.analyst.dto.valuation.MatrixSummaryDto;
+import com.oraculum.analyst.dto.valuation.MultipleAnchorDto;
+import com.oraculum.analyst.dto.valuation.SensitivityCellDto;
+import com.oraculum.analyst.dto.valuation.SensitivityMatrixDto;
 import com.oraculum.company.api.dto.HistoricalValuationSummaryDto;
 import com.oraculum.harvester.api.dto.EarningsEstimateDto;
+import com.oraculum.util.NumericUtil;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.Optional;
 
 @Component
 public class SensitivityMatrixCalculator {
@@ -15,40 +26,58 @@ public class SensitivityMatrixCalculator {
     public static final String SENSITIVITY_DISCLAIMER =
             "Illustrative sensitivity calculation only, not a price forecast or target.";
 
-    private static Float round2(double val) {
-        return (float) (Math.round(val * 100.0) / 100.0);
-    }
-
-    private static Float round1(double val) {
-        return (float) (Math.round(val * 10.0) / 10.0);
-    }
-
-    public SensitivityMatrix calculate(
+    public SensitivityMatrixDto calculate(
             Float currentPrice,
             EarningsEstimateDto target,
             List<Float> explicitMultiples,
             List<HistoricalValuationSummaryDto> historicalValuation
     ) {
+        return calculate(currentPrice, target, explicitMultiples, historicalValuation, null);
+    }
+
+    public SensitivityMatrixDto calculate(
+            Float currentPrice,
+            EarningsEstimateDto target,
+            List<Float> explicitMultiples,
+            List<HistoricalValuationSummaryDto> historicalValuation,
+            LocalDate analysisDate
+    ) {
         if (target == null) {
             return null;
         }
-        List<MultipleAnchor> anchors = resolveMultipleAnchors(explicitMultiples, historicalValuation);
+        List<MultipleAnchorDto> anchors = resolveMultipleAnchors(explicitMultiples, historicalValuation);
         Float epsLow = extractFloat(target.epsEstimateLow());
         Float epsAvg = extractFloat(target.epsEstimateAverage());
         Float epsHigh = extractFloat(target.epsEstimateHigh());
 
-        List<Float> refs = anchors.stream().map(MultipleAnchor::multiple).toList();
-        List<SensitivityCell> cells = buildMatrixCells(currentPrice, epsLow, epsAvg, epsHigh, refs);
-        List<ImpliedEpsEntry> impliedEps = buildImpliedEpsEntries(currentPrice, epsAvg, anchors);
-        MatrixSummary summary = buildMatrixSummary(currentPrice, epsAvg, refs, cells);
-        String targetLabel = target.date() != null ? target.date().toString() : "Next FY";
+        double discountFactor = computeDiscountFactor(analysisDate, target.date());
+        List<Float> refs = anchors.stream().map(MultipleAnchorDto::multiple).toList();
+        List<SensitivityCellDto> cells = buildMatrixCells(currentPrice, epsLow, epsAvg, epsHigh, refs, discountFactor);
 
-        return new SensitivityMatrix(
-                targetLabel, epsLow, epsAvg, epsHigh, refs, anchors, impliedEps, summary, cells, SENSITIVITY_DISCLAIMER
-        );
+        return SensitivityMatrixDto.builder()
+                .targetFiscalYear(target.date() != null ? target.date().toString() : "Next FY")
+                .epsLow(epsLow)
+                .epsAvg(epsAvg)
+                .epsHigh(epsHigh)
+                .referenceMultiples(refs)
+                .multipleAnchors(anchors)
+                .impliedEpsByMultiple(buildImpliedEpsEntries(currentPrice, epsAvg, anchors))
+                .matrixSummary(buildMatrixSummary(currentPrice, epsAvg, refs, cells))
+                .cells(cells)
+                .disclaimer(SENSITIVITY_DISCLAIMER)
+                .build();
     }
 
-    public List<MultipleAnchor> resolveMultipleAnchors(
+    private double computeDiscountFactor(LocalDate analysisDate, LocalDate targetDate) {
+        if (analysisDate == null || targetDate == null || targetDate.isBefore(analysisDate)) {
+            return 1.0;
+        }
+        long days = ChronoUnit.DAYS.between(analysisDate, targetDate);
+        double years = Math.max(0.1, days / 365.25);
+        return Math.pow(1.10, years);
+    }
+
+    public List<MultipleAnchorDto> resolveMultipleAnchors(
             List<Float> explicitMultiples,
             List<HistoricalValuationSummaryDto> historicalValuation
     ) {
@@ -60,48 +89,50 @@ public class SensitivityMatrixCalculator {
             return buildHistoricalPeAnchors(peOpt.get());
         }
         return List.of(
-                new MultipleAnchor(12.0f, "Conservative Multiple (12.0x)"),
-                new MultipleAnchor(16.0f, "Baseline Market Multiple (16.0x)"),
-                new MultipleAnchor(20.0f, "Growth Multiple (20.0x)")
+                new MultipleAnchorDto(12.0f, "Conservative Multiple (12.0x)"),
+                new MultipleAnchorDto(16.0f, "Baseline Market Multiple (16.0x)"),
+                new MultipleAnchorDto(20.0f, "Growth Multiple (20.0x)")
         );
     }
 
-    private List<MultipleAnchor> buildExplicitAnchors(List<Float> multiples) {
-        List<MultipleAnchor> anchors = new ArrayList<>();
+    private List<MultipleAnchorDto> buildExplicitAnchors(List<Float> multiples) {
+        List<MultipleAnchorDto> anchors = new ArrayList<>();
         for (Float m : multiples) {
             if (m != null) {
-                anchors.add(new MultipleAnchor(m, String.format(Locale.ROOT, "Reference Multiple (%.1fx)", m)));
+                anchors.add(new MultipleAnchorDto(m, String.format(Locale.ROOT, "Reference Multiple (%.1fx)", m)));
             }
         }
         return anchors;
     }
 
     private Optional<HistoricalValuationSummaryDto> findPeHistoricalSummary(List<HistoricalValuationSummaryDto> list) {
-        if (list == null) return Optional.empty();
+        if (list == null) {
+            return Optional.empty();
+        }
         return list.stream()
                 .filter(h -> h != null && "P/E".equalsIgnoreCase(h.metric()))
                 .findFirst();
     }
 
-    private List<MultipleAnchor> buildHistoricalPeAnchors(HistoricalValuationSummaryDto pe) {
+    private List<MultipleAnchorDto> buildHistoricalPeAnchors(HistoricalValuationSummaryDto pe) {
         float min10y = pe.min10y();
         if (min10y > 15.0f) {
-            float low = round1(Math.max(12.0f, min10y * 0.75f));
-            float mid = round1(Math.min(min10y, 25.0f));
-            float high = round1(resolveUpperMultiple(pe, mid));
+            float low = NumericUtil.round1(Math.max(12.0f, min10y * 0.75f));
+            float mid = NumericUtil.round1(Math.min(min10y, 25.0f));
+            float high = NumericUtil.round1(resolveUpperMultiple(pe, mid));
             return List.of(
-                    new MultipleAnchor(low, String.format(Locale.ROOT, "Cyclical Compression (%.1fx, 0.75x 10Y Min)", low)),
-                    new MultipleAnchor(mid, String.format(Locale.ROOT, "10Y Historical Min P/E (%.1fx)", mid)),
-                    new MultipleAnchor(high, String.format(Locale.ROOT, "Current / Historical Anchor P/E (%.1fx)", high))
+                    new MultipleAnchorDto(low, String.format(Locale.ROOT, "Cyclical Compression (%.1fx, 0.75x 10Y Min)", low)),
+                    new MultipleAnchorDto(mid, String.format(Locale.ROOT, "10Y Historical Min P/E (%.1fx)", mid)),
+                    new MultipleAnchorDto(high, String.format(Locale.ROOT, "Current / Historical Anchor P/E (%.1fx)", high))
             );
         }
-        float low = round1(Math.max(8.0f, min10y));
-        float mid = round1(resolveMidMultiple(pe, low));
-        float high = round1(resolveUpperMultiple(pe, mid));
+        float low = NumericUtil.round1(Math.max(8.0f, min10y));
+        float mid = NumericUtil.round1(resolveMidMultiple(pe, low));
+        float high = NumericUtil.round1(resolveUpperMultiple(pe, mid));
         return List.of(
-                new MultipleAnchor(low, String.format(Locale.ROOT, "10Y Historical Min P/E (%.1fx)", low)),
-                new MultipleAnchor(mid, String.format(Locale.ROOT, "Historical Baseline P/E (%.1fx)", mid)),
-                new MultipleAnchor(high, String.format(Locale.ROOT, "Upper Valuation Anchor P/E (%.1fx)", high))
+                new MultipleAnchorDto(low, String.format(Locale.ROOT, "10Y Historical Min P/E (%.1fx)", low)),
+                new MultipleAnchorDto(mid, String.format(Locale.ROOT, "Historical Baseline P/E (%.1fx)", mid)),
+                new MultipleAnchorDto(high, String.format(Locale.ROOT, "Upper Valuation Anchor P/E (%.1fx)", high))
         );
     }
 
@@ -115,32 +146,55 @@ public class SensitivityMatrixCalculator {
         return Math.clamp(candidate, mid + 3.0f, 32.0f);
     }
 
-    private List<SensitivityCell> buildMatrixCells(
+    private List<SensitivityCellDto> buildMatrixCells(
             Float currentPrice,
             Float epsLow,
             Float epsAvg,
             Float epsHigh,
-            List<Float> refs
+            List<Float> refs,
+            double discountFactor
     ) {
-        List<SensitivityCell> cells = new ArrayList<>();
+        List<SensitivityCellDto> cells = new ArrayList<>();
         for (Float multiple : refs) {
-            addCellIfPresent(cells, multiple, "LOW", epsLow, currentPrice);
-            addCellIfPresent(cells, multiple, "AVG", epsAvg, currentPrice);
-            addCellIfPresent(cells, multiple, "HIGH", epsHigh, currentPrice);
+            addCellIfPresent(cells, multiple, "LOW", epsLow, currentPrice, discountFactor);
+            addCellIfPresent(cells, multiple, "AVG", epsAvg, currentPrice, discountFactor);
+            addCellIfPresent(cells, multiple, "HIGH", epsHigh, currentPrice, discountFactor);
         }
         return cells;
     }
 
-    private void addCellIfPresent(List<SensitivityCell> cells, Float multiple, String scenario, Float eps, Float currentPrice) {
+    private void addCellIfPresent(
+            List<SensitivityCellDto> cells,
+            Float multiple,
+            String scenario,
+            Float eps,
+            Float currentPrice,
+            double discountFactor
+    ) {
         if (multiple == null || eps == null || currentPrice == null || currentPrice <= 0) {
             return;
         }
-        float implied = round2(multiple * eps);
-        float pctMove = round1(((implied - currentPrice) / currentPrice) * 100.0);
-        cells.add(new SensitivityCell(multiple, scenario, eps, implied, pctMove));
+        Float implied = NumericUtil.round2(multiple * eps);
+        Float pctMove = NumericUtil.round1(((implied - currentPrice) / currentPrice) * 100.0);
+        Float discounted = NumericUtil.round2(implied / discountFactor);
+        Float discPctMove = NumericUtil.round1(((discounted - currentPrice) / currentPrice) * 100.0);
+
+        cells.add(SensitivityCellDto.builder()
+                .multiple(multiple)
+                .epsScenario(scenario)
+                .epsValue(eps)
+                .impliedPrice(implied)
+                .pctMoveVsCurrent(pctMove)
+                .discountedImpliedPrice(discounted)
+                .discountedPctMoveVsCurrent(discPctMove)
+                .build());
     }
 
-    private List<ImpliedEpsEntry> buildImpliedEpsEntries(Float currentPrice, Float epsAvg, List<MultipleAnchor> anchors) {
+    private List<ImpliedEpsEntryDto> buildImpliedEpsEntries(
+            Float currentPrice,
+            Float epsAvg,
+            List<MultipleAnchorDto> anchors
+    ) {
         if (currentPrice == null || currentPrice <= 0 || anchors == null) {
             return List.of();
         }
@@ -150,60 +204,69 @@ public class SensitivityMatrixCalculator {
                 .toList();
     }
 
-    private ImpliedEpsEntry createImpliedEpsEntry(Float currentPrice, Float epsAvg, MultipleAnchor anchor) {
-        float reqEps = round2(currentPrice / anchor.multiple());
+    private ImpliedEpsEntryDto createImpliedEpsEntry(Float currentPrice, Float epsAvg, MultipleAnchorDto anchor) {
+        Float reqEps = NumericUtil.round2(currentPrice / anchor.multiple());
         Float diffPct = (epsAvg != null && reqEps > 0)
-                ? round1(((epsAvg - reqEps) / reqEps) * 100.0)
+                ? NumericUtil.round1(((epsAvg - reqEps) / reqEps) * 100.0)
                 : null;
-        return new ImpliedEpsEntry(anchor.multiple(), anchor.label(), reqEps, epsAvg, diffPct);
+        return ImpliedEpsEntryDto.builder()
+                .multiple(anchor.multiple())
+                .anchorLabel(anchor.label())
+                .requiredEpsForCurrentPrice(reqEps)
+                .consensusEpsAvg(epsAvg)
+                .consensusVsRequiredPct(diffPct)
+                .build();
     }
 
-    private MatrixSummary buildMatrixSummary(
+    private MatrixSummaryDto buildMatrixSummary(
             Float currentPrice,
             Float epsAvg,
             List<Float> refs,
-            List<SensitivityCell> cells
+            List<SensitivityCellDto> cells
     ) {
         if (cells.isEmpty()) {
             return null;
         }
-        List<Float> moves = cells.stream()
-                .map(SensitivityCell::pctMoveVsCurrent)
+        List<Float> moves = extractSortedMoves(cells, false);
+        List<Float> discMoves = extractSortedMoves(cells, true);
+        Float baseMultiple = refs.isEmpty() ? null : refs.get(refs.size() / 2);
+        SensitivityCellDto baseCell = findBaseCell(cells, baseMultiple);
+        Float breakEvenPe = (epsAvg != null && epsAvg > 0.001f && currentPrice != null)
+                ? NumericUtil.round2(currentPrice / epsAvg)
+                : null;
+
+        return MatrixSummaryDto.builder()
+                .minPctMove(moves.isEmpty() ? null : moves.getFirst())
+                .maxPctMove(moves.isEmpty() ? null : moves.getLast())
+                .medianPctMove(NumericUtil.medianFloat(moves))
+                .baseCaseMultiple(baseMultiple)
+                .baseCaseImpliedPrice(baseCell != null ? baseCell.impliedPrice() : null)
+                .baseCasePctMove(baseCell != null ? baseCell.pctMoveVsCurrent() : null)
+                .discountedMinPctMove(discMoves.isEmpty() ? null : discMoves.getFirst())
+                .discountedMaxPctMove(discMoves.isEmpty() ? null : discMoves.getLast())
+                .discountedMedianPctMove(NumericUtil.medianFloat(discMoves))
+                .discountedBaseCaseImpliedPrice(baseCell != null ? baseCell.discountedImpliedPrice() : null)
+                .discountedBaseCasePctMove(baseCell != null ? baseCell.discountedPctMoveVsCurrent() : null)
+                .breakEvenPeOnAvgEps(breakEvenPe)
+                .build();
+    }
+
+    private List<Float> extractSortedMoves(List<SensitivityCellDto> cells, boolean discounted) {
+        return cells.stream()
+                .map(c -> discounted ? c.discountedPctMoveVsCurrent() : c.pctMoveVsCurrent())
                 .filter(Objects::nonNull)
                 .sorted()
                 .toList();
-        Float minMove = moves.isEmpty() ? null : moves.getFirst();
-        Float maxMove = moves.isEmpty() ? null : moves.getLast();
-        Float medianMove = calculateMedian(moves);
-        Float baseMultiple = refs.isEmpty() ? null : refs.get(refs.size() / 2);
-        SensitivityCell baseCell = findBaseCell(cells, baseMultiple);
-        Float breakEvenPe = (epsAvg != null && epsAvg > 0.001f && currentPrice != null)
-                ? round2(currentPrice / epsAvg)
-                : null;
-
-        return new MatrixSummary(
-                minMove, maxMove, medianMove, baseMultiple,
-                baseCell != null ? baseCell.impliedPrice() : null,
-                baseCell != null ? baseCell.pctMoveVsCurrent() : null,
-                breakEvenPe
-        );
     }
 
-    private SensitivityCell findBaseCell(List<SensitivityCell> cells, Float baseMultiple) {
-        if (baseMultiple == null) return null;
+    private SensitivityCellDto findBaseCell(List<SensitivityCellDto> cells, Float baseMultiple) {
+        if (baseMultiple == null) {
+            return null;
+        }
         return cells.stream()
                 .filter(c -> baseMultiple.equals(c.multiple()) && "AVG".equals(c.epsScenario()))
                 .findFirst()
                 .orElse(null);
-    }
-
-    private Float calculateMedian(List<Float> sorted) {
-        if (sorted == null || sorted.isEmpty()) return null;
-        int mid = sorted.size() / 2;
-        if (sorted.size() % 2 == 1) {
-            return sorted.get(mid);
-        }
-        return round1((sorted.get(mid - 1) + sorted.get(mid)) / 2.0);
     }
 
     private Float extractFloat(BigDecimal value) {

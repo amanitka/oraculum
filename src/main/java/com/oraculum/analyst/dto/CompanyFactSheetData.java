@@ -1,12 +1,27 @@
 package com.oraculum.analyst.dto;
 
 import com.oraculum.analyst.agent.dto.CanonicalFacts;
+import com.oraculum.analyst.dto.valuation.ValuationScenarioDto;
 import com.oraculum.analyst.service.citation.FactSheetCitationFormatter;
 import com.oraculum.analyst.util.JsonUtils;
 import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.domain.TickerDocumentSubtype;
 import com.oraculum.company.api.domain.TickerDocumentType;
-import com.oraculum.company.api.dto.*;
+import com.oraculum.company.api.dto.BalanceSheetDto;
+import com.oraculum.company.api.dto.CashFlowStatementDto;
+import com.oraculum.company.api.dto.CompanyDto;
+import com.oraculum.company.api.dto.CompanyFinancialRatiosDto;
+import com.oraculum.company.api.dto.CompanyInstitutionalFlowDto;
+import com.oraculum.company.api.dto.HistoricalValuationSummaryDto;
+import com.oraculum.company.api.dto.IncomeStatementDto;
+import com.oraculum.company.api.dto.IndustryFinancialRatiosDto;
+import com.oraculum.company.api.dto.InsiderTransactionByPersonDto;
+import com.oraculum.company.api.dto.InsiderTransactionSummaryDto;
+import com.oraculum.company.api.dto.ReverseDcfDto;
+import com.oraculum.company.api.dto.SectorInstitutionalFlowTrendDto;
+import com.oraculum.company.api.dto.SharePriceSignalDto;
+import com.oraculum.company.api.dto.TickerDocumentDto;
+import com.oraculum.economy.api.domain.MacroIndicator;
 import com.oraculum.economy.api.dto.MacroSummaryDto;
 import com.oraculum.harvester.api.dto.CompanyNewsDto;
 import com.oraculum.harvester.api.dto.EarningsEstimateDto;
@@ -17,7 +32,13 @@ import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDate;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 @Getter
 @Slf4j
@@ -173,9 +194,11 @@ public class CompanyFactSheetData {
 
     public String getCanonicalFacts() {
         CompanyFinancialRatiosDto ttm = getCompanyFinancialRatiosList(StatementVariant.TTM).stream()
+                .filter(r -> r != null && r.reportDate() != null)
                 .max(Comparator.comparing(CompanyFinancialRatiosDto::reportDate))
                 .orElse(null);
         CompanyFinancialRatiosDto annual = getCompanyFinancialRatiosList(StatementVariant.ANNUAL).stream()
+                .filter(r -> r != null && r.reportDate() != null)
                 .max(Comparator.comparing(CompanyFinancialRatiosDto::reportDate))
                 .orElse(null);
 
@@ -202,7 +225,9 @@ public class CompanyFactSheetData {
     }
 
     private String processSharePriceSignals(List<SharePriceSignalDto> signals, int limit) {
-        if (signals == null || signals.isEmpty()) return "[]";
+        if (signals == null || signals.isEmpty()) {
+            return "[]";
+        }
         List<SharePriceSignalSlim> slim = signals.stream()
                 .limit(limit)
                 .map(dto -> {
@@ -215,27 +240,39 @@ public class CompanyFactSheetData {
     }
 
     public String getRecentCompanyNews(int limit) {
-        return serializeFilteredNews(true, limit, CompanyNewsSlim.RELEVANCE_DIRECT);
+        return getRecentCompanyNews(limit, null);
+    }
+
+    public String getRecentCompanyNews(int limit, LocalDate analysisDate) {
+        return serializeFilteredNews(true, limit, CompanyNewsSlim.RELEVANCE_DIRECT, analysisDate);
     }
 
     public String getRecentMarketNews(int limit) {
-        return serializeFilteredNews(false, limit, CompanyNewsSlim.RELEVANCE_MARKET_CONTEXT);
+        return getRecentMarketNews(limit, null);
     }
 
-    private String serializeFilteredNews(boolean directOnly, int limit, String relevance) {
+    public String getRecentMarketNews(int limit, LocalDate analysisDate) {
+        return serializeFilteredNews(false, limit, CompanyNewsSlim.RELEVANCE_MARKET_CONTEXT, analysisDate);
+    }
+
+    private String serializeFilteredNews(boolean directOnly, int limit, String relevance, LocalDate analysisDate) {
         List<CompanyNewsDto> filtered = filterNews(directOnly, limit);
-        if (filtered.isEmpty()) return "[]";
+        if (filtered.isEmpty()) {
+            return "[]";
+        }
         List<CompanyNewsSlim> slim = filtered.stream()
                 .map(dto -> {
                     String citationId = citationRegistry.getOrAssignCitationId(CompanyNewsDto.class, dto.id(), dto);
-                    return CompanyNewsSlim.from(dto, citationId, relevance);
+                    return CompanyNewsSlim.from(dto, citationId, relevance, analysisDate);
                 })
                 .toList();
         return JsonUtils.toJson(jsonMapper, slim, "[]");
     }
 
     private List<CompanyNewsDto> filterNews(boolean directOnly, int limit) {
-        if (recentNews == null || recentNews.isEmpty() || limit <= 0) return List.of();
+        if (recentNews == null || recentNews.isEmpty() || limit <= 0) {
+            return List.of();
+        }
         String ticker = company != null ? company.ticker() : null;
         String compName = company != null ? company.companyName() : null;
         return recentNews.stream()
@@ -249,15 +286,23 @@ public class CompanyFactSheetData {
     }
 
     public SharePriceSignalDto getLatestDailySignal() {
-        return (dailySharePriceSignals != null && !dailySharePriceSignals.isEmpty())
-                ? dailySharePriceSignals.getFirst()
-                : null;
+        if (dailySharePriceSignals == null || dailySharePriceSignals.isEmpty()) {
+            return null;
+        }
+        return dailySharePriceSignals.stream()
+                .filter(s -> s != null && s.tradeDate() != null)
+                .max(Comparator.comparing(SharePriceSignalDto::tradeDate))
+                .orElse(dailySharePriceSignals.getFirst());
     }
 
     public String getLatestIndustryRatios(StatementVariant variant) {
-        if (industryFinancialRatios == null) return "[]";
+        if (industryFinancialRatios == null) {
+            return "[]";
+        }
         List<IndustryFinancialRatiosDto> ratios = industryFinancialRatios.get(variant);
-        if (ratios == null || ratios.isEmpty()) return "[]";
+        if (ratios == null || ratios.isEmpty()) {
+            return "[]";
+        }
         String key = (company != null ? company.industryName() : "") + "_" + variant;
         return formatter.wrapListWithCitations(
                 IndustryFinancialRatiosDto.class,
@@ -310,7 +355,20 @@ public class CompanyFactSheetData {
     }
 
     public String getMacroeconomicSummary() {
-        return formatter.wrapListWithCitations(MacroSummaryDto.class, macroeconomicSummary, MacroSummaryDto::indicator);
+        return getMacroeconomicSummary(null);
+    }
+
+    public String getMacroeconomicSummary(Set<MacroIndicator> allowedIndicators) {
+        if (macroeconomicSummary == null || macroeconomicSummary.isEmpty()) {
+            return "[]";
+        }
+        if (allowedIndicators == null || allowedIndicators.isEmpty()) {
+            return formatter.wrapListWithCitations(MacroSummaryDto.class, macroeconomicSummary, MacroSummaryDto::indicator);
+        }
+        List<MacroSummaryDto> filtered = macroeconomicSummary.stream()
+                .filter(dto -> dto.indicator() != null && allowedIndicators.contains(dto.indicator()))
+                .toList();
+        return formatter.wrapListWithCitations(MacroSummaryDto.class, filtered, MacroSummaryDto::indicator);
     }
 
     public List<MacroSummaryDto> getMacroeconomicSummaryList() {
@@ -388,7 +446,9 @@ public class CompanyFactSheetData {
     }
 
     private String convertDocsToJson(List<TickerDocumentDto> docs) {
-        if (docs.isEmpty()) return "[]";
+        if (docs.isEmpty()) {
+            return "[]";
+        }
         List<TickerDocumentSlim> slim = docs.stream()
                 .map(dto -> {
                     String citationId = citationRegistry.getOrAssignCitationId(TickerDocumentDto.class, dto.getId(), dto);

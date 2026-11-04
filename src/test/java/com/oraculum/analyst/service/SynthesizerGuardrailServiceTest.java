@@ -13,8 +13,9 @@ import com.oraculum.analyst.api.dto.AnalysisResult;
 import com.oraculum.analyst.api.dto.AnalysisResult.ScenarioCase;
 import com.oraculum.analyst.api.dto.AnalysisResult.ScenariosResult;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
-import com.oraculum.analyst.dto.ValuationScenarioDto;
-import com.oraculum.analyst.dto.ValuationScenarioDto.SensitivityMatrix;
+import com.oraculum.analyst.dto.valuation.ForwardReverseDcfDto;
+import com.oraculum.analyst.dto.valuation.SensitivityMatrixDto;
+import com.oraculum.analyst.dto.valuation.ValuationScenarioDto;
 import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.dto.CompanyFinancialRatiosDto;
 import com.oraculum.company.api.dto.ReverseDcfDto;
@@ -42,7 +43,7 @@ class SynthesizerGuardrailServiceTest {
     }
 
     @Test
-    void applyGuardrails_aggressiveDcfHurdle_adjustsUndervaluedToFairlyValued() {
+    void applyGuardrails_aggressiveDcfHurdleWithoutTwoStageSupport_adjustsUndervaluedToFairlyValued() {
         ReverseDcfDto dcf = createDcfWithCells(List.of(
                 new ReverseDcfMatrixCellDto(10.0, 3.0, 18.0, ValuationZone.AGGRESSIVE, true),
                 new ReverseDcfMatrixCellDto(11.0, 3.0, 21.0, ValuationZone.SPECULATIVE, false),
@@ -67,6 +68,40 @@ class SynthesizerGuardrailServiceTest {
 
         assertThat(guarded.valuation()).isEqualTo(ValuationAssessment.FAIRLY_VALUED);
         assertThat(guarded.recommendationReasoning()).contains("[Guardrail Note:");
+    }
+
+    @Test
+    void applyGuardrails_aggressiveTrailingDcfButFairTwoStageDcf_preservesUndervalued() {
+        ReverseDcfDto dcf = createDcfWithCells(List.of(
+                new ReverseDcfMatrixCellDto(10.0, 3.0, 18.0, ValuationZone.AGGRESSIVE, true),
+                new ReverseDcfMatrixCellDto(11.0, 3.0, 21.0, ValuationZone.SPECULATIVE, false)
+        ));
+        ValuationScenarioDto scenarios = ValuationScenarioDto.builder()
+                .twoStageReverseDcf(ForwardReverseDcfDto.builder()
+                        .impliedGrowthYears3To10Pct(7.2f)
+                        .relativeValuationZone(ValuationZone.FAIR)
+                        .build())
+                .build();
+        CompanyFactSheetData factSheetData = CompanyFactSheetData.builder()
+                .reverseDcfResult(dcf)
+                .valuationScenarios(scenarios)
+                .build();
+
+        AnalysisResult rawResult = AnalysisResult.builder()
+                .valuation(ValuationAssessment.UNDERVALUED)
+                .recommendationReasoning("Forward consensus resolves trailing hurdle.")
+                .conviction(4)
+                .build();
+
+        AgentContext ctx = AgentContext.builder()
+                .factSheetData(factSheetData)
+                .state(state)
+                .build();
+
+        AnalysisResult guarded = guardrailService.applyGuardrails(rawResult, ctx, null);
+
+        assertThat(guarded.valuation()).isEqualTo(ValuationAssessment.UNDERVALUED);
+        assertThat(guarded.recommendationReasoning()).doesNotContain("[Guardrail Note:");
     }
 
     @Test
@@ -139,9 +174,12 @@ class SynthesizerGuardrailServiceTest {
     @Test
     void applyGuardrails_reverseDcfPeDivergence_capsConvictionAtThree() {
         setupSpecialistScores(8.5, 8.7, 8.6);
-        ValuationScenarioDto scenarios = new ValuationScenarioDto(
-                100.0f, 15.0f, 12.0f, null, null, null, false, null, null, true
-        );
+        ValuationScenarioDto scenarios = ValuationScenarioDto.builder()
+                .currentSharePrice(100.0f)
+                .forwardPeFy1(15.0f)
+                .forwardPeFy2(12.0f)
+                .flagReverseDcfPeDivergence(true)
+                .build();
         CompanyFactSheetData factSheetData = CompanyFactSheetData.builder()
                 .valuationScenarios(scenarios)
                 .build();
@@ -365,10 +403,19 @@ class SynthesizerGuardrailServiceTest {
     @Test
     void applyGuardrails_highEpsDispersion_capsConvictionAtThree() {
         setupSpecialistScores(8.5, 8.7, 8.6);
-        SensitivityMatrix matrix = new SensitivityMatrix("FY26", 2.0f, 4.0f, 6.0f, List.of(), List.of(), null);
-        ValuationScenarioDto scenarios = new ValuationScenarioDto(
-                100.0f, 15.0f, 12.0f, null, null, null, false, null, matrix, false
-        );
+        SensitivityMatrixDto matrix = SensitivityMatrixDto.builder()
+                .targetFiscalYear("FY26")
+                .epsLow(2.0f)
+                .epsAvg(4.0f)
+                .epsHigh(6.0f)
+                .build();
+        ValuationScenarioDto scenarios = ValuationScenarioDto.builder()
+                .currentSharePrice(100.0f)
+                .forwardPeFy1(15.0f)
+                .forwardPeFy2(12.0f)
+                .sensitivityMatrix(matrix)
+                .flagReverseDcfPeDivergence(false)
+                .build();
         CompanyFactSheetData factSheetData = CompanyFactSheetData.builder()
                 .valuationScenarios(scenarios)
                 .build();
@@ -393,10 +440,19 @@ class SynthesizerGuardrailServiceTest {
     @Test
     void applyGuardrails_normalEpsDispersion_doesNotCapConviction() {
         setupSpecialistScores(8.5, 8.7, 8.6);
-        SensitivityMatrix matrix = new SensitivityMatrix("FY26", 3.8f, 4.0f, 4.2f, List.of(), List.of(), null);
-        ValuationScenarioDto scenarios = new ValuationScenarioDto(
-                100.0f, 15.0f, 12.0f, null, null, null, false, null, matrix, false
-        );
+        SensitivityMatrixDto matrix = SensitivityMatrixDto.builder()
+                .targetFiscalYear("FY26")
+                .epsLow(3.8f)
+                .epsAvg(4.0f)
+                .epsHigh(4.2f)
+                .build();
+        ValuationScenarioDto scenarios = ValuationScenarioDto.builder()
+                .currentSharePrice(100.0f)
+                .forwardPeFy1(15.0f)
+                .forwardPeFy2(12.0f)
+                .sensitivityMatrix(matrix)
+                .flagReverseDcfPeDivergence(false)
+                .build();
         CompanyFactSheetData factSheetData = CompanyFactSheetData.builder()
                 .valuationScenarios(scenarios)
                 .build();

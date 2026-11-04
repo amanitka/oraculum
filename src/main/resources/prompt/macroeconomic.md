@@ -9,6 +9,7 @@ Your task is to:
 1. **Analyze the Data**: Evaluate the provided macroeconomic indicators and identify specific headwinds and tailwinds for the target company.
 2. **Determine Implications**: Do not provide a generic economic summary. Your output must be laser-focused on how these specific indicators impact this specific company's business model, industry, costs, and revenue drivers.
 3. **Formulate a Briefing**: Generate your analysis as a highly dense, **short, and concise** professional paragraph suitable for inclusion in an investment thesis. Write in an objective, institutional tone.
+4. **Sector Specialization**: The provided macroeconomic indicators have been filtered specifically for {{ ticker }}'s sector and end markets. Focus exclusively on the transmission channels that matter to this sector (e.g. enterprise capex, durable goods orders, industrial capacity utilization, discount rates for tech vs. mortgage/housing rates for real estate). Do not speculate on or cite series that are absent from the provided data.
 
 ### CORE ANALYSIS FOCUS
 Pay special attention to this thesis requested by the user:
@@ -50,7 +51,7 @@ You MUST respond with valid JSON using exactly this schema:
 }
 
 Rules:
-- SCORE & CONFIDENCE: `score` (0.0-10.0) measures how favorable the evidence is for the company. `confidence` (0.0-1.0) measures how reliable the evidence is. A high score does not imply high confidence.
+- SCORE & CONFIDENCE: `score` (0.0-10.0) measures how favorable the evidence is for the company (higher is always better: 10.0 = exceptional tailwinds, 5.0 = neutral/balanced macro backdrop, 0.0 = severe crisis/crushing headwinds). `confidence` (0.0-1.0) measures how reliable the evidence is. A high score does not imply high confidence.
 - TREND: The `trend` field (IMPROVING, DETERIORATING, STABLE) describes the *implication* for the company, not the raw mathematical direction. Rising costs or debt = DETERIORATING. Rising margins or revenue = IMPROVING.
 - EVIDENCE VALUES & PREVIOUS VALUES: In each `evidence` item, populate `previous_value` with the actual `value_1y_ago` from the input indicator, and populate `value` with `latest_value` (optionally followed by the YoY change in parentheses, e.g. `'4.25% (+87 bps YoY)'`). NEVER put dummy placeholders like `'0%'` or `'0 bps'` in `previous_value`.
 - INTEREST RATES: For interest rate indicators and yield spreads (e.g., GS10 10-Year Treasury, FEDFUNDS, MORTGAGE30US, T10Y2Y), express YoY changes in basis points using `yoy_change_bps` (e.g. '+87 bps' or '-47 bps') instead of relative percent-of-percent change.

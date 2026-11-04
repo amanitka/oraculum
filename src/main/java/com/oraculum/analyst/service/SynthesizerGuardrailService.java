@@ -8,8 +8,9 @@ import com.oraculum.analyst.api.domain.ValuationAssessment;
 import com.oraculum.analyst.api.dto.AnalysisResult;
 import com.oraculum.analyst.api.dto.AnalysisResult.ScenarioCase;
 import com.oraculum.analyst.api.dto.AnalysisResult.ScenariosResult;
-import com.oraculum.analyst.dto.ValuationScenarioDto;
-import com.oraculum.analyst.dto.ValuationScenarioDto.SensitivityMatrix;
+import com.oraculum.analyst.dto.valuation.ForwardReverseDcfDto;
+import com.oraculum.analyst.dto.valuation.SensitivityMatrixDto;
+import com.oraculum.analyst.dto.valuation.ValuationScenarioDto;
 import com.oraculum.analyst.service.valuation.DecisionSummaryCalculator;
 import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.dto.CompanyFinancialRatiosDto;
@@ -89,7 +90,10 @@ public class SynthesizerGuardrailService {
     }
 
     private AnalysisResult enforceValuationVerdictGuardrail(AnalysisResult result, AgentContext ctx) {
-        if (ctx == null || ctx.factSheetData() == null) {
+        if (ctx == null || ctx.factSheetData() == null || result.valuation() != ValuationAssessment.UNDERVALUED) {
+            return result;
+        }
+        if (isSupportedByTwoStageForwardDcf(ctx)) {
             return result;
         }
         ReverseDcfDto dcf = ctx.factSheetData().getReverseDcfResult();
@@ -100,13 +104,18 @@ public class SynthesizerGuardrailService {
         if (cells.isEmpty()) {
             return result;
         }
-        long aggressiveOrSpeculative = countAggressiveOrSpeculativeCells(cells);
-        double aggressiveRatio = (double) aggressiveOrSpeculative / cells.size();
+        double aggressiveRatio = (double) countAggressiveOrSpeculativeCells(cells) / cells.size();
+        return aggressiveRatio >= 0.70 ? adjustUndervaluedVerdict(result, aggressiveRatio) : result;
+    }
 
-        if (aggressiveRatio >= 0.70 && result.valuation() == ValuationAssessment.UNDERVALUED) {
-            return adjustUndervaluedVerdict(result, aggressiveRatio);
+    private boolean isSupportedByTwoStageForwardDcf(AgentContext ctx) {
+        ValuationScenarioDto scenarios = ctx.factSheetData().getValuationScenariosObject();
+        ForwardReverseDcfDto twoStage = scenarios != null ? scenarios.twoStageReverseDcf() : null;
+        if (twoStage == null || twoStage.relativeValuationZone() == null) {
+            return false;
         }
-        return result;
+        ValuationZone zone = twoStage.relativeValuationZone();
+        return zone == ValuationZone.FAIR || zone == ValuationZone.DEEP_DISCOUNT;
     }
 
     private long countAggressiveOrSpeculativeCells(List<ReverseDcfMatrixCellDto> cells) {
@@ -203,7 +212,7 @@ public class SynthesizerGuardrailService {
         if (scenarios == null || scenarios.sensitivityMatrix() == null) {
             return false;
         }
-        SensitivityMatrix matrix = scenarios.sensitivityMatrix();
+        SensitivityMatrixDto matrix = scenarios.sensitivityMatrix();
         Float low = matrix.epsLow();
         Float avg = matrix.epsAvg();
         Float high = matrix.epsHigh();
@@ -214,7 +223,9 @@ public class SynthesizerGuardrailService {
     }
 
     private Float extractEarningsQuality(AgentContext ctx) {
-        if (ctx.factSheetData() == null) return null;
+        if (ctx.factSheetData() == null) {
+            return null;
+        }
         List<CompanyFinancialRatiosDto> ttm = ctx.factSheetData().getCompanyFinancialRatiosList(StatementVariant.TTM);
         if (ttm != null && !ttm.isEmpty() && ttm.getFirst() != null) {
             return ttm.getFirst().earningsQualityRatio();

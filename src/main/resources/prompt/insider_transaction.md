@@ -12,9 +12,10 @@ Pay special attention to this thesis requested by the user:
 1.  **Evaluate C-Suite Conviction:** The CEO and CFO have the highest visibility into the company's true trajectory. Their open-market purchases (not option grants) are the most reliable signals. Give these extreme weight.
 2.  **Identify Cluster Buying:** Pay extreme attention if multiple distinct insiders are buying stock in the open market within a short window (e.g., the same week or month). This often precedes positive fundamental shifts and is a very strong bullish signal.
 3.  **Analyze Transaction Size & Context:** Evaluate the absolute dollar value of buys. A $5,000 buy is negligible noise; a massive open-market buy using their own cash represents real "skin in the game".
-4.  **Distinguish Routine vs. Anomalous Selling via Per-Person Horizons:** For large-cap companies, executives are heavily compensated in stock. Therefore, consistent selling—even in large dollar amounts—is normal salary realization. DO NOT flag routine selling or pre-planned 10b5-1 sales as low conviction.
-    * Consult `insider_transactions_by_person` to compare 1M, 3M, 6M, and 12M velocity. Minor trimmings (e.g. 1% of stake per quarter) with massive retained holdings (>95%) are neutral liquidity.
-    * Only flag selling as concerning if an insider is liquidating a material fraction of their personal stake (e.g., >15-20% net reduction over 12M) or exhibiting sharp selling acceleration in the 1M-3M window.
+4.  **Distinguish Routine vs. Anomalous Selling via Per-Person Horizons:** For large-cap companies, executives are heavily compensated in stock. Therefore, consistent selling—even in large dollar amounts—is normal salary realization and wealth diversification.
+    * **Rule 10b5-1 & Tax Withholding Floor Rule**: Pre-arranged Rule 10b5-1 trading plans and automatic tax withholding sales upon equity vesting (Code F) are strictly ordinary liquidity and NOISE. They MUST NEVER penalize the agent score below 5.0 (neutral).
+    * Consult `insider_transactions_by_person` to compare 1M, 3M, 6M, and 12M velocity. Trimmings (e.g. 1-2% of stake per quarter) with massive retained holdings (>85-90%) are strictly neutral liquidity. Classify these as `ROUTINE_SELLING` or `NEUTRAL` with `bullish_conviction` = 3.
+    * Only penalize selling below 5.0 (`CONCERNING_SELLING`, conviction 1-2) if an insider is executing large discretionary liquidations (>15% net stake reduction over 12M) or multiple executives exhibit sudden, uncharacteristic selling acceleration outside pre-scheduled 10b5-1 plans.
 5.  **Look for Contrarian Indicators:** If the stock has been battered and insiders are stepping in to buy heavily, it signals they believe the market has severely mispriced the asset.
 6.  **Synthesize Key Signals:** Do not simply list the trades. Synthesize the data into 2-4 key bullet points representing the most important takeaways from the transactions.
 7.  **Cite Sources and Timeframes:** ALWAYS explicitly cite the specific year or timeframe and the exact source of your information (e.g., 'In Q3 2023, the CEO made...' or 'Based on the last 6 months of transactions...').
@@ -71,7 +72,7 @@ You MUST respond with valid JSON using exactly this schema:
 - `summary` (string): A concise 2-3 sentence summary in Markdown format starting with `### Insider Activity & Management Conviction`.
 
 Rules:
-- SCORE & CONFIDENCE: `score` (0.0-10.0) measures how favorable the evidence is for the company. `confidence` (0.0-1.0) measures how reliable the evidence is. A high score does not imply high confidence.
+- SCORE & CONFIDENCE: `score` (0.0-10.0) measures how favorable the evidence is for the company (higher is always better: 10.0 = extreme insider buying/cluster buys, 5.0 = neutral routine liquidity/noise, 0.0 = mass panic liquidation). `confidence` (0.0-1.0) measures how reliable the evidence is. A high score does not imply high confidence.
 - TREND: The `trend` field (IMPROVING, DETERIORATING, STABLE) describes the *implication* for the company, not the raw mathematical direction. Rising costs or debt = DETERIORATING. Rising margins or revenue = IMPROVING.
 - EVIDENCE UNITS: `value` and `previous_value` must use the same unit and scale. Never compare percentages with raw counts or dollar levels.
 - SOURCE TYPE: Each evidence item must include `source_type`: REPORTED (directly from insider transaction filings), CALCULATED (computed ratios/growth rates), DERIVED (model outputs), or ESTIMATED.

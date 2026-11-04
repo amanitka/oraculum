@@ -21,7 +21,6 @@ import com.oraculum.company.api.dto.TickerKeyDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -29,6 +28,7 @@ import org.mockito.quality.Strictness;
 import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.LocalDate;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -36,6 +36,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -46,16 +47,10 @@ class CompanyAnalysisWorkflowServiceTest {
     private CompanyMetadataApi companyMetadataApi;
 
     @Mock
-    private AnalystProperties analystProperties;
-
-    @Mock
     private CompanyFactSheetDataService companyFactSheetDataService;
 
     @Mock
     private SecDocumentProcessingAgent secDocumentProcessingAgent;
-
-    @Mock
-    private Map<AgentType, Agent<?>> agents;
 
     @Mock
     private ApplicationEventPublisher eventPublisher;
@@ -72,18 +67,37 @@ class CompanyAnalysisWorkflowServiceTest {
     @Mock
     private SynthesizerGuardrailService synthesizerGuardrailService;
 
-    @InjectMocks
+    private Map<AgentType, Agent<?>> agents;
     private CompanyAnalysisWorkflowService workflowService;
-
     private CompanyAnalysisRequestEvent request;
 
     @BeforeEach
     void setUp() {
+        agents = new EnumMap<>(AgentType.class);
+        AnalystProperties analystProperties = new AnalystProperties(
+                null, null, null, null, null,
+                new AnalystProperties.Critic(3, 2),
+                100000
+        );
+        workflowService = new CompanyAnalysisWorkflowService(
+                companyMetadataApi,
+                analystProperties,
+                companyFactSheetDataService,
+                secDocumentProcessingAgent,
+                agents,
+                eventPublisher,
+                citationVerifierService,
+                citationManagementService,
+                dataQualityMetricsCalculator,
+                synthesizerGuardrailService
+        );
+
         when(citationVerifierService.verifyRecordCitations(any(), any(), any())).thenAnswer(inv -> inv.getArgument(0));
         when(synthesizerGuardrailService.applyGuardrails(any(), any(), any())).thenAnswer(inv -> inv.getArgument(0));
-        UUID correlationId = UUID.randomUUID();
+        when(citationManagementService.formatReportWithFootnote(any())).thenAnswer(inv -> inv.getArgument(0));
+
         request = new CompanyAnalysisRequestEvent(
-                correlationId,
+                UUID.randomUUID(),
                 1,
                 new TickerKeyDto("AAPL", "US"),
                 LocalDate.now(),
@@ -104,27 +118,23 @@ class CompanyAnalysisWorkflowServiceTest {
 
     @Test
     void run_successfulAnalysis_noReruns() {
-        CompanyDto companyDto = mock(CompanyDto.class);
+        CompanyDto companyDto = new CompanyDto(
+                1, "AAPL", "US", "Apple Inc", "TECH", "Consumer Electronics", "Technology",
+                "US0378331005", "Desc", 100000L, "USD", "0000320193", "037833100", null
+        );
         when(companyMetadataApi.getCompanyById(1)).thenReturn(companyDto);
-        when(companyFactSheetDataService.create(eq(companyDto), any())).thenReturn(mock(CompanyFactSheetData.class));
-        when(analystProperties.tokenBudget()).thenReturn(100000);
+        when(companyFactSheetDataService.create(eq(companyDto), any()))
+                .thenReturn(CompanyFactSheetData.builder().company(companyDto).build());
 
-        AnalystProperties.Critic criticProps = mock(AnalystProperties.Critic.class);
-        when(analystProperties.critic()).thenReturn(criticProps);
-        when(criticProps.maxReruns()).thenReturn(3);
-        when(criticProps.maxSpecialistsPerRerun()).thenReturn(2);
-
-        // mock critic output
         Agent<CriticAgentOutput> criticAgent = mock(Agent.class);
-        when(agents.get(AgentType.CRITIC)).thenReturn((Agent) criticAgent);
+        agents.put(AgentType.CRITIC, criticAgent);
         AgentOutput<CriticAgentOutput> criticOutput = new AgentOutput<>(
                 new CriticAgentOutput(List.of(), true, null), 100
         );
         when(criticAgent.run(any())).thenReturn(criticOutput);
 
-        // mock synthesizer output
         Agent<AnalysisResult> synthesizerAgent = mock(Agent.class);
-        when(agents.get(AgentType.SYNTHESIZER)).thenReturn((Agent) synthesizerAgent);
+        agents.put(AgentType.SYNTHESIZER, synthesizerAgent);
         AnalysisResult expectedAnalysisResult = new AnalysisResult(
                 "Report", "Reasoning", Map.of(),
                 AnalysisOutlook.BULLISH, ValuationAssessment.UNDERVALUED, 4,

@@ -36,8 +36,8 @@ public class NewsAgent implements Agent<StandardAgentOutput> {
     @Override
     public AgentOutput<StandardAgentOutput> run(AgentContext ctx) {
         log.info("NewsAgent starting analysis for ticker: {}", ctx.ticker());
-        String companyNews = ctx.factSheetData().getRecentCompanyNews(analystProperties.news().articleLimit());
-        String marketNews = ctx.factSheetData().getRecentMarketNews(analystProperties.news().marketContextLimit());
+        String companyNews = ctx.factSheetData().getRecentCompanyNews(analystProperties.news().articleLimit(), ctx.analysisDate());
+        String marketNews = ctx.factSheetData().getRecentMarketNews(analystProperties.news().marketContextLimit(), ctx.analysisDate());
         String secEx991Summary = ctx.factSheetData().getRecentSecEx991Summaries(ctx.analysisDate(), MAX_SEC_8K_AGE_DAYS);
         if (hasNoData(companyNews) && hasNoData(marketNews) && hasNoData(secEx991Summary)) {
             log.info("No recent news or SEC Exhibit 99.1 press releases found for ticker: {}. Skipping LLM execution.", ctx.ticker());

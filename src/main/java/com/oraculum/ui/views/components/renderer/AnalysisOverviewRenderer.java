@@ -145,8 +145,8 @@ public class AnalysisOverviewRenderer {
 
         normalizeFactorScores(factorScores).forEach((factor, score) -> {
             String title = SnapshotUiSupport.formatDimensionLabel(factor);
-            String badge = SnapshotUiSupport.resolveScoreBadgeLabel(score);
-            String theme = SnapshotUiSupport.resolveScoreBadgeTheme(score);
+            String badge = SnapshotUiSupport.resolveScoreBadgeLabel(factor, score);
+            String theme = SnapshotUiSupport.resolveScoreBadgeTheme(factor, score);
             grid.add(SnapshotUiSupport.createScoreCard(title, score, badge, theme));
         });
         return grid;

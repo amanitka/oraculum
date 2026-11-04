@@ -1,5 +1,6 @@
 package com.oraculum.analyst.service.valuation;
 
+import com.oraculum.analyst.dto.valuation.EpsReconciliationResult;
 import com.oraculum.company.api.dto.CompanyFinancialRatiosDto;
 import com.oraculum.harvester.api.dto.EarningsEstimateDto;
 import org.springframework.stereotype.Component;
@@ -12,8 +13,6 @@ import java.util.Locale;
 
 @Component
 public class EpsReconciliationCalculator {
-
-    public record EpsReconciliationResult(boolean divergence, String status, String note) {}
 
     public EpsReconciliationResult reconcile(
             EarningsEstimateDto fy,
@@ -29,13 +28,20 @@ public class EpsReconciliationCalculator {
         }
         LocalDate fyStart = fy.date().minusYears(1);
         List<EarningsEstimateDto> fyFutureQuarters = filterFutureQuartersForFy(futureQuarters, fyStart, fy.date());
-        List<CompanyFinancialRatiosDto> fyActualQuarters = filterActualQuartersForFy(quarterlyRatios, fyStart, fy.date(), fyFutureQuarters);
-
+        List<CompanyFinancialRatiosDto> fyActualQuarters = filterActualQuartersForFy(
+                quarterlyRatios, fyStart, fy.date(), fyFutureQuarters
+        );
         return evaluateFourQuarterReconciliation(fy.date(), fyAvg, fyActualQuarters, fyFutureQuarters);
     }
 
-    private List<EarningsEstimateDto> filterFutureQuartersForFy(List<EarningsEstimateDto> quarters, LocalDate fyStart, LocalDate fyEnd) {
-        if (quarters == null) return List.of();
+    private List<EarningsEstimateDto> filterFutureQuartersForFy(
+            List<EarningsEstimateDto> quarters,
+            LocalDate fyStart,
+            LocalDate fyEnd
+    ) {
+        if (quarters == null) {
+            return List.of();
+        }
         return quarters.stream()
                 .filter(q -> q.date() != null && q.date().isAfter(fyStart) && !q.date().isAfter(fyEnd))
                 .filter(q -> q.epsEstimateAverage() != null)
@@ -48,7 +54,9 @@ public class EpsReconciliationCalculator {
             LocalDate fyEnd,
             List<EarningsEstimateDto> futureQuarters
     ) {
-        if (quarterlyRatios == null || quarterlyRatios.isEmpty()) return List.of();
+        if (quarterlyRatios == null || quarterlyRatios.isEmpty()) {
+            return List.of();
+        }
         return quarterlyRatios.stream()
                 .filter(r -> r.reportDate() != null && r.reportDate().isAfter(fyStart) && !r.reportDate().isAfter(fyEnd))
                 .filter(r -> r.earningsPerShare() != null)

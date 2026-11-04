@@ -12,6 +12,7 @@ import com.oraculum.analyst.config.AnalystProperties;
 import com.oraculum.analyst.dto.CompanyAnalysisResult;
 import com.oraculum.analyst.dto.CompanyAnalysisWorkflowResult;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
+import com.oraculum.analyst.dto.quality.DataQualityResult;
 import com.oraculum.analyst.service.citation.CitationManagementService;
 import com.oraculum.analyst.service.citation.CitationMetrics;
 import com.oraculum.analyst.service.citation.CitationVerifierService;
@@ -89,7 +90,7 @@ public class CompanyAnalysisWorkflowService {
 
     private <T> T enrichConfidenceIfApplicable(AgentType type, T result, AgentContext ctx) {
         if (result instanceof SpecialistOutput specialist) {
-            var dq = dataQualityMetricsCalculator.calculate(type, ctx);
+            DataQualityResult dq = dataQualityMetricsCalculator.calculate(type, ctx);
             return (T) specialist.withConfidence(dq.confidenceScore(), dq.confidenceReasons());
         }
         return result;
@@ -126,19 +127,18 @@ public class CompanyAnalysisWorkflowService {
                 .build();
     }
 
-
     private void runSpecialistPhase(CompanyAnalysisRequestEvent request, AgentContext ctx) {
         List<Agent<?>> specialists = Arrays.stream(AgentType.values())
                 .filter(AgentType::isSpecialist)
                 .sorted(Comparator.comparingInt(AgentType::getExecutionOrder))
                 .map(agents::get)
-                .filter(java.util.Objects::nonNull)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
         for (Agent<?> agent : specialists) {
             log.info("Starting {} phase", agent.getName());
             eventPublisher.publishEvent(new CompanyAnalysisProgressEvent(request.correlationId(), agent.getName(), false));
-            var output = runAndVerifyAgent(agent, ctx);
+            AgentOutput<?> output = runAndVerifyAgent(agent, ctx);
 
             ctx.state().putAgentOutput(agent.getName(), output.result());
             recordTraceAndTokens(ctx, agent.getName().name(), output);
@@ -166,12 +166,10 @@ public class CompanyAnalysisWorkflowService {
             if (output.isConsistent() || rerunCount == maxReruns) {
                 break;
             }
-
             List<CriticAgentOutput.RerunInstruction> toRerun = getTopReruns(output, maxSpecialistsPerRerun);
             if (toRerun.isEmpty()) {
                 break;
             }
-
             executeSpecialistReruns(request, ctx, toRerun, rerunCount);
         }
     }
@@ -188,7 +186,12 @@ public class CompanyAnalysisWorkflowService {
                 .toList();
     }
 
-    private void executeSpecialistReruns(CompanyAnalysisRequestEvent request, AgentContext ctx, List<CriticAgentOutput.RerunInstruction> reruns, int rerunCount) {
+    private void executeSpecialistReruns(
+            CompanyAnalysisRequestEvent request,
+            AgentContext ctx,
+            List<CriticAgentOutput.RerunInstruction> reruns,
+            int rerunCount
+    ) {
         log.info("Critic triggered rerun {} for: {}", rerunCount + 1, reruns.stream().map(CriticAgentOutput.RerunInstruction::specialist).toList());
 
         Map<AgentType, String> feedbackMap = reruns.stream()
@@ -200,7 +203,7 @@ public class CompanyAnalysisWorkflowService {
             Agent<?> agent = agents.get(type);
             log.info("Re-running {} phase based on Critic feedback", type.getAgentName());
             eventPublisher.publishEvent(new CompanyAnalysisProgressEvent(request.correlationId(), type, false));
-            var output = runAndVerifyAgent(agent, ctx);
+            AgentOutput<?> output = runAndVerifyAgent(agent, ctx);
             ctx.state().putAgentOutput(type, output.result());
             recordTraceAndTokens(ctx, type.name() + "_RERUN_" + rerunCount, output);
         }
@@ -212,7 +215,7 @@ public class CompanyAnalysisWorkflowService {
         eventPublisher.publishEvent(new CompanyAnalysisProgressEvent(request.correlationId(), AgentType.SYNTHESIZER, false));
         Agent<AnalysisResult> synthesizer = (Agent<AnalysisResult>) agents.get(AgentType.SYNTHESIZER);
 
-        var output = runAndVerifyAgent(synthesizer, ctx);
+        AgentOutput<AnalysisResult> output = runAndVerifyAgent(synthesizer, ctx);
         CriticAgentOutput criticOutput = (CriticAgentOutput) ctx.state().getAgentOutput(AgentType.CRITIC);
         AnalysisResult guardedResult = synthesizerGuardrailService.applyGuardrails(output.result(), ctx, criticOutput);
 
@@ -221,7 +224,6 @@ public class CompanyAnalysisWorkflowService {
         log.info("Synthesizer phase complete. Valuation: {}", guardedResult.valuation());
         return guardedResult;
     }
-
 
     private void recordTraceAndTokens(AgentContext ctx, String key, AgentOutput<?> output) {
         ctx.state().putAgentTrace(key, output.result());
@@ -252,7 +254,12 @@ public class CompanyAnalysisWorkflowService {
                 .build();
     }
 
-    private CompanyAnalysisResult createFailureResult(CompanyAnalysisRequestEvent req, LocalDate analysisDate, Exception e, ZonedDateTime now) {
+    private CompanyAnalysisResult createFailureResult(
+            CompanyAnalysisRequestEvent req,
+            LocalDate analysisDate,
+            Exception e,
+            ZonedDateTime now
+    ) {
         return CompanyAnalysisResult.builder()
                 .correlationId(req.correlationId())
                 .ticker(req.ticker().ticker())
@@ -264,5 +271,4 @@ public class CompanyAnalysisWorkflowService {
                 .updatedAt(ZonedDateTime.now())
                 .build();
     }
-
 }

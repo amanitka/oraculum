@@ -8,18 +8,22 @@ import com.oraculum.analyst.api.dto.AnalysisResult.DecisionDriver;
 import com.oraculum.analyst.api.dto.AnalysisResult.DecisionSummary;
 import com.oraculum.analyst.api.dto.AnalysisResult.ImpliedEpsSnapshot;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
-import com.oraculum.analyst.dto.ValuationScenarioDto;
-import com.oraculum.analyst.dto.ValuationScenarioDto.ImpliedEpsEntry;
-import com.oraculum.analyst.dto.ValuationScenarioDto.ReverseDcfSummary;
-import com.oraculum.analyst.dto.ValuationScenarioDto.SensitivityMatrix;
+import com.oraculum.analyst.dto.valuation.ForwardReverseDcfDto;
+import com.oraculum.analyst.dto.valuation.ImpliedEpsEntryDto;
+import com.oraculum.analyst.dto.valuation.ReverseDcfSummaryDto;
+import com.oraculum.analyst.dto.valuation.SensitivityMatrixDto;
+import com.oraculum.analyst.dto.valuation.ValuationScenarioDto;
 import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.dto.CompanyFinancialRatiosDto;
 import com.oraculum.company.api.dto.SharePriceSignalDto;
+import com.oraculum.company.api.dto.ValuationZone;
+import com.oraculum.util.NumericUtil;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
@@ -28,42 +32,40 @@ public class DecisionSummaryCalculator {
 
     public static final double DEFAULT_THRESHOLD = 6.0;
 
-    private static Float round1(double val) {
-        return (float) (Math.round(val * 10.0) / 10.0);
-    }
-
     public DecisionSummary buildDecisionSummary(AnalysisResult result, AgentContext ctx) {
         CompanyFactSheetData factSheet = ctx != null ? ctx.factSheetData() : null;
         ValuationScenarioDto scenarios = factSheet != null ? factSheet.getValuationScenariosObject() : null;
-        ReverseDcfSummary dcfSummary = scenarios != null ? scenarios.reverseDcfSummary() : null;
+        ReverseDcfSummaryDto dcfSummary = scenarios != null ? scenarios.reverseDcfSummary() : null;
+        ForwardReverseDcfDto twoStage = scenarios != null ? scenarios.twoStageReverseDcf() : null;
         SharePriceSignalDto latestSignal = extractLatestSignal(factSheet);
         CompanyFinancialRatiosDto latestTtm = extractLatestRatio(factSheet, StatementVariant.TTM);
 
         LocalDate priceDate = latestSignal != null ? latestSignal.tradeDate() : null;
-        Integer staleness = calculateStalenessDays(priceDate, ctx != null ? ctx.analysisDate() : null);
-        Float currentPrice = resolveCurrentPrice(scenarios, latestSignal);
-        Float ttmFcfGrowthPct = (latestTtm != null && latestTtm.fcfYoyGrowth() != null)
-                ? round1(latestTtm.fcfYoyGrowth() * 100.0)
-                : null;
-        SensitivityMatrix matrix = scenarios != null ? scenarios.sensitivityMatrix() : null;
+        SensitivityMatrixDto matrix = scenarios != null ? scenarios.sensitivityMatrix() : null;
 
         return DecisionSummary.builder()
                 .businessQuality(deriveBusinessQuality(result, ctx))
-                .valuationVsExpectations(deriveValuationHurdle(dcfSummary, result))
+                .valuationVsExpectations(deriveValuationHurdle(dcfSummary, twoStage, result))
                 .methodAgreement(deriveMethodAgreement(scenarios))
                 .marketSetup(deriveMarketSetup(latestSignal, ctx))
                 .keyValuationTension(deriveKeyValuationTension(scenarios, dcfSummary))
-                .decisiveQuestion(deriveDecisiveQuestion(scenarios, dcfSummary))
-                .currentSharePrice(currentPrice)
+                .decisiveQuestion(deriveDecisiveQuestion(scenarios, dcfSummary, twoStage))
+                .currentSharePrice(resolveCurrentPrice(scenarios, latestSignal))
                 .priceDate(priceDate)
-                .priceStalenessDays(staleness)
+                .priceStalenessDays(calculateStalenessDays(priceDate, ctx != null ? ctx.analysisDate() : null))
                 .nextCatalyst(formatNextCatalyst(scenarios))
                 .requiredFcfCagrPct(dcfSummary != null ? dcfSummary.baseCaseImpliedGrowthPct() : null)
                 .historicalFcfCagrPct(dcfSummary != null ? dcfSummary.historicalFcfCagrPct() : null)
-                .ttmFcfGrowthPct(ttmFcfGrowthPct)
+                .ttmFcfGrowthPct(computeTtmFcfGrowthPct(latestTtm))
                 .targetFiscalYear(matrix != null ? matrix.targetFiscalYear() : null)
                 .impliedEpsByMultiple(mapImpliedEpsSnapshots(matrix))
                 .build();
+    }
+
+    private Float computeTtmFcfGrowthPct(CompanyFinancialRatiosDto latestTtm) {
+        return (latestTtm != null && latestTtm.fcfYoyGrowth() != null)
+                ? NumericUtil.round1(latestTtm.fcfYoyGrowth() * 100.0)
+                : null;
     }
 
     public List<DecisionDriver> buildDecisionDrivers(AgentContext ctx) {
@@ -102,26 +104,37 @@ public class DecisionSummaryCalculator {
         return "WEAK";
     }
 
-    private String deriveValuationHurdle(ReverseDcfSummary dcfSummary, AnalysisResult result) {
+    private String deriveValuationHurdle(
+            ReverseDcfSummaryDto dcfSummary,
+            ForwardReverseDcfDto twoStage,
+            AnalysisResult result
+    ) {
+        if (twoStage != null && twoStage.relativeValuationZone() != null) {
+            return mapZoneToHurdle(twoStage.relativeValuationZone().name(), null);
+        }
         if (dcfSummary != null && dcfSummary.baseCaseValuationZone() != null) {
-            String zone = dcfSummary.baseCaseValuationZone();
-            Integer aggPct = dcfSummary.aggressiveOrSpeculativeCellsPct();
-            if ("SPECULATIVE".equals(zone)) {
-                return "SPECULATIVE";
-            }
-            if ("AGGRESSIVE".equals(zone) || (aggPct != null && aggPct >= 50)) {
-                return "DEMANDING";
-            }
-            if ("DEEP_DISCOUNT".equals(zone) || "CONSERVATIVE".equals(zone)) {
-                return "LOW_HURDLE";
-            }
-            return "REASONABLE";
+            return mapZoneToHurdle(dcfSummary.baseCaseValuationZone(), dcfSummary.aggressiveOrSpeculativeCellsPct());
         }
         return fallbackValuationHurdle(result);
     }
 
+    private String mapZoneToHurdle(String zone, Integer aggPct) {
+        if ("SPECULATIVE".equals(zone)) {
+            return "SPECULATIVE";
+        }
+        if ("AGGRESSIVE".equals(zone) || (aggPct != null && aggPct >= 50)) {
+            return "DEMANDING";
+        }
+        if ("DEEP_DISCOUNT".equals(zone) || "CONSERVATIVE".equals(zone)) {
+            return "LOW_HURDLE";
+        }
+        return "REASONABLE";
+    }
+
     private String fallbackValuationHurdle(AnalysisResult result) {
-        if (result == null || result.valuation() == null) return "REASONABLE";
+        if (result == null || result.valuation() == null) {
+            return "REASONABLE";
+        }
         return switch (result.valuation()) {
             case UNDERVALUED -> "LOW_HURDLE";
             case OVERVALUED -> "DEMANDING";
@@ -149,9 +162,7 @@ public class DecisionSummaryCalculator {
         float price = signal.sharePrice();
         boolean above50 = signal.ma50() != null && price >= signal.ma50();
         boolean above200 = signal.ma200() != null && price >= signal.ma200();
-        boolean highDistDays = signal.downDaysHighVol5d() != null && signal.downDaysHighVol5d() >= 3;
-
-        if (highDistDays) {
+        if (signal.downDaysHighVol5d() != null && signal.downDaysHighVol5d() >= 3) {
             return "DISTRIBUTION_WARNING";
         }
         if (above50 && above200) {
@@ -167,11 +178,12 @@ public class DecisionSummaryCalculator {
         return "WAIT_FOR_CONFIRMATION";
     }
 
-    private String deriveKeyValuationTension(ValuationScenarioDto scenarios, ReverseDcfSummary dcfSummary) {
+    private String deriveKeyValuationTension(ValuationScenarioDto scenarios, ReverseDcfSummaryDto dcfSummary) {
         if (scenarios != null && scenarios.valuationMethodTensionNote() != null) {
             return scenarios.valuationMethodTensionNote();
         }
-        if (dcfSummary != null && dcfSummary.baseCaseImpliedGrowthPct() != null && scenarios != null && scenarios.forwardPeFy1() != null) {
+        if (dcfSummary != null && dcfSummary.baseCaseImpliedGrowthPct() != null
+                && scenarios != null && scenarios.forwardPeFy1() != null) {
             return String.format(Locale.ROOT,
                     "FY1 Forward P/E of %.1fx vs. %.1f%% 10Y FCF CAGR required by Reverse DCF (%s zone).",
                     scenarios.forwardPeFy1(),
@@ -181,7 +193,17 @@ public class DecisionSummaryCalculator {
         return null;
     }
 
-    private String deriveDecisiveQuestion(ValuationScenarioDto scenarios, ReverseDcfSummary dcfSummary) {
+    private String deriveDecisiveQuestion(
+            ValuationScenarioDto scenarios,
+            ReverseDcfSummaryDto dcfSummary,
+            ForwardReverseDcfDto twoStage
+    ) {
+        if (twoStage != null && twoStage.impliedGrowthYears3To10Pct() != null && twoStage.fy2FcfProxyUsd() != null) {
+            return String.format(Locale.ROOT,
+                    "Can the company deliver consensus FY2 FCF (~$%.1fB) and sustain ≥%.1f%% annual FCF growth in Years 3–10?",
+                    twoStage.fy2FcfProxyUsd() / 1e9,
+                    twoStage.impliedGrowthYears3To10Pct());
+        }
         if (dcfSummary != null && dcfSummary.baseCaseImpliedGrowthPct() != null) {
             return String.format(Locale.ROOT,
                     "Can free cash flow compound at ≥%.1f%% annually over 10 years while margins and working capital normalize?",
@@ -206,7 +228,7 @@ public class DecisionSummaryCalculator {
         return "Next Quarter End: " + scenarios.nextQuarterEndDate();
     }
 
-    private List<ImpliedEpsSnapshot> mapImpliedEpsSnapshots(SensitivityMatrix matrix) {
+    private List<ImpliedEpsSnapshot> mapImpliedEpsSnapshots(SensitivityMatrixDto matrix) {
         if (matrix == null || matrix.impliedEpsByMultiple() == null) {
             return List.of();
         }
@@ -215,7 +237,7 @@ public class DecisionSummaryCalculator {
                 .toList();
     }
 
-    private ImpliedEpsSnapshot toSnapshot(ImpliedEpsEntry e) {
+    private ImpliedEpsSnapshot toSnapshot(ImpliedEpsEntryDto e) {
         return new ImpliedEpsSnapshot(
                 e.multiple(),
                 e.anchorLabel(),
@@ -226,32 +248,73 @@ public class DecisionSummaryCalculator {
     }
 
     private void addFcfGrowthDriver(List<DecisionDriver> drivers, ValuationScenarioDto scenarios, CompanyFinancialRatiosDto ttm) {
-        ReverseDcfSummary dcf = scenarios != null ? scenarios.reverseDcfSummary() : null;
+        ReverseDcfSummaryDto dcf = scenarios != null ? scenarios.reverseDcfSummary() : null;
+        ForwardReverseDcfDto twoStage = scenarios != null ? scenarios.twoStageReverseDcf() : null;
+        if (twoStage != null && twoStage.impliedGrowthYears3To10Pct() != null && twoStage.relativeValuationZone() != null) {
+            addTwoStageFcfDriver(drivers, twoStage, dcf, ttm);
+            return;
+        }
         if (dcf == null || dcf.baseCaseImpliedGrowthPct() == null) {
             return;
         }
-        String current = buildCurrentFcfGrowthText(ttm, dcf);
-        String required = String.format(Locale.ROOT, "%.1f%% 10Y FCF CAGR required (%s)",
-                dcf.baseCaseImpliedGrowthPct(),
-                dcf.baseCaseValuationZone() != null ? dcf.baseCaseValuationZone() : "BASE");
-        boolean demanding = "AGGRESSIVE".equals(dcf.baseCaseValuationZone()) || "SPECULATIVE".equals(dcf.baseCaseValuationZone());
+        addSingleStageFcfDriver(drivers, dcf, ttm);
+    }
+
+    private void addTwoStageFcfDriver(
+            List<DecisionDriver> drivers,
+            ForwardReverseDcfDto twoStage,
+            ReverseDcfSummaryDto dcf,
+            CompanyFinancialRatiosDto ttm
+    ) {
+        ValuationZone zone = twoStage.relativeValuationZone();
+        boolean demanding = zone == ValuationZone.AGGRESSIVE || zone == ValuationZone.SPECULATIVE;
+        String required = String.format(Locale.ROOT, "%.1f%% Y3-10 FCF CAGR (%s) after FY2 consensus",
+                twoStage.impliedGrowthYears3To10Pct(), zone.name());
 
         drivers.add(DecisionDriver.builder()
                 .factor("Implied FCF Growth Hurdle")
                 .status(demanding ? "DEMANDING" : "SUPPORTIVE")
                 .importance("CRITICAL")
-                .currentValue(current)
+                .currentValue(buildCurrentFcfGrowthText(ttm, dcf))
                 .benchmarkOrRequired(required)
-                .whatChangesView(String.format(Locale.ROOT, "FCF YoY growth decelerates below %.1f%% for 2 consecutive quarters", dcf.baseCaseImpliedGrowthPct()))
+                .whatChangesView(String.format(Locale.ROOT,
+                        "FY1-FY2 consensus FCF cuts >15%% or post-FY2 FCF growth falls below %.1f%%",
+                        twoStage.impliedGrowthYears3To10Pct()))
                 .build());
     }
 
-    private String buildCurrentFcfGrowthText(CompanyFinancialRatiosDto ttm, ReverseDcfSummary dcf) {
-        if (ttm != null && ttm.fcfYoyGrowth() != null && dcf.historicalFcfCagrPct() != null) {
+    private void addSingleStageFcfDriver(
+            List<DecisionDriver> drivers,
+            ReverseDcfSummaryDto dcf,
+            CompanyFinancialRatiosDto ttm
+    ) {
+        String required = String.format(Locale.ROOT, "%.1f%% 10Y FCF CAGR required (%s)",
+                dcf.baseCaseImpliedGrowthPct(),
+                dcf.baseCaseValuationZone() != null ? dcf.baseCaseValuationZone() : "BASE");
+        boolean demanding = "AGGRESSIVE".equals(dcf.baseCaseValuationZone())
+                || "SPECULATIVE".equals(dcf.baseCaseValuationZone());
+
+        drivers.add(DecisionDriver.builder()
+                .factor("Implied FCF Growth Hurdle")
+                .status(demanding ? "DEMANDING" : "SUPPORTIVE")
+                .importance("CRITICAL")
+                .currentValue(buildCurrentFcfGrowthText(ttm, dcf))
+                .benchmarkOrRequired(required)
+                .whatChangesView(String.format(Locale.ROOT,
+                        "FCF YoY growth decelerates below %.1f%% for 2 consecutive quarters",
+                        dcf.baseCaseImpliedGrowthPct()))
+                .build());
+    }
+
+    private String buildCurrentFcfGrowthText(CompanyFinancialRatiosDto ttm, ReverseDcfSummaryDto dcf) {
+        if (ttm != null && ttm.fcfYoyGrowth() != null && dcf != null && dcf.historicalFcfCagrPct() != null) {
             return String.format(Locale.ROOT, "%.1f%% TTM YoY (%.1f%% 5Y CAGR)", ttm.fcfYoyGrowth() * 100.0, dcf.historicalFcfCagrPct());
         }
-        if (dcf.historicalFcfCagrPct() != null) {
+        if (dcf != null && dcf.historicalFcfCagrPct() != null) {
             return String.format(Locale.ROOT, "%.1f%% Historical FCF CAGR", dcf.historicalFcfCagrPct());
+        }
+        if (ttm != null && ttm.fcfYoyGrowth() != null) {
+            return String.format(Locale.ROOT, "%.1f%% TTM YoY", ttm.fcfYoyGrowth() * 100.0);
         }
         return "See Cash Flow tab";
     }
@@ -263,20 +326,20 @@ public class DecisionSummaryCalculator {
         String current = String.format(Locale.ROOT, "FY1 P/E %s | FY2 P/E %s",
                 scenarios.forwardPeFy1() != null ? String.format(Locale.ROOT, "%.1fx", scenarios.forwardPeFy1()) : "N/A",
                 scenarios.forwardPeFy2() != null ? String.format(Locale.ROOT, "%.1fx", scenarios.forwardPeFy2()) : "N/A");
-        String required = buildForwardPeBenchmarkText(scenarios.sensitivityMatrix());
-        boolean conflict = Boolean.TRUE.equals(scenarios.flagEpsReconciliationDivergence()) || (scenarios.forwardPeFy2() != null && scenarios.forwardPeFy2() > 30.0f);
+        boolean conflict = Boolean.TRUE.equals(scenarios.flagEpsReconciliationDivergence())
+                || (scenarios.forwardPeFy2() != null && scenarios.forwardPeFy2() > 30.0f);
 
         drivers.add(DecisionDriver.builder()
                 .factor("Forward Earnings vs. Implied EPS")
                 .status(conflict ? "WARNING" : "SUPPORTIVE")
                 .importance("CRITICAL")
                 .currentValue(current)
-                .benchmarkOrRequired(required)
+                .benchmarkOrRequired(buildForwardPeBenchmarkText(scenarios.sensitivityMatrix()))
                 .whatChangesView("Downward 90-day consensus EPS revisions or management guidance cut")
                 .build());
     }
 
-    private String buildForwardPeBenchmarkText(SensitivityMatrix matrix) {
+    private String buildForwardPeBenchmarkText(SensitivityMatrixDto matrix) {
         if (matrix != null && matrix.matrixSummary() != null && matrix.matrixSummary().breakEvenPeOnAvgEps() != null) {
             return String.format(Locale.ROOT, "Break-even P/E %.1fx on consensus EPS $%.2f",
                     matrix.matrixSummary().breakEvenPeOnAvgEps(), matrix.epsAvg());
@@ -290,7 +353,8 @@ public class DecisionSummaryCalculator {
         }
         Float ttmEq = ttm != null ? ttm.earningsQualityRatio() : null;
         Float qtrEq = qtr != null ? qtr.earningsQualityRatio() : null;
-        Float dso = qtr != null && qtr.daysSalesOutstanding() != null ? qtr.daysSalesOutstanding()
+        Float dso = qtr != null && qtr.daysSalesOutstanding() != null
+                ? qtr.daysSalesOutstanding()
                 : (ttm != null ? ttm.daysSalesOutstanding() : null);
 
         String current = String.format(Locale.ROOT, "TTM OCF/NI %s | Qtr OCF/NI %s | DSO %s",
@@ -321,11 +385,10 @@ public class DecisionSummaryCalculator {
         String current = String.format(Locale.ROOT, "TTM Payout/FCF %s | Latest Qtr %s",
                 ttmPayout != null ? String.format(Locale.ROOT, "%.1f%%", ttmPayout) : "N/A",
                 qtrPayout != null ? String.format(Locale.ROOT, "%.1f%%", qtrPayout) : "N/A");
-        String status = debtFunded ? "RISK" : (exceedsFcf ? "WARNING" : "SUPPORTIVE");
 
         drivers.add(DecisionDriver.builder()
                 .factor("Shareholder Payout & Debt Coverage")
-                .status(status)
+                .status(debtFunded ? "RISK" : (exceedsFcf ? "WARNING" : "SUPPORTIVE"))
                 .importance("MEDIUM")
                 .currentValue(current)
                 .benchmarkOrRequired("Payout ≤ 80% of organic FCF without debt funding")
@@ -340,15 +403,24 @@ public class DecisionSummaryCalculator {
     }
 
     private SharePriceSignalDto extractLatestSignal(CompanyFactSheetData factSheet) {
-        if (factSheet == null) return null;
-        List<SharePriceSignalDto> signals = factSheet.getDailySharePriceSignalsList();
-        return (signals != null && !signals.isEmpty()) ? signals.getFirst() : null;
+        if (factSheet == null) {
+            return null;
+        }
+        return factSheet.getLatestDailySignal();
     }
 
     private CompanyFinancialRatiosDto extractLatestRatio(CompanyFactSheetData factSheet, StatementVariant variant) {
-        if (factSheet == null) return null;
+        if (factSheet == null) {
+            return null;
+        }
         List<CompanyFinancialRatiosDto> list = factSheet.getCompanyFinancialRatiosList(variant);
-        return (list != null && !list.isEmpty()) ? list.getFirst() : null;
+        if (list == null || list.isEmpty()) {
+            return null;
+        }
+        return list.stream()
+                .filter(r -> r != null && r.reportDate() != null)
+                .max(Comparator.comparing(CompanyFinancialRatiosDto::reportDate))
+                .orElse(list.getFirst());
     }
 
     private Float resolveCurrentPrice(ValuationScenarioDto scenarios, SharePriceSignalDto signal) {
@@ -362,8 +434,7 @@ public class DecisionSummaryCalculator {
         if (priceDate == null || analysisDate == null) {
             return null;
         }
-        long days = ChronoUnit.DAYS.between(priceDate, analysisDate);
-        return (int) Math.max(0, days);
+        return (int) Math.max(0, ChronoUnit.DAYS.between(priceDate, analysisDate));
     }
 
     private Double resolveAgentScore(AnalysisResult result, AgentContext ctx, String factorKey, AgentType type) {

@@ -9,15 +9,17 @@ import com.oraculum.analyst.api.dto.AnalysisResult;
 import com.oraculum.analyst.api.dto.AnalysisResult.DecisionDriver;
 import com.oraculum.analyst.api.dto.AnalysisResult.DecisionSummary;
 import com.oraculum.analyst.dto.CompanyFactSheetData;
-import com.oraculum.analyst.dto.ValuationScenarioDto;
-import com.oraculum.analyst.dto.ValuationScenarioDto.ImpliedEpsEntry;
-import com.oraculum.analyst.dto.ValuationScenarioDto.MatrixSummary;
-import com.oraculum.analyst.dto.ValuationScenarioDto.MultipleAnchor;
-import com.oraculum.analyst.dto.ValuationScenarioDto.ReverseDcfSummary;
-import com.oraculum.analyst.dto.ValuationScenarioDto.SensitivityMatrix;
+import com.oraculum.analyst.dto.valuation.ForwardReverseDcfDto;
+import com.oraculum.analyst.dto.valuation.ImpliedEpsEntryDto;
+import com.oraculum.analyst.dto.valuation.MatrixSummaryDto;
+import com.oraculum.analyst.dto.valuation.MultipleAnchorDto;
+import com.oraculum.analyst.dto.valuation.ReverseDcfSummaryDto;
+import com.oraculum.analyst.dto.valuation.SensitivityMatrixDto;
+import com.oraculum.analyst.dto.valuation.ValuationScenarioDto;
 import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.dto.CompanyFinancialRatiosDto;
 import com.oraculum.company.api.dto.SharePriceSignalDto;
+import com.oraculum.company.api.dto.ValuationZone;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -44,24 +46,55 @@ class DecisionSummaryCalculatorTest {
         state.putAgentOutput(AgentType.CASH_FLOW, StandardAgentOutput.builder().score(7.8).build());
         state.putAgentOutput(AgentType.SHARE_PRICE, StandardAgentOutput.builder().score(6.5).build());
 
-        ReverseDcfSummary dcfSummary = new ReverseDcfSummary(
-                16.68f, "AGGRESSIVE", 9.5f, 22.0f, 18.5f, 88, 83.1f
-        );
-        SensitivityMatrix matrix = new SensitivityMatrix(
-                "2028-01-31", 12.85f, 15.91f, 18.75f,
-                List.of(20.1f, 25.0f, 29.2f),
-                List.of(new MultipleAnchor(25.0f, "10Y Historical Min P/E (25.0x)")),
-                List.of(new ImpliedEpsEntry(25.0f, "10Y Historical Min P/E (25.0x)", 8.44f, 15.91f, 88.5f)),
-                new MatrixSummary(-23.6f, 160.2f, 88.6f, 25.0f, 397.75f, 88.5f, 13.26f),
-                List.of(),
-                "Disclaimer"
-        );
-        ValuationScenarioDto scenarios = new ValuationScenarioDto(
-                210.96f, 22.66f, 13.26f,
-                LocalDate.of(2026, 10, 31), 2.47f, 65000.0f,
-                false, "GAAP_NON_GAAP_BASIS_DIFF", "Basis diff note",
-                matrix, dcfSummary, true, "METHOD CONFLICT: P/E 22.7x vs AGGRESSIVE DCF"
-        );
+        ReverseDcfSummaryDto dcfSummary = ReverseDcfSummaryDto.builder()
+                .baseCaseImpliedGrowthPct(16.68f)
+                .baseCaseValuationZone("AGGRESSIVE")
+                .minImpliedGrowthPct(9.5f)
+                .maxImpliedGrowthPct(22.0f)
+                .medianImpliedGrowthPct(18.5f)
+                .aggressiveOrSpeculativeCellsPct(88)
+                .historicalFcfCagrPct(83.1f)
+                .build();
+        SensitivityMatrixDto matrix = SensitivityMatrixDto.builder()
+                .targetFiscalYear("2028-01-31")
+                .epsLow(12.85f)
+                .epsAvg(15.91f)
+                .epsHigh(18.75f)
+                .referenceMultiples(List.of(20.1f, 25.0f, 29.2f))
+                .multipleAnchors(List.of(new MultipleAnchorDto(25.0f, "10Y Historical Min P/E (25.0x)")))
+                .impliedEpsByMultiple(List.of(ImpliedEpsEntryDto.builder()
+                        .multiple(25.0f)
+                        .anchorLabel("10Y Historical Min P/E (25.0x)")
+                        .requiredEpsForCurrentPrice(8.44f)
+                        .consensusEpsAvg(15.91f)
+                        .consensusVsRequiredPct(88.5f)
+                        .build()))
+                .matrixSummary(MatrixSummaryDto.builder()
+                        .minPctMove(-23.6f)
+                        .maxPctMove(160.2f)
+                        .medianPctMove(88.6f)
+                        .baseCaseMultiple(25.0f)
+                        .baseCaseImpliedPrice(397.75f)
+                        .baseCasePctMove(88.5f)
+                        .breakEvenPeOnAvgEps(13.26f)
+                        .build())
+                .disclaimer("Disclaimer")
+                .build();
+        ValuationScenarioDto scenarios = ValuationScenarioDto.builder()
+                .currentSharePrice(210.96f)
+                .forwardPeFy1(22.66f)
+                .forwardPeFy2(13.26f)
+                .nextQuarterEndDate(LocalDate.of(2026, 10, 31))
+                .nextQuarterEpsConsensus(2.47f)
+                .nextQuarterRevenueConsensus(65000.0f)
+                .flagEpsReconciliationDivergence(false)
+                .epsReconciliationStatus("GAAP_NON_GAAP_BASIS_DIFF")
+                .epsReconciliationNote("Basis diff note")
+                .sensitivityMatrix(matrix)
+                .reverseDcfSummary(dcfSummary)
+                .flagReverseDcfPeDivergence(true)
+                .valuationMethodTensionNote("METHOD CONFLICT: P/E 22.7x vs AGGRESSIVE DCF")
+                .build();
         SharePriceSignalDto signal = createSignal(LocalDate.of(2026, 10, 23), 210.96f, 215.0f, 185.0f, 1);
         CompanyFinancialRatiosDto ttm = createRatio(StatementVariant.TTM, 0.765f, 0.99f, 56.1f, 48.8f, 0, 0);
 
@@ -84,10 +117,10 @@ class DecisionSummaryCalculatorTest {
         DecisionSummary summary = calculator.buildDecisionSummary(rawResult, ctx);
 
         assertThat(summary).isNotNull();
-        assertThat(summary.businessQuality()).isEqualTo("EXCEPTIONAL"); // avg(9.2, 7.8) = 8.5 >= 8.0
+        assertThat(summary.businessQuality()).isEqualTo("EXCEPTIONAL");
         assertThat(summary.valuationVsExpectations()).isEqualTo("DEMANDING");
         assertThat(summary.methodAgreement()).isEqualTo("CONFLICTING_PEAK_MARGIN_RISK");
-        assertThat(summary.marketSetup()).isEqualTo("PULLBACK_IN_UPTREND"); // below MA50 (215), above MA200 (185)
+        assertThat(summary.marketSetup()).isEqualTo("PULLBACK_IN_UPTREND");
         assertThat(summary.priceDate()).isEqualTo(LocalDate.of(2026, 10, 23));
         assertThat(summary.priceStalenessDays()).isEqualTo(5);
         assertThat(summary.requiredFcfCagrPct()).isEqualTo(16.68f);
@@ -97,16 +130,69 @@ class DecisionSummaryCalculatorTest {
     }
 
     @Test
+    void buildDecisionSummaryAndDrivers_whenTwoStageDcfIsFair_resolvesHurdleToReasonableAndSupportive() {
+        ReverseDcfSummaryDto dcfSummary = ReverseDcfSummaryDto.builder()
+                .baseCaseImpliedGrowthPct(16.68f)
+                .baseCaseValuationZone("AGGRESSIVE")
+                .aggressiveOrSpeculativeCellsPct(100)
+                .historicalFcfCagrPct(83.1f)
+                .build();
+        ForwardReverseDcfDto twoStage = ForwardReverseDcfDto.builder()
+                .fy2FcfProxyUsd(145_000_000_000.0)
+                .impliedGrowthYears3To10Pct(7.2f)
+                .relativeValuationZone(ValuationZone.FAIR)
+                .build();
+        ValuationScenarioDto scenarios = ValuationScenarioDto.builder()
+                .currentSharePrice(210.96f)
+                .forwardPeFy1(22.66f)
+                .reverseDcfSummary(dcfSummary)
+                .twoStageReverseDcf(twoStage)
+                .flagReverseDcfPeDivergence(false)
+                .build();
+        CompanyFinancialRatiosDto ttm = createRatio(StatementVariant.TTM, 0.765f, 0.99f, 56.1f, 48.8f, 0, 0);
+
+        CompanyFactSheetData factSheet = CompanyFactSheetData.builder()
+                .valuationScenarios(scenarios)
+                .companyFinancialRatios(Map.of(StatementVariant.TTM, List.of(ttm)))
+                .build();
+
+        AgentContext ctx = AgentContext.builder()
+                .factSheetData(factSheet)
+                .state(state)
+                .build();
+
+        DecisionSummary summary = calculator.buildDecisionSummary(
+                AnalysisResult.builder().valuation(ValuationAssessment.UNDERVALUED).build(), ctx
+        );
+        List<DecisionDriver> drivers = calculator.buildDecisionDrivers(ctx);
+
+        assertThat(summary.valuationVsExpectations()).isEqualTo("REASONABLE");
+        assertThat(summary.decisiveQuestion()).contains("$145.0B").contains("7.2%");
+        assertThat(drivers.getFirst().factor()).isEqualTo("Implied FCF Growth Hurdle");
+        assertThat(drivers.getFirst().status()).isEqualTo("SUPPORTIVE");
+        assertThat(drivers.getFirst().benchmarkOrRequired()).contains("7.2% Y3-10 FCF CAGR (FAIR)");
+    }
+
+    @Test
     void buildDecisionDrivers_createsStructuredDriversWithTrafficLightStatuses() {
-        ReverseDcfSummary dcfSummary = new ReverseDcfSummary(
-                16.68f, "AGGRESSIVE", 9.5f, 22.0f, 18.5f, 88, 83.1f
-        );
-        ValuationScenarioDto scenarios = new ValuationScenarioDto(
-                210.96f, 22.66f, 13.26f,
-                LocalDate.of(2026, 10, 31), 2.47f, null,
-                false, "ALIGNED", null,
-                null, dcfSummary, true, "METHOD CONFLICT"
-        );
+        ReverseDcfSummaryDto dcfSummary = ReverseDcfSummaryDto.builder()
+                .baseCaseImpliedGrowthPct(16.68f)
+                .baseCaseValuationZone("AGGRESSIVE")
+                .aggressiveOrSpeculativeCellsPct(88)
+                .historicalFcfCagrPct(83.1f)
+                .build();
+        ValuationScenarioDto scenarios = ValuationScenarioDto.builder()
+                .currentSharePrice(210.96f)
+                .forwardPeFy1(22.66f)
+                .forwardPeFy2(13.26f)
+                .nextQuarterEndDate(LocalDate.of(2026, 10, 31))
+                .nextQuarterEpsConsensus(2.47f)
+                .flagEpsReconciliationDivergence(false)
+                .epsReconciliationStatus("ALIGNED")
+                .reverseDcfSummary(dcfSummary)
+                .flagReverseDcfPeDivergence(true)
+                .valuationMethodTensionNote("METHOD CONFLICT")
+                .build();
         CompanyFinancialRatiosDto ttm = createRatio(StatementVariant.TTM, 0.765f, 0.99f, 56.1f, 48.8f, 0, 0);
         CompanyFinancialRatiosDto qtr = createRatio(StatementVariant.QUARTERLY, 0.50f, 0.40f, 62.2f, 120.8f, 1, 1);
 
@@ -131,9 +217,9 @@ class DecisionSummaryCalculatorTest {
         assertThat(drivers.get(1).factor()).isEqualTo("Forward Earnings vs. Implied EPS");
         assertThat(drivers.get(1).status()).isEqualTo("SUPPORTIVE");
         assertThat(drivers.get(2).factor()).isEqualTo("Cash Conversion & Working Capital (DSO)");
-        assertThat(drivers.get(2).status()).isEqualTo("WARNING"); // Qtr OCF/NI 0.40 < 0.70
+        assertThat(drivers.get(2).status()).isEqualTo("WARNING");
         assertThat(drivers.get(3).factor()).isEqualTo("Shareholder Payout & Debt Coverage");
-        assertThat(drivers.get(3).status()).isEqualTo("RISK"); // Qtr flagDebtFundedPayout == 1
+        assertThat(drivers.get(3).status()).isEqualTo("RISK");
     }
 
     private SharePriceSignalDto createSignal(

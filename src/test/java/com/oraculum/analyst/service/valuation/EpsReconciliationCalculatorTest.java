@@ -1,6 +1,6 @@
 package com.oraculum.analyst.service.valuation;
 
-import com.oraculum.analyst.service.valuation.EpsReconciliationCalculator.EpsReconciliationResult;
+import com.oraculum.analyst.dto.valuation.EpsReconciliationResult;
 import com.oraculum.company.api.domain.StatementVariant;
 import com.oraculum.company.api.dto.CompanyFinancialRatiosDto;
 import com.oraculum.harvester.api.dto.EarningsEstimateDto;
@@ -55,7 +55,7 @@ class EpsReconciliationCalculatorTest {
                 createEstimate("quarter", LocalDate.of(2026, 6, 30), 2.50),
                 createEstimate("quarter", LocalDate.of(2026, 9, 30), 2.55),
                 createEstimate("quarter", LocalDate.of(2026, 12, 31), 2.60)
-        ); // sum = 10.10 (+1.0% diff)
+        );
 
         EpsReconciliationResult result = calculator.reconcile(fy, quarters, List.of());
 
@@ -74,7 +74,7 @@ class EpsReconciliationCalculatorTest {
         List<CompanyFinancialRatiosDto> actuals = List.of(
                 createQuarterlyRatio(LocalDate.of(2026, 4, 30), 1.59f),
                 createQuarterlyRatio(LocalDate.of(2026, 7, 31), 1.65f)
-        ); // combined = 8.46 vs 9.31 -> 9.1% diff (<= 15%)
+        );
 
         EpsReconciliationResult result = calculator.reconcile(fy, estimates, actuals);
 
@@ -94,7 +94,7 @@ class EpsReconciliationCalculatorTest {
                 createEstimate("quarter", LocalDate.of(2026, 6, 30), 1.8),
                 createEstimate("quarter", LocalDate.of(2026, 9, 30), 1.8),
                 createEstimate("quarter", LocalDate.of(2026, 12, 31), 1.8)
-        ); // sum = 7.2 vs 10.0 -> 28% diff (> 15%)
+        );
 
         EpsReconciliationResult result = calculator.reconcile(fy, quarters, List.of());
 

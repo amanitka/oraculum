@@ -7,6 +7,8 @@ import com.oraculum.analyst.agent.service.Agent;
 import com.oraculum.analyst.api.domain.AgentType;
 import com.oraculum.analyst.config.PromptRegistry;
 import com.oraculum.analyst.domain.PromptType;
+import com.oraculum.analyst.service.macro.SectorMacroIndicatorPolicy;
+import com.oraculum.economy.api.domain.MacroIndicator;
 import com.oraculum.llm.api.LlmCallRequest;
 import com.oraculum.llm.api.LlmRouterApi;
 import com.oraculum.llm.api.dto.CorrelationType;
@@ -16,6 +18,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.Set;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -23,6 +27,7 @@ public class MacroeconomicAgent implements Agent<StandardAgentOutput> {
 
     private final LlmRouterApi llmRouterApi;
     private final PromptRegistry promptRegistry;
+    private final SectorMacroIndicatorPolicy sectorMacroIndicatorPolicy;
 
     @Override
     public AgentType getName() {
@@ -47,13 +52,13 @@ public class MacroeconomicAgent implements Agent<StandardAgentOutput> {
     @Override
     public AgentOutput<StandardAgentOutput> run(AgentContext ctx) {
         log.info("MacroeconomicAgent starting analysis for ticker: {}", ctx.ticker());
-        String macroeconomicSummary = ctx.factSheetData().getMacroeconomicSummary();
+        String macroeconomicSummary = getSectorMacroSummary(ctx);
         if ("[]".equals(macroeconomicSummary)) {
             log.warn("No macroeconomic data found for ticker: {}", ctx.ticker());
             return getDefaultOutput();
         }
 
-        String prompt = getPrompt(ctx, macroeconomicSummary);
+        String prompt = appendCriticFeedbackIfPresent(getPrompt(ctx, macroeconomicSummary), ctx);
         LlmResponse<StandardAgentOutput> response = llmRouterApi.executeCall(
                 LlmCallRequest.of(
                         LlmTierType.STANDARD,
@@ -66,5 +71,11 @@ public class MacroeconomicAgent implements Agent<StandardAgentOutput> {
 
         log.info("MacroeconomicAgent successfully generated summary for ticker: {}", ctx.ticker());
         return new AgentOutput<>(response.result(), response.metrics().totalTokens());
+    }
+
+    private String getSectorMacroSummary(AgentContext ctx) {
+        String sector = ctx.company() != null ? ctx.company().sectorName() : null;
+        Set<MacroIndicator> relevantIndicators = sectorMacroIndicatorPolicy.getRelevantIndicators(sector);
+        return ctx.factSheetData().getMacroeconomicSummary(relevantIndicators);
     }
 }

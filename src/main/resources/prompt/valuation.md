@@ -20,14 +20,19 @@ Your task is to evaluate valuation across three distinct analytical lenses:
 - Use the latest ratios from `daily_share_price_signals` for current P/E, P/S, P/FCF, EV/EBITDA.
 - Compare valuation multiples against growth rates and benchmark margins, returns, and multiples against `industry_ratios` medians.
 
-#### Lens 3: Intrinsic Valuation (reverse DCF sanity check)
-- Use `reverse_dcf` to state clearly: "At today's price, the market implies X% annual FCF growth for 10 years (base case 10% discount, 3% terminal), compared to the historical FCF CAGR of Y%."
-- Review `reverse_dcf.sensitivity_matrix` across the 8–12% discount and 2–4% terminal rate spectrum to evaluate the range of implied growth (from deep discount to speculative) and whether the hurdle remains favorable under more demanding cost of capital assumptions.
-- Assess whether implied growth is realistic, aggressive, or conservative given competitive position.
+#### Lens 3: Intrinsic Valuation (Reverse DCF & Two-Stage Forward DCF)
+- Use `reverse_dcf` to state clearly the baseline single-stage TTM implied growth: "At today's price, the single-stage model implies X% annual FCF growth for 10 years (base case 10% discount, 3% terminal), compared to historical FCF CAGR of Y%."
+- When `valuation_scenarios.two_stage_reverse_dcf` is present, explicitly analyze the **Two-Stage Forward Reverse DCF**:
+  - Highlight what growth is implied in Years 3–10 (`implied_growth_years_3_to_10_pct`) AFTER achieving consensus FY1 stub and FY2 forward FCF (`fcf_proxy_derivation_method`, `fy1_fcf_proxy_usd`, `fy2_fcf_proxy_usd`).
+  - Frame the narrative clearly: e.g., "If the company delivers consensus FY2 FCF, the market only requires ~Z% CAGR in Years 3–10 (`relative_valuation_zone`). Thus, the key valuation risk is meeting near-term forward consensus, rather than maintaining 10-year perpetual hypergrowth."
+  - If `flag_fcf_proxy_divergence` is true, note that revenue-based and earnings-based forward FCF proxies diverged by >30%, indicating working capital or margin uncertainty.
+- Review `reverse_dcf.sensitivity_matrix` across the 8–12% discount and 2–4% terminal rate spectrum to evaluate the range of implied growth.
 
-#### Lens 4: Forward Scenarios & Consensus Reconciliations
-- Cross-reference `reverse_dcf` with `valuation_scenarios` (`forward_pe_fy1`, `forward_pe_fy2`, `reverse_dcf_summary`, `sensitivity_matrix.matrix_summary`, and `sensitivity_matrix.implied_eps_by_multiple` which maps what FY2 EPS today's price requires at each anchored P/E multiple versus consensus `eps_avg`).
-- Check `eps_reconciliation_status`: if `ALIGNED` or `GAAP_NON_GAAP_BASIS_DIFF`, treat Forward P/E as reliable (noting GAAP vs non-GAAP basis if applicable); only treat Forward P/E with caution if `MATERIAL_DIVERGENCE`.
+#### Lens 4: Forward Scenarios, Operating Earnings & Discounted Sensitivity
+- Cross-reference with `valuation_scenarios` (`forward_pe_fy1`, `forward_pe_fy2`, `reverse_dcf_summary`, and `sensitivity_matrix`).
+- **Operating vs. Reported Earnings**: Inspect `valuation_scenarios.operating_earnings_summary`. If `flag_high_non_operating_income` is true (non-operating income > 10% of EBT), explicitly state both reported GAAP P/E (`gaap_pe`) and `operating_pe`. Warn that trailing P/E is flattered (or penalized) by non-operating investment gains/losses.
+- **Present Value Discounted Scenarios**: When referencing implied stock prices or percentage moves in `sensitivity_matrix`, prefer the present-value discounted values (`discounted_implied_price`, `discounted_pct_move_vs_current`, and `matrix_summary.discounted_base_case_pct_move`), which discount future target-year values back to today at the cost of capital.
+- Check `eps_reconciliation_status`: if `ALIGNED` or `GAAP_NON_GAAP_BASIS_DIFF`, treat Forward P/E as reliable; only treat Forward P/E with caution if `MATERIAL_DIVERGENCE`.
 - Check `flag_reverse_dcf_pe_divergence` and `valuation_method_tension_note`: if true, explicitly highlight the tension that the market prices demanding multi-year FCF growth in Reverse DCF while near-term Forward P/E or historical P/E percentiles appear moderate.
 
 #### Synthesis
@@ -46,10 +51,11 @@ Derive your `score` using this weighted framework:
 - Macro impact (10%): Favorable rate environment for valuation multiples = 8-10, neutral = 5-7, hostile = 0-4
 
 #### HARD SCORING CONSTRAINTS (Reverse DCF Hurdle Alignment)
-Your final `score` MUST be consistent with the pre-computed `reverse_dcf.sensitivity_matrix` base case:
-- If `valuation_zone` is **AGGRESSIVE** (implied FCF CAGR is high / demanding): Your final `score` **MUST NOT exceed 6.8** (recommended range 5.0 - 6.8). Even if trailing multiples appear low or in single-digit percentiles, priced-in future expectations require aggressive execution, so the valuation cannot be rated attractive (score >= 7.0).
-- If `valuation_zone` is **SPECULATIVE** (implied FCF CAGR is extreme / unrealistic): Your final `score` **MUST NOT exceed 4.9** (range 1.0 - 4.9).
-- If `valuation_zone` is **REALISTIC** or **CONSERVATIVE**: Your score may range from 7.0 to 10.0 if multiples and peer comparison also justify an attractive valuation.
+Your final `score` MUST be consistent with the effective Reverse DCF hurdle (`valuation_scenarios.two_stage_reverse_dcf.relative_valuation_zone` when present, otherwise `reverse_dcf.sensitivity_matrix` base case `valuation_zone`):
+- If `two_stage_reverse_dcf` is present and its `relative_valuation_zone` is **FAIR** or **DEEP_DISCOUNT**, your score MAY exceed 6.8 (range 7.0 - 10.0) when forward multiples, peer comparison, and business quality justify an attractive valuation, even if trailing single-stage TTM DCF appears `AGGRESSIVE`.
+- If the effective zone is **AGGRESSIVE** (both trailing and two-stage forward DCF are demanding, or two-stage is unavailable and trailing is `AGGRESSIVE`): Your final `score` **MUST NOT exceed 6.8** (recommended range 5.0 - 6.8). Even if trailing multiples appear low or in single-digit percentiles, priced-in future expectations require aggressive execution, so the valuation cannot be rated attractive (score >= 7.0).
+- If the effective zone is **SPECULATIVE** (implied FCF CAGR is extreme / unrealistic): Your final `score` **MUST NOT exceed 4.9** (range 1.0 - 4.9).
+- If the effective zone is **FAIR** or **DEEP_DISCOUNT**: Your score may range from 7.0 to 10.0 if multiples and peer comparison also justify an attractive valuation.
 - PRESENTATION RULE: NEVER mention internal prompt rules, scoring constraints, or score caps in user-facing text (e.g. do NOT write "capping the score at 6.8" or "constrained by rule" in your headline, summary, or evidence). State the economic reality directly (e.g. "Valuation is constrained by demanding implied FCF growth requirements despite reasonable trailing multiples").
 
 ### Canonical Facts (authoritative — do not recompute)
@@ -93,7 +99,7 @@ You MUST respond with valid JSON using exactly this schema:
 }
 
 Rules:
-- SCORE & CONFIDENCE: `score` (0.0-10.0) measures how favorable the valuation is for an investor. A high score does not imply high confidence. You MUST strictly respect the HARD SCORING CONSTRAINTS regarding Reverse DCF valuation zones (if base case is AGGRESSIVE, score MUST NOT exceed 6.8; if SPECULATIVE, score MUST NOT exceed 4.9).
+- SCORE & CONFIDENCE: `score` (0.0-10.0) measures how favorable the valuation is for an investor. A high score does not imply high confidence. You MUST strictly respect the HARD SCORING CONSTRAINTS regarding effective Reverse DCF valuation zones (if effective zone is AGGRESSIVE, score MUST NOT exceed 6.8; if SPECULATIVE, score MUST NOT exceed 4.9).
 - TREND: The `trend` field (IMPROVING, DETERIORATING, STABLE) describes the *implication* for the company, not the raw mathematical direction. Rising costs or debt = DETERIORATING. Rising margins or revenue = IMPROVING.
 - EVIDENCE UNITS: `value` and `previous_value` must use the same unit and scale. Never compare percentages or multiples with raw dollar or index values.
 - SOURCE TYPE: Each evidence item must include `source_type`: REPORTED (directly from financial statements), CALCULATED (computed ratios/growth rates), DERIVED (model outputs like reverse DCF), or ESTIMATED (forward analyst consensus).

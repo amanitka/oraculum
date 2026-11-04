@@ -1,9 +1,11 @@
 package com.oraculum.company.api.dto;
 
 import com.oraculum.company.domain.SharePriceSignalEntity;
+import lombok.Builder;
 
 import java.time.LocalDate;
 
+@Builder(toBuilder = true)
 public record SharePriceSignalDto(
         LocalDate tradeDate,
         int companyId,
