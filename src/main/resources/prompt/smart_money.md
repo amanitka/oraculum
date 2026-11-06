@@ -29,10 +29,10 @@ Pay special attention to this thesis requested by the user:
 4. **Options & Derivative Sentiment:** Evaluate the `put_call_ratio`. A P/C ratio < 0.70 reflects heavily bullish call positioning, 0.70–1.0 is neutral/mild, and > 1.20 indicates substantial defensive hedging or bearish positioning.
 5. **Multi-Quarter Trend:** Check whether institutional accumulation is accelerating, decelerating, or reversing QoQ.
 6. **Cite Sources and Quarters:** ALWAYS explicitly cite the specific reporting period (e.g., 'In Q2 2026, Tier 1 superinvestors added...') and specific funds.
-7. **Data Gap & Incomplete Filer Sample:** If `flag_incomplete_filer_sample` is true:
-   - Do NOT interpret missing institutional shares as a genuine mass liquidation or bearish exit.
-   - You MUST reduce `data` confidence to <= 0.70.
-   - In `confidence_reasons` and `summary`, explicitly state that 13F reporting for the period is incomplete due to delayed or missing filings from one or more major prior institutional holders.
+7. **Data Gap & Incomplete Filer Sample:** If `flag_incomplete_filer_sample` is true for a quarter (meaning either that quarter or its prior comparison quarter had a missing top-10 filer):
+   - Do NOT interpret QoQ deltas (`net_shares_change`, `shares_change_pct`, `capital_flow_usd`, or `net_value_change_usd`) in any quarter with `flag_incomplete_filer_sample = true` as genuine institutional accumulation or liquidation, because the QoQ difference is distorted by a major filer dropping out in $T-1$ or reappearing in $T$.
+   - Focus instead on absolute holdings levels in complete quarters, Tier 1 superinvestor activity, and options positioning.
+   - In `confidence_reasons` and `summary`, explicitly state that 13F QoQ comparisons are affected by an incomplete filer sample.
 8. **Capital Flow vs. Price Valuation Effect:** When assessing sector rotation or institutional accumulation, prioritize `capital_flow_usd` and `net_shares_change`. If portfolio value changed solely due to equity price appreciation (`price_valuation_effect_usd`) while share changes were flat or negative, do not report it as institutional buying or capital inflow.
 
 ### SIGNAL WEIGHTING HIERARCHY (strongest to weakest)

@@ -6,12 +6,23 @@ import com.oraculum.analyst.agent.dto.CriticAgentOutput.CorrectionType;
 import com.oraculum.analyst.agent.dto.CriticAgentOutput.Resolution;
 import com.oraculum.analyst.agent.dto.StandardAgentOutput;
 import com.oraculum.analyst.api.domain.AgentType;
+import com.oraculum.analyst.dto.valuation.ForwardReverseDcfDto;
+import com.oraculum.analyst.dto.valuation.ValuationScenarioDto;
 import com.oraculum.company.api.domain.StatementVariant;
-import com.oraculum.company.api.dto.*;
+import com.oraculum.company.api.dto.CompanyFinancialRatiosDto;
+import com.oraculum.company.api.dto.CompanyInstitutionalFlowDto;
+import com.oraculum.company.api.dto.ReverseDcfDto;
+import com.oraculum.company.api.dto.ReverseDcfMatrixCellDto;
+import com.oraculum.company.api.dto.SharePriceSignalDto;
+import com.oraculum.company.api.dto.ValuationZone;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -23,11 +34,19 @@ public class PreCriticValidationService {
         checkFiscalYearCalendarAlignment(ctx, findings);
         checkSmartMoneyAttribution(ctx, findings);
         checkMarginExpansionSignalAlignment(ctx, findings);
+        checkDeathCrossMisnomer(ctx, findings);
         return findings;
     }
 
     private void checkDcfAgainstValuationScore(AgentContext ctx, List<Contradiction> findings) {
         if (ctx.factSheetData() == null) {
+            return;
+        }
+        ValuationScenarioDto scenarios = ctx.factSheetData().getValuationScenariosObject();
+        ForwardReverseDcfDto twoStage = scenarios != null ? scenarios.twoStageReverseDcf() : null;
+        if (twoStage != null && (twoStage.relativeValuationZone() == ValuationZone.FAIR
+                || twoStage.relativeValuationZone() == ValuationZone.DEEP_DISCOUNT)
+                && !Boolean.TRUE.equals(twoStage.flagFcfProxyDivergence())) {
             return;
         }
         ReverseDcfDto dcf = ctx.factSheetData().getReverseDcfResult();
@@ -57,6 +76,7 @@ public class PreCriticValidationService {
         }
         if (valOutput.score() >= 7.0) {
             String desc = String.format(
+                    Locale.ROOT,
                     "Valuation agent assigned high score (%.1f) and attractive stance despite Reverse DCF baseline requiring %.1f%% FCF growth (%s zone).",
                     valOutput.score(),
                     cell.impliedFcfGrowthPct(),
@@ -88,6 +108,7 @@ public class PreCriticValidationService {
         }
         if (latest.reportDate().getYear() != latest.fiscalYear()) {
             String desc = String.format(
+                    Locale.ROOT,
                     "Fiscal calendar shift: Financial statements use fiscal year FY%d for period ending %s (calendar year %d). Unify to calendar-anchored dates.",
                     latest.fiscalYear(),
                     latest.reportDate(),
@@ -122,9 +143,11 @@ public class PreCriticValidationService {
     }
 
     private void verifyIncompleteSampleHandling(StandardAgentOutput smOutput, List<Contradiction> findings) {
-        if (smOutput.confidence() != null && smOutput.confidence().data() != null && smOutput.confidence().data() > 0.75f) {
+        if (smOutput.confidence() != null
+                && smOutput.confidence().interpretation() != null
+                && smOutput.confidence().interpretation() > 0.80) {
             findings.add(new Contradiction(
-                    "Smart Money agent reports high data confidence (>0.75) despite flag_incomplete_filer_sample indicating delayed or missing 13F filings from major institutional holders.",
+                    "Smart Money agent reports high interpretation confidence (>0.80) despite flag_incomplete_filer_sample indicating delayed or missing 13F filings from major institutional holders.",
                     List.of(AgentType.SMART_MONEY.name()),
                     CorrectionType.OVERCONFIDENCE,
                     Resolution.NARRATIVE_RECONCILED
@@ -133,7 +156,7 @@ public class PreCriticValidationService {
     }
 
     private void verifyAccumulationClaimsWithoutFlows(StandardAgentOutput smOutput, List<Contradiction> findings) {
-        String narrative = buildSmartMoneyNarrative(smOutput).toLowerCase(Locale.ROOT);
+        String narrative = buildAgentNarrative(smOutput).toLowerCase(Locale.ROOT);
         boolean claimsAccumulation = narrative.contains("increased")
                 || narrative.contains("accumulated")
                 || narrative.contains("bought")
@@ -146,14 +169,6 @@ public class PreCriticValidationService {
                     Resolution.NARRATIVE_RECONCILED
             ));
         }
-    }
-
-    private String buildSmartMoneyNarrative(StandardAgentOutput smOutput) {
-        StringBuilder sb = new StringBuilder();
-        if (smOutput.headline() != null) sb.append(smOutput.headline()).append(" ");
-        if (smOutput.summary() != null) sb.append(smOutput.summary()).append(" ");
-        if (smOutput.strengths() != null) sb.append(String.join(" ", smOutput.strengths()));
-        return sb.toString();
     }
 
     private void checkMarginExpansionSignalAlignment(AgentContext ctx, List<Contradiction> findings) {
@@ -175,11 +190,16 @@ public class PreCriticValidationService {
         evaluateNarrativeMarginSignalContradiction(fundOutput, actualTtmSignal, findings);
     }
 
-    private void evaluateNarrativeMarginSignalContradiction(StandardAgentOutput fundOutput, int actualSignal, List<Contradiction> findings) {
-        String narrative = buildFundamentalsNarrative(fundOutput).toLowerCase(Locale.ROOT);
+    private void evaluateNarrativeMarginSignalContradiction(
+            StandardAgentOutput fundOutput,
+            int actualSignal,
+            List<Contradiction> findings
+    ) {
+        String narrative = buildAgentNarrative(fundOutput).toLowerCase(Locale.ROOT);
         boolean mentionsZeroAtTtm = narrative.contains("margin expansion signal is not positive at annual/ttm")
                 || narrative.contains("margin_expansion_signal was 0 at ttm")
-                || (narrative.contains("margin_expansion_signal was 0") && narrative.contains("ttm") && !narrative.contains("annual margin_expansion_signal was 0"));
+                || (narrative.contains("margin_expansion_signal was 0") && narrative.contains("ttm")
+                && !narrative.contains("annual margin_expansion_signal was 0"));
 
         if (actualSignal == 1 && mentionsZeroAtTtm) {
             findings.add(new Contradiction(
@@ -191,7 +211,31 @@ public class PreCriticValidationService {
         }
     }
 
-    private String buildFundamentalsNarrative(StandardAgentOutput output) {
+    private void checkDeathCrossMisnomer(AgentContext ctx, List<Contradiction> findings) {
+        if (ctx.factSheetData() == null || ctx.state() == null) {
+            return;
+        }
+        SharePriceSignalDto latest = ctx.factSheetData().getLatestDailySignal();
+        if (latest == null || latest.ma50() == null || latest.ma200() == null || latest.ma50() < latest.ma200()) {
+            return;
+        }
+        Object spObj = ctx.state().getAgentOutput(AgentType.SHARE_PRICE);
+        if (!(spObj instanceof StandardAgentOutput spOutput)) {
+            return;
+        }
+        if (buildAgentNarrative(spOutput).toLowerCase(Locale.ROOT).contains("death cross")) {
+            findings.add(new Contradiction(
+                    String.format(Locale.ROOT,
+                            "Share Price agent refers to a 'death cross' (which strictly means 50d SMA < 200d SMA), whereas 50d SMA (%.2f) remains above 200d SMA (%.2f); 20d SMA < 50d SMA is a short-term 20d/50d bearish crossover.",
+                            latest.ma50(), latest.ma200()),
+                    List.of(AgentType.SHARE_PRICE.name()),
+                    CorrectionType.REASONING_ERROR,
+                    Resolution.NARRATIVE_RECONCILED
+            ));
+        }
+    }
+
+    private String buildAgentNarrative(StandardAgentOutput output) {
         StringBuilder sb = new StringBuilder();
         if (output.headline() != null) sb.append(output.headline()).append(" ");
         if (output.summary() != null) sb.append(output.summary()).append(" ");

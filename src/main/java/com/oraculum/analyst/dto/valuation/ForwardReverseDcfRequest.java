@@ -16,10 +16,12 @@ public record ForwardReverseDcfRequest(
         EarningsEstimateDto fy2,
         List<EarningsEstimateDto> estimates,
         List<CompanyFinancialRatiosDto> annualRatios,
+        List<CompanyFinancialRatiosDto> quarterlyRatios,
         CompanyFinancialRatiosDto ttmRatio
 ) {
     public ForwardReverseDcfRequest {
         estimates = estimates != null ? estimates : List.of();
         annualRatios = annualRatios != null ? annualRatios : List.of();
+        quarterlyRatios = quarterlyRatios != null ? quarterlyRatios : List.of();
     }
 }

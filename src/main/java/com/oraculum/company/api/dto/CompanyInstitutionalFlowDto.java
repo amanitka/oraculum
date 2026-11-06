@@ -92,4 +92,17 @@ public record CompanyInstitutionalFlowDto(
                 entity.getTier1SellerNames() != null ? List.of(entity.getTier1SellerNames()) : List.of()
         );
     }
+
+    public CompanyInstitutionalFlowDto withFlagIncompleteFilerSample(Boolean flag) {
+        return new CompanyInstitutionalFlowDto(
+                companyId, ticker, companyName, market, sectorName, industryName, cusip,
+                reportPeriod, quarterIndex, totalInstValueUsd, totalInstShares, totalHoldersCount,
+                topHoldersNames, top5HoldersValueUsd, top5HoldersPct, putValueUsd, callValueUsd,
+                putCallRatio, netValueChangeUsd, netSharesChange, sharesChangePct, capitalFlowUsd,
+                priceValuationEffectUsd, flag, fundsBuyingCount, fundsSellingCount, fundsNewCount,
+                fundsClosedCount, fundsUnchangedCount, tier1ValueUsd, tier1Shares, tier1HoldersCount,
+                tier1NetValueChangeUsd, tier1NetSharesChange, tier1BuyersCount, tier1SellersCount,
+                tier1NewCount, tier1ClosedCount, tier1BuyerNames, tier1SellerNames
+        );
+    }
 }

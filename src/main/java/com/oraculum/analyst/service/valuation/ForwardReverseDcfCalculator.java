@@ -1,5 +1,6 @@
 package com.oraculum.analyst.service.valuation;
 
+import com.oraculum.analyst.dto.valuation.FcfMarginSensitivityEntryDto;
 import com.oraculum.analyst.dto.valuation.ForwardDcfSolverResult;
 import com.oraculum.analyst.dto.valuation.ForwardFcfProxyRequest;
 import com.oraculum.analyst.dto.valuation.ForwardReverseDcfDto;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -96,9 +98,12 @@ public class ForwardReverseDcfCalculator {
         Float impliedGrowthPct = NumericUtil.round1(solver.impliedGrowth() * 100.0);
         Float consensusGrowth = computeConsensusCagr(fy2, request.ttmRatio(), t2);
         Float historicalCagr = computeHistoricalFcfCagr(request.annualRatios());
-        ValuationZone zone = determineRelativeValuationZone(impliedGrowthPct / 100.0f, consensusGrowth, historicalCagr);
+        ValuationZone zone = determineUnifiedValuationZone(impliedGrowthPct);
+        List<FcfMarginSensitivityEntryDto> sensitivity = buildMarginSensitivity(
+                request, fy1, fy2, fy1Stub, stage2BaseFcf, t1, t2
+        );
 
-        return buildResultDto(request.marketCap(), proxy, solver, impliedGrowthPct, zone, consensusGrowth, historicalCagr);
+        return buildResultDto(request.marketCap(), proxy, solver, impliedGrowthPct, zone, sensitivity, consensusGrowth, historicalCagr);
     }
 
     private ForwardReverseDcfDto buildResultDto(
@@ -107,6 +112,7 @@ public class ForwardReverseDcfCalculator {
             ForwardDcfSolverResult solver,
             Float impliedGrowthPct,
             ValuationZone zone,
+            List<FcfMarginSensitivityEntryDto> sensitivity,
             Float consensusGrowth,
             Float historicalCagr
     ) {
@@ -119,11 +125,82 @@ public class ForwardReverseDcfCalculator {
                 .fcfProxyDivergencePct(proxy.maxDivergencePct())
                 .impliedGrowthYears3To10Pct(impliedGrowthPct)
                 .relativeValuationZone(zone)
+                .marginSensitivity(sensitivity)
                 .consensusGrowthRatePct(consensusGrowth != null ? NumericUtil.round1(consensusGrowth * 100.0) : null)
                 .historicalCagrPct(historicalCagr != null ? NumericUtil.round1(historicalCagr * 100.0) : null)
-                .interpretation(buildInterpretation(impliedGrowthPct, zone, consensusGrowth, proxy))
+                .interpretation(buildInterpretation(impliedGrowthPct, zone, proxy, sensitivity))
                 .isClipped(solver.isClipped())
                 .build();
+    }
+
+    private List<FcfMarginSensitivityEntryDto> buildMarginSensitivity(
+            ForwardReverseDcfRequest request,
+            EarningsEstimateDto fy1,
+            EarningsEstimateDto fy2,
+            double fy1Stub,
+            double stage2BaseFcf,
+            double t1,
+            double t2
+    ) {
+        EarningsEstimateDto stage2Est = fy2 != null ? fy2 : fy1;
+        if (stage2Est == null || stage2Est.revenueEstimateAverage() == null
+                || stage2Est.revenueEstimateAverage().doubleValue() <= 0) {
+            return List.of();
+        }
+        double stage2Revenue = stage2Est.revenueEstimateAverage().doubleValue();
+        double baseMargin = stage2BaseFcf / stage2Revenue;
+        if (baseMargin <= 0.01) {
+            return List.of();
+        }
+        Double qtrMargin = resolveLatestQuarterlyFcfMargin(request.quarterlyRatios());
+        double lowMargin = (qtrMargin != null && qtrMargin > 0.01 && qtrMargin < baseMargin - 0.01)
+                ? qtrMargin
+                : Math.max(0.05, baseMargin * 0.80);
+        String lowLabel = (qtrMargin != null && qtrMargin > 0.01 && qtrMargin < baseMargin - 0.01)
+                ? "Latest Quarter FCF Margin"
+                : "Conservative / Stressed FCF Margin";
+        double midMargin = (lowMargin + baseMargin) / 2.0;
+
+        List<FcfMarginSensitivityEntryDto> rows = new ArrayList<>();
+        rows.add(buildSensitivityEntry(lowLabel, lowMargin, baseMargin, stage2Revenue, request.marketCap(), fy1Stub, t1, t2));
+        rows.add(buildSensitivityEntry("Blended Mid-Cycle FCF Margin", midMargin, baseMargin, stage2Revenue, request.marketCap(), fy1Stub, t1, t2));
+        rows.add(buildSensitivityEntry("Normalized Proxy FCF Margin", baseMargin, baseMargin, stage2Revenue, request.marketCap(), fy1Stub, t1, t2));
+        return rows;
+    }
+
+    private FcfMarginSensitivityEntryDto buildSensitivityEntry(
+            String label,
+            double targetMargin,
+            double baseMargin,
+            double stage2Revenue,
+            double marketCap,
+            double baseFy1Stub,
+            double t1,
+            double t2
+    ) {
+        double impliedFy2Fcf = stage2Revenue * targetMargin;
+        double scaledFy1Stub = baseFy1Stub * (targetMargin / baseMargin);
+        ForwardDcfSolverResult solved = solveImpliedGrowthRate(marketCap, scaledFy1Stub, impliedFy2Fcf, t1, t2);
+        Float growthPct = NumericUtil.round1(solved.impliedGrowth() * 100.0);
+
+        return FcfMarginSensitivityEntryDto.builder()
+                .scenarioLabel(label)
+                .assumedFcfMarginPct(NumericUtil.round1(targetMargin * 100.0))
+                .impliedFy2FcfUsd(Math.round(impliedFy2Fcf * 100.0) / 100.0)
+                .impliedGrowthYears3To10Pct(growthPct)
+                .valuationZone(determineUnifiedValuationZone(growthPct))
+                .build();
+    }
+
+    private Double resolveLatestQuarterlyFcfMargin(List<CompanyFinancialRatiosDto> quarterlyRatios) {
+        if (quarterlyRatios == null || quarterlyRatios.isEmpty()) {
+            return null;
+        }
+        return quarterlyRatios.stream()
+                .filter(r -> r != null && r.reportDate() != null && r.fcfMargin() != null)
+                .max(Comparator.comparing(CompanyFinancialRatiosDto::reportDate))
+                .map(r -> r.fcfMargin().doubleValue())
+                .orElse(null);
     }
 
     private ForwardDcfSolverResult solveImpliedGrowthRate(
@@ -183,32 +260,48 @@ public class ForwardReverseDcfCalculator {
         return pvStage1 + pvStage2 + pvTerminal;
     }
 
-    private ValuationZone determineRelativeValuationZone(Float impliedG, Float consensusGrowth, Float historicalCagr) {
-        if (impliedG == null) {
+    /**
+     * Unified Reverse DCF legend across both single-stage and two-stage models:
+     * <= 6.0% DEEP_DISCOUNT, < 12.0% FAIR, <= 20.0% AGGRESSIVE, > 20.0% SPECULATIVE.
+     */
+    private ValuationZone determineUnifiedValuationZone(Float impliedGrowthPct) {
+        if (impliedGrowthPct == null) {
             return ValuationZone.FAIR;
         }
-        if (impliedG <= 0.03f || (consensusGrowth != null && impliedG <= consensusGrowth * 0.25f)) {
+        if (impliedGrowthPct <= 6.0f) {
             return ValuationZone.DEEP_DISCOUNT;
         }
-        if (impliedG <= 0.10f && (consensusGrowth == null || impliedG <= consensusGrowth * 0.50f)) {
+        if (impliedGrowthPct < 12.0f) {
             return ValuationZone.FAIR;
         }
-        if (impliedG > 0.18f
-                || (consensusGrowth != null && impliedG > consensusGrowth)
-                || (historicalCagr != null && impliedG > historicalCagr)) {
-            return ValuationZone.SPECULATIVE;
+        if (impliedGrowthPct <= 20.0f) {
+            return ValuationZone.AGGRESSIVE;
         }
-        return ValuationZone.AGGRESSIVE;
+        return ValuationZone.SPECULATIVE;
     }
 
-    private String buildInterpretation(Float impliedG, ValuationZone zone, Float consensusGrowth, MultiYearFcfProxyResult proxy) {
+    private String buildInterpretation(
+            Float impliedG,
+            ValuationZone zone,
+            MultiYearFcfProxyResult proxy,
+            List<FcfMarginSensitivityEntryDto> sensitivity
+    ) {
         String base = String.format(
                 Locale.ROOT,
-                "Two-stage Reverse DCF implies %.1f%% annualized FCF growth in Years 3-10 (%s zone) after reaching FY2 FCF proxy of $%.1fB.",
+                "Two-stage Reverse DCF implies %.1f%% annualized FCF growth in Years 3-10 (%s zone) at normalized FY2 FCF proxy of $%.1fB.",
                 impliedG, zone, proxy.fy2FcfProxy() != null ? proxy.fy2FcfProxy() / 1e9 : 0.0
         );
-        if (consensusGrowth != null && consensusGrowth > 0.25f && (impliedG / 100.0f) < consensusGrowth * 0.50f) {
-            return base + " Execution hurdle primarily centers on achieving near-term consensus targets rather than long-term terminal growth.";
+        if (sensitivity != null && sensitivity.size() >= 2) {
+            FcfMarginSensitivityEntryDto lowRow = sensitivity.getFirst();
+            return base + String.format(
+                    Locale.ROOT,
+                    " At %s (%.1f%%), FY2 FCF is $%.1fB and required Years 3-10 growth rises to %.1f%% (%s zone).",
+                    lowRow.scenarioLabel(),
+                    lowRow.assumedFcfMarginPct(),
+                    lowRow.impliedFy2FcfUsd() / 1e9,
+                    lowRow.impliedGrowthYears3To10Pct(),
+                    lowRow.valuationZone()
+            );
         }
         return base;
     }

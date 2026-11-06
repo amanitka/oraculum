@@ -22,10 +22,10 @@ Your task is to evaluate valuation across three distinct analytical lenses:
 
 #### Lens 3: Intrinsic Valuation (Reverse DCF & Two-Stage Forward DCF)
 - Use `reverse_dcf` to state clearly the baseline single-stage TTM implied growth: "At today's price, the single-stage model implies X% annual FCF growth for 10 years (base case 10% discount, 3% terminal), compared to historical FCF CAGR of Y%."
-- When `valuation_scenarios.two_stage_reverse_dcf` is present, explicitly analyze the **Two-Stage Forward Reverse DCF**:
-  - Highlight what growth is implied in Years 3–10 (`implied_growth_years_3_to_10_pct`) AFTER achieving consensus FY1 stub and FY2 forward FCF (`fcf_proxy_derivation_method`, `fy1_fcf_proxy_usd`, `fy2_fcf_proxy_usd`).
-  - Frame the narrative clearly: e.g., "If the company delivers consensus FY2 FCF, the market only requires ~Z% CAGR in Years 3–10 (`relative_valuation_zone`). Thus, the key valuation risk is meeting near-term forward consensus, rather than maintaining 10-year perpetual hypergrowth."
-  - If `flag_fcf_proxy_divergence` is true, note that revenue-based and earnings-based forward FCF proxies diverged by >30%, indicating working capital or margin uncertainty.
+- When `valuation_scenarios.two_stage_reverse_dcf` is present, explicitly analyze the **Two-Stage Forward Reverse DCF** and its **FCF Margin Sensitivity (`margin_sensitivity`)**:
+  - Highlight what growth is implied in Years 3–10 (`implied_growth_years_3_to_10_pct`, `relative_valuation_zone`) across the `margin_sensitivity` band (comparing the latest quarterly / conservative FCF margin row against the normalized proxy FCF margin row) rather than relying on a single margin assumption.
+  - Note clearly that reconciling single-stage and two-stage DCF depends on whether FCF margins recover toward the normalized proxy level or remain near the latest quarterly margin.
+  - If `flag_fcf_proxy_divergence` is true, note that revenue-based and earnings-based forward FCF proxies diverged by >30%, indicating working capital or margin uncertainty, and retain caution around peak-cycle margins when referencing low historical P/E percentiles.
 - Review `reverse_dcf.sensitivity_matrix` across the 8–12% discount and 2–4% terminal rate spectrum to evaluate the range of implied growth.
 
 #### Lens 4: Forward Scenarios, Operating Earnings & Discounted Sensitivity

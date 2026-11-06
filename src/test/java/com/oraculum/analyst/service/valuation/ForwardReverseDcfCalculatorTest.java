@@ -204,6 +204,44 @@ class ForwardReverseDcfCalculatorTest {
         assertThat(cyclicalResult.flagFcfProxyDivergence()).isTrue();
     }
 
+    @Test
+    void calculate_nvdaHypergrowthWithQuarterlyMarginDrop_usesUnifiedZoneLegendAndBuildsMarginSensitivity() {
+        LocalDate analysisDate = LocalDate.of(2026, 11, 4);
+        EarningsEstimateDto fy1 = createEstimate(LocalDate.of(2027, 1, 31), 413_430_000_000.0, 9.31);
+        EarningsEstimateDto fy2 = createEstimate(LocalDate.of(2028, 1, 31), 692_200_000_000.0, 15.91);
+
+        List<CompanyFinancialRatiosDto> annual = List.of(
+                createRatio(2026, 0.299f, 96_000_000_000.0f, 113_000_000_000.0f, 0.60f),
+                createRatio(2025, 0.299f, 60_000_000_000.0f, 70_000_000_000.0f, 1.25f),
+                createRatio(2024, 0.200f, 27_000_000_000.0f, 32_000_000_000.0f, 0.50f)
+        );
+        CompanyFinancialRatiosDto ttm = createRatio(2026, 0.299f, 96_580_000_000.0f, 113_000_000_000.0f, 0.34f);
+        List<CompanyFinancialRatiosDto> quarterly = List.of(
+                createRatio(2026, 0.222f, 22_000_000_000.0f, 31_000_000_000.0f, -0.05f)
+        );
+
+        ForwardReverseDcfDto result = calculator.calculate(ForwardReverseDcfRequest.builder()
+                .marketCap(4_935_000_000_000.0)
+                .currentSharePrice(202.06f)
+                .analysisDate(analysisDate)
+                .fy1(fy1)
+                .fy2(fy2)
+                .annualRatios(annual)
+                .quarterlyRatios(quarterly)
+                .ttmRatio(ttm)
+                .build());
+
+        assertThat(result).isNotNull();
+        // 12.0% implied growth must be AGGRESSIVE under unified legend (never DEEP_DISCOUNT!)
+        assertThat(result.impliedGrowthYears3To10Pct()).isCloseTo(12.0f, within(0.5f));
+        assertThat(result.relativeValuationZone()).isEqualTo(ValuationZone.AGGRESSIVE);
+        assertThat(result.marginSensitivity()).hasSize(3);
+        assertThat(result.marginSensitivity().getFirst().scenarioLabel()).isEqualTo("Latest Quarter FCF Margin");
+        assertThat(result.marginSensitivity().getFirst().assumedFcfMarginPct()).isEqualTo(22.2f);
+        assertThat(result.marginSensitivity().getFirst().impliedGrowthYears3To10Pct()).isGreaterThan(16.0f);
+        assertThat(result.marginSensitivity().getFirst().valuationZone()).isEqualTo(ValuationZone.AGGRESSIVE);
+    }
+
     private EarningsEstimateDto createEstimate(LocalDate date, Double revAvg, Double epsAvg) {
         return new EarningsEstimateDto(
                 date, "fiscal year", BigDecimal.valueOf(epsAvg), null, null,

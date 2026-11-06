@@ -100,7 +100,8 @@ public class DecisionSummaryCalculator {
             ForwardReverseDcfDto twoStage,
             AnalysisResult result
     ) {
-        if (twoStage != null && twoStage.relativeValuationZone() != null) {
+        if (twoStage != null && twoStage.relativeValuationZone() != null
+                && !Boolean.TRUE.equals(twoStage.flagFcfProxyDivergence())) {
             return mapZoneToHurdle(twoStage.relativeValuationZone().name(), null);
         }
         if (dcfSummary != null && dcfSummary.baseCaseValuationZone() != null) {

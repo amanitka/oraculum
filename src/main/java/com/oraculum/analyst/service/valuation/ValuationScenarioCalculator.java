@@ -7,6 +7,7 @@ import com.oraculum.analyst.dto.valuation.MethodDivergenceResult;
 import com.oraculum.analyst.dto.valuation.SensitivityMatrixDto;
 import com.oraculum.analyst.dto.valuation.ValuationScenarioDto;
 import com.oraculum.analyst.dto.valuation.ValuationScenarioRequest;
+import com.oraculum.company.api.dto.CompanyFinancialRatiosDto;
 import com.oraculum.harvester.api.dto.EarningsEstimateDto;
 import com.oraculum.util.NumericUtil;
 import lombok.RequiredArgsConstructor;
@@ -50,7 +51,9 @@ public class ValuationScenarioCalculator {
 
     private ValuationScenarioDto executeCalculation(ValuationScenarioRequest request) {
         List<EarningsEstimateDto> fyEstimates = filterFiscalYears(request.estimates(), request.analysisDate());
-        List<EarningsEstimateDto> qEstimates = filterFiscalQuarters(request.estimates(), request.analysisDate());
+        List<EarningsEstimateDto> qEstimates = filterUnreportedFiscalQuarters(
+                request.estimates(), request.quarterlyRatios(), request.analysisDate()
+        );
         EarningsEstimateDto fy1 = !fyEstimates.isEmpty() ? fyEstimates.getFirst() : null;
         EarningsEstimateDto fy2 = fyEstimates.size() > 1 ? fyEstimates.get(1) : null;
         EarningsEstimateDto nextQ = !qEstimates.isEmpty() ? qEstimates.getFirst() : null;
@@ -60,9 +63,10 @@ public class ValuationScenarioCalculator {
         EpsReconciliationResult reconciliation = epsReconciliationCalculator.reconcile(
                 fy1, qEstimates, request.quarterlyRatios()
         );
+        Float stagnantEps = resolveBaselineStagnantEps(fy1, fy2, request.ttmRatio());
         SensitivityMatrixDto matrix = sensitivityMatrixCalculator.calculate(
                 request.currentSharePrice(), fy2 != null ? fy2 : fy1,
-                request.explicitMultiples(), request.historicalValuation(), request.analysisDate()
+                request.explicitMultiples(), request.historicalValuation(), request.analysisDate(), stagnantEps
         );
         ForwardReverseDcfDto twoStageDcf = computeTwoStageDcf(request, fy1, fy2);
         MethodDivergenceResult divergence = valuationDivergenceEvaluator.evaluateMethodDivergence(
@@ -80,6 +84,20 @@ public class ValuationScenarioCalculator {
 
         applyNextQuarterAndFlags(builder, nextQ, reconciliation, divergence);
         return builder.build();
+    }
+
+    private Float resolveBaselineStagnantEps(
+            EarningsEstimateDto fy1,
+            EarningsEstimateDto fy2,
+            CompanyFinancialRatiosDto ttmRatio
+    ) {
+        if (fy2 != null && fy1 != null && fy1.epsEstimateAverage() != null) {
+            return fy1.epsEstimateAverage().floatValue();
+        }
+        if (ttmRatio != null && ttmRatio.earningsPerShare() != null && ttmRatio.earningsPerShare() > 0) {
+            return ttmRatio.earningsPerShare();
+        }
+        return null;
     }
 
     private void applyNextQuarterAndFlags(
@@ -118,6 +136,7 @@ public class ValuationScenarioCalculator {
                 .fy2(fy2)
                 .estimates(request.estimates())
                 .annualRatios(request.annualRatios())
+                .quarterlyRatios(request.quarterlyRatios())
                 .ttmRatio(request.ttmRatio())
                 .build());
     }
@@ -149,12 +168,41 @@ public class ValuationScenarioCalculator {
                 .toList();
     }
 
-    private List<EarningsEstimateDto> filterFiscalQuarters(List<EarningsEstimateDto> estimates, LocalDate analysisDate) {
+    private List<EarningsEstimateDto> filterUnreportedFiscalQuarters(
+            List<EarningsEstimateDto> estimates,
+            List<CompanyFinancialRatiosDto> quarterlyRatios,
+            LocalDate analysisDate
+    ) {
+        LocalDate latestReportedDate = resolveLatestReportedQuarterDate(quarterlyRatios);
         return estimates.stream()
                 .filter(this::isFiscalQuarter)
-                .filter(e -> e.date() != null && (analysisDate == null || !e.date().isBefore(analysisDate)))
+                .filter(e -> isUnreportedQuarter(e.date(), latestReportedDate, analysisDate))
                 .sorted(Comparator.comparing(EarningsEstimateDto::date))
                 .toList();
+    }
+
+    private boolean isUnreportedQuarter(LocalDate estimateDate, LocalDate latestReportedDate, LocalDate analysisDate) {
+        if (estimateDate == null) {
+            return false;
+        }
+        if (latestReportedDate != null) {
+            if (!estimateDate.isAfter(latestReportedDate)) {
+                return false;
+            }
+            return analysisDate == null || !estimateDate.isBefore(analysisDate.minusDays(75));
+        }
+        return analysisDate == null || !estimateDate.isBefore(analysisDate);
+    }
+
+    private LocalDate resolveLatestReportedQuarterDate(List<CompanyFinancialRatiosDto> quarterlyRatios) {
+        if (quarterlyRatios == null || quarterlyRatios.isEmpty()) {
+            return null;
+        }
+        return quarterlyRatios.stream()
+                .filter(r -> r != null && r.reportDate() != null)
+                .map(CompanyFinancialRatiosDto::reportDate)
+                .max(Comparator.naturalOrder())
+                .orElse(null);
     }
 
     private boolean isFiscalYear(EarningsEstimateDto dto) {

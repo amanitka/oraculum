@@ -1,5 +1,6 @@
 package com.oraculum.analyst.service.valuation;
 
+import com.oraculum.analyst.dto.valuation.FcfMarginSensitivityEntryDto;
 import com.oraculum.analyst.dto.valuation.ForwardReverseDcfDto;
 import com.oraculum.analyst.dto.valuation.MethodDivergenceResult;
 import com.oraculum.analyst.dto.valuation.ReverseDcfSummaryDto;
@@ -81,8 +82,22 @@ public class ValuationDivergenceEvaluator {
         if (twoStageDcf == null || twoStageDcf.relativeValuationZone() == null) {
             return false;
         }
+        if (Boolean.TRUE.equals(twoStageDcf.flagFcfProxyDivergence())) {
+            return false;
+        }
         ValuationZone zone = twoStageDcf.relativeValuationZone();
-        return zone == ValuationZone.FAIR || zone == ValuationZone.DEEP_DISCOUNT;
+        if (zone != ValuationZone.FAIR && zone != ValuationZone.DEEP_DISCOUNT) {
+            return false;
+        }
+        return !hasDemandingMarginSensitivity(twoStageDcf.marginSensitivity());
+    }
+
+    private boolean hasDemandingMarginSensitivity(List<FcfMarginSensitivityEntryDto> sensitivity) {
+        if (sensitivity == null || sensitivity.isEmpty()) {
+            return false;
+        }
+        return sensitivity.stream().anyMatch(s -> s != null
+                && (s.valuationZone() == ValuationZone.AGGRESSIVE || s.valuationZone() == ValuationZone.SPECULATIVE));
     }
 
     private MethodDivergenceResult buildReconciledNote(

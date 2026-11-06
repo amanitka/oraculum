@@ -94,6 +94,11 @@ BEGIN
                                       WHERE d.is_missing_filer = TRUE
                                         AND p.rank_pos <= 10
                                       ),
+              prv_incomplete_summary AS (SELECT s.cusip
+                                         FROM t_sec_holding_summary s
+                                         WHERE s.report_period = (date_trunc('quarter', p_report_period) - INTERVAL '1 day')::DATE
+                                           AND s.flag_incomplete_filer_sample = TRUE
+                                         ),
               current_deltas AS (SELECT
                                     d.cusip,
                                     d.report_period,
@@ -131,7 +136,7 @@ BEGIN
                                        COALESCE(d.net_shares_change, 0)          AS net_shares_change,
                                        COALESCE(ROUND(COALESCE(d.net_shares_change, 0) * (COALESCE(h.total_inst_value_usd, 0)::NUMERIC / NULLIF(h.total_inst_shares, 0))), 0)::BIGINT AS capital_flow_usd,
                                        (COALESCE(d.net_value_change_usd, 0) - COALESCE(ROUND(COALESCE(d.net_shares_change, 0) * (COALESCE(h.total_inst_value_usd, 0)::NUMERIC / NULLIF(h.total_inst_shares, 0))), 0))::BIGINT AS price_valuation_effect_usd,
-                                       (mth.cusip IS NOT NULL)                   AS flag_incomplete_filer_sample,
+                                       (mth.cusip IS NOT NULL OR pis.cusip IS NOT NULL) AS flag_incomplete_filer_sample,
                                        COALESCE(d.funds_buying_count, 0)         AS funds_buying_count,
                                        COALESCE(d.funds_selling_count, 0)        AS funds_selling_count,
                                        COALESCE(d.funds_new_count, 0)            AS funds_new_count,
@@ -154,6 +159,7 @@ BEGIN
                                     LEFT JOIN current_deltas d ON d.cusip = h.cusip
                                                               AND d.report_period = h.report_period
                                     LEFT JOIN missing_top_holders mth ON mth.cusip = h.cusip
+                                    LEFT JOIN prv_incomplete_summary pis ON pis.cusip = h.cusip
                                     )
          SELECT *
          FROM aggregated_source

@@ -287,6 +287,36 @@ class ValuationScenarioCalculatorTest {
                 .findFirst().orElseThrow();
         assertThat(cell20High.pctMoveVsCurrent()).isCloseTo(76.7f, within(0.5f));
         assertThat(Math.round(cell20High.pctMoveVsCurrent())).isEqualTo(77);
+
+        SensitivityCellDto cell16Stagnant = cells.stream()
+                .filter(c -> c.multiple().equals(16.0f) && "STAGNANT".equals(c.epsScenario()))
+                .findFirst().orElseThrow();
+        assertThat(cell16Stagnant.epsValue()).isEqualTo(10.0f);
+    }
+
+    @Test
+    void calculate_selectsFirstUnreportedQuarterEvenAfterQuarterEndDatePassed() {
+        // On Nov 4, 2026, Q3 ended Oct 31, 2026 is 4 days in the past, but latest reported quarter is Jul 31, 2026
+        List<EarningsEstimateDto> estimates = List.of(
+                createEstimate("fiscal year", LocalDate.of(2027, 1, 31), 9.31, 8.80, 9.90),
+                createEstimate("fiscal quarter", LocalDate.of(2026, 7, 31), 1.65, 1.55, 1.75),
+                createEstimate("fiscal quarter", LocalDate.of(2026, 10, 31), 2.47, 2.35, 2.60),
+                createEstimate("fiscal quarter", LocalDate.of(2027, 1, 31), 2.75, 2.60, 2.95)
+        );
+        List<CompanyFinancialRatiosDto> quarterlyRatios = List.of(
+                createQuarterlyRatio(LocalDate.of(2026, 7, 31), 1.65f),
+                createQuarterlyRatio(LocalDate.of(2026, 4, 30), 1.59f)
+        );
+
+        ValuationScenarioDto result = calculator.calculate(ValuationScenarioRequest.builder()
+                .currentSharePrice(202.06f)
+                .estimates(estimates)
+                .analysisDate(LocalDate.of(2026, 11, 4))
+                .quarterlyRatios(quarterlyRatios)
+                .build());
+
+        assertThat(result.nextQuarterEndDate()).isEqualTo(LocalDate.of(2026, 10, 31));
+        assertThat(result.nextQuarterEpsConsensus()).isEqualTo(2.47f);
     }
 
     private EarningsEstimateDto createEstimate(String horizon, LocalDate date, double avg, double low, double high) {

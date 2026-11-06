@@ -16,6 +16,7 @@ import com.oraculum.company.api.dto.BalanceSheetDto;
 import com.oraculum.company.api.dto.CashFlowStatementDto;
 import com.oraculum.company.api.dto.CompanyDto;
 import com.oraculum.company.api.dto.CompanyFinancialRatiosDto;
+import com.oraculum.company.api.dto.CompanyInstitutionalFlowDto;
 import com.oraculum.company.api.dto.HistoricalValuationSummaryDto;
 import com.oraculum.company.api.dto.IncomeStatementDto;
 import com.oraculum.company.api.dto.IndustryFinancialRatiosDto;
@@ -224,5 +225,36 @@ class CompanyFactSheetDataServiceTest {
 
         verify(harvesterLiveApi).fetchCompanyNews(eq("AAPL"), eq(historyDate), any(LocalDate.class));
         assertThat(data.getRecentNewsList()).containsExactly(newsItem);
+    }
+
+    @Test
+    void create_propagatesIncompleteFilerSampleFlagFromPriorQuarterToCurrentQuarterDelta() {
+        CompanyInstitutionalFlowDto q2Complete = new CompanyInstitutionalFlowDto(
+                1, "AAPL", "Apple Inc", "US", "Technology", "Consumer Electronics", "037833100",
+                LocalDate.of(2026, 6, 30), 1L, 3_200_000_000_000L, 16_600_000_000L, 6200,
+                List.of("Vanguard", "BlackRock"), 1_300_000_000_000L, 40.0f, 100L, 200L, 0.50f,
+                800_000_000_000L, 2_940_000_000L, 21.5f, 561_800_000_000L, 238_000_000_000L,
+                false, 3300, 2400, 500, 200, 500, 100L, 10L, 10, 10L, 1L, 5, 5, 1, 0, List.of(), List.of()
+        );
+        CompanyInstitutionalFlowDto q1Incomplete = q2Complete
+                .withFlagIncompleteFilerSample(true);
+        CompanyInstitutionalFlowDto q1WithDate = new CompanyInstitutionalFlowDto(
+                1, "AAPL", "Apple Inc", "US", "Technology", "Consumer Electronics", "037833100",
+                LocalDate.of(2026, 3, 31), 2L, 2_390_000_000_000L, 13_660_000_000L, 6000,
+                List.of("BlackRock"), 960_000_000_000L, 40.0f, 100L, 200L, 0.50f,
+                -480_000_000_000L, -2_300_000_000L, -14.4f, -404_000_000_000L, -75_000_000_000L,
+                q1Incomplete.flagIncompleteFilerSample(), 2400, 2900, 300, 250, 600,
+                100L, 10L, 10, 10L, 1L, 5, 5, 1, 0, List.of(), List.of()
+        );
+
+        when(companyInstitutionalFlowApi.getInstitutionalFlowHistory(1))
+                .thenReturn(List.of(q2Complete, q1WithDate));
+
+        CompanyFactSheetData data = service.create(company, new CitationRegistry());
+
+        List<CompanyInstitutionalFlowDto> flows = data.getInstitutionalFlowHistory();
+        assertThat(flows).hasSize(2);
+        assertThat(flows.getFirst().reportPeriod()).isEqualTo(LocalDate.of(2026, 6, 30));
+        assertThat(flows.getFirst().flagIncompleteFilerSample()).isTrue();
     }
 }

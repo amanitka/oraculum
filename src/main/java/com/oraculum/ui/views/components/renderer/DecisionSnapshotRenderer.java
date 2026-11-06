@@ -66,13 +66,22 @@ public class DecisionSnapshotRenderer {
         double growthScore = scores.getOrDefault("growth_prospects", 0.0);
         double riskScore = scores.getOrDefault("risk_profile", 0.0);
 
+        String riskBadge = resolveRiskAndSetupLabel(riskScore, s.marketSetup());
         grid.add(
                 SnapshotUiSupport.createScoreCard("Fundamental Health", fundScore, s.businessQuality(), SnapshotUiSupport.resolveDimensionTheme(s.businessQuality())),
-                SnapshotUiSupport.createScoreCard("Valuation Hurdle", valScore, s.valuationVsExpectations(), SnapshotUiSupport.resolveDimensionTheme(s.valuationVsExpectations())),
+                SnapshotUiSupport.createScoreCard("Valuation Attractiveness", valScore, s.valuationVsExpectations(), SnapshotUiSupport.resolveDimensionTheme(s.valuationVsExpectations())),
                 SnapshotUiSupport.createScoreCard("Growth Prospects", growthScore, resolveGrowthLabel(growthScore, s), resolveGrowthTheme(growthScore)),
-                SnapshotUiSupport.createScoreCard("Risk & Market Setup", riskScore, s.marketSetup(), SnapshotUiSupport.resolveDimensionTheme(s.marketSetup()))
+                SnapshotUiSupport.createScoreCard("Risk Resilience & Setup", riskScore, riskBadge, SnapshotUiSupport.resolveScoreBadgeTheme(riskScore))
         );
         return grid;
+    }
+
+    private String resolveRiskAndSetupLabel(double riskScore, String marketSetup) {
+        String riskTier = riskScore >= 7.0 ? "Low Fin. Risk" : (riskScore >= 5.0 ? "Moderate Risk" : "High Risk");
+        if (marketSetup == null || marketSetup.isBlank()) {
+            return riskTier;
+        }
+        return riskTier + " · " + SnapshotUiSupport.formatDimensionLabel(marketSetup);
     }
 
     private String resolveGrowthLabel(double score, DecisionSummary s) {

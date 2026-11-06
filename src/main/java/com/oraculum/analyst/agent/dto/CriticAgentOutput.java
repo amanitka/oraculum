@@ -1,16 +1,15 @@
 package com.oraculum.analyst.agent.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import com.oraculum.analyst.api.domain.AgentType;
 
 import java.util.List;
 
 public record CriticAgentOutput(
-        @JsonProperty("contradictions_found")  List<Contradiction> contradictionsFound,
-        @JsonProperty("is_consistent")         boolean isConsistent,
-        @JsonProperty("recommended_reruns")    List<RerunInstruction> recommendedReruns,
-        @JsonProperty("counter_thesis")        String counterThesis
+        @JsonProperty("contradictions_found") List<Contradiction> contradictionsFound,
+        @JsonProperty("is_consistent") boolean isConsistent,
+        @JsonProperty("recommended_reruns") List<RerunInstruction> recommendedReruns,
+        @JsonProperty("counter_thesis") String counterThesis
 ) {
     public CriticAgentOutput(
             List<Contradiction> contradictionsFound,
@@ -19,11 +18,12 @@ public record CriticAgentOutput(
     ) {
         this(contradictionsFound, isConsistent, recommendedReruns, null);
     }
+
     public record Contradiction(
-            @JsonProperty("description")     String description,
+            @JsonProperty("description") String description,
             @JsonProperty("agents_involved") List<String> agentsInvolved,
             @JsonProperty("correction_type") CorrectionType correctionType,
-            @JsonProperty("resolution")      Resolution resolution
+            @JsonProperty("resolution") Resolution resolution
     ) {}
 
     public enum CorrectionType {
@@ -43,8 +43,8 @@ public record CriticAgentOutput(
     }
 
     public record RerunInstruction(
-            @JsonProperty("specialist")  AgentType specialist,
-            @JsonProperty("severity")    int severity,
+            @JsonProperty("specialist") AgentType specialist,
+            @JsonProperty("severity") int severity,
             @JsonProperty("instruction") String instruction
     ) {}
 
@@ -54,5 +54,15 @@ public record CriticAgentOutput(
         return contradictionsFound.stream()
                 .filter(c -> c.resolution() == Resolution.UNRESOLVED)
                 .toList();
+    }
+
+    public CriticAgentOutput normalizeConsistency(boolean isVerificationPass) {
+        boolean hasUnresolved = !unresolvedContradictions().isEmpty();
+        boolean hasReruns = recommendedReruns != null && !recommendedReruns.isEmpty();
+        boolean normalizedConsistent = isVerificationPass ? !hasUnresolved : (!hasUnresolved && !hasReruns);
+        if (this.isConsistent == normalizedConsistent) {
+            return this;
+        }
+        return new CriticAgentOutput(contradictionsFound, normalizedConsistent, recommendedReruns, counterThesis);
     }
 }

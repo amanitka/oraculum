@@ -156,10 +156,11 @@ public class CompanyAnalysisWorkflowService {
             eventPublisher.publishEvent(new CompanyAnalysisProgressEvent(request.correlationId(), AgentType.CRITIC, false));
 
             AgentOutput<CriticAgentOutput> outputRaw = (AgentOutput<CriticAgentOutput>) runAndVerifyAgent(critic, ctx);
-            CriticAgentOutput output = outputRaw.result();
+            CriticAgentOutput output = outputRaw.result().normalizeConsistency(rerunCount > 0);
+            AgentOutput<CriticAgentOutput> normalizedRaw = new AgentOutput<>(output, outputRaw.tokens());
 
             String traceKey = rerunCount == 0 ? "CRITIC" : "CRITIC_VERIFY_" + rerunCount;
-            recordTraceAndTokens(ctx, traceKey, outputRaw);
+            recordTraceAndTokens(ctx, traceKey, normalizedRaw);
             ctx.state().putAgentOutput(AgentType.CRITIC, output);
             log.info("Critic phase complete. Consistent: {}", output.isConsistent());
 

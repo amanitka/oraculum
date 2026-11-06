@@ -24,7 +24,8 @@ public class SensitivityMatrixCalculator {
 
     public static final List<Float> DEFAULT_REFERENCE_MULTIPLES = List.of(12.0f, 16.0f, 20.0f);
     public static final String SENSITIVITY_DISCLAIMER =
-            "Illustrative sensitivity calculation only, not a price forecast or target.";
+            "Illustrative sensitivity calculation only, not a price forecast or target. " +
+            "Discounted values represent present value @ 10%/yr cost of equity (excess return over 10% annual hurdle).";
 
     public SensitivityMatrixDto calculate(
             Float currentPrice,
@@ -32,7 +33,7 @@ public class SensitivityMatrixCalculator {
             List<Float> explicitMultiples,
             List<HistoricalValuationSummaryDto> historicalValuation
     ) {
-        return calculate(currentPrice, target, explicitMultiples, historicalValuation, null);
+        return calculate(currentPrice, target, explicitMultiples, historicalValuation, null, null);
     }
 
     public SensitivityMatrixDto calculate(
@@ -42,6 +43,17 @@ public class SensitivityMatrixCalculator {
             List<HistoricalValuationSummaryDto> historicalValuation,
             LocalDate analysisDate
     ) {
+        return calculate(currentPrice, target, explicitMultiples, historicalValuation, analysisDate, null);
+    }
+
+    public SensitivityMatrixDto calculate(
+            Float currentPrice,
+            EarningsEstimateDto target,
+            List<Float> explicitMultiples,
+            List<HistoricalValuationSummaryDto> historicalValuation,
+            LocalDate analysisDate,
+            Float baselineStagnantEps
+    ) {
         if (target == null) {
             return null;
         }
@@ -49,13 +61,17 @@ public class SensitivityMatrixCalculator {
         Float epsLow = extractFloat(target.epsEstimateLow());
         Float epsAvg = extractFloat(target.epsEstimateAverage());
         Float epsHigh = extractFloat(target.epsEstimateHigh());
+        Float epsStagnant = resolveStagnantEps(baselineStagnantEps, epsLow);
 
         double discountFactor = computeDiscountFactor(analysisDate, target.date());
         List<Float> refs = anchors.stream().map(MultipleAnchorDto::multiple).toList();
-        List<SensitivityCellDto> cells = buildMatrixCells(currentPrice, epsLow, epsAvg, epsHigh, refs, discountFactor);
+        List<SensitivityCellDto> cells = buildMatrixCells(
+                currentPrice, epsStagnant, epsLow, epsAvg, epsHigh, refs, discountFactor
+        );
 
         return SensitivityMatrixDto.builder()
                 .targetFiscalYear(target.date() != null ? target.date().toString() : "Next FY")
+                .epsStagnant(epsStagnant)
                 .epsLow(epsLow)
                 .epsAvg(epsAvg)
                 .epsHigh(epsHigh)
@@ -66,6 +82,16 @@ public class SensitivityMatrixCalculator {
                 .cells(cells)
                 .disclaimer(SENSITIVITY_DISCLAIMER)
                 .build();
+    }
+
+    private Float resolveStagnantEps(Float baselineStagnantEps, Float epsLow) {
+        if (baselineStagnantEps == null || baselineStagnantEps <= 0.0f) {
+            return null;
+        }
+        if (epsLow != null && baselineStagnantEps >= epsLow - 0.01f) {
+            return null;
+        }
+        return NumericUtil.round2(baselineStagnantEps);
     }
 
     private double computeDiscountFactor(LocalDate analysisDate, LocalDate targetDate) {
@@ -148,6 +174,7 @@ public class SensitivityMatrixCalculator {
 
     private List<SensitivityCellDto> buildMatrixCells(
             Float currentPrice,
+            Float epsStagnant,
             Float epsLow,
             Float epsAvg,
             Float epsHigh,
@@ -156,6 +183,7 @@ public class SensitivityMatrixCalculator {
     ) {
         List<SensitivityCellDto> cells = new ArrayList<>();
         for (Float multiple : refs) {
+            addCellIfPresent(cells, multiple, "STAGNANT", epsStagnant, currentPrice, discountFactor);
             addCellIfPresent(cells, multiple, "LOW", epsLow, currentPrice, discountFactor);
             addCellIfPresent(cells, multiple, "AVG", epsAvg, currentPrice, discountFactor);
             addCellIfPresent(cells, multiple, "HIGH", epsHigh, currentPrice, discountFactor);

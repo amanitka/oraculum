@@ -8,6 +8,7 @@ import java.util.List;
 @Builder
 public record SensitivityMatrixDto(
         @JsonProperty("target_fiscal_year") String targetFiscalYear,
+        @JsonProperty("eps_stagnant") Float epsStagnant,
         @JsonProperty("eps_low") Float epsLow,
         @JsonProperty("eps_avg") Float epsAvg,
         @JsonProperty("eps_high") Float epsHigh,

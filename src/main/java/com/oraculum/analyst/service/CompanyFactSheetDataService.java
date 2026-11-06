@@ -262,7 +262,33 @@ public class CompanyFactSheetDataService {
         if (company == null || company.id() == null) {
             return List.of();
         }
-        return companyInstitutionalFlowApi.getInstitutionalFlowHistory(company.id());
+        List<CompanyInstitutionalFlowDto> raw = companyInstitutionalFlowApi.getInstitutionalFlowHistory(company.id());
+        return propagateIncompleteSampleFlagToQoqDelta(raw);
+    }
+
+    private List<CompanyInstitutionalFlowDto> propagateIncompleteSampleFlagToQoqDelta(
+            List<CompanyInstitutionalFlowDto> flows
+    ) {
+        if (flows == null || flows.size() < 2) {
+            return flows != null ? flows : List.of();
+        }
+        List<CompanyInstitutionalFlowDto> chronologicallySorted = flows.stream()
+                .filter(f -> f != null && f.reportPeriod() != null)
+                .sorted(Comparator.comparing(CompanyInstitutionalFlowDto::reportPeriod))
+                .toList();
+        if (chronologicallySorted.size() < 2) {
+            return flows;
+        }
+        List<CompanyInstitutionalFlowDto> adjusted = new ArrayList<>(chronologicallySorted.size());
+        for (int i = 0; i < chronologicallySorted.size(); i++) {
+            CompanyInstitutionalFlowDto current = chronologicallySorted.get(i);
+            boolean priorIncomplete = i > 0 && Boolean.TRUE.equals(chronologicallySorted.get(i - 1).flagIncompleteFilerSample());
+            boolean currentIncomplete = Boolean.TRUE.equals(current.flagIncompleteFilerSample());
+            adjusted.add((currentIncomplete || priorIncomplete)
+                    ? current.withFlagIncompleteFilerSample(true)
+                    : current);
+        }
+        return adjusted.reversed();
     }
 
     private List<SectorInstitutionalFlowTrendDto> getAllSectorsInstitutionalFlow() {
