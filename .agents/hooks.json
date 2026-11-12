@@ -1,0 +1,12 @@
+{
+  "oraculum-agents-contract": {
+    "enabled": true,
+    "Stop": [
+      {
+        "type": "command",
+        "command": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/verify-agents-contract.ps1",
+        "timeout": 15
+      }
+    ]
+  }
+}

@@ -1,7 +1,7 @@
 package com.oraculum.llm.config;
 
-import com.oraculum.llm.api.dto.LlmTierType;
 import com.oraculum.llm.api.dto.LlmProviderType;
+import com.oraculum.llm.api.dto.LlmTierType;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.util.List;
@@ -16,11 +16,15 @@ public record LlmProperties(Common common,
                          int maxCompletionTokens,
                          List<LlmProviderType> providerFallbackOrder,
                          Integer timeout,
+                         Integer connectTimeout,
                          Integer maxRetries,
                          Long retryDelayMs) {
     }
 
     public record ProviderConfig(String baseUrl,
-                                 String apiKey) {
+                                 String apiKey,
+                                 Integer connectTimeout,
+                                 Integer timeout,
+                                 Integer maxRetries) {
     }
 }

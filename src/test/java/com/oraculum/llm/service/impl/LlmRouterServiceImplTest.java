@@ -15,9 +15,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.context.ApplicationEventPublisher;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -51,7 +51,7 @@ class LlmRouterServiceImplTest {
         LlmProperties properties = new LlmProperties(new LlmProperties.Common(0.7,
                 1000,
                 List.of(LlmProviderType.OPENAI, LlmProviderType.GEMINI),
-                60, 3, 1000L),
+                60, 5, 3, 1000L),
                 Map.of(),
                 models);
 
@@ -69,7 +69,7 @@ class LlmRouterServiceImplTest {
         String prompt = "Test prompt";
         String expectedResult = "Test response";
         when(health.isBlocked(LlmProviderType.OPENAI)).thenReturn(false);
-        when(executionService.executeCall(any())).thenReturn(CompletableFuture.completedFuture(new LlmResponse<>(expectedResult, null)));
+        when(executionService.executeCall(any())).thenReturn(new LlmResponse<>(expectedResult, null));
 
         // Act
         LlmResponse<String> result = routerService.executeCall(LlmCallRequest.of(LlmTierType.STANDARD, prompt, String.class));
@@ -91,12 +91,12 @@ class LlmRouterServiceImplTest {
         when(health.isBlocked(any())).thenReturn(false);
 
         // First provider fails
-        when(executionService.executeCall(argThat(req -> req != null && req.client() == openaiClient))).thenReturn(CompletableFuture.failedFuture(new RuntimeException("API Error")));
+        when(executionService.executeCall(argThat(req -> req != null && req.client() == openaiClient))).thenThrow(new RuntimeException("API Error"));
 
         // Second provider succeeds
-        when(executionService.executeCall(argThat(req -> req != null && req.client() == geminiClient))).thenReturn(CompletableFuture.completedFuture(new LlmResponse<>(
+        when(executionService.executeCall(argThat(req -> req != null && req.client() == geminiClient))).thenReturn(new LlmResponse<>(
                 expectedResult,
-                null)));
+                null));
 
         // Act
         LlmResponse<String> result = routerService.executeCall(LlmCallRequest.of(LlmTierType.STANDARD, prompt, String.class));
@@ -117,7 +117,7 @@ class LlmRouterServiceImplTest {
         when(health.isBlocked(LlmProviderType.OPENAI)).thenReturn(true);
         when(health.isBlocked(LlmProviderType.GEMINI)).thenReturn(false);
 
-        when(executionService.executeCall(any())).thenReturn(CompletableFuture.completedFuture(new LlmResponse<>(expectedResult, null)));
+        when(executionService.executeCall(any())).thenReturn(new LlmResponse<>(expectedResult, null));
 
         // Act
         LlmResponse<String> result = routerService.executeCall(LlmCallRequest.of(LlmTierType.STANDARD, prompt, String.class));
@@ -132,7 +132,7 @@ class LlmRouterServiceImplTest {
     void testAllProvidersFailThrowsException() {
         // Arrange
         when(health.isBlocked(any())).thenReturn(false);
-        when(executionService.executeCall(any())).thenReturn(CompletableFuture.failedFuture(new RuntimeException("API Error")));
+        when(executionService.executeCall(any())).thenThrow(new RuntimeException("API Error"));
 
         // Act & Assert
         RuntimeException exception = assertThrows(RuntimeException.class,
@@ -150,7 +150,7 @@ class LlmRouterServiceImplTest {
         LlmProperties propertiesWithMissingTier = new LlmProperties(new LlmProperties.Common(0.7,
                 1000,
                 List.of(LlmProviderType.OPENAI),
-                60, 3, 1000L), Map.of(), Map.of());
+                60, 5, 3, 1000L), Map.of(), Map.of());
         routerService = new LlmRouterServiceImpl(Map.of(LlmProviderType.OPENAI, openaiClient),
                 executionService,
                 health,
@@ -171,7 +171,7 @@ class LlmRouterServiceImplTest {
         String expectedResult = "Test response";
 
         when(health.isBlocked(any())).thenReturn(false);
-        when(executionService.executeCall(any())).thenReturn(CompletableFuture.completedFuture(new LlmResponse<>(expectedResult, null)));
+        when(executionService.executeCall(any())).thenReturn(new LlmResponse<>(expectedResult, null));
 
         LlmCallRequest<String> request = LlmCallRequest.withFallbackOverride(
                 LlmTierType.STANDARD, prompt, String.class,
@@ -196,7 +196,7 @@ class LlmRouterServiceImplTest {
 
         // Setup properties where OPENAI model is null, but GEMINI model is set
         Map<LlmTierType, Map<LlmProviderType, String>> models = Map.of(LlmTierType.STANDARD,
-                new java.util.HashMap<>() {{
+                new HashMap<>() {{
                     put(LlmProviderType.OPENAI, null); // Skip this
                     put(LlmProviderType.GEMINI, "gemini-1.5-pro");
                 }});
@@ -204,7 +204,7 @@ class LlmRouterServiceImplTest {
         LlmProperties propertiesWithNullModel = new LlmProperties(new LlmProperties.Common(0.7,
                 1000,
                 List.of(LlmProviderType.OPENAI, LlmProviderType.GEMINI),
-                60, 3, 1000L), Map.of(), models);
+                60, 5, 3, 1000L), Map.of(), models);
 
         routerService = new LlmRouterServiceImpl(
                 Map.of(LlmProviderType.OPENAI, openaiClient, LlmProviderType.GEMINI, geminiClient),
@@ -215,7 +215,7 @@ class LlmRouterServiceImplTest {
         );
 
         when(health.isBlocked(any())).thenReturn(false);
-        when(executionService.executeCall(any())).thenReturn(CompletableFuture.completedFuture(new LlmResponse<>(expectedResult, null)));
+        when(executionService.executeCall(any())).thenReturn(new LlmResponse<>(expectedResult, null));
 
         // Act
         LlmResponse<String> result = routerService.executeCall(LlmCallRequest.of(LlmTierType.STANDARD, prompt, String.class));
@@ -237,7 +237,7 @@ class LlmRouterServiceImplTest {
                 List.of(LlmProviderType.OPENAI) // Single provider
         );
 
-        when(executionService.executeCall(any())).thenReturn(CompletableFuture.failedFuture(new RuntimeException("API Error")));
+        when(executionService.executeCall(any())).thenThrow(new RuntimeException("API Error"));
 
         // Act & Assert
         RuntimeException exception = assertThrows(RuntimeException.class, () -> routerService.executeCall(request));

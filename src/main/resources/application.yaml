@@ -54,6 +54,7 @@ resilience4j:
         max-attempts: 4
         wait-duration: 2s
         enable-exponential-backoff: true
+        retry-exception-predicate: com.oraculum.llm.config.LlmRetryExceptionPredicate
         ignore-exceptions:
           - org.springframework.web.client.HttpClientErrorException.TooManyRequests
           - org.springframework.web.reactive.function.client.WebClientResponseException.TooManyRequests
@@ -88,12 +89,6 @@ resilience4j:
         retry-exceptions:
           - org.springframework.web.client.RestClientException
           - java.io.IOException
-  timelimiter:
-    time-limiter-aspect-order: 400
-    instances:
-      llm:
-        timeout-duration: 300s
-        cancel-running-future: true
 
 vaadin:
   launch-browser: true
@@ -237,6 +232,8 @@ oraculum:
     common:
       temperature: 0.0
       max-completion-tokens: 12288
+      connect-timeout: 5
+      max-retries: 0
       provider-fallback-order:
         - lmstudio
         - deepseek
@@ -247,6 +244,7 @@ oraculum:
       lmstudio:
         base-url: ${ORACULUM_LMSTUDIO_BASE_URL:http://10.10.1.3:1234/v1}
         api-key: ${ORACULUM_LMSTUDIO_API_KEY:lmstudio}
+        connect-timeout: 3
 
       gemini:
         base-url: "https://generativelanguage.googleapis.com/v1beta/openai/"

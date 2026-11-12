@@ -73,7 +73,7 @@ public class LlmRouterServiceImpl implements LlmRouterService {
                 properties.common().temperature(),
                 properties.common().maxCompletionTokens(),
                 ctx.request().responseType()
-        )).join();
+        ));
 
         if (ctx.useHealthCheck()) {
             health.markSuccess(ctx.provider());
