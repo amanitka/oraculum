@@ -5,10 +5,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Repository
 public interface SecHoldingRepository extends JpaRepository<SecHoldingEntity, SecHoldingEntity.SecHoldingId> {
+
+    boolean existsByReportPeriod(LocalDate reportPeriod);
 
     @Query("""
             SELECT DISTINCT TRIM(h.cusip) FROM SecHoldingEntity h

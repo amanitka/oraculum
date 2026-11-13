@@ -39,15 +39,27 @@ public interface HarvesterBatchApi {
     void refresh13FBulk(int year, int quarter);
 
     /**
-     * Triggers a 13F bulk download for the most recently completed quarter.
-     * Derives the period by going 2 months back from today, then snapping to the
-     * last day of that quarter — safe to call on the 20th of Feb/May/Aug/Nov.
+     * Triggers a 13F bulk download for the latest SEC-published quarter.
+     * Since March 2024, SEC bulk datasets cover 3-month filing windows ending Feb/May/Aug/Nov
+     * and are published at the start of Mar/Jun/Sep/Dec.
      */
     default void refresh13FBulk() {
-        LocalDate ref       = LocalDate.now().minusMonths(2);
-        int lastMonthOfQtr  = ((ref.getMonthValue() - 1) / 3 + 1) * 3;
-        LocalDate periodEnd = YearMonth.of(ref.getYear(), lastMonthOfQtr).atEndOfMonth();
-        refresh13FBulk(periodEnd.getYear(), (periodEnd.getMonthValue() - 1) / 3 + 1);
+        LocalDate periodEnd = resolveLatestAvailable13FPeriodEnd(LocalDate.now());
+        refresh13FBulk(periodEnd.getYear(), quarterOf(periodEnd));
+    }
+
+    /**
+     * Resolves the quarter-end date of the most recently published SEC 13F bulk dataset
+     * as of the given date.
+     */
+    static LocalDate resolveLatestAvailable13FPeriodEnd(LocalDate asOfDate) {
+        LocalDate ref = asOfDate.minusMonths(5);
+        int lastMonthOfQtr = quarterOf(ref) * 3;
+        return YearMonth.of(ref.getYear(), lastMonthOfQtr).atEndOfMonth();
+    }
+
+    private static int quarterOf(LocalDate date) {
+        return (date.getMonthValue() - 1) / 3 + 1;
     }
 
     /**

@@ -3,12 +3,22 @@ package com.oraculum.harvester.service;
 import com.oraculum.common.config.OraculumProperties;
 import com.oraculum.company.api.CompanyInsiderTransactionApi;
 import com.oraculum.company.api.CompanyMetadataApi;
+import com.oraculum.company.api.CompanySecApi;
 import com.oraculum.company.api.CompanySharePriceApi;
 import com.oraculum.company.api.domain.StatementTemplate;
 import com.oraculum.company.api.domain.StatementVariant;
-import com.oraculum.harvester.api.HarvesterBatchApi;
-import com.oraculum.harvester.api.dto.*;
 import com.oraculum.company.api.dto.TickerKeyDto;
+import com.oraculum.harvester.api.HarvesterBatchApi;
+import com.oraculum.harvester.api.dto.Fetch13FBulkRequest;
+import com.oraculum.harvester.api.dto.FetchBalanceSheetRequest;
+import com.oraculum.harvester.api.dto.FetchCashFlowStatementRequest;
+import com.oraculum.harvester.api.dto.FetchCompanyRequest;
+import com.oraculum.harvester.api.dto.FetchIncomeStatementRequest;
+import com.oraculum.harvester.api.dto.FetchIndustryRequest;
+import com.oraculum.harvester.api.dto.FetchInsiderTransactionsRequest;
+import com.oraculum.harvester.api.dto.FetchMarketRequest;
+import com.oraculum.harvester.api.dto.FetchSharePricePriceRequest;
+import com.oraculum.harvester.api.dto.HarvesterRequest;
 import com.oraculum.harvester.api.event.FetchCompanyCusipsRequestEvent;
 import com.oraculum.harvester.event.FetchMacroeconomicRequestEvent;
 import com.oraculum.util.DateTimeUtil;
@@ -30,6 +40,7 @@ public class HarvesterBatchService implements HarvesterBatchApi {
     private final CompanyMetadataApi companyMetadataApi;
     private final CompanyInsiderTransactionApi companyInsiderTransactionApi;
     private final CompanySharePriceApi companySharePriceApi;
+    private final CompanySecApi companySecApi;
     private final SecDocumentHarvesterService secDocumentHarvesterService;
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final String harvesterRequestTopic;
@@ -39,6 +50,7 @@ public class HarvesterBatchService implements HarvesterBatchApi {
     public HarvesterBatchService(CompanyMetadataApi companyMetadataApi,
                                  CompanyInsiderTransactionApi companyInsiderTransactionApi,
                                  CompanySharePriceApi companySharePriceApi,
+                                 CompanySecApi companySecApi,
                                  SecDocumentHarvesterService secDocumentHarvesterService,
                                  KafkaTemplate<String, Object> kafkaTemplate,
                                  OraculumProperties properties,
@@ -46,6 +58,7 @@ public class HarvesterBatchService implements HarvesterBatchApi {
         this.companyMetadataApi = companyMetadataApi;
         this.companyInsiderTransactionApi = companyInsiderTransactionApi;
         this.companySharePriceApi = companySharePriceApi;
+        this.companySecApi = companySecApi;
         this.secDocumentHarvesterService = secDocumentHarvesterService;
         this.kafkaTemplate = kafkaTemplate;
         this.harvesterRequestTopic = properties.kafka().topics().harvesterRequest();
@@ -168,6 +181,24 @@ public class HarvesterBatchService implements HarvesterBatchApi {
                 .year(year)
                 .quarter(quarter)
                 .build());
+    }
+
+    /**
+     * Triggers the latest SEC-published 13F bulk download only if holdings for that
+     * quarter are not yet present in the database.
+     */
+    public void refresh13FBulkIfMissing() {
+        refresh13FBulkIfMissing(LocalDate.now());
+    }
+
+    void refresh13FBulkIfMissing(LocalDate asOfDate) {
+        LocalDate periodEnd = HarvesterBatchApi.resolveLatestAvailable13FPeriodEnd(asOfDate);
+        if (companySecApi.hasHoldingsForPeriod(periodEnd)) {
+            log.info("SEC 13F holdings for period {} already exist, skipping scheduled bulk download", periodEnd);
+            return;
+        }
+        int quarter = (periodEnd.getMonthValue() - 1) / 3 + 1;
+        refresh13FBulk(periodEnd.getYear(), quarter);
     }
 
     @Override

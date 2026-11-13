@@ -31,4 +31,10 @@ class RefreshSchedulerTest {
         scheduler.refreshCompanyCusips();
         verify(refreshService).refreshCompanyCusips();
     }
+
+    @Test
+    void refreshSec13F_delegatesToRefresh13FBulkIfMissing() {
+        scheduler.refreshSec13F();
+        verify(refreshService).refresh13FBulkIfMissing();
+    }
 }

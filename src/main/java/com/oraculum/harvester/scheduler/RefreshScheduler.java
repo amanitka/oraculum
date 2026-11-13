@@ -105,7 +105,7 @@ public class RefreshScheduler {
     public void refreshSec13F() {
         log.info("Starting scheduled SEC 13F bulk download...");
         try {
-            refreshService.refresh13FBulk();
+            refreshService.refresh13FBulkIfMissing();
         } catch (Exception e) {
             log.error("Scheduled SEC 13F bulk refresh failed", e);
         }

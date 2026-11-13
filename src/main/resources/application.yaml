@@ -126,8 +126,8 @@ oraculum:
     company-cusip:
       cron: "0 0 5 1 * *"
     sec-13f:
-      # 20th of Feb/May/Aug/Nov at 06:00 — ~55 days after each quarter end
-      bulk-cron: "0 0 6 20 2,5,8,11 *"
+      # Daily at 06:00 during SEC publication months (Mar/Jun/Sep/Dec); skips once quarter is loaded
+      bulk-cron: "0 0 6 * 3,6,9,12 *"
       tier1-ciks:
         - "0001067983"   # Berkshire Hathaway (Buffett)
         - "0001649339"   # Scion Asset Management (Burry)
