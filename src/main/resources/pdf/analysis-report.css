@@ -1,0 +1,544 @@
+@page {
+    size: A4;
+    margin: 18mm 14mm 17mm 14mm;
+    @top-left {
+        content: element(running-header-left);
+        font-family: 'Inter', sans-serif;
+        font-size: 7.5pt;
+        color: #64748b;
+        vertical-align: bottom;
+        padding-bottom: 4pt;
+    }
+    @top-right {
+        content: element(running-header-right);
+        font-family: 'Inter', sans-serif;
+        font-size: 7.5pt;
+        color: #64748b;
+        vertical-align: bottom;
+        padding-bottom: 4pt;
+    }
+    @bottom-left {
+        content: "Oraculum Equity Research  |  Objective Fundamental & Valuation Memo";
+        font-family: 'Inter', sans-serif;
+        font-size: 7.5pt;
+        color: #94a3b8;
+    }
+    @bottom-right {
+        content: "Page " counter(page) " of " counter(pages);
+        font-family: 'Inter', sans-serif;
+        font-size: 7.5pt;
+        color: #64748b;
+    }
+}
+
+@page :first {
+    margin-top: 13mm;
+    @top-left { content: none; }
+    @top-right { content: none; }
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    font-size: 9.2pt;
+    line-height: 1.5;
+    color: #1e293b;
+    margin: 0;
+    padding: 0;
+}
+
+.running-header-left {
+    position: running(running-header-left);
+    font-weight: 600;
+    color: #475569;
+}
+
+.running-header-right {
+    position: running(running-header-right);
+    color: #64748b;
+}
+
+.doc-header {
+    border-bottom: 2px solid #0f172a;
+    padding-bottom: 8pt;
+    margin-bottom: 11pt;
+}
+
+.doc-header-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.doc-header-left {
+    vertical-align: bottom;
+}
+
+.doc-header-right {
+    width: 170pt;
+    text-align: right;
+    vertical-align: bottom;
+}
+
+.doc-brand {
+    font-size: 7.5pt;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: #2563eb;
+    margin-bottom: 2pt;
+}
+
+.doc-title {
+    font-size: 16pt;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.doc-meta {
+    font-size: 8.2pt;
+    color: #475569;
+    margin-top: 3pt;
+}
+
+.doc-date-label {
+    font-size: 7.2pt;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+}
+
+.doc-date-val {
+    font-size: 9pt;
+    font-weight: 700;
+    color: #0f172a;
+    margin-top: 1pt;
+}
+
+.section-title {
+    font-size: 10.5pt;
+    font-weight: 700;
+    color: #0f172a;
+    border-bottom: 1px solid #cbd5e1;
+    padding-bottom: 3pt;
+    margin: 14pt 0 7pt 0;
+    page-break-after: avoid;
+    break-after: avoid;
+}
+
+.sub-heading {
+    font-size: 8.2pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #475569;
+    margin: 10pt 0 5pt 0;
+    page-break-after: avoid;
+    break-after: avoid;
+}
+
+.hero-card {
+    background-color: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-left-width: 4pt;
+    border-radius: 5pt;
+    padding: 9pt 11pt;
+    margin-bottom: 8pt;
+    page-break-inside: avoid;
+    break-inside: avoid;
+}
+
+.hero-top-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.hero-top-left {
+    vertical-align: top;
+    padding-right: 10pt;
+}
+
+.hero-top-right {
+    width: 165pt;
+    text-align: right;
+    vertical-align: top;
+}
+
+.stance-badge {
+    display: inline-block;
+    font-size: 7.6pt;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    padding: 3pt 7pt;
+    border-radius: 3pt;
+    border: 1px solid #cbd5e1;
+    margin-bottom: 4pt;
+    white-space: nowrap;
+}
+
+.hero-why {
+    font-size: 9.2pt;
+    font-weight: 600;
+    color: #0f172a;
+    margin-top: 2pt;
+}
+
+.hero-dims {
+    font-size: 8.2pt;
+    color: #475569;
+    margin-top: 5pt;
+}
+
+.hero-dims strong {
+    color: #0f172a;
+}
+
+.hero-price {
+    font-size: 13pt;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.hero-sub {
+    font-size: 7.5pt;
+    color: #64748b;
+    margin-top: 1pt;
+}
+
+.conviction-text {
+    font-size: 8.8pt;
+    font-weight: 700;
+    color: #0f172a;
+    margin-top: 5pt;
+}
+
+.hero-thesis {
+    border-top: 1px solid #e2e8f0;
+    margin-top: 8pt;
+    padding-top: 7pt;
+    font-size: 9pt;
+    color: #1e293b;
+}
+
+.hero-thesis p {
+    margin: 0 0 4pt 0;
+}
+
+.hero-thesis p:last-child {
+    margin-bottom: 0;
+}
+
+.question-strip {
+    background-color: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 4pt;
+    padding: 6pt 9pt;
+    margin-top: 8pt;
+}
+
+.question-label {
+    font-size: 7pt;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: #b45309;
+    text-transform: uppercase;
+}
+
+.question-val {
+    font-size: 8.6pt;
+    font-weight: 600;
+    color: #0f172a;
+    margin-top: 1pt;
+}
+
+.avoid-break {
+    page-break-inside: avoid;
+    break-inside: avoid;
+}
+
+.grid-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 6pt 0;
+    table-layout: fixed;
+    margin: 0 -6pt 7pt -6pt;
+}
+
+.grid-table tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+}
+
+.grid-table-rows {
+    border-spacing: 6pt 6pt;
+    margin: -6pt -6pt 7pt -6pt;
+}
+
+.pillar-cell {
+    vertical-align: top;
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 4pt;
+    padding: 6pt 8pt;
+    page-break-inside: avoid;
+    break-inside: avoid;
+}
+
+.pillar-title {
+    font-size: 6.8pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #64748b;
+}
+
+.pillar-score {
+    font-size: 11.5pt;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 2pt 0 3pt 0;
+}
+
+.score-track {
+    width: 100%;
+    height: 3.5pt;
+    background-color: #e2e8f0;
+    border-radius: 2pt;
+    margin-bottom: 5pt;
+}
+
+.score-fill {
+    height: 3.5pt;
+    border-radius: 2pt;
+}
+
+.badge {
+    display: inline-block;
+    font-size: 6.8pt;
+    font-weight: 700;
+    padding: 1.5pt 5pt;
+    border-radius: 3pt;
+    border: 1px solid transparent;
+}
+
+.badge-success { background-color: #dcfce7; color: #166534; border-color: #bbf7d0; }
+.badge-warning { background-color: #fef3c7; color: #92400e; border-color: #fde68a; }
+.badge-error   { background-color: #fee2e2; color: #991b1b; border-color: #fecaca; }
+.badge-contrast { background-color: #f1f5f9; color: #334155; border-color: #cbd5e1; }
+.badge-info    { background-color: #dbeafe; color: #1e40af; border-color: #bfdbfe; }
+
+.card {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 4pt;
+    padding: 8pt 10pt;
+    margin-bottom: 8pt;
+    page-break-inside: avoid;
+    break-inside: avoid;
+}
+
+.card-bull { background-color: #f0fdf4; border-color: #bbf7d0; }
+.card-bear { background-color: #fef2f2; border-color: #fecaca; }
+.card-info { background-color: #eff6ff; border-color: #bfdbfe; }
+.card-warn { background-color: #fffbeb; border-color: #fde68a; }
+
+.card-cell {
+    vertical-align: top;
+    border: 1px solid #e2e8f0;
+    border-radius: 4pt;
+    padding: 8pt 9pt;
+    page-break-inside: avoid;
+    break-inside: avoid;
+}
+
+.card-title {
+    font-size: 8.2pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0 0 5pt 0;
+}
+
+.title-green { color: #15803d; }
+.title-red   { color: #b91c1c; }
+.title-blue  { color: #1d4ed8; }
+.title-amber { color: #b45309; }
+
+.bullet-list {
+    margin: 0;
+    padding-left: 13pt;
+    font-size: 8.5pt;
+    line-height: 1.45;
+}
+
+.bullet-list li {
+    margin-bottom: 3pt;
+}
+
+.bullet-list li p {
+    margin: 0;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 5pt 0 8pt 0;
+    font-size: 8.2pt;
+}
+
+.data-table th {
+    background-color: #f1f5f9;
+    color: #334155;
+    font-weight: 700;
+    text-align: left;
+    padding: 4.5pt 6pt;
+    border-bottom: 1px solid #cbd5e1;
+}
+
+.data-table td {
+    padding: 4.5pt 6pt;
+    border-bottom: 1px solid #e2e8f0;
+    vertical-align: top;
+}
+
+.data-table tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+}
+
+.watch-bar {
+    background-color: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 4pt;
+    padding: 6pt 9pt;
+    margin-bottom: 8pt;
+    font-size: 8.4pt;
+    page-break-inside: avoid;
+    break-inside: avoid;
+}
+
+.watch-bar p {
+    display: inline;
+    margin: 0;
+}
+
+.scenario-move {
+    font-size: 8.8pt;
+    font-weight: 700;
+    margin-top: 5pt;
+}
+
+.scenario-label {
+    font-size: 7.4pt;
+    font-weight: 700;
+    color: #475569;
+    margin-top: 4pt;
+}
+
+.driver-meta {
+    font-size: 7.8pt;
+    color: #334155;
+    margin-top: 3pt;
+}
+
+.driver-trigger {
+    border-top: 1px solid #e2e8f0;
+    margin-top: 5pt;
+    padding-top: 4pt;
+    font-size: 7.7pt;
+    color: #475569;
+}
+
+.markdown-body {
+    font-size: 9pt;
+    line-height: 1.55;
+    color: #1e293b;
+}
+
+.markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4 {
+    color: #0f172a;
+    font-weight: 700;
+    margin: 10pt 0 4pt 0;
+    page-break-after: avoid;
+    break-after: avoid;
+}
+
+.markdown-body h1 { font-size: 11.2pt; }
+.markdown-body h2 { font-size: 10.2pt; border-bottom: 1px solid #e2e8f0; padding-bottom: 2pt; }
+.markdown-body h3 { font-size: 9.5pt; }
+.markdown-body h4 { font-size: 9.1pt; }
+
+.markdown-body p {
+    margin: 0 0 6pt 0;
+}
+
+.markdown-body ul, .markdown-body ol {
+    margin: 0 0 6pt 0;
+    padding-left: 15pt;
+}
+
+.markdown-body li {
+    margin-bottom: 2.5pt;
+}
+
+.markdown-body strong {
+    color: #0f172a;
+}
+
+.markdown-body code {
+    font-family: monospace;
+    font-size: 8.2pt;
+    background-color: #f1f5f9;
+    padding: 1pt 3pt;
+    border-radius: 2pt;
+}
+
+.markdown-body pre {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 3pt;
+    padding: 6pt;
+    font-size: 7.8pt;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    page-break-inside: avoid;
+    break-inside: avoid;
+}
+
+.markdown-body blockquote {
+    border-left: 3pt solid #cbd5e1;
+    margin: 4pt 0 6pt 0;
+    padding: 2pt 8pt;
+    color: #475569;
+}
+
+.cite {
+    font-size: 6.8pt;
+    font-weight: 700;
+    color: #1d4ed8;
+}
+
+.cite-unverifiable {
+    color: #b45309;
+}
+
+.cite-link {
+    text-decoration: none;
+    color: inherit;
+}
+
+.cite-anchor {
+    text-decoration: none;
+    color: inherit;
+}
+
+.citation-summary {
+    font-size: 7.7pt;
+    color: #334155;
+    word-wrap: break-word;
+}

@@ -92,7 +92,8 @@ class AnalysisOverviewRendererTest {
     void renderOverviewTab_streamlinedExecutiveLayout_movesHeavyBlocksToDriversTab() {
         MarkdownRenderer markdownRenderer = new MarkdownRenderer(new JsonMapper());
         DecisionSnapshotRenderer decisionRenderer = new DecisionSnapshotRenderer();
-        AnalysisOverviewRenderer renderer = new AnalysisOverviewRenderer(markdownRenderer, decisionRenderer);
+        AnalysisOverviewRenderer renderer = new AnalysisOverviewRenderer(
+                markdownRenderer, decisionRenderer, new VerdictHeroRenderer(markdownRenderer), new ScenarioSectionRenderer(markdownRenderer));
 
         DecisionSummary summary = DecisionSummary.builder()
                 .businessQuality("EXCEPTIONAL")
@@ -164,7 +165,8 @@ class AnalysisOverviewRendererTest {
     @Test
     void hasValuationAndDriversContent_checksActualRenderableFields() {
         MarkdownRenderer markdownRenderer = new MarkdownRenderer(new JsonMapper());
-        AnalysisOverviewRenderer renderer = new AnalysisOverviewRenderer(markdownRenderer, new DecisionSnapshotRenderer());
+        AnalysisOverviewRenderer renderer = new AnalysisOverviewRenderer(
+                markdownRenderer, new DecisionSnapshotRenderer(), new VerdictHeroRenderer(markdownRenderer), new ScenarioSectionRenderer(markdownRenderer));
 
         assertThat(renderer.hasValuationAndDriversContent(null)).isFalse();
         assertThat(renderer.hasValuationAndDriversContent(AnalysisResult.builder()

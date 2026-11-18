@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,21 +34,14 @@ import java.util.regex.Pattern;
 public class MarkdownRenderer {
 
     private static final String TRACE_CITATIONS_KEY = "CITATIONS";
+    private static final Pattern CITATION_PATTERN = Pattern.compile("\\[([\\d,\\s\\?\u26A0\uFE0F]+)\\]");
     private final JsonMapper jsonMapper;
 
     public Component renderMarkdownWithCitations(String strValue, String jsonData) {
         try {
-            JsonNode citationsNode = null;
-            if (jsonData != null && !jsonData.isBlank()) {
-                JsonNode rootNode = jsonMapper.readTree(jsonData);
-                if (rootNode.has(TRACE_CITATIONS_KEY)) {
-                    citationsNode = rootNode.get(TRACE_CITATIONS_KEY);
-                }
-            }
-
-            String processedMd = injectCitations(strValue, jsonData);
-            String htmlContent = HtmlRenderer.builder().build()
-                    .render(Parser.builder().build().parse(processedMd));
+            JsonNode citationsNode = extractCitationsNode(jsonData);
+            String processedMd = injectCitations(strValue, citationsNode, this::formatInteractiveCitation);
+            String htmlContent = renderMarkdownToHtml(processedMd);
 
             CitationMarkdownContainer container = new CitationMarkdownContainer(htmlContent, citationsNode);
             container.getStyle().set("line-height", "1.6").set("font-size", "0.9rem");
@@ -60,54 +54,99 @@ public class MarkdownRenderer {
         }
     }
 
-    private String injectCitations(String markdown, String analysisDataJson) {
-        if (analysisDataJson == null || markdown == null || analysisDataJson.isBlank()) return markdown;
+    /**
+     * Renders markdown to HTML using a caller-provided citation formatter {@code (id, suffix) -> html}.
+     */
+    public String renderHtmlWithCitations(String markdown, JsonNode citationsNode, BiFunction<String, String, String> citationFormatter) {
+        if (markdown == null || markdown.isBlank()) {
+            return "";
+        }
+        String processedMd = injectCitations(markdown, citationsNode, citationFormatter);
+        return renderMarkdownToHtml(processedMd);
+    }
+
+    /**
+     * Extracts the {@code CITATIONS} JSON node from {@code analysisData}, or {@code null} when unavailable.
+     */
+    public JsonNode extractCitationsNode(String jsonData) {
+        if (jsonData == null || jsonData.isBlank()) {
+            return null;
+        }
         try {
-            JsonNode rootNode = jsonMapper.readTree(analysisDataJson);
-            if (!rootNode.has(TRACE_CITATIONS_KEY)) return markdown;
-            JsonNode citationsNode = rootNode.get(TRACE_CITATIONS_KEY);
-
-            Pattern pattern = Pattern.compile("\\[([\\d,\\s\\?\u26A0\uFE0F]+)\\]");
-            Matcher matcher = pattern.matcher(markdown);
-
-            StringBuilder sb = new StringBuilder();
-            while (matcher.find()) {
-                String inner = matcher.group(1);
-                String[] parts = inner.split(",");
-                StringBuilder replacement = new StringBuilder("[");
-
-                for (int i = 0; i < parts.length; i++) {
-                    String part = parts[i].trim();
-                    String id = part.replaceAll("[^\\d]", "");
-                    String suffix = part.replaceAll("[\\d]", "").trim();
-
-                    if (!id.isEmpty() && citationsNode.has(id)) {
-                        boolean isUnverifiable = suffix.contains("?");
-                        String titleAttr = isUnverifiable ? " title=\"This claim couldn't be automatically verified against the underlying data\"" : "";
-                        String classAttr = isUnverifiable ? "reference-data-link unverifiable" : "reference-data-link";
-                        
-                        replacement.append("<a href=\"javascript:void(0)\" class=\"").append(classAttr).append("\" data-reference-id=\"")
-                                .append(id).append("\"").append(titleAttr).append(">").append(id);
-                        if (!suffix.isEmpty()) {
-                            replacement.append(" ").append(suffix);
-                        }
-                        replacement.append("</a>");
-                    } else {
-                        replacement.append(part);
-                    }
-
-                    if (i < parts.length - 1) {
-                        replacement.append(", ");
-                    }
-                }
-                replacement.append("]");
-                matcher.appendReplacement(sb, Matcher.quoteReplacement(replacement.toString()));
-            }
-            matcher.appendTail(sb);
-            return sb.toString();
+            JsonNode rootNode = jsonMapper.readTree(jsonData);
+            return rootNode.has(TRACE_CITATIONS_KEY) ? rootNode.get(TRACE_CITATIONS_KEY) : null;
         } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * Collects citation IDs referenced in {@code text} that exist in {@code citationsNode}, in appearance order.
+     */
+    public static List<String> extractCitationIds(String text, JsonNode citationsNode) {
+        if (text == null || text.isBlank() || citationsNode == null) {
+            return List.of();
+        }
+        List<String> ids = new ArrayList<>();
+        Matcher matcher = CITATION_PATTERN.matcher(text);
+        while (matcher.find()) {
+            for (String part : matcher.group(1).split(",")) {
+                String id = part.trim().replaceAll("[^\\d]", "");
+                if (!id.isEmpty() && citationsNode.has(id)) {
+                    ids.add(id);
+                }
+            }
+        }
+        return ids;
+    }
+
+    private String renderMarkdownToHtml(String markdown) {
+        return HtmlRenderer.builder().build()
+                .render(Parser.builder().build().parse(markdown));
+    }
+
+    private String injectCitations(String markdown, JsonNode citationsNode, BiFunction<String, String, String> formatter) {
+        if (markdown == null || citationsNode == null) {
             return markdown;
         }
+        Matcher matcher = CITATION_PATTERN.matcher(markdown);
+        StringBuilder sb = new StringBuilder();
+        while (matcher.find()) {
+            String replacement = formatCitationGroup(matcher.group(1), citationsNode, formatter);
+            matcher.appendReplacement(sb, Matcher.quoteReplacement(replacement));
+        }
+        matcher.appendTail(sb);
+        return sb.toString();
+    }
+
+    private String formatCitationGroup(String inner, JsonNode citationsNode, BiFunction<String, String, String> formatter) {
+        String[] parts = inner.split(",");
+        StringBuilder replacement = new StringBuilder("[");
+        for (int i = 0; i < parts.length; i++) {
+            if (i > 0) {
+                replacement.append(", ");
+            }
+            replacement.append(formatSingleCitation(parts[i].trim(), citationsNode, formatter));
+        }
+        return replacement.append("]").toString();
+    }
+
+    private String formatSingleCitation(String part, JsonNode citationsNode, BiFunction<String, String, String> formatter) {
+        String id = part.replaceAll("[^\\d]", "");
+        if (id.isEmpty() || !citationsNode.has(id)) {
+            return part;
+        }
+        String suffix = part.replaceAll("[\\d]", "").trim();
+        return formatter.apply(id, suffix);
+    }
+
+    private String formatInteractiveCitation(String id, String suffix) {
+        boolean isUnverifiable = suffix.contains("?");
+        String titleAttr = isUnverifiable ? " title=\"This claim couldn't be automatically verified against the underlying data\"" : "";
+        String classAttr = isUnverifiable ? "reference-data-link unverifiable" : "reference-data-link";
+        String suffixPart = suffix.isEmpty() ? "" : " " + suffix;
+        return "<a href=\"javascript:void(0)\" class=\"" + classAttr + "\" data-reference-id=\""
+                + id + "\"" + titleAttr + ">" + id + suffixPart + "</a>";
     }
 
     public static class CitationMarkdownContainer extends Div {
