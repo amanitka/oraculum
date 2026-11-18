@@ -141,7 +141,7 @@ class AnalysisOverviewRendererTest {
                 .contains("Fairly Valued")
                 .contains("FUNDAMENTAL HEALTH")
                 .contains("Exceptional")
-                .contains("VALUATION HURDLE")
+                .contains("VALUATION ATTRACTIVENESS")
                 .contains("Demanding")
                 .contains("Can FCF compound at 16.7%?")
                 .contains("WHAT TODAY'S PRICE REQUIRES")

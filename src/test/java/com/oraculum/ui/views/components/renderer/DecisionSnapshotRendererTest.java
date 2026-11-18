@@ -57,9 +57,9 @@ class DecisionSnapshotRendererTest {
         String text = grid.getElement().getTextRecursively();
         assertThat(text)
                 .contains("FUNDAMENTAL HEALTH", "9.0", "Exceptional")
-                .contains("VALUATION HURDLE", "6.4", "Speculative")
+                .contains("VALUATION ATTRACTIVENESS", "6.4", "Speculative")
                 .contains("GROWTH PROSPECTS", "8.1", "High Expansion")
-                .contains("RISK & MARKET SETUP", "7.6", "Pullback in Uptrend");
+                .contains("RISK RESILIENCE & SETUP", "7.6", "Pullback in Uptrend");
 
         assertNoPillThemeRecursively(grid.getElement());
     }

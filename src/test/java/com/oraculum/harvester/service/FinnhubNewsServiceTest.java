@@ -57,7 +57,7 @@ class FinnhubNewsServiceTest {
     void fetchCompanyNews_filtersBotsDeduplicatesAndSortsNewestFirst() {
         LocalDate from = LocalDate.of(2026, 1, 1);
         LocalDate to = LocalDate.of(2026, 1, 10);
-        String longSummary = "A".repeat(500);
+        String longSummary = "A".repeat(1200);
 
         FinnhubCompanyNewsItem older = new FinnhubCompanyNewsItem(
                 "company news", 1767225600L, "Apple Unveils New Product", 1L, null, "AAPL", "Reuters", "Summary 1", "https://url1"
@@ -84,7 +84,7 @@ class FinnhubNewsServiceTest {
         // Newer timestamp (1767226000L vs 1767225600L) comes first
         assertThat(result.getFirst().headline()).isEqualTo("Analysts Raise Target for AAPL");
         assertThat(result.getFirst().related()).containsExactly("AAPL", "MSFT");
-        assertThat(result.getFirst().summary()).hasSize(403);
+        assertThat(result.getFirst().summary()).hasSize(1003);
         assertThat(result.getFirst().summary()).endsWith("...");
 
         assertThat(result.get(1).headline()).isEqualTo("Apple Unveils New Product");
